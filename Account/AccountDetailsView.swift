@@ -1,0 +1,128 @@
+import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
+
+struct AccountDetailsView: View {
+    @State private var displayName = ""
+    @State private var email = ""
+    @State private var showingSignOut = false
+    @State private var showingDeleteAccount = false
+    @State private var isSigningOut = false
+    @Environment(\.presentationMode) var presentationMode
+
+    var body: some View {
+        VStack(spacing: 0) {
+            CustomMenuSection(title: "PROFILE") {
+                // Name first, then Email
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Name")
+                            .appFont(size: 16, weight: .medium)
+                            .foregroundColor(.white)
+                        Text(displayName.isEmpty ? "(No Name Set)" : displayName)
+                            .appFont(size: 14)
+                            .foregroundColor(.gray)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Email")
+                            .appFont(size: 16, weight: .medium)
+                            .foregroundColor(.white)
+                        Text(email.isEmpty ? "(No Email Set)" : email)
+                            .appFont(size: 14)
+                            .foregroundColor(.gray)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            }
+            CustomMenuSection(title: "ACCOUNT ACTIONS") {
+                Button(action: { showingSignOut = true }) {
+                    HStack {
+                        Text("Sign Out")
+                            .appFont(size: 16, weight: .medium)
+                            .foregroundColor(.red)
+                        Spacer()
+                        if isSigningOut {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .tint(.red)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                }
+                .disabled(isSigningOut)
+                Button(action: { showingDeleteAccount = true }) {
+                    HStack {
+                        Text("Delete Account")
+                            .appFont(size: 16, weight: .medium)
+                            .foregroundColor(.red)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+        .background(Color.black)
+        .navigationTitle("Account Details")
+        .navigationBarTitleDisplayMode(.large)
+        .alert("Sign Out", isPresented: $showingSignOut) {
+            Button("Cancel", role: .cancel) {}
+            Button("Sign Out", role: .destructive) { signOut() }
+        } message: {
+            Text("Are you sure you want to sign out?")
+        }
+        .alert("Delete Account", isPresented: $showingDeleteAccount) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) { deleteAccount() }
+        } message: {
+            Text("This action cannot be undone.")
+        }
+        .onAppear {
+            fetchUserInfoFromFirestore()
+        }
+    }
+    
+    private func fetchUserInfoFromFirestore() {
+        guard let user = Auth.auth().currentUser else { return }
+        let db = Firestore.firestore()
+        db.collection("users").document(user.uid).getDocument { snapshot, error in
+            if let data = snapshot?.data() {
+                self.displayName = data["displayName"] as? String ?? ""
+                self.email = data["email"] as? String ?? ""
+            }
+        }
+    }
+
+    private func signOut() {
+        isSigningOut = true
+        do {
+            try Auth.auth().signOut()
+            presentationMode.wrappedValue.dismiss()
+        } catch {
+            print("Error signing out: \(error.localizedDescription)")
+        }
+        isSigningOut = false
+    }
+    
+    private func deleteAccount() {
+        guard let user = Auth.auth().currentUser else { return }
+        user.delete { error in
+            if let error = error {
+                print("Error deleting account: \(error.localizedDescription)")
+            } else {
+                presentationMode.wrappedValue.dismiss()
+            }
+        }
+    }
+}
