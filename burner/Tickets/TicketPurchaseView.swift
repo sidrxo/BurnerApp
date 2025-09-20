@@ -164,6 +164,8 @@ struct TicketPurchaseView: View {
     }
     
     private func purchaseTicket() {
+        print("maxTickets: \(event.maxTickets), ticketsSold: \(event.ticketsSold)")
+           print("availableTickets: \(availableTickets)")
         guard let eventId = event.id else {
             alertMessage = "Invalid event"
             isSuccess = false

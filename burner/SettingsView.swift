@@ -1,9 +1,13 @@
 import SwiftUI
 import FirebaseAuth
+import FirebaseFirestore
 
 struct SettingsView: View {
     @State private var showingSignIn = false
     @State private var currentUser: FirebaseAuth.User?
+    @State private var userRole: String = ""
+    
+    private let db = Firestore.firestore()
     
     var body: some View {
         NavigationView {
@@ -25,6 +29,13 @@ struct SettingsView: View {
                         }
                         NavigationLink(destination: PaymentSettingsView()) {
                             CustomMenuItemContent(title: "Payment", subtitle: "Cards & billing")
+                        }
+                        
+                        // Only show scanner option if user has scanner role
+                        if userRole == "scanner" || userRole == "siteAdmin" || userRole == "venueAdmin" {
+                            NavigationLink(destination: ScannerView()) {
+                                CustomMenuItemContent(title: "Scanner", subtitle: "Scan QR codes")
+                            }
                         }
                     }
                     
@@ -58,12 +69,32 @@ struct SettingsView: View {
         .background(Color.black)
         .onAppear {
             currentUser = Auth.auth().currentUser
+            fetchUserRole()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
             currentUser = Auth.auth().currentUser
+            fetchUserRole()
         }
         .fullScreenCover(isPresented: $showingSignIn) {
             SignInSheetView(showingSignIn: $showingSignIn)
+        }
+    }
+    
+    private func fetchUserRole() {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            userRole = ""
+            return
+        }
+        
+        db.collection("users").document(userId).getDocument { snapshot, error in
+            DispatchQueue.main.async {
+                if let data = snapshot?.data(),
+                   let role = data["role"] as? String {
+                    userRole = role
+                } else {
+                    userRole = "user" // default role
+                }
+            }
         }
     }
     

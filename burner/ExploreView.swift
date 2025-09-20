@@ -111,16 +111,6 @@ struct ExploreView: View {
     
     private var contentSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("All Events")
-                    .font(.appTitle2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
             
             ScrollView {
                 LazyVStack(spacing: 0) {

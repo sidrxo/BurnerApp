@@ -40,13 +40,21 @@ struct TicketsView: View {
         return result
     }
 
+    // Helper function to determine if an event should be considered "past"
+    private func isEventPast(_ eventDate: Date) -> Bool {
+        let calendar = Calendar.current
+        let nextDay6AM = calendar.dateInterval(of: .day, for: eventDate)?.end ?? eventDate
+        let nextDay6AMDate = calendar.date(byAdding: .hour, value: 6, to: nextDay6AM) ?? eventDate
+        return Date() > nextDay6AMDate
+    }
+
     private var filteredTickets: [TicketWithEventData] {
         var result = ticketsWithEvents
         switch selectedFilter {
         case .upcoming:
-            result = result.filter { $0.event.date > Date() }
+            result = result.filter { !isEventPast($0.event.date) }
         case .past:
-            result = result.filter { $0.event.date <= Date() }
+            result = result.filter { isEventPast($0.event.date) }
         }
         if !searchText.isEmpty {
             result = result.filter { ticketWithEvent in
@@ -58,11 +66,12 @@ struct TicketsView: View {
     }
 
     private var upcomingTickets: [TicketWithEventData] {
-        filteredTickets.filter { $0.event.date > Date() && $0.ticket.status == "confirmed" }
+        // Show all tickets (including used ones) as long as the event isn't past 6AM next day
+        filteredTickets.filter { !isEventPast($0.event.date) }
     }
 
     private var pastTickets: [TicketWithEventData] {
-        filteredTickets.filter { $0.event.date <= Date() }
+        filteredTickets.filter { isEventPast($0.event.date) }
     }
 
     var body: some View {
@@ -228,6 +237,8 @@ struct TicketsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
+        .padding(.bottom, 16)
+
     }
 
     private var ticketsList: some View {

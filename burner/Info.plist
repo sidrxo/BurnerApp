@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>google-signin</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.8577865405-u9313lunreqchsroqjeb9ktbafqjm67f</string>
+			</array>
+		</dict>
+	</array>
+    <!-- Camera Usage Description for QR Scanner -->
+        <key>NSCameraUsageDescription</key>
+        <string>This app uses the camera to scan QR codes for ticket verification and event check-ins.</string>
+</dict>
+</plist>
