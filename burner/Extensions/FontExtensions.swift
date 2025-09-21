@@ -2,7 +2,7 @@ import SwiftUI
 
 extension Font {
     // Central font configuration - change this to switch fonts app-wide
-    private static let fontFamily = "Avenir" // Change this to switch fonts easily
+    private static let fontFamily = "Inter" // Change this to switch fonts easily
     
     static func appFont(size: CGFloat, weight: Font.Weight = .regular) -> Font {
         switch weight {
@@ -16,8 +16,8 @@ extension Font {
     }
     
     // Convenience methods that match SwiftUI's built-in styles
-    static var appLargeTitle: Font { appFont(size: 34, weight: .regular) }
-    static var appTitle: Font { appFont(size: 28, weight: .regular) }
+    static var appLargeTitle: Font { appFont(size: 34, weight: .black) }
+    static var appTitle: Font { appFont(size: 28, weight: .bold) }
     static var appTitle2: Font { appFont(size: 22, weight: .regular) }
     static var appTitle3: Font { appFont(size: 20, weight: .regular) }
     static var appHeadline: Font { appFont(size: 17, weight: .semibold) }

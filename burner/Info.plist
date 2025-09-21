@@ -2,19 +2,26 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>google-signin</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.8577865405-u9313lunreqchsroqjeb9ktbafqjm67f</string>
-			</array>
-		</dict>
-	</array>
+    <!-- Fonts - MOVED TO ROOT LEVEL -->
+    <!-- URL Types -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>google-signin</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>com.googleusercontent.apps.8577865405-u9313lunreqchsroqjeb9ktbafqjm67f</string>
+            </array>
+        </dict>
+    </array>
+    
     <!-- Camera Usage Description for QR Scanner -->
-        <key>NSCameraUsageDescription</key>
-        <string>This app uses the camera to scan QR codes for ticket verification and event check-ins.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>This app uses the camera to scan QR codes for ticket verification and event check-ins.</string>
+    
+    <!-- Family Controls Usage Description for Burner Mode -->
+    <key>NSFamilyControlsUsageDescription</key>
+    <string>This app uses Family Controls to help you stay focused during events by blocking distracting apps when Burner Mode is enabled.</string>
 </dict>
 </plist>

@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8B1F297B2E7F946500B13ED2 /* DeviceActivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1F296D2E7F924400B13ED2 /* DeviceActivity.framework */; };
+		8B1F297D2E7F946E00B13ED2 /* ManagedSettings.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1F297C2E7F946E00B13ED2 /* ManagedSettings.framework */; };
+		8B1F297F2E7F9A5800B13ED2 /* FamilyControls.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1F297E2E7F9A5800B13ED2 /* FamilyControls.framework */; };
 		8B36D8F42E7DBE2E00EDDF0F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B7FF5E02E7CEC3C007072DD /* WidgetKit.framework */; };
 		8B36D8F52E7DBE2E00EDDF0F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B7FF5E22E7CEC3C007072DD /* SwiftUI.framework */; };
 		8B36D9042E7DBE3100EDDF0F /* TicketWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8B36D8F32E7DBE2E00EDDF0F /* TicketWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -46,6 +49,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8B1F296D2E7F924400B13ED2 /* DeviceActivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DeviceActivity.framework; path = System/Library/Frameworks/DeviceActivity.framework; sourceTree = SDKROOT; };
+		8B1F297C2E7F946E00B13ED2 /* ManagedSettings.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettings.framework; path = System/Library/Frameworks/ManagedSettings.framework; sourceTree = SDKROOT; };
+		8B1F297E2E7F9A5800B13ED2 /* FamilyControls.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FamilyControls.framework; path = System/Library/Frameworks/FamilyControls.framework; sourceTree = SDKROOT; };
 		8B36D8C72E7DAB7F00EDDF0F /* burner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = burner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B36D8F32E7DBE2E00EDDF0F /* TicketWidgetExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TicketWidgetExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B36D9122E7DBFE600EDDF0F /* TicketWidgetExtensionExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TicketWidgetExtensionExtension.entitlements; sourceTree = "<group>"; };
@@ -112,6 +118,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8B1F297F2E7F9A5800B13ED2 /* FamilyControls.framework in Frameworks */,
+				8B1F297D2E7F946E00B13ED2 /* ManagedSettings.framework in Frameworks */,
+				8B1F297B2E7F946500B13ED2 /* DeviceActivity.framework in Frameworks */,
 				8B66F9422E6864FB00760E4E /* Kingfisher in Frameworks */,
 				8B7FF5B62E7C6E6B007072DD /* FirebaseFunctions in Frameworks */,
 				8B7FF6482E7CF1DC007072DD /* ActivityKit.framework in Frameworks */,
@@ -142,9 +151,12 @@
 		8B7FF5DF2E7CEC3C007072DD /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				8B1F297E2E7F9A5800B13ED2 /* FamilyControls.framework */,
+				8B1F297C2E7F946E00B13ED2 /* ManagedSettings.framework */,
 				8B7FF6462E7CF1CB007072DD /* ActivityKit.framework */,
 				8B7FF5E02E7CEC3C007072DD /* WidgetKit.framework */,
 				8B7FF5E22E7CEC3C007072DD /* SwiftUI.framework */,
+				8B1F296D2E7F924400B13ED2 /* DeviceActivity.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";

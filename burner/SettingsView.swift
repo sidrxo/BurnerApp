@@ -1,11 +1,16 @@
 import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
+import FamilyControls
 
 struct SettingsView: View {
     @State private var showingSignIn = false
     @State private var currentUser: FirebaseAuth.User?
     @State private var userRole: String = ""
+    @State private var burnerModeEnabled = false
+    @State private var showingBurnerModeSetup = false
+    
+    @StateObject private var burnerModeManager = BurnerModeManager()
     
     private let db = Firestore.firestore()
     
@@ -13,6 +18,48 @@ struct SettingsView: View {
         NavigationView {
             if currentUser != nil {
                 VStack(spacing: 0) {
+                    // BURNER MODE Section
+                    CustomMenuSection(title: "BURNER MODE") {
+                        VStack(spacing: 0) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Burner Mode")
+                                        .appFont(size: 16, weight: .medium)
+                                        .foregroundColor(.white)
+                                    Text(burnerModeEnabled ? "Block distracting apps" : "Allow all apps")
+                                        .appFont(size: 14)
+                                        .foregroundColor(.gray)
+                                }
+                                Spacer()
+                                Toggle("", isOn: $burnerModeEnabled)
+                                    .toggleStyle(SwitchToggleStyle(tint: .orange))
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            
+                            if burnerModeEnabled {
+                                Divider()
+                                    .background(Color.gray.opacity(0.3))
+                                
+                                Button(action: {
+                                    showingBurnerModeSetup = true
+                                }) {
+                                    HStack {
+                                        Text("Configure Blocked Apps")
+                                            .appFont(size: 14, weight: .medium)
+                                            .foregroundColor(.orange)
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .appFont(size: 12, weight: .medium)
+                                            .foregroundColor(.gray)
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                }
+                            }
+                        }
+                    }
+                    
                     // ACCOUNT Section
                     CustomMenuSection(title: "ACCOUNT") {
                         NavigationLink(destination: AccountDetailsView()) {
@@ -70,13 +117,26 @@ struct SettingsView: View {
         .onAppear {
             currentUser = Auth.auth().currentUser
             fetchUserRole()
+            burnerModeEnabled = burnerModeManager.isEnabled
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
             currentUser = Auth.auth().currentUser
             fetchUserRole()
         }
+        .onChange(of: burnerModeEnabled) { oldValue, newValue in
+            Task {
+                if newValue {
+                    await burnerModeManager.enableBurnerMode()
+                } else {
+                    await burnerModeManager.disableBurnerMode()
+                }
+            }
+        }
         .fullScreenCover(isPresented: $showingSignIn) {
             SignInSheetView(showingSignIn: $showingSignIn)
+        }
+        .sheet(isPresented: $showingBurnerModeSetup) {
+            BurnerModeSetupView(burnerModeManager: burnerModeManager)
         }
     }
     

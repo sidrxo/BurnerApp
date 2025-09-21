@@ -45,7 +45,11 @@ class TicketLiveActivityManager {
             )
             
             Task {
-                await activity.update(using: newContentState)
+                if #available(iOS 16.2, *) {
+                    await activity.update(.init(state: newContentState, staleDate: nil))
+                } else {
+                    await activity.update(using: newContentState)
+                }
             }
         }
     }
@@ -55,7 +59,11 @@ class TicketLiveActivityManager {
         
         for activity in activities {
             Task {
-                await activity.end(dismissalPolicy: .immediate)
+                if #available(iOS 16.2, *) {
+                    await activity.end(nil, dismissalPolicy: .immediate)
+                } else {
+                    await activity.end(dismissalPolicy: .immediate)
+                }
             }
         }
     }

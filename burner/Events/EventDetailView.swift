@@ -17,6 +17,16 @@ struct EventDetailView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var tabBarVisibility: TabBarVisibility
     
+    // Get screen height for responsive sizing
+    private let screenHeight = UIScreen.main.bounds.height
+    
+    // Calculate responsive hero height based on screen size
+    private var heroHeight: CGFloat {
+        // Use 45% of screen height, with min/max bounds
+        let calculatedHeight = screenHeight * 0.45
+        return max(300, min(calculatedHeight, 500))
+    }
+    
     var availableTickets: Int {
         max(0, event.maxTickets - event.ticketsSold)
     }
@@ -56,240 +66,188 @@ struct EventDetailView: View {
     }
     
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            
-            ScrollView {
-                VStack(spacing: 0) {
-                    // Hero Image Section
-                    ZStack {
-                        KFImage(URL(string: event.imageUrl))
-                            .placeholder {
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.3))
-                                    .overlay(
-                                        Image(systemName: "music.note")
-                                            .font(.system(size: 40))
-                                            .foregroundColor(.gray)
-                                    )
+        GeometryReader { geometry in
+            ZStack {
+                Color.black.ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 0) {
+                        // Hero Image Section - Now responsive
+                        ZStack {
+                            KFImage(URL(string: event.imageUrl))
+                                .placeholder {
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .overlay(
+                                            Image(systemName: "music.note")
+                                                .font(.system(size: 40))
+                                                .foregroundColor(.gray)
+                                        )
+                                }
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: geometry.size.width, height: heroHeight)
+                                .clipped()
+                            
+                            // Gradient overlay
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.black.opacity(0.3),
+                                    Color.clear,
+                                    Color.clear,
+                                    Color.black.opacity(0.8)
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(width: geometry.size.width, height: heroHeight)
+                            
+                            // Event info overlay - positioned at bottom
+                            VStack {
+                                Spacer()
+                                
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text(event.name)
+                                        .appFont(size: min(32, geometry.size.width * 0.08), weight: .black)
+                                        .foregroundColor(.white)
+                                        .multilineTextAlignment(.leading)
+                                        .lineLimit(3)
+                                    
+                                    HStack(spacing: 12) {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(event.date.formatted(.dateTime.hour().minute()))
+                                                .appFont(size: 16, weight: .medium)
+                                                .foregroundColor(.white.opacity(0.9))
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        VStack(alignment: .trailing, spacing: 2) {
+                                            Text(event.venue)
+                                                .appFont(size: 16, weight: .medium)
+                                                .foregroundColor(.white.opacity(0.9))
+                                                .multilineTextAlignment(.trailing)
+                                                .lineLimit(2)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 20)
                             }
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 500)
-                            .clipped()
+                        }
+                        .frame(height: heroHeight)
                         
-                        // Gradient overlay
+                        // Content Section - More compact spacing
+                        VStack(spacing: 16) {
+                            // Price section only
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Ticket Price")
+                                        .appFont(size: 13)
+                                        .foregroundColor(.gray)
+                                    
+                                    Text("£\(String(format: "%.2f", event.price))")
+                                        .appFont(size: 22, weight: .bold)
+                                        .foregroundColor(.white)
+                                }
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 16)
+                            
+                            // Description - more compact
+                            if let description = event.description, !description.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("About")
+                                        .appFont(size: 17, weight: .semibold)
+                                        .foregroundColor(.white)
+                                    
+                                    Text(description)
+                                        .appFont(size: 15)
+                                        .foregroundColor(.gray)
+                                        .lineSpacing(2)
+                                        .lineLimit(6)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 20)
+                            }
+                            
+                            // Event details - more compact
+                            VStack(spacing: 12) {
+                                Text("Event Details")
+                                    .appFont(size: 17, weight: .semibold)
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                
+                                VStack(spacing: 8) {
+                                    EventDetailRow(
+                                        icon: "calendar",
+                                        title: "Date & Time",
+                                        value: event.date.formatted(.dateTime.weekday(.abbreviated).day().month().year().hour().minute())
+                                    )
+                                    
+                                    EventDetailRow(
+                                        icon: "location",
+                                        title: "Venue",
+                                        value: event.venue
+                                    )
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            
+                            // Bottom spacing for floating button
+                            Spacer(minLength: 100)
+                        }
+                    }
+                }
+                
+                // Floating bottom bar
+                VStack {
+                    Spacer()
+                    
+                    HStack(spacing: 12) {
+                        Button(action: {
+                            isBookmarked.toggle()
+                        }) {
+                            Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.white)
+                                .frame(width: 44, height: 44)
+                                .background(Color.gray.opacity(0.2))
+                                .clipShape(Circle())
+                        }
+                        
+                        Button(action: {
+                            if !userHasTicket && availableTickets > 0 {
+                                showingPurchase = true
+                            }
+                        }) {
+                            Text(buttonText)
+                                .appFont(size: 16, weight: .semibold)
+                                .foregroundColor(buttonTextColor)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(buttonColor)
+                                .clipShape(RoundedRectangle(cornerRadius: 22))
+                        }
+                        .disabled(isButtonDisabled)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? 0 : 16)
+                    .background(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Color.black.opacity(0.3),
-                                Color.clear,
-                                Color.clear,
-                                Color.black.opacity(0.8)
+                                Color.black.opacity(0),
+                                Color.black.opacity(0.8),
+                                Color.black
                             ]),
                             startPoint: .top,
                             endPoint: .bottom
                         )
-                        .frame(height: 500)
-                        
-                        // Event info overlay
-                        VStack(alignment: .leading, spacing: 12) {
-                            Spacer()
-                            
-                            Text(event.name)
-                                .font(.appTitle)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.leading)
-                            
-                            HStack(spacing: 16) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(event.date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
-                                        .font(.appCallout)
-                                        .fontWeight(.medium)
-                                        .foregroundColor(.white.opacity(0.9))
-                                    
-                                    Text(event.date.formatted(.dateTime.hour().minute()))
-                                        .font(.appCallout)
-                                        .fontWeight(.medium)
-                                        .foregroundColor(.white.opacity(0.9))
-                                }
-                                
-                                Spacer()
-                                
-                                VStack(alignment: .trailing, spacing: 4) {
-                                    Text(event.venue)
-                                        .font(.appCallout)
-                                        .fontWeight(.medium)
-                                        .foregroundColor(.white.opacity(0.9))
-                                        .multilineTextAlignment(.trailing)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 30)
-                    }
-                    
-                    // Content Section
-                    VStack(spacing: 24) {
-                        // Price and availability
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Ticket Price")
-                                    .font(.appFootnote)
-                                    .foregroundColor(.gray)
-                                
-                                Text("£\(String(format: "%.2f", event.price))")
-                                    .font(.appTitle2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.white)
-                            }
-                            
-                            Spacer()
-                            
-                            VStack(alignment: .trailing, spacing: 4) {
-                                Text(userHasTicket ? "Status" : "Available")
-                                    .font(.appFootnote)
-                                    .foregroundColor(.gray)
-                                
-                                if userHasTicket {
-                                    Text("Purchased")
-                                        .font(.appCallout)
-                                        .fontWeight(.medium)
-                                        .foregroundColor(.green)
-                                } else {
-                                    Text("\(availableTickets) tickets")
-                                        .font(.appCallout)
-                                        .fontWeight(.medium)
-                                        .foregroundColor(availableTickets > 0 ? .green : .red)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 24)
-                        
-                        // Purchase limit notice
-                        if !userHasTicket {
-                            VStack(spacing: 8) {
-                                Image(systemName: "info.circle")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.blue)
-                                
-                                Text("One ticket per person limit")
-                                    .font(.appCallout)
-                                    .foregroundColor(.gray)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 12)
-                            .background(Color.blue.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                            .padding(.horizontal, 20)
-                        }
-                        
-                        // Description
-                        if let description = event.description, !description.isEmpty {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("About")
-                                    .font(.appTitle3)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.white)
-                                
-                                Text(description)
-                                    .font(.appBody)
-                                    .foregroundColor(.gray)
-                                    .lineSpacing(4)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 20)
-                        }
-                        
-                        // Event details
-                        VStack(spacing: 16) {
-                            Text("Event Details")
-                                .font(.appTitle3)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            
-                            VStack(spacing: 12) {
-                                EventDetailRow(
-                                    icon: "calendar",
-                                    title: "Date & Time",
-                                    value: event.date.formatted(.dateTime.weekday(.wide).day().month().year().hour().minute())
-                                )
-                                
-                                EventDetailRow(
-                                    icon: "location",
-                                    title: "Venue",
-                                    value: event.venue
-                                )
-                                
-                                EventDetailRow(
-                                    icon: "ticket",
-                                    title: "Tickets Sold",
-                                    value: "\(event.ticketsSold) / \(event.maxTickets)"
-                                )
-                                
-                                EventDetailRow(
-                                    icon: "person.fill",
-                                    title: "Purchase Limit",
-                                    value: "1 ticket per person"
-                                )
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        
-                        Spacer(minLength: 120)
-                    }
-                }
-            }
-            
-            // Floating bottom bar
-            VStack {
-                Spacer()
-                
-                HStack(spacing: 16) {
-                    Button(action: {
-                        isBookmarked.toggle()
-                    }) {
-                        Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(width: 50, height: 50)
-                            .background(Color.gray.opacity(0.2))
-                            .clipShape(Circle())
-                    }
-                    
-                    Button(action: {
-                        if !userHasTicket && availableTickets > 0 {
-                            showingPurchase = true
-                        }
-                    }) {
-                        Text(buttonText)
-                            .font(.appHeadline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(buttonTextColor)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(buttonColor)
-                            .clipShape(RoundedRectangle(cornerRadius: 25))
-                    }
-                    .disabled(isButtonDisabled)
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.black.opacity(0),
-                            Color.black.opacity(0.8),
-                            Color.black
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
+                        .frame(height: 120)
                     )
-                    .frame(height: 150)
-                )
+                }
             }
         }
         .onAppear {
@@ -369,7 +327,7 @@ struct RepresentedApplePayButton: UIViewRepresentable {
     func updateUIView(_ uiView: PKPaymentButton, context: Context) {}
 }
 
-// MARK: - Event Detail Row
+// MARK: - Event Detail Row - More compact
 struct EventDetailRow: View {
     let icon: String
     let title: String
@@ -378,41 +336,42 @@ struct EventDetailRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 16, weight: .medium))
+                .appFont(size: 14, weight: .medium)
                 .foregroundColor(.white)
-                .frame(width: 20)
+                .frame(width: 16)
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(title)
-                    .font(.system(size: 14))
+                    .appFont(size: 13)
                     .foregroundColor(.gray)
                 
                 Text(value)
-                    .font(.system(size: 16, weight: .medium))
+                    .appFont(size: 14, weight: .medium)
                     .foregroundColor(.white)
+                    .lineLimit(2)
             }
             
             Spacer()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(Color.gray.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 
 // MARK: - Preview
 #Preview {
     EventDetailView(event: Event(
-        name: "Sample Event",
-        venue: "Sample Venue",
+        name: "fabric Presents: Nina Kraviz - Electronic Music Experience",
+        venue: "fabric London",
         date: Date(),
         price: 25.0,
         maxTickets: 100,
         ticketsSold: 50,
         imageUrl: "",
         isFeatured: false,
-        description: "This is a sample event description for testing the event detail view."
+        description: "The Russian techno queen returns to fabric with her hypnotic blend of acid and experimental electronic music."
     ))
     .preferredColorScheme(.dark)
 }
