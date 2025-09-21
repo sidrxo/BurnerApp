@@ -10,6 +10,11 @@ struct HomeView: View {
         eventViewModel.events.filter { $0.isFeatured }.first
     }
     
+    var secondFeaturedEvent: Event? {
+        let featuredEvents = eventViewModel.events.filter { $0.isFeatured }
+        return featuredEvents.count > 1 ? featuredEvents[1] : nil
+    }
+    
     var popularEvents: [Event] {
         eventViewModel.events.filter { !$0.isFeatured }.prefix(4).map { $0 }
     }
@@ -39,6 +44,16 @@ struct HomeView: View {
                                         
                     PopularEventsSection(events: popularEvents)
                     UpcomingEventsSection(events: upcomingEvents)
+                    
+                    if let secondFeatured = secondFeaturedEvent {
+                        NavigationLink(value: secondFeatured) {
+                            FeaturedHeroCard(event: secondFeatured)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 40)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    
                     AllEventsSection(events: allEvents)
                 }
                 .padding(.bottom, 100)
@@ -70,96 +85,6 @@ struct HeaderSection: View {
         .padding(.horizontal, 20)
         .padding(.top, 60)
         .padding(.bottom, 30)
-    }
-}
-
-// MARK: - Featured Hero Card
-struct FeaturedHeroCard: View {
-    let event: Event
-    @State private var isBookmarked = false
-    
-    var body: some View {
-        ZStack {
-            KFImage(URL(string: event.imageUrl))
-                .placeholder {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                }
-                .resizable()
-                .scaledToFill()
-                .frame(height: 500)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-            
-            // Gradient overlay
-            LinearGradient(
-                gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.8)]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            
-            VStack {
-                HStack {
-                    Spacer()
-                    Text(event.venue.uppercased())
-                        .appFont(size: 12, weight: .bold)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.black.opacity(0.6))
-                        .clipShape(Capsule())
-                }
-                .padding(.top, 20)
-                .padding(.trailing, 20)
-                
-                Spacer()
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(event.name)
-                                .appFont(size: 32, weight: .black)
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.leading)
-                            
-                            Text("\(event.date.formatted(.dateTime.weekday().day().month())) • \(event.venue)")
-                                .appFont(size: 16, weight: .medium)
-                                .foregroundColor(.white.opacity(0.8))
-                            
-                            Text("From £\(String(format: "%.2f", event.price))")
-                                .appFont(size: 16, weight: .bold)
-                                .foregroundColor(.white)
-                        }
-                        
-                        Spacer()
-                    }
-                    
-                    HStack(spacing: 16) {
-                        Spacer()
-                        
-                        Button(action: { isBookmarked.toggle() }) {
-                            Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                                .appFont(size: 20, weight: .medium)
-                                .foregroundColor(.white)
-                        }
-                        
-                        Button(action: {}) {
-                            Image(systemName: "hand.thumbsup")
-                                .appFont(size: 20, weight: .medium)
-                                .foregroundColor(.white)
-                        }
-                        
-                        Button(action: {}) {
-                            Image(systemName: "hand.thumbsdown")
-                                .appFont(size: 20, weight: .medium)
-                                .foregroundColor(.white)
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-            }
-        }
     }
 }
 
