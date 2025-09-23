@@ -1,20 +1,20 @@
-//
-//  ExploreView.swift
-//  burner
-//
-//  Created by Sid Rao on 03/09/2025.
-//
-
 import SwiftUI
 import Kingfisher
 
 struct ExploreView: View {
     @StateObject private var eventViewModel = EventViewModel()
+    @StateObject private var bookmarkManager = BookmarkManager()
     @State private var searchText = ""
     @State private var selectedFilter: ExploreFilter = .trending
     
     var filteredEvents: [Event] {
         var events = eventViewModel.events
+        
+        // First filter out past events (only show future events)
+        let currentDate = Date()
+        events = events.filter { event in
+            event.date > currentDate
+        }
         
         // Apply search filter
         if !searchText.isEmpty {
@@ -34,13 +34,11 @@ struct ExploreView: View {
                 return first.ticketsSold > second.ticketsSold
             }
         case .nearYou:
-            events = events.filter { $0.date > Date() }
-                .sorted { $0.date < $1.date }
+            events = events.sorted { $0.date < $1.date }
         case .popular:
             events = events.sorted { $0.ticketsSold > $1.ticketsSold }
         case .new:
-            events = events.filter { $0.date > Date() }
-                .sorted { $0.date > $1.date }
+            events = events.sorted { $0.date > $1.date }
         case .categories:
             events = events.sorted { $0.venue < $1.venue }
         }
@@ -111,7 +109,6 @@ struct ExploreView: View {
     
     private var contentSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            
             ScrollView {
                 LazyVStack(spacing: 0) {
                     if eventViewModel.isLoading {
@@ -121,9 +118,13 @@ struct ExploreView: View {
                     } else if filteredEvents.isEmpty {
                         EmptyEventsView(searchText: searchText)
                     } else {
-                        ForEach(filteredEvents.prefix(10)) { event in
+                        ForEach(filteredEvents.prefix(20)) { event in
                             NavigationLink(destination: EventDetailView(event: event)) {
-                                EventListItem(event: event)
+                                // Using UnifiedEventRow instead of EventListItem
+                                UnifiedEventRow(
+                                    event: event,
+                                    bookmarkManager: bookmarkManager
+                                )
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
@@ -136,7 +137,6 @@ struct ExploreView: View {
 }
 
 // MARK: - Supporting Views
-
 
 struct LocationFilterButton: View {
     let location: String
@@ -160,58 +160,6 @@ struct LocationFilterButton: View {
     }
 }
 
-struct EventListItem: View {
-    let event: Event
-    @State private var isFavorited = false
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // Event Image with Kingfisher
-            KFImage(URL(string: event.imageUrl))
-                .placeholder {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(.systemGray4))
-                }
-                .resizable()
-                .scaledToFill()
-                .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            
-            // Event Details
-            VStack(alignment: .leading, spacing: 4) {
-                Text(event.name)
-                    .appFont(size: 16, weight: .semibold)
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                
-                Text(event.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
-                    .appFont(size: 14, weight: .medium)
-                    .foregroundColor(.gray)
-                
-                Text(event.venue)
-                    .appFont(size: 14, weight: .medium)
-                    .foregroundColor(.gray)
-                    .lineLimit(1)
-            }
-            
-            Spacer()
-            
-            // Favorite Button
-            Button(action: {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isFavorited.toggle()
-                }
-            }) {
-                Image(systemName: isFavorited ? "bookmark.fill" : "bookmark")
-                    .appFont(size: 18, weight: .medium)
-                    .foregroundColor(.gray)
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-    }
-}
-
 struct EmptyEventsView: View {
     let searchText: String
     
@@ -222,13 +170,13 @@ struct EmptyEventsView: View {
                 .foregroundColor(.gray)
             
             VStack(spacing: 8) {
-                Text(searchText.isEmpty ? "No Events Found" : "No Search Results")
+                Text(searchText.isEmpty ? "No Upcoming Events" : "No Search Results")
                     .font(.appTitle3)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                 
                 Text(searchText.isEmpty ?
-                     "There are no events available at the moment." :
+                     "There are no upcoming events available at the moment." :
                      "Try searching with different keywords.")
                     .font(.appSubheadline)
                     .foregroundColor(.gray)
@@ -265,7 +213,6 @@ enum ExploreFilter: CaseIterable {
     }
 }
 
-
 // MARK: - Preview
 
 struct ExploreView_Previews: PreviewProvider {
@@ -274,4 +221,3 @@ struct ExploreView_Previews: PreviewProvider {
             .preferredColorScheme(.dark)
     }
 }
-

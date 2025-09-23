@@ -103,7 +103,7 @@ struct TicketsView: View {
         .navigationViewStyle(StackNavigationViewStyle())
     }
 
-    // MARK: - ExploreView-style Search Bar
+    // MARK: - Search Bar
     private var searchSection: some View {
         VStack(spacing: 16) {
             // Search Bar
@@ -126,7 +126,7 @@ struct TicketsView: View {
         .background(Color.black)
     }
 
-    // MARK: - ExploreView-style Filters Section
+    // MARK: - Filters Section
     private var filtersSection: some View {
         HStack(spacing: 12) {
             ForEach(TicketsFilter.allCases, id: \.self) { filter in
@@ -144,7 +144,7 @@ struct TicketsView: View {
         .padding(.bottom, 16)
     }
 
-    // MARK: - Direct Firestore Query
+    // MARK: - Firestore Query
     private func fetchUserTicketsDirectly() {
         guard let userId = Auth.auth().currentUser?.uid else {
             print("❌ No authenticated user")
@@ -238,7 +238,6 @@ struct TicketsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
         .padding(.bottom, 16)
-
     }
 
     private var ticketsList: some View {
@@ -251,12 +250,14 @@ struct TicketsView: View {
                             NavigationLink(
                                 destination: TicketDetailView(ticketWithEvent: ticketWithEvent)
                             ) {
-                                TicketRowView(
+                                // Using UnifiedEventRow instead of TicketRowView
+                                UnifiedEventRow(
                                     ticketWithEvent: ticketWithEvent,
                                     isPast: false,
-                                    onCancel: { }
+                                    onCancel: {
+                                        // Handle ticket cancellation
+                                    }
                                 )
-                                .padding(.horizontal, 20)
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
@@ -291,12 +292,14 @@ struct TicketsView: View {
                                     NavigationLink(
                                         destination: TicketDetailView(ticketWithEvent: ticketWithEvent)
                                     ) {
-                                        TicketRowView(
+                                        // Using UnifiedEventRow instead of TicketRowView
+                                        UnifiedEventRow(
                                             ticketWithEvent: ticketWithEvent,
                                             isPast: true,
-                                            onCancel: { }
+                                            onCancel: {
+                                                // Past tickets can't be cancelled
+                                            }
                                         )
-                                        .padding(.horizontal, 20)
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
@@ -312,14 +315,6 @@ struct TicketsView: View {
 }
 
 // MARK: - Supporting Types
-struct TicketWithEventData: Codable, Identifiable {
-    let ticket: Ticket
-    let event: Event
-    var id: String {
-        ticket.id ?? UUID().uuidString
-    }
-}
-
 enum TicketsFilter: CaseIterable {
     case upcoming, past
     var displayName: String {
@@ -330,7 +325,6 @@ enum TicketsFilter: CaseIterable {
     }
     static var allCases: [TicketsFilter] { [.upcoming, .past] }
 }
-
 
 #Preview {
     TicketsView()

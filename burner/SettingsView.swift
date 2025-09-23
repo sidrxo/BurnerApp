@@ -17,99 +17,100 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             if currentUser != nil {
-                VStack(spacing: 0) {
-                    // BURNER MODE Section
-                    CustomMenuSection(title: "BURNER MODE") {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        HeaderSection(title: "Settings")
+                        
                         VStack(spacing: 0) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Burner Mode")
-                                        .appFont(size: 16, weight: .medium)
-                                        .foregroundColor(.white)
-                                    Text(burnerModeEnabled ? "Block distracting apps" : "Allow all apps")
-                                        .appFont(size: 14)
-                                        .foregroundColor(.gray)
+                            // ACCOUNT Section
+                            CustomMenuSection(title: "ACCOUNT") {
+                                NavigationLink(destination: AccountDetailsView()) {
+                                    CustomMenuItemContent(
+                                        title: "Account Details",
+                                        subtitle: currentUser?.email ?? "View Ac"
+                                    )
                                 }
-                                Spacer()
-                                Toggle("", isOn: $burnerModeEnabled)
-                                    .toggleStyle(SwitchToggleStyle(tint: .orange))
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            
-                            if burnerModeEnabled {
-                                Divider()
-                                    .background(Color.gray.opacity(0.3))
+                                NavigationLink(destination: TicketsView()) {
+                                    CustomMenuItemContent(title: "My Tickets", subtitle: "View purchases")
+                                }
+                                NavigationLink(destination: FavoritesView()) {
+                                    CustomMenuItemContent(title: "Bookmarks", subtitle: "Saved events")
+                                }
+                                NavigationLink(destination: PaymentSettingsView()) {
+                                    CustomMenuItemContent(title: "Payment", subtitle: "Cards & billing")
+                                }
                                 
-                                Button(action: {
-                                    showingBurnerModeSetup = true
-                                }) {
+                                // Only show scanner option if user has scanner role
+                                if userRole == "scanner" || userRole == "siteAdmin" || userRole == "venueAdmin" {
+                                    NavigationLink(destination: ScannerView()) {
+                                        CustomMenuItemContent(title: "Scanner", subtitle: "Scan QR codes")
+                                    }
+                                }
+                            }
+                            
+                            // APP Section
+                            CustomMenuSection(title: "APP") {
+                                NavigationLink(destination: NotificationSettingsView()) {
+                                    CustomMenuItemContent(title: "Notifications", subtitle: "Push alerts")
+                                }
+                                
+                                // Burner Mode Toggle
+                                VStack(spacing: 0) {
                                     HStack {
-                                        Text("Configure Blocked Apps")
-                                            .appFont(size: 14, weight: .medium)
-                                            .foregroundColor(.orange)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Burner Mode")
+                                                .appFont(size: 16, weight: .medium)
+                                                .foregroundColor(.white)
+                                            Text(burnerModeEnabled ? "Block distracting apps" : "Allow all apps")
+                                                .appFont(size: 14)
+                                                .foregroundColor(.gray)
+                                        }
                                         Spacer()
-                                        Image(systemName: "chevron.right")
-                                            .appFont(size: 12, weight: .medium)
-                                            .foregroundColor(.gray)
+                                        Toggle("", isOn: $burnerModeEnabled)
+                                            .toggleStyle(SwitchToggleStyle(tint: .orange))
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
+                                    
+                                    if burnerModeEnabled {
+                                        Divider()
+                                            .background(Color.gray.opacity(0.3))
+                                        
+                                        Button(action: {
+                                            showingBurnerModeSetup = true
+                                        }) {
+                                            HStack {
+                                                Text("Configure Blocked Apps")
+                                                    .appFont(size: 14, weight: .medium)
+                                                    .foregroundColor(.orange)
+                                                Spacer()
+                                                Image(systemName: "chevron.right")
+                                                    .appFont(size: 12, weight: .medium)
+                                                    .foregroundColor(.gray)
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 12)
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // SUPPORT Section
+                            CustomMenuSection(title: "SUPPORT") {
+                                NavigationLink(destination: SupportView()) {
+                                    CustomMenuItemContent(title: "Help & Support", subtitle: "Get help, terms, privacy")
                                 }
                             }
                         }
+                        .padding(.horizontal, 20)
                     }
-                    
-                    // ACCOUNT Section
-                    CustomMenuSection(title: "ACCOUNT") {
-                        NavigationLink(destination: AccountDetailsView()) {
-                            CustomMenuItemContent(
-                                title: "Account Details",
-                                subtitle: currentUser?.email ?? ""
-                            )
-                        }
-                        NavigationLink(destination: TicketsView()) {
-                            CustomMenuItemContent(title: "My Tickets", subtitle: "View purchases")
-                        }
-                        NavigationLink(destination: FavoritesView()) {
-                            CustomMenuItemContent(title: "Favorites", subtitle: "Saved events")
-                        }
-                        NavigationLink(destination: PaymentSettingsView()) {
-                            CustomMenuItemContent(title: "Payment", subtitle: "Cards & billing")
-                        }
-                        
-                        // Only show scanner option if user has scanner role
-                        if userRole == "scanner" || userRole == "siteAdmin" || userRole == "venueAdmin" {
-                            NavigationLink(destination: ScannerView()) {
-                                CustomMenuItemContent(title: "Scanner", subtitle: "Scan QR codes")
-                            }
-                        }
-                    }
-                    
-                    // APP Section
-                    CustomMenuSection(title: "APP") {
-                        NavigationLink(destination: NotificationSettingsView()) {
-                            CustomMenuItemContent(title: "Notifications", subtitle: "Push alerts")
-                        }
-                    }
-                    
-                    // SUPPORT Section
-                    CustomMenuSection(title: "SUPPORT") {
-                        NavigationLink(destination: SupportView()) {
-                            CustomMenuItemContent(title: "Help & Support", subtitle: "Get help, terms, privacy")
-                        }
-                    }
-                    
-                    Spacer()
+                    .padding(.bottom, 100)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
                 .background(Color.black)
-                .navigationTitle("Settings")
-                .navigationBarTitleDisplayMode(.large)
+                .navigationBarHidden(true)
             } else {
                 notSignedInSection
-                    .navigationTitle("Settings")
+                    .navigationBarHidden(true)
                     .background(Color.black)
             }
         }
@@ -159,27 +160,33 @@ struct SettingsView: View {
     }
     
     private var notSignedInSection: some View {
-        VStack(spacing: 40) {
-            VStack(spacing: 16) {
-                Text("Not Signed In")
-                    .appFont(size: 28, weight: .bold)
-                    .foregroundColor(.white)
-                Text("Sign in to access your settings")
-                    .appFont(size: 16)
-                    .foregroundColor(.gray)
+        VStack(spacing: 0) {
+            HeaderSection(title: "Settings")
+            
+            VStack(spacing: 40) {
+                VStack(spacing: 16) {
+                    Text("Not Signed In")
+                        .appFont(size: 22, weight: .semibold)
+                        .foregroundColor(.white)
+                    Text("Sign in to access your settings")
+                        .appFont(size: 16)
+                        .foregroundColor(.gray)
+                }
+                Button("Sign In") {
+                    showingSignIn = true
+                }
+                .appFont(size: 17, weight: .semibold)
+                .foregroundColor(.black)
+                .frame(maxWidth: 200)
+                .padding(.vertical, 12)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            Button("Sign In") {
-                showingSignIn = true
-            }
-            .appFont(size: 17, weight: .semibold)
-            .foregroundColor(.black)
-            .frame(maxWidth: 200)
-            .padding(.vertical, 12)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.black)
+            
+            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
     }
 }
 

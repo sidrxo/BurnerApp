@@ -31,7 +31,7 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
-                    HeaderSection()
+                    HeaderSection(title: "Make plans")
                     
                     if let featured = featuredEvent {
                         NavigationLink(value: featured) {
@@ -70,21 +70,6 @@ struct HomeView: View {
                 EventDetailView(event: event)
             }
         }
-    }
-}
-
-// MARK: - Header Section
-struct HeaderSection: View {
-    var body: some View {
-        HStack {
-            Text("Make plans")
-                .appFont(size: 28, weight: .bold)
-                .foregroundColor(.white)
-            Spacer()
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 60)
-        .padding(.bottom, 30)
     }
 }
 
