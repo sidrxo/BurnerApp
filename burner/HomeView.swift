@@ -3,6 +3,7 @@ import Kingfisher
 
 struct HomeView: View {
     @StateObject private var eventViewModel = EventViewModel()
+    @StateObject private var bookmarkManager = BookmarkManager()
     @State private var searchText = ""
     @State private var selectedEvent: Event? = nil
 
@@ -31,30 +32,30 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
-                    HeaderSection(title: "Make plans")
+                    HeaderSection(title: "Explore")
                     
                     if let featured = featuredEvent {
                         NavigationLink(value: featured) {
-                            FeaturedHeroCard(event: featured)
+                            FeaturedHeroCard(event: featured, bookmarkManager: bookmarkManager)
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 40)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
                                         
-                    PopularEventsSection(events: popularEvents)
-                    UpcomingEventsSection(events: upcomingEvents)
+                    PopularEventsSection(events: popularEvents, bookmarkManager: bookmarkManager)
+                    UpcomingEventsSection(events: upcomingEvents, bookmarkManager: bookmarkManager)
                     
                     if let secondFeatured = secondFeaturedEvent {
                         NavigationLink(value: secondFeatured) {
-                            FeaturedHeroCard(event: secondFeatured)
+                            FeaturedHeroCard(event: secondFeatured, bookmarkManager: bookmarkManager)
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 40)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
                     
-                    AllEventsSection(events: allEvents)
+                    AllEventsSection(events: allEvents, bookmarkManager: bookmarkManager)
                 }
                 .padding(.bottom, 100)
             }
@@ -73,9 +74,11 @@ struct HomeView: View {
     }
 }
 
+
 // MARK: - Popular Events Section
 struct PopularEventsSection: View {
     let events: [Event]
+    let bookmarkManager: BookmarkManager
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -100,7 +103,7 @@ struct PopularEventsSection: View {
             LazyVStack(spacing: 12) {
                 ForEach(events) { event in
                     NavigationLink(value: event) {
-                        EventListRow(event: event)
+                        EventListRow(event: event, bookmarkManager: bookmarkManager)
                             .padding(.horizontal, 20)
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -114,6 +117,7 @@ struct PopularEventsSection: View {
 // MARK: - Upcoming Events Section
 struct UpcomingEventsSection: View {
     let events: [Event]
+    let bookmarkManager: BookmarkManager
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -138,7 +142,7 @@ struct UpcomingEventsSection: View {
             LazyVStack(spacing: 12) {
                 ForEach(events) { event in
                     NavigationLink(value: event) {
-                        EventListRow(event: event)
+                        EventListRow(event: event, bookmarkManager: bookmarkManager)
                             .padding(.horizontal, 20)
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -152,6 +156,7 @@ struct UpcomingEventsSection: View {
 // MARK: - All Events Section
 struct AllEventsSection: View {
     let events: [Event]
+    let bookmarkManager: BookmarkManager
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -176,7 +181,7 @@ struct AllEventsSection: View {
             LazyVStack(spacing: 12) {
                 ForEach(events) { event in
                     NavigationLink(value: event) {
-                        EventListRow(event: event)
+                        EventListRow(event: event, bookmarkManager: bookmarkManager)
                             .padding(.horizontal, 20)
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -190,7 +195,12 @@ struct AllEventsSection: View {
 // MARK: - Event List Row
 struct EventListRow: View {
     let event: Event
-    @State private var isBookmarked = false
+    @ObservedObject var bookmarkManager: BookmarkManager
+    
+    private var isBookmarked: Bool {
+        guard let eventId = event.id else { return false }
+        return bookmarkManager.isBookmarked(eventId)
+    }
     
     var body: some View {
         HStack(spacing: 12) {
@@ -222,10 +232,16 @@ struct EventListRow: View {
             
             Spacer()
             
-            Button(action: { isBookmarked.toggle() }) {
+            Button(action: {
+                Task {
+                    await bookmarkManager.toggleBookmark(for: event)
+                }
+            }) {
                 Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
                     .appFont(size: 18, weight: .medium)
-                    .foregroundColor(.gray)
+                    .foregroundColor(isBookmarked ? .white : .gray)
+                    .scaleEffect(isBookmarked ? 1.1 : 1.0)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: isBookmarked)
             }
         }
     }

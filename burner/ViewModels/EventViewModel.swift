@@ -13,20 +13,24 @@ class EventViewModel: ObservableObject, Sendable {
     @Published var userTicketStatus: [String: Bool] = [:] // eventId -> hasTicket
     
     private let db = Firestore.firestore()
-    private let functions = Functions.functions()
+    private var functions = Functions.functions()
+    private var hasConfiguredFunctions = false
     
     init() {
         configureFunctions()
     }
     
     private func configureFunctions() {
+        if hasConfiguredFunctions { return }
+        
         #if DEBUG
-        // Uncomment if using local emulator
+        // Configure for local development if needed
         // functions.useEmulator(withHost: "localhost", port: 5001)
         #endif
         
-        // Set proper region if your functions are not in us-central1
-        // functions = Functions.functions(region: "your-region")
+        // Ensure we're using the correct region
+        functions = Functions.functions(region: "us-central1")
+        hasConfiguredFunctions = true
     }
     
     func clearMessages() {
@@ -39,21 +43,22 @@ class EventViewModel: ObservableObject, Sendable {
         
         db.collection("events")
             .order(by: "date", descending: false)
-            .addSnapshotListener { [weak self] snapshot, error in
-                Task { @MainActor in
-                    self?.isLoading = false
+            .addSnapshotListener { snapshot, error in
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    self.isLoading = false
                     
                     if let error = error {
-                        self?.errorMessage = "Failed to load events: \(error.localizedDescription)"
+                        self.errorMessage = "Failed to load events: \(error.localizedDescription)"
                         return
                     }
                     
                     guard let documents = snapshot?.documents else {
-                        self?.events = []
+                        self.events = []
                         return
                     }
                     
-                    self?.events = documents.compactMap { doc in
+                    self.events = documents.compactMap { doc in
                         do {
                             var event = try doc.data(as: Event.self)
                             event.id = doc.documentID
@@ -63,54 +68,70 @@ class EventViewModel: ObservableObject, Sendable {
                         }
                     }
                     
-                    // Check user's ticket status for all events
-                    self?.checkUserTicketStatusForAllEvents()
+                    // Fetch user's ticket status efficiently from Firestore
+                    self.fetchUserTicketStatusFromFirestore()
                 }
             }
     }
     
-    private func checkUserTicketStatusForAllEvents() {
-        guard Auth.auth().currentUser != nil else { return }
+    private func fetchUserTicketStatusFromFirestore() {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            userTicketStatus.removeAll()
+            return
+        }
         
-        for event in events {
-            if let eventId = event.id {
-                checkUserTicketStatus(for: eventId) { [weak self] hasTicket in
-                    Task { @MainActor in
-                        self?.userTicketStatus[eventId] = hasTicket
+        db.collection("tickets")
+            .whereField("userId", isEqualTo: userId)
+            .whereField("status", isEqualTo: "confirmed")
+            .getDocuments { snapshot, error in
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    
+                    if let error = error {
+                        print("Error fetching user tickets: \(error.localizedDescription)")
+                        return
+                    }
+                    
+                    // Create set of event IDs user has tickets for
+                    let eventIdsWithTickets = Set(snapshot?.documents.compactMap { doc -> String? in
+                        doc.data()["eventId"] as? String
+                    } ?? [])
+                    
+                    // Update status for all events
+                    self.userTicketStatus.removeAll()
+                    for event in self.events {
+                        if let eventId = event.id {
+                            self.userTicketStatus[eventId] = eventIdsWithTickets.contains(eventId)
+                        }
                     }
                 }
             }
-        }
     }
     
     func checkUserTicketStatus(for eventId: String, completion: @escaping (Bool) -> Void) {
-        guard let user = Auth.auth().currentUser else {
+        guard let userId = Auth.auth().currentUser?.uid else {
             completion(false)
             return
         }
         
-        user.getIDTokenForcingRefresh(true) { [weak self] token, error in
-            if error != nil || token == nil {
-                completion(false)
-                return
-            }
-            
-            let checkData: [String: Any] = [
-                "eventId": eventId
-            ]
-            
-            self?.functions.httpsCallable("checkUserTicket").call(checkData) { result, error in
-                if let error = error {
-                    print("Error checking ticket status: \(error.localizedDescription)")
-                    completion(false)
-                } else if let data = result?.data as? [String: Any],
-                          let hasTicket = data["hasTicket"] as? Bool {
+        // Query Firestore directly instead of using Cloud Function
+        db.collection("tickets")
+            .whereField("userId", isEqualTo: userId)
+            .whereField("eventId", isEqualTo: eventId)
+            .whereField("status", isEqualTo: "confirmed")
+            .getDocuments { [weak self] snapshot, error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        print("Error checking ticket status: \(error.localizedDescription)")
+                        completion(false)
+                        return
+                    }
+                    
+                    let hasTicket = !(snapshot?.documents.isEmpty ?? true)
+                    self?.userTicketStatus[eventId] = hasTicket
                     completion(hasTicket)
-                } else {
-                    completion(false)
                 }
             }
-        }
     }
     
     func userHasTicket(for eventId: String) -> Bool {
@@ -132,6 +153,11 @@ class EventViewModel: ObservableObject, Sendable {
         
         // Get fresh ID token to ensure auth context is properly set
         user.getIDTokenForcingRefresh(true) { [weak self] token, error in
+            guard let self else {
+                completion(false, "Session expired")
+                return
+            }
+            
             if error != nil {
                 completion(false, "Authentication error. Please try logging out and back in.")
                 return
@@ -147,28 +173,30 @@ class EventViewModel: ObservableObject, Sendable {
                 "eventId": eventId
             ]
             
-            self?.functions.httpsCallable("purchaseTicket").call(purchaseData) { result, error in
-                Task { @MainActor in
+            self.functions.httpsCallable("purchaseTicket").call(purchaseData) { result, error in
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    
                     if let error = error as NSError? {
-                        let errorMsg = self?.handleFunctionError(error) ?? "Purchase failed"
-                        self?.errorMessage = errorMsg
+                        let errorMsg = self.handleFunctionError(error)
+                        self.errorMessage = errorMsg
                         completion(false, errorMsg)
                     } else if let data = result?.data as? [String: Any] {
                         if let success = data["success"] as? Bool, success {
                             let message = data["message"] as? String ?? "Ticket purchased successfully!"
-                            self?.successMessage = message
+                            self.successMessage = message
                             // Update user ticket status
-                            self?.userTicketStatus[eventId] = true
+                            self.userTicketStatus[eventId] = true
                             completion(true, message)
-                            self?.fetchEvents() // Refresh events to update ticket counts
+                            self.fetchEvents() // Refresh events to update ticket counts
                         } else {
                             let errorMsg = data["message"] as? String ?? "Purchase failed"
-                            self?.errorMessage = errorMsg
+                            self.errorMessage = errorMsg
                             completion(false, errorMsg)
                         }
                     } else {
                         let errorMsg = "Unexpected response from server"
-                        self?.errorMessage = errorMsg
+                        self.errorMessage = errorMsg
                         completion(false, errorMsg)
                     }
                 }

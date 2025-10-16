@@ -10,6 +10,7 @@ struct TicketPurchaseView: View {
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var isSuccess = false
+    @State private var showApplePayButton = false
     @Environment(\.presentationMode) var presentationMode
     
     private var availableTickets: Int {
@@ -109,13 +110,16 @@ struct TicketPurchaseView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal, 20)
                 
-                // Apple Pay Button (UI only, no action/backend)
-                ApplePayButtonView()
+                // Apple Pay Button
+                if showApplePayButton {
+                    ApplePayButtonView {
+                        handleApplePay()
+                    }
                     .frame(height: 50)
                     .padding(.horizontal, 20)
+                }
                 
-                Spacer()
-                
+
                 // Purchase button
                 Button(action: {
                     purchaseTicket()
@@ -160,12 +164,73 @@ struct TicketPurchaseView: View {
                     }
                 )
             }
+            .onAppear {
+                // Check if Apple Pay is available
+                showApplePayButton = ApplePayHandler.canMakePayments()
+            }
+        }
+    }
+    
+    private func handleApplePay() {
+        guard let eventId = event.id else {
+            alertMessage = "Invalid event"
+            isSuccess = false
+            showingAlert = true
+            return
+        }
+        
+        guard Auth.auth().currentUser != nil else {
+            alertMessage = "Please log in to purchase a ticket"
+            isSuccess = false
+            showingAlert = true
+            return
+        }
+        
+        isPurchasing = true
+        
+        ApplePayHandler.shared.startPayment(
+            eventName: event.name,
+            amount: event.price,
+            onSuccess: { payment in
+                // Payment authorized - now process with your backend
+                self.processPurchaseWithPayment(eventId: eventId, payment: payment)
+            },
+            onFailure: { error in
+                DispatchQueue.main.async {
+                    self.isPurchasing = false
+                    self.alertMessage = error.localizedDescription
+                    self.isSuccess = false
+                    self.showingAlert = true
+                }
+            }
+        )
+    }
+    
+    private func processPurchaseWithPayment(eventId: String, payment: PKPayment) {
+        // Here you would send the payment token to your backend
+        // The token is in: payment.token.paymentData
+        
+        // For now, we'll just call the existing purchase method
+        viewModel.purchaseTicket(eventId: eventId) { success, error in
+            DispatchQueue.main.async {
+                isPurchasing = false
+                
+                if success {
+                    alertMessage = "Ticket purchased successfully! Check your ticket in the profile tab."
+                    isSuccess = true
+                    showingAlert = true
+                } else {
+                    alertMessage = error ?? "Purchase failed. Please try again."
+                    isSuccess = false
+                    showingAlert = true
+                }
+            }
         }
     }
     
     private func purchaseTicket() {
         print("maxTickets: \(event.maxTickets), ticketsSold: \(event.ticketsSold)")
-           print("availableTickets: \(availableTickets)")
+        print("availableTickets: \(availableTickets)")
         guard let eventId = event.id else {
             alertMessage = "Invalid event"
             isSuccess = false

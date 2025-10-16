@@ -3,7 +3,12 @@ import Kingfisher
 
 struct FeaturedHeroCard: View {
     let event: Event
-    @State private var isBookmarked = false
+    @ObservedObject var bookmarkManager: BookmarkManager
+    
+    private var isBookmarked: Bool {
+        guard let eventId = event.id else { return false }
+        return bookmarkManager.isBookmarked(eventId)
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -67,10 +72,16 @@ struct FeaturedHeroCard: View {
                         HStack(spacing: 16) {
                             Spacer()
                             
-                            Button(action: { isBookmarked.toggle() }) {
+                            Button(action: {
+                                Task {
+                                    await bookmarkManager.toggleBookmark(for: event)
+                                }
+                            }) {
                                 Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
                                     .appFont(size: 20, weight: .medium)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(isBookmarked ? .white : .white.opacity(0.7))
+                                    .scaleEffect(isBookmarked ? 1.1 : 1.0)
+                                    .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: isBookmarked)
                             }
                         }
                     }

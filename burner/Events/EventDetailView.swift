@@ -305,17 +305,6 @@ struct EventDetailView: View {
     }
 }
 
-// MARK: - Apple Pay Button View (UI Only)
-struct ApplePayButtonView: View {
-    var body: some View {
-        if PKPaymentAuthorizationController.canMakePayments() {
-            RepresentedApplePayButton()
-                .frame(maxWidth: .infinity)
-        } else {
-            EmptyView()
-        }
-    }
-}
 
 struct RepresentedApplePayButton: UIViewRepresentable {
     func makeUIView(context: Context) -> PKPaymentButton {

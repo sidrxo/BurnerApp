@@ -1,7 +1,7 @@
 import SwiftUI
 import Kingfisher
 
-struct FavoritesView: View {
+struct BookmarksView: View {
     @StateObject private var bookmarkManager = BookmarkManager()
     @State private var searchText = ""
     
@@ -49,7 +49,7 @@ struct FavoritesView: View {
                 .appFont(size: 16, weight: .medium)
                 .foregroundColor(.gray)
             
-            TextField("Search favorites", text: $searchText)
+            TextField("Search bookmarks", text: $searchText)
                 .appFont(size: 16)
                 .foregroundColor(.white)
         }
@@ -58,7 +58,6 @@ struct FavoritesView: View {
         .background(Color(.systemGray6))
         .clipShape(RoundedRectangle(cornerRadius: 25))
         .padding(.horizontal, 20)
-        .padding(.top, 20)
         .padding(.bottom, 16)
     }
     
@@ -68,7 +67,7 @@ struct FavoritesView: View {
             ProgressView()
                 .scaleEffect(1.2)
                 .tint(.white)
-            Text("Loading favorites...")
+            Text("Loading bookmarks...")
                 .appFont(size: 16)
                 .foregroundColor(.gray)
         }
@@ -237,6 +236,6 @@ struct BookmarkListItem: View {
 
 // MARK: - Preview
 #Preview {
-    FavoritesView()
+    BookmarksView()
         .preferredColorScheme(.dark)
 }

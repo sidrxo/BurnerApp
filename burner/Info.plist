@@ -23,5 +23,18 @@
     <!-- Family Controls Usage Description for Burner Mode -->
     <key>NSFamilyControlsUsageDescription</key>
     <string>This app uses Family Controls to help you stay focused during events by blocking distracting apps when Burner Mode is enabled.</string>
+    
+    <key>NSSupportsAutomaticTermination</key>
+    <true/>
+
+    <!-- Background modes for device activity monitoring -->
+    <key>UIBackgroundModes</key>
+    <array>
+    </array>
+
+    <!-- Required for Family Controls -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+
 </dict>
 </plist>

@@ -5,7 +5,12 @@ struct ExploreView: View {
     @StateObject private var eventViewModel = EventViewModel()
     @StateObject private var bookmarkManager = BookmarkManager()
     @State private var searchText = ""
-    @State private var selectedFilter: ExploreFilter = .trending
+    @State private var sortBy: SortOption = .date
+    
+    enum SortOption {
+        case date
+        case price
+    }
     
     var filteredEvents: [Event] {
         var events = eventViewModel.events
@@ -25,22 +30,12 @@ struct ExploreView: View {
             }
         }
         
-        // Apply sorting based on filter
-        switch selectedFilter {
-        case .trending:
-            events = events.sorted { first, second in
-                if first.isFeatured && !second.isFeatured { return true }
-                if !first.isFeatured && second.isFeatured { return false }
-                return first.ticketsSold > second.ticketsSold
-            }
-        case .nearYou:
+        // Apply sorting based on selected sort option (lowest to highest)
+        switch sortBy {
+        case .date:
             events = events.sorted { $0.date < $1.date }
-        case .popular:
-            events = events.sorted { $0.ticketsSold > $1.ticketsSold }
-        case .new:
-            events = events.sorted { $0.date > $1.date }
-        case .categories:
-            events = events.sorted { $0.venue < $1.venue }
+        case .price:
+            events = events.sorted { $0.price < $1.price }
         }
         
         return events
@@ -65,14 +60,14 @@ struct ExploreView: View {
     }
     
     private var searchSection: some View {
-        VStack(spacing: 16) {
-            // Search Bar
+        HStack(spacing: 12) {
+            // Search Bar with reduced width
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
                     .appFont(size: 16, weight: .medium)
                     .foregroundColor(.gray)
                 
-                TextField("Search for an event, artist or venue", text: $searchText)
+                TextField("Search events", text: $searchText)
                     .appFont(size: 16)
                     .foregroundColor(.white)
             }
@@ -80,24 +75,33 @@ struct ExploreView: View {
             .padding(.vertical, 14)
             .background(Color(.systemGray6))
             .clipShape(RoundedRectangle(cornerRadius: 25))
-            .padding(.horizontal, 20)
-            .padding(.top, 60)
+            
+            // Location button
         }
-        .background(Color.black)
+        .padding(.horizontal, 20)
+        .padding(.top, 60)
     }
     
     private var filtersSection: some View {
         HStack(spacing: 12) {
-            FilterButton(title: "DATE", isSelected: false) {
-                // Handle date filter
+            // Date filter button
+            FilterButton(
+                title: "DATE",
+                isSelected: sortBy == .date
+            ) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    sortBy = .date
+                }
             }
             
-            FilterButton(title: "PRICE", isSelected: false) {
-                // Handle price filter
-            }
-            
-            LocationFilterButton(location: "LONDON") {
-                // Handle location filter
+            // Price filter button
+            FilterButton(
+                title: "PRICE",
+                isSelected: sortBy == .price
+            ) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    sortBy = .price
+                }
             }
             
             Spacer()
@@ -120,7 +124,6 @@ struct ExploreView: View {
                     } else {
                         ForEach(filteredEvents.prefix(20)) { event in
                             NavigationLink(destination: EventDetailView(event: event)) {
-                                // Using UnifiedEventRow instead of EventListItem
                                 UnifiedEventRow(
                                     event: event,
                                     bookmarkManager: bookmarkManager
@@ -132,30 +135,6 @@ struct ExploreView: View {
                 }
                 .padding(.bottom, 100)
             }
-        }
-    }
-}
-
-// MARK: - Supporting Views
-
-struct LocationFilterButton: View {
-    let location: String
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: "location")
-                    .appFont(size: 14, weight: .medium)
-                
-                Text(location)
-                    .appFont(size: 14, weight: .semibold)
-            }
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color(.systemGray5))
-            .clipShape(Capsule())
         }
     }
 }
@@ -184,32 +163,6 @@ struct EmptyEventsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: 200)
-    }
-}
-
-// MARK: - Supporting Models
-
-enum ExploreFilter: CaseIterable {
-    case trending, nearYou, popular, new, categories
-    
-    var displayName: String {
-        switch self {
-        case .trending: return "Trending"
-        case .nearYou: return "Upcoming"
-        case .popular: return "Popular"
-        case .new: return "New"
-        case .categories: return "By Venue"
-        }
-    }
-    
-    var icon: String {
-        switch self {
-        case .trending: return "flame"
-        case .nearYou: return "clock"
-        case .popular: return "star"
-        case .new: return "sparkles"
-        case .categories: return "building.2"
-        }
     }
 }
 
