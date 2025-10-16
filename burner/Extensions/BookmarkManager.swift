@@ -137,7 +137,7 @@ class BookmarkManager: ObservableObject {
         )
         
         do {
-            try await db.collection("users")
+            try db.collection("users")
                 .document(userId)
                 .collection("bookmarks")
                 .document(eventId)

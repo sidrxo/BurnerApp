@@ -12,6 +12,7 @@ struct AccountDetailsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            SettingsHeaderSection(title: "Account Details")
             CustomMenuSection(title: "PROFILE") {
                 // Name first, then Email
                 HStack {
@@ -74,8 +75,6 @@ struct AccountDetailsView: View {
         .padding(.horizontal, 20)
         .padding(.top, 20)
         .background(Color.black)
-        .navigationTitle("Account Details")
-        .navigationBarTitleDisplayMode(.large)
         .alert("Sign Out", isPresented: $showingSignOut) {
             Button("Cancel", role: .cancel) {}
             Button("Sign Out", role: .destructive) { signOut() }

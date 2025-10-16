@@ -11,14 +11,15 @@ import SwiftUI
 struct PaymentSettingsView: View {
     var body: some View {
         VStack {
+            SettingsHeaderSection(title: "Payment Methods")
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
+            
             Text("No payment methods")
                 .appFont(size: 16)
                 .foregroundColor(.gray)
             Spacer()
         }
-        .padding(.top, 40)
         .background(Color.black)
-        .navigationTitle("Payment")
-        .navigationBarTitleDisplayMode(.large)
     }
 }

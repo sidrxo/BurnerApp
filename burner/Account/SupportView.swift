@@ -11,6 +11,8 @@ import SwiftUI
 struct SupportView: View {
     var body: some View {
         VStack(spacing: 0) {
+            SettingsHeaderSection(title: "Support")
+                .padding(.top, 20)
             CustomMenuSection(title: "HELP") {
                 Button(action: { openURL("mailto:support@burner.app") }) {
                     CustomMenuItemContent(title: "Contact Support", subtitle: "Get help with your account")
@@ -48,10 +50,8 @@ struct SupportView: View {
             Spacer()
         }
         .padding(.horizontal, 20)
-        .padding(.top, 20)
         .background(Color.black)
-        .navigationTitle("Support")
-        .navigationBarTitleDisplayMode(.large)
+
     }
     
     private func openURL(_ urlString: String) {

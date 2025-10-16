@@ -44,6 +44,7 @@ struct ExploreView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
+                HeaderSection(title: "Search")
                 searchSection
                 filtersSection
                 contentSection
@@ -79,7 +80,6 @@ struct ExploreView: View {
             // Location button
         }
         .padding(.horizontal, 20)
-        .padding(.top, 60)
     }
     
     private var filtersSection: some View {

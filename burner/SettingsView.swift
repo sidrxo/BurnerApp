@@ -17,11 +17,14 @@ struct SettingsView: View {
     
     var body: some View {
         NavigationView {
-            if currentUser != nil {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        HeaderSection(title: "Settings")
-                        
+            VStack(spacing: 0) {
+                // Only show header when signed in
+                if currentUser != nil {
+                    HeaderSection(title: "Settings")
+                }
+                
+                if currentUser != nil {
+                    ScrollView {
                         VStack(spacing: 0) {
                             // ACCOUNT Section
                             CustomMenuSection(title: "ACCOUNT") {
@@ -30,9 +33,6 @@ struct SettingsView: View {
                                         title: "Account Details",
                                         subtitle: currentUser?.email ?? "View Account"
                                     )
-                                }
-                                NavigationLink(destination: TicketsView()) {
-                                    CustomMenuItemContent(title: "My Tickets", subtitle: "View purchases")
                                 }
                                 NavigationLink(destination: BookmarksView()) {
                                     CustomMenuItemContent(title: "Bookmarks", subtitle: "Saved events")
@@ -51,10 +51,6 @@ struct SettingsView: View {
                             
                             // APP Section
                             CustomMenuSection(title: "APP") {
-                                NavigationLink(destination: NotificationSettingsView()) {
-                                    CustomMenuItemContent(title: "Notifications", subtitle: "Push alerts")
-                                }
-                                
                                 // App Selector Button
                                 Button(action: {
                                     showingAppPicker = true
@@ -104,10 +100,6 @@ struct SettingsView: View {
                                         Text("Burner Mode")
                                             .appFont(size: 16, weight: .medium)
                                             .foregroundColor(.white)
-                                        Text(isBurnerModeEnabled ? "All apps blocked except selected" :
-                                             burnerManager.isSetupValid ? "Ready to block all apps" : "Must select all categories first")
-                                            .appFont(size: 14)
-                                            .foregroundColor(burnerManager.isSetupValid ? .gray : .orange)
                                     }
                                     Spacer()
                                     Toggle("", isOn: $isBurnerModeEnabled)
@@ -123,30 +115,25 @@ struct SettingsView: View {
                                 }
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
-                            }
-                            
-                            // SUPPORT Section
-                            CustomMenuSection(title: "SUPPORT") {
+                                
                                 NavigationLink(destination: SupportView()) {
                                     CustomMenuItemContent(title: "Help & Support", subtitle: "Get help, terms, privacy")
                                 }
                             }
                         }
                         .padding(.horizontal, 20)
+                        .padding(.bottom, 100)
                     }
-                    .padding(.bottom, 100)
+                    .familyActivityPicker(
+                        isPresented: $showingAppPicker,
+                        selection: $burnerManager.selectedApps
+                    )
+                } else {
+                    notSignedInSection
                 }
-                .background(Color.black)
-                .navigationBarHidden(true)
-                .familyActivityPicker(
-                    isPresented: $showingAppPicker,
-                    selection: $burnerManager.selectedApps
-                )
-            } else {
-                notSignedInSection
-                    .navigationBarHidden(true)
-                    .background(Color.black)
             }
+            .background(Color.black)
+            .navigationBarHidden(true)
         }
         .background(Color.black)
         .onAppear {
@@ -182,33 +169,37 @@ struct SettingsView: View {
     }
     
     private var notSignedInSection: some View {
-        VStack(spacing: 0) {
-            HeaderSection(title: "Settings")
+        VStack(spacing: 20) {
+            Spacer()
             
-            VStack(spacing: 40) {
-                VStack(spacing: 16) {
-                    Text("Not Signed In")
-                        .appFont(size: 22, weight: .semibold)
-                        .foregroundColor(.white)
-                    Text("Sign in to access your settings")
-                        .appFont(size: 16)
-                        .foregroundColor(.gray)
-                }
-                Button("Sign In") {
-                    showingSignIn = true
-                }
-                .appFont(size: 17, weight: .semibold)
-                .foregroundColor(.black)
-                .frame(maxWidth: 200)
-                .padding(.vertical, 12)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            Image(systemName: "person.crop.circle")
+                .font(.system(size: 60))
+                .foregroundColor(.gray)
+            
+            VStack(spacing: 8) {
+                Text("Not Signed In")
+                    .appFont(size: 22, weight: .semibold)
+                    .foregroundColor(.white)
+                Text("Sign in to access your settings")
+                    .appFont(size: 16)
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.black)
+            
+            Button("Sign In") {
+                showingSignIn = true
+            }
+            .appFont(size: 17, weight: .semibold)
+            .foregroundColor(.black)
+            .frame(maxWidth: 200)
+            .padding(.vertical, 12)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             
             Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
     }
 }
 

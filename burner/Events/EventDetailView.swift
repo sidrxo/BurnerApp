@@ -259,6 +259,8 @@ struct EventDetailView: View {
         }
         .sheet(isPresented: $showingPurchase) {
             TicketPurchaseView(event: event, viewModel: viewModel)
+                .presentationDetents([.height(280)])
+                .presentationDragIndicator(.visible)
                 .onDisappear {
                     // Refresh ticket status when purchase sheet is dismissed
                     checkUserTicketStatus()

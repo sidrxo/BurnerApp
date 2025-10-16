@@ -20,10 +20,14 @@ struct BookmarksView: View {
         NavigationView {
             VStack(spacing: 0) {
                 // Header Section
-                HeaderSection(title: "Bookmarks")
+                SettingsHeaderSection(title: "Bookmarks")
+                    .padding(.horizontal, 16)
+                    .padding(.top, 20)
+
+
                 
                 if !bookmarkManager.bookmarkedEvents.isEmpty {
-                    searchSection
+                    
                 }
                 
                 if bookmarkManager.isLoading {
@@ -43,23 +47,6 @@ struct BookmarksView: View {
     }
     
     // MARK: - Search Section
-    private var searchSection: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "magnifyingglass")
-                .appFont(size: 16, weight: .medium)
-                .foregroundColor(.gray)
-            
-            TextField("Search bookmarks", text: $searchText)
-                .appFont(size: 16)
-                .foregroundColor(.white)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: 25))
-        .padding(.horizontal, 20)
-        .padding(.bottom, 16)
-    }
     
     // MARK: - Loading View
     private var loadingView: some View {

@@ -10,7 +10,6 @@ struct TicketsView: View {
     @State private var isLoadingTickets = false
     @State private var searchText = ""
     @State private var selectedFilter: TicketsFilter = .upcoming // default to upcoming
-    @State private var isPastEventsExpanded = false
 
     private let db = Firestore.firestore()
 
@@ -77,8 +76,12 @@ struct TicketsView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                searchSection
-                filtersSection
+                if !tickets.isEmpty || isLoadingTickets || viewModel.isLoading {
+                    HeaderSection(title: "My Tickets")
+                    searchSection
+                    filtersSection
+                }
+                
                 if isLoadingTickets || viewModel.isLoading {
                     loadingView
                 } else if tickets.isEmpty {
@@ -103,6 +106,38 @@ struct TicketsView: View {
         .navigationViewStyle(StackNavigationViewStyle())
     }
 
+    private var emptyStateView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            
+            Image(systemName: "ticket")
+                .font(.system(size: 60))
+                .foregroundColor(.gray)
+            VStack(spacing: 8) {
+                Text("No Tickets Yet")
+                    .appFont(size: 22, weight: .semibold)
+                    .foregroundColor(.white)
+                Text("Your purchased tickets will appear here")
+                    .appFont(size: 16)
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+            }
+            Button("Browse Events") {
+                // Navigation to events
+            }
+            .appFont(size: 17, weight: .semibold)
+            .foregroundColor(.black)
+            .frame(maxWidth: 200)
+            .padding(.vertical, 12)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
+    }
+
     // MARK: - Search Bar
     private var searchSection: some View {
         VStack(spacing: 16) {
@@ -112,7 +147,7 @@ struct TicketsView: View {
                     .appFont(size: 16, weight: .medium)
                     .foregroundColor(.gray)
 
-                TextField("Search for an event or venue", text: $searchText)
+                TextField("Search my tickets", text: $searchText)
                     .appFont(size: 16)
                     .foregroundColor(.white)
             }
@@ -121,7 +156,6 @@ struct TicketsView: View {
             .background(Color(.systemGray6))
             .clipShape(RoundedRectangle(cornerRadius: 25))
             .padding(.horizontal, 20)
-            .padding(.top, 60)
         }
         .background(Color.black)
     }
@@ -191,34 +225,6 @@ struct TicketsView: View {
         .background(Color.black)
     }
 
-    private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "ticket")
-                .font(.system(size: 60))
-                .foregroundColor(.gray)
-            VStack(spacing: 8) {
-                Text("No Tickets Yet")
-                    .appFont(size: 22, weight: .semibold)
-                    .foregroundColor(.white)
-                Text("Your purchased tickets will appear here")
-                    .appFont(size: 16)
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-            }
-            Button("Browse Events") {
-                // Navigation to events
-            }
-            .appFont(size: 17, weight: .semibold)
-            .foregroundColor(.black)
-            .frame(maxWidth: 200)
-            .padding(.vertical, 12)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
-        .offset(y: -100)
-    }
 
     private var emptyFilteredView: some View {
         VStack(spacing: 16) {
@@ -250,7 +256,6 @@ struct TicketsView: View {
                             NavigationLink(
                                 destination: TicketDetailView(ticketWithEvent: ticketWithEvent)
                             ) {
-                                // Using UnifiedEventRow instead of TicketRowView
                                 UnifiedEventRow(
                                     ticketWithEvent: ticketWithEvent,
                                     isPast: false,
@@ -263,46 +268,25 @@ struct TicketsView: View {
                         }
                     }
                 }
-                // Past Events Section - Expandable
+                // Past Events Section - Always Displayed
                 if !pastTickets.isEmpty {
                     VStack(alignment: .leading, spacing: 16) {
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                isPastEventsExpanded.toggle()
-                            }
-                        }) {
-                            HStack {
-                                Text("Past Events")
-                                    .appFont(size: 24, weight: .bold)
-                                    .foregroundColor(.white)
-                                Spacer()
-                                Text("\(pastTickets.count)")
-                                    .appFont(size: 16)
-                                    .foregroundColor(.gray)
-                                Image(systemName: isPastEventsExpanded ? "chevron.up" : "chevron.down")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.gray)
-                            }
-                            .padding(.horizontal, 20)
-                            .contentShape(Rectangle())
-                        }
-                        if isPastEventsExpanded {
-                            LazyVStack(spacing: 12) {
-                                ForEach(pastTickets, id: \.ticket.id) { ticketWithEvent in
-                                    NavigationLink(
-                                        destination: TicketDetailView(ticketWithEvent: ticketWithEvent)
-                                    ) {
-                                        // Using UnifiedEventRow instead of TicketRowView
-                                        UnifiedEventRow(
-                                            ticketWithEvent: ticketWithEvent,
-                                            isPast: true,
-                                            onCancel: {
-                                                // Past tickets can't be cancelled
-                                            }
-                                        )
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
+              
+                        
+                        LazyVStack(spacing: 12) {
+                            ForEach(pastTickets, id: \.ticket.id) { ticketWithEvent in
+                                NavigationLink(
+                                    destination: TicketDetailView(ticketWithEvent: ticketWithEvent)
+                                ) {
+                                    UnifiedEventRow(
+                                        ticketWithEvent: ticketWithEvent,
+                                        isPast: true,
+                                        onCancel: {
+                                            // Past tickets can't be cancelled
+                                        }
+                                    )
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
                     }
