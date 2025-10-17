@@ -34,12 +34,12 @@ struct TicketPurchaseView: View {
                     
                     VStack(alignment: .leading, spacing: 1) {
                         Text(event.name)
-                            .font(.system(size: 14, weight: .semibold))
+                            .appSecondary()
                             .foregroundColor(.white)
                             .lineLimit(1)
                         
                         Text(event.venue)
-                            .font(.system(size: 12))
+                            .appCaption()
                             .foregroundColor(.gray)
                             .lineLimit(1)
                     }
@@ -52,13 +52,13 @@ struct TicketPurchaseView: View {
                 // Price info - simplified and compact
                 HStack {
                     Text("Total")
-                        .font(.system(size: 15, weight: .medium))
+                        .appBody()
                         .foregroundColor(.gray)
                     
                     Spacer()
                     
                     Text("£\(String(format: "%.2f", event.price))")
-                        .font(.system(size: 18, weight: .bold))
+                        .appBody()
                         .foregroundColor(.white)
                 }
                 .padding(.horizontal, 20)
@@ -89,7 +89,7 @@ struct TicketPurchaseView: View {
                         }
                         
                         Text(isPurchasing ? "Processing..." : "Purchase Ticket")
-                            .font(.system(size: 18, weight: .semibold))
+                            .appBody()
                             .foregroundColor(.black)
                     }
                     .frame(maxWidth: .infinity)

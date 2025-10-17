@@ -112,7 +112,7 @@ struct TabBarButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 24))
+                .font(.appSectionHeader)
                 .foregroundColor(isSelected ? .white : .gray)
                 .padding(.horizontal, 20)
 

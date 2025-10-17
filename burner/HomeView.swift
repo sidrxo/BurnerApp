@@ -84,14 +84,14 @@ struct PopularEventsSection: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Popular")
-                    .appFont(size: 24, weight: .bold)
+                    .appSectionHeader()
                     .foregroundColor(.white)
                 
                 Spacer()
                 
                 Button(action: {}) {
                     Image(systemName: "chevron.right")
-                        .appFont(size: 16, weight: .medium)
+                        .appBody()
                         .foregroundColor(.gray)
                         .frame(width: 32, height: 32)
                         .background(Color.gray.opacity(0.2))
@@ -123,14 +123,14 @@ struct UpcomingEventsSection: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Upcoming")
-                    .appFont(size: 24, weight: .bold)
-                    .foregroundColor(.white)
+                    .appSectionHeader()
+                    .appSectionHeader()
                 
                 Spacer()
                 
                 Button(action: {}) {
                     Image(systemName: "chevron.right")
-                        .appFont(size: 16, weight: .medium)
+                        .font(.appIcon)
                         .foregroundColor(.gray)
                         .frame(width: 32, height: 32)
                         .background(Color.gray.opacity(0.2))
@@ -162,14 +162,14 @@ struct AllEventsSection: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("All Events")
-                    .appFont(size: 24, weight: .bold)
+                    .appSectionHeader()
                     .foregroundColor(.white)
                 
                 Spacer()
                 
                 Button(action: {}) {
                     Image(systemName: "chevron.right")
-                        .appFont(size: 16, weight: .medium)
+                        .font(.appIcon)
                         .foregroundColor(.gray)
                         .frame(width: 32, height: 32)
                         .background(Color.gray.opacity(0.2))
@@ -216,16 +216,16 @@ struct EventListRow: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(event.name)
-                    .appFont(size: 16, weight: .semibold)
+                    .appBody()
                     .foregroundColor(.white)
                     .lineLimit(1)
                 
                 Text(event.date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
-                    .appFont(size: 14, weight: .regular)
+                    .appSecondary()
                     .foregroundColor(.gray)
                 
                 Text(event.venue)
-                    .appFont(size: 14, weight: .regular)
+                    .appSecondary()
                     .foregroundColor(.gray)
                     .lineLimit(1)
             }
@@ -238,7 +238,7 @@ struct EventListRow: View {
                 }
             }) {
                 Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                    .appFont(size: 18, weight: .medium)
+                    .font(.appIcon)
                     .foregroundColor(isBookmarked ? .white : .gray)
                     .scaleEffect(isBookmarked ? 1.1 : 1.0)
                     .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: isBookmarked)

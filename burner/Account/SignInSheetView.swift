@@ -56,7 +56,7 @@ struct SignInSheetView: View {
                         }
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.appIcon)
                             .foregroundColor(.white)
                             .frame(width: 32, height: 32)
                             .background(Color.white.opacity(0.2))
@@ -114,7 +114,7 @@ struct SignInSheetView: View {
                         .frame(width: 20, height: 20)
                     
                     Text("Continue with Google")
-                        .font(.system(size: 16, weight: .semibold))
+                        .appBody()
                         .foregroundColor(.white)
                 }
                 .frame(maxWidth: .infinity)
@@ -134,11 +134,11 @@ struct SignInSheetView: View {
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "applelogo")
-                        .font(.system(size: 18, weight: .medium))
+                        .font(.appIcon)
                         .foregroundColor(.black)
                     
                     Text("Continue with Apple")
-                        .font(.system(size: 16, weight: .semibold))
+                        .appBody()
                         .foregroundColor(.black)
                 }
                 .frame(maxWidth: .infinity)
@@ -158,11 +158,11 @@ struct SignInSheetView: View {
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "envelope")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.appIcon)
                         .foregroundColor(.white)
                     
                     Text("Continue with Email")
-                        .font(.system(size: 16, weight: .medium))
+                        .appBody()
                         .foregroundColor(.white)
                 }
                 .frame(maxWidth: .infinity)
@@ -180,7 +180,7 @@ struct SignInSheetView: View {
 
     private var footerSection: some View {
         Text("By continuing, you agree to our Terms & Privacy Policy")
-            .font(.system(size: 12, weight: .regular))
+            .appCaption()
             .foregroundColor(.white.opacity(0.7))
             .multilineTextAlignment(.center)
             .lineLimit(2)

@@ -172,7 +172,7 @@ struct QRCodeScannerView: View {
     var body: some View {
         VStack(spacing: 24) {
             Text("Venue Scanner")
-                .font(.system(size: 24, weight: .bold))
+                .appSectionHeader()
                 .foregroundColor(.white)
             
             Button(action: {
@@ -180,11 +180,11 @@ struct QRCodeScannerView: View {
             }) {
                 VStack(spacing: 16) {
                     Image(systemName: "qrcode.viewfinder")
-                        .font(.system(size: 60))
+                        .font(.appLargeIcon)
                         .foregroundColor(.white)
                     
                     Text("Scan Ticket QR Code")
-                        .font(.system(size: 18, weight: .semibold))
+                        .appBody()
                         .foregroundColor(.white)
                 }
                 .frame(maxWidth: .infinity)

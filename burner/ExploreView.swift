@@ -65,11 +65,11 @@ struct ExploreView: View {
             // Search Bar with reduced width
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
-                    .appFont(size: 16, weight: .medium)
+                    .font(.appIcon)
                     .foregroundColor(.gray)
                 
                 TextField("Search events", text: $searchText)
-                    .appFont(size: 16)
+                    .appBody()
                     .foregroundColor(.white)
             }
             .padding(.horizontal, 16)
@@ -145,19 +145,19 @@ struct EmptyEventsView: View {
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: searchText.isEmpty ? "calendar.badge.exclamationmark" : "magnifyingglass")
-                .appFont(size: 60, weight: .light)
+                .font(.appLargeIcon)
                 .foregroundColor(.gray)
             
             VStack(spacing: 8) {
                 Text(searchText.isEmpty ? "No Upcoming Events" : "No Search Results")
-                    .font(.appTitle3)
+                    .font(.appBody)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                 
                 Text(searchText.isEmpty ?
                      "There are no upcoming events available at the moment." :
                      "Try searching with different keywords.")
-                    .font(.appSubheadline)
+                    .font(.appBody)
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
             }

@@ -16,11 +16,11 @@ struct FilterButton: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Text(title)
-                    .appFont(size: 14, weight: .semibold)
+                    .appSecondary()
                 
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .appFont(size: 12, weight: .bold)
+                        .font(.appCaption)
                 }
             }
             .foregroundColor(.white)

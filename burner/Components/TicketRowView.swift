@@ -69,7 +69,7 @@ struct UnifiedEventRow: View {
             .frame(width: 60, height: 60)
             .overlay(
                 Image(systemName: "music.note")
-                    .font(.system(size: 20))
+                    .font(.appIcon)
                     .foregroundColor(.gray)
             )
     }
@@ -78,14 +78,14 @@ struct UnifiedEventRow: View {
     private var eventDetails: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(event.name)
-                .appFont(size: 16, weight: .semibold)
+                .appBody()
                 .foregroundColor(.white)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
             
             if configuration.showVenue {
                 Text(event.venue)
-                    .appFont(size: 14, weight: .medium)
+                    .appSecondary()
                     .foregroundColor(.gray)
                     .lineLimit(1)
             }
@@ -93,16 +93,13 @@ struct UnifiedEventRow: View {
             // Date formatting based on configuration
             if configuration.showDetailedDate {
                 HStack(spacing: 4) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
-                    Text(event.date.formatted(date: .abbreviated, time: .shortened))
-                        .appFont(size: 12)
+                    Text(event.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                        .appSecondary()
                         .foregroundColor(.gray)
                 }
             } else {
                 Text(event.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
-                    .appFont(size: 14, weight: .medium)
+                    .appSecondary()
                     .foregroundColor(.gray)
             }
             
@@ -110,11 +107,7 @@ struct UnifiedEventRow: View {
             statusBadges
             
             // Price (only for event list)
-            if configuration.showPrice {
-                Text("£\(String(format: "%.2f", event.price))")
-                    .appFont(size: 14, weight: .medium)
-                    .foregroundColor(.white)
-            }
+        
         }
     }
     
@@ -124,7 +117,7 @@ struct UnifiedEventRow: View {
             if let ticket = ticket {
                 if ticket.status == "cancelled" {
                     Text("Cancelled")
-                        .appFont(size: 12, weight: .medium)
+                        .appCaption()
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(Color.red.opacity(0.2))
@@ -132,7 +125,7 @@ struct UnifiedEventRow: View {
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 } else if isPastEvent {
                     Text("Past Event")
-                        .appFont(size: 12, weight: .medium)
+                        .appCaption()
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(Color.gray.opacity(0.2))
@@ -159,11 +152,11 @@ struct UnifiedEventRow: View {
             if let ticket = ticket {
                 if !isPastEvent && ticket.status == "confirmed" {
                     Image(systemName: "qrcode")
-                        .font(.system(size: 18))
+                        .font(.appIcon)
                         .foregroundColor(.white)
                 } else if isPastEvent {
                     Text("Attended")
-                        .appFont(size: 12, weight: .medium)
+                        .appCaption()
                         .foregroundColor(.green)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
@@ -302,7 +295,7 @@ struct BookmarkButton: View {
             }
         }) {
             Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                .font(.system(size: size, weight: .medium))
+                .font(.appIcon)
                 .foregroundColor(isBookmarked ? .white : .gray)
                 .scaleEffect(isBookmarked ? 1.1 : 1.0)
                 .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: isBookmarked)

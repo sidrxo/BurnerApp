@@ -33,10 +33,9 @@ struct SupportView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Version")
-                            .appFont(size: 16, weight: .medium)
-                            .foregroundColor(.white)
+.appBody()                            .foregroundColor(.white)
                         Text("1.0.0")
-                            .appFont(size: 14)
+                            .appSecondary()
                             .foregroundColor(.gray)
                     }
                     Spacer()

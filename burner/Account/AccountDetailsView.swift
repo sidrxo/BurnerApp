@@ -18,10 +18,9 @@ struct AccountDetailsView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Name")
-                            .appFont(size: 16, weight: .medium)
-                            .foregroundColor(.white)
+.appBody()                            .foregroundColor(.white)
                         Text(displayName.isEmpty ? "(No Name Set)" : displayName)
-                            .appFont(size: 14)
+                            .appSecondary()
                             .foregroundColor(.gray)
                     }
                     Spacer()
@@ -31,10 +30,9 @@ struct AccountDetailsView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Email")
-                            .appFont(size: 16, weight: .medium)
-                            .foregroundColor(.white)
+.appBody()                            .foregroundColor(.white)
                         Text(email.isEmpty ? "(No Email Set)" : email)
-                            .appFont(size: 14)
+                            .appSecondary()
                             .foregroundColor(.gray)
                     }
                     Spacer()
@@ -46,8 +44,7 @@ struct AccountDetailsView: View {
                 Button(action: { showingSignOut = true }) {
                     HStack {
                         Text("Sign Out")
-                            .appFont(size: 16, weight: .medium)
-                            .foregroundColor(.red)
+.appBody()                            .foregroundColor(.red)
                         Spacer()
                         if isSigningOut {
                             ProgressView()
@@ -62,8 +59,7 @@ struct AccountDetailsView: View {
                 Button(action: { showingDeleteAccount = true }) {
                     HStack {
                         Text("Delete Account")
-                            .appFont(size: 16, weight: .medium)
-                            .foregroundColor(.red)
+.appBody()                            .foregroundColor(.red)
                         Spacer()
                     }
                     .padding(.horizontal, 16)

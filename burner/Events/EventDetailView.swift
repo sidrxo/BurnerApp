@@ -7,7 +7,7 @@ import PassKit
 
 struct EventDetailView: View {
     let event: Event
-    @State private var isBookmarked = false
+    @StateObject private var bookmarkManager = BookmarkManager()
     @State private var showingPurchase = false
     @State private var showingAlert = false
     @State private var alertMessage = ""
@@ -23,7 +23,7 @@ struct EventDetailView: View {
     // Calculate responsive hero height based on screen size
     private var heroHeight: CGFloat {
         // Use 45% of screen height, with min/max bounds
-        let calculatedHeight = screenHeight * 0.45
+        let calculatedHeight = screenHeight * 0.40
         return max(300, min(calculatedHeight, 500))
     }
     
@@ -35,7 +35,7 @@ struct EventDetailView: View {
         if userHasTicket {
             return "Ticket Purchased"
         } else if availableTickets > 0 {
-            return "Buy Ticket - £\(String(format: "%.2f", event.price))"
+            return "Buy Ticket"
         } else {
             return "Sold Out"
         }
@@ -43,7 +43,7 @@ struct EventDetailView: View {
     
     var buttonColor: Color {
         if userHasTicket {
-            return .green
+            return Color.gray.opacity(0.3)
         } else if availableTickets > 0 {
             return .white
         } else {
@@ -57,12 +57,17 @@ struct EventDetailView: View {
         } else if availableTickets > 0 {
             return .black
         } else {
-            return .gray
+            return .white
         }
     }
     
     var isButtonDisabled: Bool {
         return userHasTicket || availableTickets == 0
+    }
+    
+    private var isBookmarked: Bool {
+        guard let eventId = event.id else { return false }
+        return bookmarkManager.isBookmarked(eventId)
     }
     
     var body: some View {
@@ -72,7 +77,7 @@ struct EventDetailView: View {
                 
                 ScrollView {
                     VStack(spacing: 0) {
-                        // Hero Image Section - Now responsive
+                        // Hero Image Section - Extends under navigation bar
                         ZStack {
                             KFImage(URL(string: event.imageUrl))
                                 .placeholder {
@@ -80,7 +85,7 @@ struct EventDetailView: View {
                                         .fill(Color.gray.opacity(0.3))
                                         .overlay(
                                             Image(systemName: "music.note")
-                                                .font(.system(size: 40))
+                                                .appHero()
                                                 .foregroundColor(.gray)
                                         )
                                 }
@@ -89,82 +94,77 @@ struct EventDetailView: View {
                                 .frame(width: geometry.size.width, height: heroHeight)
                                 .clipped()
                             
-                            // Gradient overlay
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.black.opacity(0.3),
-                                    Color.clear,
-                                    Color.clear,
-                                    Color.black.opacity(0.8)
-                                ]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
+                            // Gradient overlay with blur at bottom
+                            ZStack {
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.black.opacity(0.3),
+                                        Color.clear,
+                                        Color.clear,
+                                        Color.black.opacity(0.8)
+                                    ]),
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                                
+                                // Fading blur effect at bottom
+                                VStack {
+                                    Spacer()
+                                    Rectangle()
+                                        .fill(Color.clear)
+                                        .background(.regularMaterial)
+                                        .mask(
+                                            LinearGradient(
+                                                gradient: Gradient(stops: [
+                                                    .init(color: .clear, location: 0.0),
+                                                    .init(color: .black.opacity(0.5), location: 0.5),
+                                                    .init(color: .black, location: 0.8),
+                                                    .init(color: .black, location: 1.0)
+                                                ]),
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            )
+                                        )
+                                        .frame(height: heroHeight * 0.67)
+                                }
+                            }
                             .frame(width: geometry.size.width, height: heroHeight)
                             
                             // Event info overlay - positioned at bottom
                             VStack {
-                                Spacer()
-                                
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text(event.name)
-                                        .appFont(size: min(32, geometry.size.width * 0.08), weight: .black)
-                                        .foregroundColor(.white)
-                                        .multilineTextAlignment(.leading)
-                                        .lineLimit(3)
-                                    
-                                    HStack(spacing: 12) {
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(event.date.formatted(.dateTime.hour().minute()))
-                                                .appFont(size: 16, weight: .medium)
-                                                .foregroundColor(.white.opacity(0.9))
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        VStack(alignment: .trailing, spacing: 2) {
-                                            Text(event.venue)
-                                                .appFont(size: 16, weight: .medium)
-                                                .foregroundColor(.white.opacity(0.9))
-                                                .multilineTextAlignment(.trailing)
-                                                .lineLimit(2)
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 20)
+                                   Spacer()
+                                   
+                                   HStack {
+                                       VStack(alignment: .leading, spacing: 12) {
+                                           Text(event.name)
+                                               .appHero()
+                                               .foregroundColor(.white)
+                                               .multilineTextAlignment(.leading)
+                                               .fixedSize(horizontal: false, vertical: true)
+                                       }
+                                       
+                                       Spacer()
+                                   }
+                                   .padding(.horizontal, 20)
+                                   .padding(.bottom, 20)
                             }
                         }
                         .frame(height: heroHeight)
+                        .ignoresSafeArea(edges: .top)
+                        .padding(.bottom, 30)
                         
                         // Content Section - More compact spacing
                         VStack(spacing: 16) {
-                            // Price section only
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Ticket Price")
-                                        .appFont(size: 13)
-                                        .foregroundColor(.gray)
-                                    
-                                    Text("£\(String(format: "%.2f", event.price))")
-                                        .appFont(size: 22, weight: .bold)
-                                        .foregroundColor(.white)
-                                }
-                                
-                                Spacer()
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.top, 16)
-                            
+                           
                             // Description - more compact
                             if let description = event.description, !description.isEmpty {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("About")
-                                        .appFont(size: 17, weight: .semibold)
+                                        .appBody()
                                         .foregroundColor(.white)
                                     
                                     Text(description)
-                                        .appFont(size: 15)
+                                        .appBody()
                                         .foregroundColor(.gray)
                                         .lineSpacing(2)
                                         .lineLimit(6)
@@ -176,8 +176,7 @@ struct EventDetailView: View {
                             // Event details - more compact
                             VStack(spacing: 12) {
                                 Text("Event Details")
-                                    .appFont(size: 17, weight: .semibold)
-                                    .foregroundColor(.white)
+        .appBody()                                    .foregroundColor(.white)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                 
                                 VStack(spacing: 8) {
@@ -191,6 +190,12 @@ struct EventDetailView: View {
                                         icon: "location",
                                         title: "Venue",
                                         value: event.venue
+                                    )
+                                    
+                                    EventDetailRow(
+                                        icon: "creditcard",
+                                        title: "Price",
+                                        value: "£\(String(format: "%.2f", event.price))"
                                     )
                                 }
                             }
@@ -208,11 +213,12 @@ struct EventDetailView: View {
                     
                     HStack(spacing: 12) {
                         Button(action: {
-                            isBookmarked.toggle()
+                            Task {
+                                await bookmarkManager.toggleBookmark(for: event)
+                            }
                         }) {
                             Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.white)
+    .appBody()                                .foregroundColor(.white)
                                 .frame(width: 44, height: 44)
                                 .background(Color.gray.opacity(0.2))
                                 .clipShape(Circle())
@@ -224,8 +230,7 @@ struct EventDetailView: View {
                             }
                         }) {
                             Text(buttonText)
-                                .appFont(size: 16, weight: .semibold)
-                                .foregroundColor(buttonTextColor)
+    .appBody()                                .foregroundColor(buttonTextColor)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 44)
                                 .background(buttonColor)
@@ -327,17 +332,16 @@ struct EventDetailRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .appFont(size: 14, weight: .medium)
-                .foregroundColor(.white)
+                .font(.appIcon)
                 .frame(width: 16)
             
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
-                    .appFont(size: 13)
+                    .appSecondary()
                     .foregroundColor(.gray)
                 
                 Text(value)
-                    .appFont(size: 14, weight: .medium)
+                    .appBody()
                     .foregroundColor(.white)
                     .lineLimit(2)
             }
@@ -351,18 +355,20 @@ struct EventDetailRow: View {
     }
 }
 
-// MARK: - Preview
 #Preview {
-    EventDetailView(event: Event(
-        name: "fabric Presents: Nina Kraviz - Electronic Music Experience",
-        venue: "fabric London",
-        date: Date(),
-        price: 25.0,
-        maxTickets: 100,
-        ticketsSold: 50,
-        imageUrl: "",
-        isFeatured: false,
-        description: "The Russian techno queen returns to fabric with her hypnotic blend of acid and experimental electronic music."
-    ))
+    NavigationStack {
+        EventDetailView(event: Event(
+            name: "fabric Presents: Nina Kraviz",
+            venue: "fabric London",
+            date: Date(),
+            price: 25.0,
+            maxTickets: 100,
+            ticketsSold: 50,
+            imageUrl: "https://placeholder.com/400x600",
+            isFeatured: false,
+            description: "The Russian techno queen returns to fabric with her hypnotic blend of acid and experimental electronic music."
+        ))
+        .environmentObject(TabBarVisibility(isDetailViewPresented: .constant(false)))
+    }
     .preferredColorScheme(.dark)
 }

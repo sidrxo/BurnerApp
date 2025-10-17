@@ -16,7 +16,7 @@ struct PaymentSettingsView: View {
                 .padding(.top, 20)
             
             Text("No payment methods")
-                .appFont(size: 16)
+                .appBody()
                 .foregroundColor(.gray)
             Spacer()
         }

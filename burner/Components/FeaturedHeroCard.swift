@@ -36,7 +36,7 @@ struct FeaturedHeroCard: View {
                     HStack {
                         Spacer()
                         Text("FEATURED")
-                            .appFont(size: 12, weight: .bold)
+                            .appCaption()
                             .foregroundColor(.white)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
@@ -49,41 +49,35 @@ struct FeaturedHeroCard: View {
                     Spacer()
                     
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack {
+                        HStack(alignment: .bottom, spacing: 12) {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(event.name)
-                                    .appFont(size: 32, weight: .black)
+                                    .appHero()
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.leading)
                                     .fixedSize(horizontal: false, vertical: true)
                                 
                                 Text("\(event.date.formatted(.dateTime.weekday().day().month())) • \(event.venue)")
-                                    .appFont(size: 16, weight: .medium)
-                                    .foregroundColor(.white.opacity(0.8))
+        .appBody()                                    .foregroundColor(.white.opacity(0.8))
                                 
                                 Text("£\(String(format: "%.2f", event.price))")
-                                    .appFont(size: 16, weight: .bold)
-                                    .foregroundColor(.white)
+        .appBody()                                    .foregroundColor(.white)
                             }
                             
                             Spacer()
-                        }
-                        
-                        HStack(spacing: 16) {
-                            Spacer()
-                            
                             Button(action: {
                                 Task {
                                     await bookmarkManager.toggleBookmark(for: event)
                                 }
                             }) {
                                 Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                                    .appFont(size: 20, weight: .medium)
+                                    .appSectionHeader()
                                     .foregroundColor(isBookmarked ? .white : .white.opacity(0.7))
                                     .scaleEffect(isBookmarked ? 1.1 : 1.0)
                                     .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: isBookmarked)
                             }
                         }
+                        
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)

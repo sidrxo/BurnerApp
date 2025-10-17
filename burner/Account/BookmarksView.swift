@@ -34,8 +34,6 @@ struct BookmarksView: View {
                     loadingView
                 } else if bookmarkManager.bookmarkedEvents.isEmpty {
                     emptyStateView
-                } else if filteredBookmarks.isEmpty {
-                    emptySearchView
                 } else {
                     bookmarksList
                 }
@@ -55,7 +53,7 @@ struct BookmarksView: View {
                 .scaleEffect(1.2)
                 .tint(.white)
             Text("Loading bookmarks...")
-                .appFont(size: 16)
+                .appBody()
                 .foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -66,16 +64,16 @@ struct BookmarksView: View {
     private var emptyStateView: some View {
         VStack(spacing: 20) {
             Image(systemName: "bookmark")
-                .font(.system(size: 60))
+                .appHero()
                 .foregroundColor(.gray)
             
             VStack(spacing: 8) {
                 Text("No Bookmarks Yet")
-                    .appFont(size: 22, weight: .semibold)
+                    .appSectionHeader()
                     .foregroundColor(.white)
                 
                 Text("Bookmark events you're interested in to see them here")
-                    .appFont(size: 16)
+                    .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
@@ -85,7 +83,7 @@ struct BookmarksView: View {
                 // Navigate to home or explore tab
                 // You can implement navigation logic here
             }
-            .appFont(size: 17, weight: .semibold)
+            .appBody()
             .foregroundColor(.black)
             .frame(maxWidth: 200)
             .padding(.vertical, 12)
@@ -98,27 +96,6 @@ struct BookmarksView: View {
     }
     
     // MARK: - Empty Search View
-    private var emptySearchView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 50))
-                .foregroundColor(.gray)
-            
-            VStack(spacing: 8) {
-                Text("No Results Found")
-                    .appFont(size: 18, weight: .semibold)
-                    .foregroundColor(.white)
-                
-                Text("Try adjusting your search terms")
-                    .appFont(size: 16)
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
-        .padding(.bottom, 100)
-    }
     
     // MARK: - Bookmarks List
     private var bookmarksList: some View {
@@ -156,7 +133,7 @@ struct BookmarkListItem: View {
                         .fill(Color.gray.opacity(0.3))
                         .overlay(
                             Image(systemName: "music.note")
-                                .font(.system(size: 20))
+                                .appSectionHeader()
                                 .foregroundColor(.gray)
                         )
                 }
@@ -168,28 +145,28 @@ struct BookmarkListItem: View {
             // Event Details
             VStack(alignment: .leading, spacing: 4) {
                 Text(event.name)
-                    .appFont(size: 16, weight: .semibold)
+                    .appBody()
                     .foregroundColor(.white)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 
                 Text(event.venue)
-                    .appFont(size: 14)
+                    .appSecondary()
                     .foregroundColor(.gray)
                     .lineLimit(1)
                 
                 HStack(spacing: 4) {
                     Image(systemName: "calendar")
-                        .font(.system(size: 12))
+                        .appCaption()
                         .foregroundColor(.gray)
                     
                     Text(event.date.formatted(.dateTime.weekday(.abbreviated).day().month()))
-                        .appFont(size: 12)
+                        .appCaption()
                         .foregroundColor(.gray)
                 }
                 
                 Text("£\(String(format: "%.2f", event.price))")
-                    .appFont(size: 14, weight: .medium)
+                    .appSecondary()
                     .foregroundColor(.white)
             }
             
@@ -200,7 +177,7 @@ struct BookmarkListItem: View {
                 showingRemoveAlert = true
             }) {
                 Image(systemName: "bookmark.fill")
-                    .font(.system(size: 18))
+                    .appBody()
                     .foregroundColor(.white)
             }
         }

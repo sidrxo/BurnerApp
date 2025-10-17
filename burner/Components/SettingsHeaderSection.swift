@@ -15,7 +15,7 @@ struct SettingsHeaderSection: View {
     var body: some View {
         HStack {
             Text(title)
-                .appFont(size: 28, weight: .bold)
+                .appPageHeader()
                 .foregroundColor(.white)
             Spacer()
         }

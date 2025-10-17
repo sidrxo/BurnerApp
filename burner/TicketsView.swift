@@ -111,21 +111,21 @@ struct TicketsView: View {
             Spacer()
             
             Image(systemName: "ticket")
-                .font(.system(size: 60))
+                .font(.appLargeIcon)
                 .foregroundColor(.gray)
             VStack(spacing: 8) {
                 Text("No Tickets Yet")
-                    .appFont(size: 22, weight: .semibold)
+                    .appSectionHeader()
                     .foregroundColor(.white)
                 Text("Your purchased tickets will appear here")
-                    .appFont(size: 16)
+                    .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
             }
             Button("Browse Events") {
                 // Navigation to events
             }
-            .appFont(size: 17, weight: .semibold)
+            .appBody()
             .foregroundColor(.black)
             .frame(maxWidth: 200)
             .padding(.vertical, 12)
@@ -144,11 +144,11 @@ struct TicketsView: View {
             // Search Bar
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
-                    .appFont(size: 16, weight: .medium)
+                    .appBody()
                     .foregroundColor(.gray)
 
                 TextField("Search my tickets", text: $searchText)
-                    .appFont(size: 16)
+                    .appBody()
                     .foregroundColor(.white)
             }
             .padding(.horizontal, 16)
@@ -218,7 +218,7 @@ struct TicketsView: View {
                 .scaleEffect(1.2)
                 .tint(.white)
             Text("Loading your tickets...")
-                .appFont(size: 16)
+                .appBody()
                 .foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -229,14 +229,14 @@ struct TicketsView: View {
     private var emptyFilteredView: some View {
         VStack(spacing: 16) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 50))
+                .font(.appLargeIcon)
                 .foregroundColor(.gray)
             VStack(spacing: 8) {
                 Text("No Results Found")
-                    .appFont(size: 18, weight: .semibold)
+                    .appSectionHeader()
                     .foregroundColor(.white)
                 Text("Try adjusting your search terms")
-                    .appFont(size: 16)
+                    .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
             }

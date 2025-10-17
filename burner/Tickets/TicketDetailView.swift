@@ -63,7 +63,7 @@ struct TicketDetailView: View {
     private func menuItem(_ title: String, isSelected: Bool = false) -> some View {
         VStack(spacing: 0) {
             Text(title)
-                .font(.system(size: 16, weight: .medium))
+               .appBody()
                 .foregroundColor(isSelected ? .white : .gray)
                 .padding(.vertical, 16)
             
@@ -79,7 +79,7 @@ struct TicketDetailView: View {
             VStack(spacing: 20) {
                 // Artist Name - Fixed to prevent clipping
                 Text(ticketWithEvent.event.name.uppercased())
-                    .font(.system(size: 28, weight: .black))
+                    .appPageHeader()
                     .foregroundColor(.black)
                     .multilineTextAlignment(.center)
                     .lineLimit(nil)
@@ -90,13 +90,13 @@ struct TicketDetailView: View {
                 // Date and Time
                 HStack {
                     Text(ticketWithEvent.event.date.formatted(.dateTime.day().month().year()))
-                        .font(.system(size: 16, weight: .medium))
+                       .appBody()
                         .foregroundColor(.black)
                     
                     Spacer()
                     
                     Text(ticketWithEvent.event.date.formatted(.dateTime.hour().minute()))
-                        .font(.system(size: 16, weight: .medium))
+                       .appBody()
                         .foregroundColor(.black)
                 }
                 .padding(.horizontal, 30)
@@ -111,10 +111,10 @@ struct TicketDetailView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("VENUE")
-                            .font(.system(size: 14, weight: .medium))
+                            .appSecondary()
                             .foregroundColor(.black)
                         Text(ticketWithEvent.event.venue.uppercased())
-                            .font(.system(size: 16, weight: .bold))
+                            .appBody()
                             .foregroundColor(.black)
                     }
                     
@@ -122,10 +122,10 @@ struct TicketDetailView: View {
                     
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("STATUS")
-                            .font(.system(size: 14, weight: .medium))
+                            .appSecondary()
                             .foregroundColor(.black)
                         Text(ticketWithEvent.ticket.status.uppercased())
-                            .font(.system(size: 16, weight: .bold))
+                            .appBody()
                             .foregroundColor(.black)
                     }
                 }
@@ -232,11 +232,11 @@ struct TicketDetailView: View {
             }) {
                 HStack(spacing: 8) {
                     Text("NEXT")
-                        .font(.system(size: 16, weight: .medium))
+                       .appBody()
                         .foregroundColor(.white)
                     
                     Image(systemName: "arrow.right")
-                        .font(.system(size: 16, weight: .medium))
+                       .appBody()
                         .foregroundColor(.white)
                 }
             }

@@ -23,15 +23,15 @@ struct ScannerView: View {
                 // Unauthorized access view
                 VStack(spacing: 20) {
                     Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 60))
+                        .font(.appLargeIcon)
                         .foregroundColor(.red)
                     
                     Text("Access Denied")
-                        .appFont(size: 24, weight: .bold)
+                        .appSectionHeader()
                         .foregroundColor(.white)
                     
                     Text("You don't have permission to scan tickets. Please contact an administrator if you need scanner access.")
-                        .appFont(size: 16)
+                        .appBody()
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
@@ -39,7 +39,7 @@ struct ScannerView: View {
                     Button("Go Back") {
                         presentationMode.wrappedValue.dismiss()
                     }
-                    .appFont(size: 17, weight: .semibold)
+                    .appBody()
                     .foregroundColor(.black)
                     .frame(maxWidth: 150)
                     .padding(.vertical, 12)
@@ -52,17 +52,16 @@ struct ScannerView: View {
                 // Results Section
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Scan Result")
-                        .appFont(size: 20, weight: .bold)
+                        .appSectionHeader()
                         .foregroundColor(.white)
                     
                     ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("QR Code Data:")
-                                .appFont(size: 14, weight: .semibold)
-                                .foregroundColor(.gray)
+    .appBody()                                .foregroundColor(.gray)
                             
                             Text(scannedValue)
-                                .appFont(size: 16)
+                                .appBody()
                                 .foregroundColor(.white)
                                 .padding(16)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -76,7 +75,7 @@ struct ScannerView: View {
                         Button("Scan Again") {
                             resetScanner()
                         }
-                        .appFont(size: 17, weight: .semibold)
+                        .appBody()
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -86,7 +85,7 @@ struct ScannerView: View {
                         Button("Process Ticket") {
                             processTicketScan()
                         }
-                        .appFont(size: 17, weight: .semibold)
+                        .appBody()
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -103,15 +102,15 @@ struct ScannerView: View {
                     
                     VStack(spacing: 16) {
                         Image(systemName: "qrcode.viewfinder")
-                            .font(.system(size: 80))
+                            .font(.appLargeIcon)
                             .foregroundColor(.white)
                         
                         Text("QR Code Scanner")
-                            .appFont(size: 24, weight: .bold)
+                            .appSectionHeader()
                             .foregroundColor(.white)
                         
                         Text("Scan ticket QR codes to mark them as used")
-                            .appFont(size: 16)
+                            .appBody()
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 40)
@@ -120,7 +119,7 @@ struct ScannerView: View {
                     Button("Start Scanning") {
                         isShowingScanner = true
                     }
-                    .appFont(size: 17, weight: .semibold)
+                    .appSectionHeader()
                     .foregroundColor(.black)
                     .frame(maxWidth: 200)
                     .padding(.vertical, 14)
@@ -137,7 +136,7 @@ struct ScannerView: View {
                         .scaleEffect(0.8)
                         .tint(.white)
                     Text("Processing ticket...")
-                        .appFont(size: 16)
+                        .appBody()
                         .foregroundColor(.gray)
                 }
                 .padding(.top, 20)

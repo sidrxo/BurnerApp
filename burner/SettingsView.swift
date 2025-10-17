@@ -66,9 +66,9 @@ struct SettingsView: View {
                                             HStack {
                                                 Image(systemName: "shield.fill")
                                                     .foregroundColor(.green)
-                                                    .font(.caption)
+                                                    .font(.appCaption)
                                                 Text("All categories selected - Block-All Mode ready")
-                                                    .appFont(size: 12)
+                                                    .appCaption()
                                                     .foregroundColor(.green)
                                                 Spacer()
                                             }
@@ -81,9 +81,9 @@ struct SettingsView: View {
                                             HStack {
                                                 Image(systemName: "exclamationmark.triangle.fill")
                                                     .foregroundColor(.orange)
-                                                    .font(.caption)
+                                                    .font(.appCaption)
                                                 Text(burnerManager.getSetupValidationMessage())
-                                                    .appFont(size: 12)
+                                                    .appCaption()
                                                     .foregroundColor(.orange)
                                                 Spacer()
                                             }
@@ -98,7 +98,7 @@ struct SettingsView: View {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Burner Mode")
-                                            .appFont(size: 16, weight: .medium)
+                                            .appBody()
                                             .foregroundColor(.white)
                                     }
                                     Spacer()
@@ -173,15 +173,15 @@ struct SettingsView: View {
             Spacer()
             
             Image(systemName: "person.crop.circle")
-                .font(.system(size: 60))
+                .font(.appLargeIcon)
                 .foregroundColor(.gray)
             
             VStack(spacing: 8) {
                 Text("Not Signed In")
-                    .appFont(size: 22, weight: .semibold)
+                    .appSectionHeader()
                     .foregroundColor(.white)
                 Text("Sign in to access your settings")
-                    .appFont(size: 16)
+                    .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
             }
@@ -189,7 +189,7 @@ struct SettingsView: View {
             Button("Sign In") {
                 showingSignIn = true
             }
-            .appFont(size: 17, weight: .semibold)
+            .appBody()
             .foregroundColor(.black)
             .frame(maxWidth: 200)
             .padding(.vertical, 12)
@@ -355,7 +355,7 @@ struct CustomMenuSection<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(title)
-                .appFont(size: 12, weight: .semibold)
+                .appCaption()
                 .foregroundColor(.gray)
                 .padding(.horizontal, 4)
             VStack(spacing: 0) {
@@ -376,15 +376,15 @@ struct CustomMenuItemContent: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .appFont(size: 16, weight: .medium)
+                    .appBody()
                     .foregroundColor(.white)
                 Text(subtitle)
-                    .appFont(size: 14)
+                    .appSecondary()
                     .foregroundColor(.gray)
             }
             Spacer()
             Image(systemName: "chevron.right")
-                .appFont(size: 12, weight: .medium)
+                .appCaption()
                 .foregroundColor(.gray)
         }
         .padding(.horizontal, 16)
