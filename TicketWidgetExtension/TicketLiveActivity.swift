@@ -10,12 +10,12 @@ struct TicketLiveActivity: Widget {
                 // Left side - Event info
                 VStack(alignment: .leading, spacing: 6) {
                     Text(context.attributes.eventName)
-                        .font(.custom("HelveticaNeue", size: 16).weight(.bold))
+                        .appBody()
                         .foregroundColor(.white)
                         .lineLimit(2)
                     
                     Text(context.attributes.venue)
-                        .font(.custom("HelveticaNeue", size: 13).weight(.regular))
+                        .appSecondary()
                         .foregroundColor(.gray)
                         .lineLimit(1)
                 }
@@ -30,7 +30,7 @@ struct TicketLiveActivity: Widget {
                 
                 // Right side - Timer
                 Text(context.state.timeUntilEvent)
-                    .font(.custom("HelveticaNeue", size: 28).weight(.bold))
+                    .appPageHeader()
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.leading, 12)

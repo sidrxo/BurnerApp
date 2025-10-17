@@ -78,6 +78,7 @@
 		8B36D9102E7DBEE300EDDF0F /* Exceptions for "burner" folder in "TicketWidgetExtensionExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Extensions/FontExtensions.swift,
 				Extensions/Managers/TicketActivityAttributes.swift,
 			);
 			target = 8B36D8F22E7DBE2E00EDDF0F /* TicketWidgetExtensionExtension */;
