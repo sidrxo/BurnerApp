@@ -28,7 +28,7 @@ class BurnerModeManager: ObservableObject {
     ]
     
     // Minimum categories required (you can set this to all categories)
-    private let minimumCategoriesRequired = 8 // Must select 11+ categories
+    let minimumCategoriesRequired = 8 // Must select 8+ categories
     
     init() {
         loadSelectedApps()
@@ -46,7 +46,7 @@ class BurnerModeManager: ObservableObject {
         
         // Require all categories to be selected
         if categoryCount < minimumCategoriesRequired {
-            setupError = "Please select at least \(minimumCategoriesRequired) app categories (\(categoryCount)/\(minimumCategoriesRequired) selected)"
+            setupError = "Please select more categories."
             isSetupValid = false
             return false
         }

@@ -11,6 +11,7 @@ struct SettingsView: View {
     @State private var userRole: String = ""
     @State private var isBurnerModeEnabled = false
     @State private var showingAppPicker = false
+    @State private var showingBurnerSetup = false
     @StateObject private var burnerManager = BurnerModeManager()
     
     private let db = Firestore.firestore()
@@ -51,50 +52,17 @@ struct SettingsView: View {
                             
                             // APP Section
                             CustomMenuSection(title: "APP") {
-                                // App Selector Button
+                                // Setup Burner Mode Button
                                 Button(action: {
-                                    showingAppPicker = true
+                                    showingBurnerSetup = true
                                 }) {
-                                    VStack(spacing: 0) {
-                                        CustomMenuItemContent(
-                                            title: "Select Apps to Keep Available",
-                                            subtitle: burnerManager.getSelectedAppsDescription()
-                                        )
-                                        
-                                        // Block-all mode indicator
-                                        if burnerManager.hasAllCategoriesSelected() {
-                                            HStack {
-                                                Image(systemName: "shield.fill")
-                                                    .foregroundColor(.green)
-                                                    .font(.appCaption)
-                                                Text("All categories selected - Block-All Mode ready")
-                                                    .appCaption()
-                                                    .foregroundColor(.green)
-                                                Spacer()
-                                            }
-                                            .padding(.horizontal, 16)
-                                            .padding(.bottom, 4)
-                                        }
-                                        
-                                        // Validation message
-                                        if !burnerManager.isSetupValid {
-                                            HStack {
-                                                Image(systemName: "exclamationmark.triangle.fill")
-                                                    .foregroundColor(.orange)
-                                                    .font(.appCaption)
-                                                Text(burnerManager.getSetupValidationMessage())
-                                                    .appCaption()
-                                                    .foregroundColor(.orange)
-                                                Spacer()
-                                            }
-                                            .padding(.horizontal, 16)
-                                            .padding(.bottom, 8)
-                                        }
-                                    }
+                                    CustomMenuItemContent(
+                                        title: "Setup Burner Mode",
+                                        subtitle: "Step-by-step setup guide"
+                                    )
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 
-                                // Simple Burner Mode Toggle
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Burner Mode")
@@ -147,6 +115,9 @@ struct SettingsView: View {
         }
         .fullScreenCover(isPresented: $showingSignIn) {
             SignInSheetView(showingSignIn: $showingSignIn)
+        }
+        .fullScreenCover(isPresented: $showingBurnerSetup) {
+            BurnerModeSetupView(burnerManager: burnerManager)
         }
     }
     

@@ -16,6 +16,9 @@ class AppState: ObservableObject {
     @Published var showingError = false
     @Published var errorMessage: String?
     
+    // Add flag to track initial auth check
+    private var hasCompletedInitialAuthCheck = false
+    
     private var cancellables = Set<AnyCancellable>()
     
     // Shared repository instances
@@ -60,14 +63,28 @@ class AppState: ObservableObject {
     
     // MARK: - Setup Observers
     private func setupObservers() {
-        // Observe authentication state
+        // Observe authentication state with initial check flag
         authService.$currentUser
             .sink { [weak self] user in
+                guard let self = self else { return }
+                
+                // Skip showing sign-in sheet on initial load
+                if !self.hasCompletedInitialAuthCheck {
+                    self.hasCompletedInitialAuthCheck = true
+                    
+                    if user != nil {
+                        self.handleUserSignedIn()
+                    }
+                    // Don't show sign-in sheet on first load - let user browse
+                    return
+                }
+                
+                // After initial check, handle sign-in/sign-out normally
                 if user == nil {
-                    self?.isSignInSheetPresented = true
-                    self?.handleUserSignedOut()
+                    self.isSignInSheetPresented = true
+                    self.handleUserSignedOut()
                 } else {
-                    self?.handleUserSignedIn()
+                    self.handleUserSignedIn()
                 }
             }
             .store(in: &cancellables)

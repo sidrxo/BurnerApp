@@ -138,9 +138,6 @@ struct ExploreView: View {
             ProgressView()
                 .scaleEffect(1.2)
                 .tint(.white)
-            Text("Loading events...")
-                .appBody()
-                .foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 200)
