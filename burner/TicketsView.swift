@@ -146,7 +146,7 @@ struct TicketsView: View {
                     .appBody()
                     .foregroundColor(.gray)
 
-                TextField("Search my tickets", text: $searchText)
+                TextField("Search tickets", text: $searchText)
                     .appBody()
                     .foregroundColor(.white)
             }

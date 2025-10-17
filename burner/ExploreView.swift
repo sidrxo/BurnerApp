@@ -1,46 +1,19 @@
 import SwiftUI
 import Kingfisher
+import Combine
+import FirebaseFirestore
 
+// MARK: - Optimized ExploreView
 struct ExploreView: View {
-    // ✅ Use shared ViewModels from environment
-    @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var bookmarkManager: BookmarkManager
+    @StateObject private var viewModel = ExploreViewModel()
     
     @State private var searchText = ""
     @State private var sortBy: SortOption = .date
     
-    enum SortOption {
-        case date
-        case price
-    }
-    
-    var filteredEvents: [Event] {
-        var events = eventViewModel.events
-        
-        // First filter out past events (only show future events)
-        let currentDate = Date()
-        events = events.filter { event in
-            event.date > currentDate
-        }
-        
-        // Apply search filter
-        if !searchText.isEmpty {
-            events = events.filter { event in
-                event.name.localizedCaseInsensitiveContains(searchText) ||
-                event.venue.localizedCaseInsensitiveContains(searchText) ||
-                event.description?.localizedCaseInsensitiveContains(searchText) == true
-            }
-        }
-        
-        // Apply sorting based on selected sort option (lowest to highest)
-        switch sortBy {
-        case .date:
-            events = events.sorted { $0.date < $1.date }
-        case .price:
-            events = events.sorted { $0.price < $1.price }
-        }
-        
-        return events
+    enum SortOption: String {
+        case date = "date"
+        case price = "price"
     }
     
     var body: some View {
@@ -53,15 +26,25 @@ struct ExploreView: View {
             }
             .navigationBarHidden(true)
             .background(Color.black)
+            .task {
+                await viewModel.loadInitialEvents(sortBy: sortBy.rawValue)
+            }
             .refreshable {
-                eventViewModel.fetchEvents()
+                await viewModel.refreshEvents(sortBy: sortBy.rawValue)
+            }
+            .onChange(of: searchText) { oldValue, newValue in
+                viewModel.updateSearchText(newValue, sortBy: sortBy.rawValue)
+            }
+            .onChange(of: sortBy) { oldValue, newValue in
+                Task {
+                    await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
+                }
             }
         }
     }
     
     private var searchSection: some View {
         HStack(spacing: 12) {
-            // Search Bar
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
                     .font(.appIcon)
@@ -70,6 +53,19 @@ struct ExploreView: View {
                 TextField("Search events", text: $searchText)
                     .appBody()
                     .foregroundColor(.white)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                
+                // Clear button
+                if !searchText.isEmpty {
+                    Button(action: {
+                        searchText = ""
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.appIcon)
+                            .foregroundColor(.gray)
+                    }
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
@@ -81,7 +77,6 @@ struct ExploreView: View {
     
     private var filtersSection: some View {
         HStack(spacing: 12) {
-            // Date filter button
             FilterButton(
                 title: "DATE",
                 isSelected: sortBy == .date
@@ -91,7 +86,6 @@ struct ExploreView: View {
                 }
             }
             
-            // Price filter button
             FilterButton(
                 title: "PRICE",
                 isSelected: sortBy == .price
@@ -112,12 +106,12 @@ struct ExploreView: View {
         VStack(alignment: .leading, spacing: 0) {
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    if eventViewModel.isLoading && eventViewModel.events.isEmpty {
+                    if viewModel.isLoading && viewModel.events.isEmpty {
                         loadingView
-                    } else if filteredEvents.isEmpty {
+                    } else if viewModel.events.isEmpty {
                         EmptyEventsView(searchText: searchText)
                     } else {
-                        ForEach(filteredEvents.prefix(20)) { event in
+                        ForEach(viewModel.events) { event in
                             NavigationLink(destination: EventDetailView(event: event)) {
                                 UnifiedEventRow(
                                     event: event,
@@ -125,6 +119,29 @@ struct ExploreView: View {
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .onAppear {
+                                // Load more when reaching last item
+                                if event.id == viewModel.events.last?.id {
+                                    Task {
+                                        await viewModel.loadMoreEvents(
+                                            sortBy: sortBy.rawValue,
+                                            searchText: searchText
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Loading more indicator
+                        if viewModel.isLoadingMore {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .tint(.white)
+                                    .padding(.vertical, 20)
+                                Spacer()
+                            }
                         }
                     }
                 }
@@ -144,6 +161,204 @@ struct ExploreView: View {
     }
 }
 
+// MARK: - ExploreViewModel (Performance Optimized)
+@MainActor
+class ExploreViewModel: ObservableObject {
+    @Published var events: [Event] = []
+    @Published var isLoading = false
+    @Published var isLoadingMore = false
+    @Published var errorMessage: String?
+    
+    private var hasMoreEvents = true
+    private var lastDocument: Date?
+    private var currentSearchText = ""
+    private var searchCache: [String: [Event]] = [:]
+    
+    private let eventRepository = OptimizedEventRepository()
+    private var searchCancellable: AnyCancellable?
+    private let searchSubject = PassthroughSubject<(String, String), Never>()
+    
+    init() {
+        setupSearchDebouncing()
+    }
+    
+    // MARK: - Setup Search Debouncing
+    private func setupSearchDebouncing() {
+        searchCancellable = searchSubject
+            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+            .sink { [weak self] (searchText, sortBy) in
+                Task {
+                    await self?.performSearch(searchText: searchText, sortBy: sortBy)
+                }
+            }
+    }
+    
+    // MARK: - Update Search Text (Debounced)
+    func updateSearchText(_ text: String, sortBy: String) {
+        searchSubject.send((text, sortBy))
+    }
+    
+    // MARK: - Load Initial Events
+    func loadInitialEvents(sortBy: String) async {
+        guard !isLoading else { return }
+        
+        isLoading = true
+        hasMoreEvents = true
+        lastDocument = nil
+        
+        do {
+            let fetchedEvents = try await eventRepository.fetchUpcomingEvents(
+                sortBy: sortBy,
+                limit: 20
+            )
+            
+            events = fetchedEvents
+            lastDocument = fetchedEvents.last?.date
+            hasMoreEvents = fetchedEvents.count >= 20
+            
+        } catch {
+            errorMessage = "Failed to load events: \(error.localizedDescription)"
+        }
+        
+        isLoading = false
+    }
+    
+    // MARK: - Load More Events (Pagination)
+    func loadMoreEvents(sortBy: String, searchText: String) async {
+        guard !isLoadingMore && hasMoreEvents && searchText.isEmpty else { return }
+        
+        isLoadingMore = true
+        
+        do {
+            let fetchedEvents = try await eventRepository.fetchUpcomingEvents(
+                sortBy: sortBy,
+                limit: 20,
+                startAfter: lastDocument
+            )
+            
+            events.append(contentsOf: fetchedEvents)
+            lastDocument = fetchedEvents.last?.date
+            hasMoreEvents = fetchedEvents.count >= 20
+            
+        } catch {
+            errorMessage = "Failed to load more events: \(error.localizedDescription)"
+        }
+        
+        isLoadingMore = false
+    }
+    
+    // MARK: - Perform Search
+    private func performSearch(searchText: String, sortBy: String) async {
+        currentSearchText = searchText
+        
+        // Empty search - load regular events
+        if searchText.isEmpty {
+            await loadInitialEvents(sortBy: sortBy)
+            return
+        }
+        
+        // Check cache first
+        let cacheKey = "\(searchText)_\(sortBy)"
+        if let cached = searchCache[cacheKey] {
+            events = cached
+            return
+        }
+        
+        isLoading = true
+        
+        do {
+            let searchResults = try await eventRepository.searchEvents(
+                searchText: searchText,
+                sortBy: sortBy,
+                limit: 50
+            )
+            
+            events = searchResults
+            searchCache[cacheKey] = searchResults
+            hasMoreEvents = false // Disable pagination for search results
+            
+        } catch {
+            errorMessage = "Search failed: \(error.localizedDescription)"
+        }
+        
+        isLoading = false
+    }
+    
+    // MARK: - Change Sort
+    func changeSort(to sortBy: String, searchText: String) async {
+        if searchText.isEmpty {
+            await loadInitialEvents(sortBy: sortBy)
+        } else {
+            await performSearch(searchText: searchText, sortBy: sortBy)
+        }
+    }
+    
+    // MARK: - Refresh Events
+    func refreshEvents(sortBy: String) async {
+        searchCache.removeAll()
+        await loadInitialEvents(sortBy: sortBy)
+    }
+}
+
+// MARK: - Optimized Event Repository
+@MainActor
+class OptimizedEventRepository {
+    private let db = Firestore.firestore()
+    
+    // MARK: - Fetch Upcoming Events (Paginated)
+    func fetchUpcomingEvents(
+        sortBy: String = "date",
+        limit: Int = 20,
+        startAfter: Date? = nil
+    ) async throws -> [Event] {
+        var query = db.collection("events")
+            .whereField("date", isGreaterThan: Date())
+            .order(by: sortBy)
+            .limit(to: limit)
+        
+        if let startAfter = startAfter {
+            query = query.start(after: [startAfter])
+        }
+        
+        let snapshot = try await query.getDocuments()
+        
+        return snapshot.documents.compactMap { doc in
+            var event = try? doc.data(as: Event.self)
+            event?.id = doc.documentID
+            return event
+        }
+    }
+    
+    // MARK: - Search Events (Client-side for now)
+    func searchEvents(
+        searchText: String,
+        sortBy: String = "date",
+        limit: Int = 50
+    ) async throws -> [Event] {
+        // Fetch more events for search
+        let snapshot = try await db.collection("events")
+            .whereField("date", isGreaterThan: Date())
+            .order(by: sortBy)
+            .limit(to: limit)
+            .getDocuments()
+        
+        let allEvents = snapshot.documents.compactMap { doc -> Event? in
+            var event = try? doc.data(as: Event.self)
+            event?.id = doc.documentID
+            return event
+        }
+        
+        // Filter client-side (consider Algolia for production)
+        let searchLower = searchText.lowercased()
+        return allEvents.filter { event in
+            event.name.lowercased().contains(searchLower) ||
+            event.venue.lowercased().contains(searchLower) ||
+            (event.description?.lowercased().contains(searchLower) ?? false)
+        }
+    }
+}
+
+// MARK: - Empty Events View
 struct EmptyEventsView: View {
     let searchText: String
     
@@ -175,7 +390,6 @@ struct EmptyEventsView: View {
 struct ExploreView_Previews: PreviewProvider {
     static var previews: some View {
         ExploreView()
-            .environmentObject(AppState().eventViewModel)
             .environmentObject(AppState().bookmarkManager)
             .preferredColorScheme(.dark)
     }

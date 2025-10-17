@@ -180,14 +180,12 @@ class BookmarkRepository: ObservableObject {
     
     // MARK: - Add Bookmark
     func addBookmark(userId: String, bookmark: BookmarkData) async throws {
-        guard let eventId = bookmark.id else {
-            throw NSError(domain: "BookmarkRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid bookmark ID"])
-        }
+        let eventId = bookmark.eventId  // ✅ Changed from bookmark.id to bookmark.eventId
         
         try db.collection("users")
             .document(userId)
             .collection("bookmarks")
-            .document(eventId)
+            .document(eventId)  // Use eventId as the document ID
             .setData(from: bookmark)
     }
     
