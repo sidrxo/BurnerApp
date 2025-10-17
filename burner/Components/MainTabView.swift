@@ -18,7 +18,7 @@ struct MainTabView: View {
                     ExploreView()
                         .environmentObject(TabBarVisibility(isDetailViewPresented: $isDetailViewPresented))
                 case 2:
-                    TicketsView()
+                    TicketsView(selectedTab: $selectedTab)
                         .environmentObject(TabBarVisibility(isDetailViewPresented: $isDetailViewPresented))
                 case 3:
                     SettingsView()
@@ -38,6 +38,7 @@ struct MainTabView: View {
             }
         }
         .ignoresSafeArea(.keyboard)
+        
     }
 }
 

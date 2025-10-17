@@ -39,21 +39,13 @@ struct SignInSheetView: View {
                 endPoint: .bottom
             )
             .ignoresSafeArea(.all)
-            
-            // Noise texture overlay
-            NoiseView()
-                .opacity(0.15)
-                .ignoresSafeArea(.all)
-                .blendMode(.overlay)
 
             VStack(spacing: 0) {
                 // Close button
                 HStack {
                     Spacer()
                     Button {
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            showingSignIn = false
-                        }
+                        showingSignIn = false  // Removed withAnimation wrapper
                     } label: {
                         Image(systemName: "xmark")
                             .font(.appIcon)
@@ -179,7 +171,7 @@ struct SignInSheetView: View {
     }
 
     private var footerSection: some View {
-        Text("By continuing, you agree to our Terms & Privacy Policy")
+        Text("By continuing, you agree to our Terms of Service & Privacy Policy")
             .appCaption()
             .foregroundColor(.white.opacity(0.7))
             .multilineTextAlignment(.center)
@@ -455,9 +447,8 @@ struct SignInSheetView: View {
             triggerSuccessFeedback()
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
             
-            withAnimation(.easeOut(duration: 0.3)) {
-                showingSignIn = false
-            }
+            // Let fullScreenCover handle its own dismiss animation
+            showingSignIn = false
         }
     }
     
@@ -535,28 +526,6 @@ class ApplePresentationContextProvider: NSObject, ASAuthorizationControllerPrese
             return UIWindow()
         }
         return windowScene.windows.first(where: { $0.isKeyWindow }) ?? UIWindow()
-    }
-}
-
-// MARK: - Noise View for texture
-struct NoiseView: View {
-    var body: some View {
-        GeometryReader { geometry in
-            Canvas { context, size in
-                _ = CGRect(origin: .zero, size: size)
-                
-                for _ in 0..<Int(size.width * size.height / 4) {
-                    let x = Double.random(in: 0...size.width)
-                    let y = Double.random(in: 0...size.height)
-                    let opacity = Double.random(in: 0.1...0.3)
-                    
-                    context.fill(
-                        Path(ellipseIn: CGRect(x: x, y: y, width: 1, height: 1)),
-                        with: .color(.white.opacity(opacity))
-                    )
-                }
-            }
-        }
     }
 }
 

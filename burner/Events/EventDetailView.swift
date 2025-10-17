@@ -17,6 +17,8 @@ struct EventDetailView: View {
     @State private var alertMessage = ""
     @State private var isSuccess = false
     @State private var userHasTicket = false
+    @State private var showingSignIn = false
+    @State private var showingSignInPrompt = false
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var tabBarVisibility: TabBarVisibility
     
@@ -34,8 +36,14 @@ struct EventDetailView: View {
         max(0, event.maxTickets - event.ticketsSold)
     }
     
+    var isUserSignedIn: Bool {
+        Auth.auth().currentUser != nil
+    }
+    
     var buttonText: String {
-        if userHasTicket {
+        if !isUserSignedIn {
+            return "Sign In to Purchase"
+        } else if userHasTicket {
             return "Ticket Purchased"
         } else if availableTickets > 0 {
             return "Buy Ticket"
@@ -45,7 +53,9 @@ struct EventDetailView: View {
     }
     
     var buttonColor: Color {
-        if userHasTicket {
+        if !isUserSignedIn {
+            return .white
+        } else if userHasTicket {
             return Color.gray.opacity(0.3)
         } else if availableTickets > 0 {
             return .white
@@ -55,7 +65,9 @@ struct EventDetailView: View {
     }
     
     var buttonTextColor: Color {
-        if userHasTicket {
+        if !isUserSignedIn {
+            return .black
+        } else if userHasTicket {
             return .white
         } else if availableTickets > 0 {
             return .black
@@ -65,7 +77,7 @@ struct EventDetailView: View {
     }
     
     var isButtonDisabled: Bool {
-        return userHasTicket || availableTickets == 0
+        return (isUserSignedIn && userHasTicket) || (isUserSignedIn && availableTickets == 0)
     }
     
     private var isBookmarked: Bool {
@@ -179,7 +191,8 @@ struct EventDetailView: View {
                             // Event details - more compact
                             VStack(spacing: 12) {
                                 Text("Event Details")
-        .appBody()                                    .foregroundColor(.white)
+                                    .appBody()
+                                    .foregroundColor(.white)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                 
                                 VStack(spacing: 8) {
@@ -221,19 +234,23 @@ struct EventDetailView: View {
                             }
                         }) {
                             Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-    .appBody()                                .foregroundColor(.white)
+                                .appBody()
+                                .foregroundColor(.white)
                                 .frame(width: 44, height: 44)
                                 .background(Color.gray.opacity(0.2))
                                 .clipShape(Circle())
                         }
                         
                         Button(action: {
-                            if !userHasTicket && availableTickets > 0 {
+                            if !isUserSignedIn {
+                                showingSignInPrompt = true
+                            } else if !userHasTicket && availableTickets > 0 {
                                 showingPurchase = true
                             }
                         }) {
                             Text(buttonText)
-    .appBody()                                .foregroundColor(buttonTextColor)
+                                .appBody()
+                                .foregroundColor(buttonTextColor)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 44)
                                 .background(buttonColor)
@@ -260,7 +277,9 @@ struct EventDetailView: View {
         }
         .onAppear {
             tabBarVisibility.hideTabBar()
-            checkUserTicketStatus()
+            if isUserSignedIn {
+                checkUserTicketStatus()
+            }
         }
         .onDisappear {
             tabBarVisibility.showTabBar()
@@ -274,6 +293,17 @@ struct EventDetailView: View {
                     checkUserTicketStatus()
                 }
         }
+        .fullScreenCover(isPresented: $showingSignIn) {
+            SignInSheetView(showingSignIn: $showingSignIn)
+        }
+        .alert("Sign In Required", isPresented: $showingSignInPrompt) {
+            Button("Cancel", role: .cancel) { }
+            Button("Sign In") {
+                showingSignIn = true
+            }
+        } message: {
+            Text("Please sign in to purchase tickets for this event.")
+        }
         .alert(isPresented: $showingAlert) {
             Alert(
                 title: Text(isSuccess ? "Success" : "Error"),
@@ -284,6 +314,11 @@ struct EventDetailView: View {
                     }
                 }
             )
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
+            if isUserSignedIn {
+                checkUserTicketStatus()
+            }
         }
         .onReceive(eventViewModel.$errorMessage) { errorMessage in
             if let errorMessage = errorMessage {

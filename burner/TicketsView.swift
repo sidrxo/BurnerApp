@@ -8,6 +8,9 @@ struct TicketsView: View {
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
     @EnvironmentObject var eventViewModel: EventViewModel
     
+    // Add binding for selected tab
+    @Binding var selectedTab: Int
+    
     @State private var searchText = ""
     @State private var selectedFilter: TicketsFilter = .upcoming
 
@@ -115,15 +118,19 @@ struct TicketsView: View {
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
             }
-            Button("Browse Events") {
-                // Navigation to events
+            Button {
+                // Navigate to Home tab (index 0)
+                selectedTab = 0
+            } label: {
+                Text("Browse Events")
+                    .appBody()
+                    .foregroundColor(.black)
+                    .frame(maxWidth: 200)
+                    .padding(.vertical, 12)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            .appBody()
-            .foregroundColor(.black)
-            .frame(maxWidth: 200)
-            .padding(.vertical, 12)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .buttonStyle(PlainButtonStyle())
             
             Spacer()
         }
@@ -267,7 +274,7 @@ enum TicketsFilter: CaseIterable {
 }
 
 #Preview {
-    TicketsView()
+    TicketsView(selectedTab: .constant(2))
         .environmentObject(AppState().ticketsViewModel)
         .environmentObject(AppState().eventViewModel)
         .preferredColorScheme(.dark)

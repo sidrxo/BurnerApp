@@ -18,33 +18,23 @@ struct TicketPurchaseView: View {
     }
     
     var body: some View {
-        NavigationView {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            
             VStack(spacing: 12) {
-                // Event summary - more compact
-                HStack(spacing: 10) {
-                    KFImage(URL(string: event.imageUrl))
-                        .placeholder {
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.gray.opacity(0.3))
-                        }
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 44, height: 44)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                // Event summary - centered
+                VStack(spacing: 4) {
+                    Text(event.name)
+                        .appSectionHeader()
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
                     
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(event.name)
-                            .appSecondary()
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                        
-                        Text(event.venue)
-                            .appCaption()
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
-                    }
-                    
-                    Spacer()
+                    Text(event.venue)
+                        .appBody()
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(1)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
@@ -87,10 +77,17 @@ struct TicketPurchaseView: View {
                                 .scaleEffect(0.8)
                                 .tint(.black)
                         }
-                        
-                        Text(isPurchasing ? "Processing..." : "Purchase Ticket")
-                            .appBody()
-                            .foregroundColor(.black)
+                        HStack(spacing: 8) {
+                            Text(isPurchasing ? "Processing..." : "Pay with")
+                                .appFont(size: 22)
+                                .foregroundColor(.black)
+                            
+                            if !isPurchasing {
+                                Image(systemName: "creditcard")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.black)
+                            }
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)
@@ -102,22 +99,22 @@ struct TicketPurchaseView: View {
                 .padding(.top, showApplePayButton ? 0 : 4)
                 .padding(.bottom, 12)
             }
-            .background(Color.black)
-            .presentationDetents([.height(showApplePayButton ? 240 : 200)])
-            .alert(isPresented: $showingAlert) {
-                Alert(
-                    title: Text(isSuccess ? "Success!" : "Purchase Failed"),
-                    message: Text(alertMessage),
-                    dismissButton: .default(Text("OK")) {
-                        if isSuccess {
-                            presentationMode.wrappedValue.dismiss()
-                        }
+        }
+        .presentationDetents([.height(showApplePayButton ? 240 : 200)])
+        .presentationDragIndicator(.visible)
+        .alert(isPresented: $showingAlert) {
+            Alert(
+                title: Text(isSuccess ? "Success!" : "Purchase Failed"),
+                message: Text(alertMessage),
+                dismissButton: .default(Text("OK")) {
+                    if isSuccess {
+                        presentationMode.wrappedValue.dismiss()
                     }
-                )
-            }
-            .onAppear {
-                showApplePayButton = ApplePayHandler.canMakePayments()
-            }
+                }
+            )
+        }
+        .onAppear {
+            showApplePayButton = ApplePayHandler.canMakePayments()
         }
     }
     
