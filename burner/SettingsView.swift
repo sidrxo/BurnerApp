@@ -6,7 +6,7 @@ import ManagedSettings
 import Combine
 
 struct SettingsView: View {
-    // ✅ NEW: Access AppState to control sign-in sheet
+    // ✅ Access AppState to control sign-in sheet
     @EnvironmentObject var appState: AppState
     
     @State private var showingSignIn = false
@@ -15,9 +15,14 @@ struct SettingsView: View {
     @State private var isBurnerModeEnabled = false
     @State private var showingAppPicker = false
     @State private var showingBurnerSetup = false
-    @StateObject private var burnerManager = BurnerModeManager()
+    @State private var showingAutoEnabledAlert = false
     
     private let db = Firestore.firestore()
+    
+    // Use shared burner manager from AppState
+    private var burnerManager: BurnerModeManager {
+        appState.burnerManager
+    }
     
     var body: some View {
         NavigationView {
@@ -65,26 +70,7 @@ struct SettingsView: View {
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Burner Mode")
-                                            .appBody()
-                                            .foregroundColor(.white)
-                                    }
-                                    Spacer()
-                                    Toggle("", isOn: $isBurnerModeEnabled)
-                                        .toggleStyle(SwitchToggleStyle(tint: burnerManager.isSetupValid ? .blue : .gray))
-                                        .disabled(!burnerManager.isSetupValid)
-                                        .onChange(of: isBurnerModeEnabled) { oldValue, newValue in
-                                            if newValue {
-                                                burnerManager.enable()
-                                            } else {
-                                                burnerManager.disable()
-                                            }
-                                        }
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
+            
                                 
                                 NavigationLink(destination: SupportView()) {
                                     CustomMenuItemContent(title: "Help & Support", subtitle: "Get help, terms, privacy")
@@ -95,19 +81,7 @@ struct SettingsView: View {
                             #if DEBUG
                             CustomMenuSection(title: "DEBUG") {
                                 Button(action: {
-                                    // Reset onboarding for testing
-                                    let onboarding = OnboardingManager()
-                                    onboarding.resetOnboarding()
-                                    
-                                    // Restart the app to show onboarding
-                                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                                       let window = windowScene.windows.first {
-                                        window.rootViewController = UIHostingController(
-                                            rootView: ContentView()
-                                                .environmentObject(AppState())
-                                        )
-                                        window.makeKeyAndVisible()
-                                    }
+                                    resetOnboarding()
                                 }) {
                                     CustomMenuItemContent(
                                         title: "Reset Onboarding",
@@ -123,7 +97,10 @@ struct SettingsView: View {
                     }
                     .familyActivityPicker(
                         isPresented: $showingAppPicker,
-                        selection: $burnerManager.selectedApps
+                        selection: Binding(
+                            get: { burnerManager.selectedApps },
+                            set: { burnerManager.selectedApps = $0 }
+                        )
                     )
                 } else {
                     notSignedInSection
@@ -137,12 +114,26 @@ struct SettingsView: View {
             currentUser = Auth.auth().currentUser
             fetchUserRole()
             isBurnerModeEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
+            
+            // Setup notification observer for auto-enabled burner mode
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("BurnerModeAutoEnabled"),
+                object: nil,
+                queue: .main
+            ) { _ in
+                showingAutoEnabledAlert = true
+                isBurnerModeEnabled = true
+            }
+        }
+        .alert("Burner Mode Enabled", isPresented: $showingAutoEnabledAlert) {
+            Button("OK") { }
+        } message: {
+            Text("Burner Mode has been automatically enabled because your ticket was scanned for today's event.")
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
             currentUser = Auth.auth().currentUser
             fetchUserRole()
         }
-        // ✅ NEW: Listen for sign out events
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedOut"))) { _ in
             currentUser = nil
             userRole = ""
@@ -208,6 +199,16 @@ struct SettingsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
+    }
+    
+    // MARK: - Reset Onboarding (Fixed)
+    private func resetOnboarding() {
+        // Reset onboarding state
+        let onboarding = OnboardingManager()
+        onboarding.resetOnboarding()
+        
+        // Post notification to trigger app restart at root level
+        NotificationCenter.default.post(name: NSNotification.Name("ResetOnboarding"), object: nil)
     }
 }
 

@@ -1,5 +1,3 @@
-// PART 1: Update AppState.swift
-
 import SwiftUI
 import FirebaseAuth
 import Combine
@@ -12,13 +10,14 @@ class AppState: ObservableObject {
     @Published var bookmarkManager: BookmarkManager
     @Published var ticketsViewModel: TicketsViewModel
     @Published var authService: AuthenticationService
+    @Published var burnerModeMonitor: BurnerModeMonitor
     
     // MARK: - Global UI State
     @Published var isSignInSheetPresented = false
     @Published var showingError = false
     @Published var errorMessage: String?
     
-    // ✅ NEW: Track if user manually signed out
+    // ✅ Track if user manually signed out
     @Published var userDidSignOut = false
     
     // Add flag to track initial auth check
@@ -33,6 +32,9 @@ class AppState: ObservableObject {
     private let userRepository: UserRepository
     private let purchaseService: PurchaseService
     
+    // Burner Mode Manager (shared)
+    let burnerManager: BurnerModeManager
+    
     init() {
         // Initialize repositories (shared instances)
         self.eventRepository = EventRepository()
@@ -42,6 +44,9 @@ class AppState: ObservableObject {
         
         // Initialize services
         self.purchaseService = PurchaseService()
+        
+        // Initialize Burner Mode Manager
+        self.burnerManager = BurnerModeManager()
         
         // Initialize ViewModels with shared repositories
         self.eventViewModel = EventViewModel(
@@ -62,6 +67,9 @@ class AppState: ObservableObject {
         self.authService = AuthenticationService(
             userRepository: userRepository
         )
+        
+        // Initialize Burner Mode Monitor (will start monitoring immediately)
+        self.burnerModeMonitor = BurnerModeMonitor(burnerManager: burnerManager)
         
         setupObservers()
     }
@@ -121,6 +129,9 @@ class AppState: ObservableObject {
         // Fetch data when user signs in
         eventViewModel.fetchEvents()
         ticketsViewModel.fetchUserTickets()
+        
+        // Restart Burner Mode monitoring for new user
+        burnerModeMonitor.startMonitoring()
     }
     
     private func handleUserSignedOut() {
@@ -128,9 +139,12 @@ class AppState: ObservableObject {
         bookmarkManager.clearBookmarks()
         ticketsViewModel.cleanup()
         eventViewModel.cleanup()
+        
+        // Stop Burner Mode monitoring
+        burnerModeMonitor.stopMonitoring()
     }
     
-    // ✅ NEW: Method to handle manual sign out
+    // ✅ Method to handle manual sign out
     func handleManualSignOut() {
         userDidSignOut = true
         isSignInSheetPresented = false
@@ -169,4 +183,3 @@ extension EnvironmentValues {
         set { self[AppStateKey.self] = newValue }
     }
 }
-

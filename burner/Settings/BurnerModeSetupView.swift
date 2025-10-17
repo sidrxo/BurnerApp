@@ -8,6 +8,7 @@ struct BurnerModeSetupView: View {
     @State private var authorizationGranted = false
     @State private var showingAppPicker = false
     @ObservedObject var burnerManager: BurnerModeManager
+    var onSkip: (() -> Void)? = nil
     
     private let totalSteps = 3
     
@@ -16,15 +17,18 @@ struct BurnerModeSetupView: View {
             Color.black.ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Top bar with skip button
+                // Close button using CloseButton component
                 HStack {
                     Spacer()
-                    Button("Skip") {
-                        dismiss()
+                    CloseButton {
+                        if let onSkip = onSkip {
+                            onSkip()
+                        } else {
+                            dismiss()
+                        }
                     }
-                    .appBody()
-                    .foregroundColor(.gray)
-                    .padding()
+                    .padding(.trailing, 24)
+                    .padding(.top, 16)
                 }
                 
                 // Content area
@@ -112,7 +116,7 @@ struct BurnerModeSetupView: View {
     private func canProceed() -> Bool {
         switch currentStep {
         case 0: return true
-        case 1: return true // Always allow button press to request permission
+        case 1: return true
         case 2: return burnerManager.isSetupValid
         default: return false
         }
@@ -120,10 +124,8 @@ struct BurnerModeSetupView: View {
     
     private func handleNextButton() {
         if currentStep == 1 && !authorizationGranted {
-            // Request authorization and wait for it to complete
             requestAuthorization()
         } else if currentStep == 1 && authorizationGranted {
-            // Permission granted, move to next step
             withAnimation {
                 currentStep += 1
             }
@@ -135,7 +137,11 @@ struct BurnerModeSetupView: View {
             }
         } else {
             // Complete setup
-            dismiss()
+            if let onSkip = onSkip {
+                onSkip()
+            } else {
+                dismiss()
+            }
         }
     }
     
@@ -157,19 +163,25 @@ struct BurnerModeSetupView: View {
 struct WelcomeSlide: View {
     var body: some View {
         VStack(spacing: 0) {
-            // Fixed top spacing
+            // Fixed top spacing - consistent with other views
             Spacer()
-                .frame(height: 120)
+                .frame(height: 80)
             
             // Icon
-            Image(systemName: "flame.fill")
-                .font(.appLargeIcon)
-                .foregroundColor(.orange)
-                .padding(.bottom, 32)
+            ZStack {
+                Circle()
+                    .fill(Color.orange.opacity(0.1))
+                    .frame(width: 120, height: 120)
+                
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 60))
+                    .foregroundColor(.orange)
+            }
+            .padding(.bottom, 32)
             
             // Header text
             VStack(spacing: 12) {
-                Text("Welcome to Burner Mode")
+                Text("Welcome to Burner.")
                     .appPageHeader()
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
@@ -183,18 +195,18 @@ struct WelcomeSlide: View {
             .padding(.horizontal, 40)
             .padding(.bottom, 40)
             
-            // Feature list
-            VStack(alignment: .leading, spacing: 20) {
-                FeatureRow(
+            // Info boxes
+            VStack(spacing: 16) {
+                InfoBox(
                     icon: "lock.shield.fill",
-                    title: "Block All Apps",
-                    description: "Restrict access to all apps except essentials"
+                    text: "Block all apps except essentials during events",
+                    color: .blue
                 )
-                                
-                FeatureRow(
+                
+                InfoBox(
                     icon: "clock.fill",
-                    title: "Event-Based",
-                    description: "Automatically activates during events"
+                    text: "Automatically activates when you attend ticketed events",
+                    color: .blue
                 )
             }
             .padding(.horizontal, 40)
@@ -236,14 +248,14 @@ struct PermissionSlide: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Fixed top spacing
+            // Fixed top spacing - consistent with other views
             Spacer()
                 .frame(height: 80)
             
             // Icon
             ZStack {
                 Circle()
-                    .fill(Color.blue.opacity(0.1))
+                    .fill(authorizationGranted ? Color.green.opacity(0.1) : Color.blue.opacity(0.1))
                     .frame(width: 120, height: 120)
                 
                 Image(systemName: authorizationGranted ? "checkmark.shield.fill" : "shield.lefthalf.filled")
@@ -261,7 +273,7 @@ struct PermissionSlide: View {
                 
                 Text(authorizationGranted
                     ? "You're all set! Screen Time permissions have been granted."
-                    : "Burner Mode needs Screen Time permissions to block apps. This is required to continue.")
+                    : "Burner Mode needs Screen Time permissions to block apps. This is required.")
                     .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
@@ -270,30 +282,25 @@ struct PermissionSlide: View {
             .padding(.horizontal, 40)
             .padding(.bottom, 40)
             
-            // Status/Info section
+            // Info boxes
             if authorizationGranted {
-                HStack(spacing: 12) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                    Text("Screen Time Access Enabled")
-                        .appBody()
-                        .foregroundColor(.green)
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
-                .background(Color.green.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                InfoBox(
+                    icon: "checkmark.circle.fill",
+                    text: "Screen Time access enabled successfully",
+                    color: .green
+                )
                 .padding(.horizontal, 40)
             } else {
                 VStack(spacing: 16) {
                     InfoBox(
                         icon: "info.circle.fill",
-                        text: "This permission allows the app to manage which apps are accessible during Burner Mode."
+                        text: "This permission allows the app to manage which apps are accessible during Burner Mode.",
+                        color: .blue
                     )
                     
                     InfoBox(
                         icon: "hand.raised.fill",
-                        text: "Your privacy is protected. Burner does not read or collect any data about your Screen Time usage in other apps.",
+                        text: "Your privacy is protected. Burner does not read or collect any data about your Screen Time usage.",
                         color: .orange
                     )
                 }
@@ -337,7 +344,7 @@ struct CategorySelectionSlide: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Fixed top spacing
+            // Fixed top spacing - consistent with other views
             Spacer()
                 .frame(height: 80)
             
@@ -361,8 +368,8 @@ struct CategorySelectionSlide: View {
                     .multilineTextAlignment(.center)
                 
                 Text(burnerManager.isSetupValid
-                    ? "You've selected enough categories."
-                    : "Select all categories to enable Burner Mode.")
+                    ? "You've selected enough categories. You're ready to use Burner Mode."
+                    : "Select all app categories to enable Burner Mode blocking.")
                     .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
@@ -371,56 +378,32 @@ struct CategorySelectionSlide: View {
             .padding(.horizontal, 40)
             .padding(.bottom, 40)
             
-            // Status card
-            VStack(spacing: 12) {
-                HStack {
-                    Image(systemName: burnerManager.isSetupValid ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                        .foregroundColor(burnerManager.isSetupValid ? .green : .orange)
-                    
-                    Text(burnerManager.getSetupValidationMessage())
-                        .appBody()
-                        .foregroundColor(burnerManager.isSetupValid ? .green : .orange)
-                    
-                    Spacer()
-                }
+            // Info boxes
+            VStack(spacing: 16) {
+                InfoBox(
+                    icon: burnerManager.isSetupValid ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
+                    text: burnerManager.isSetupValid
+                        ? "Ready for Burner Mode - \(burnerManager.selectedApps.categoryTokens.count) categories selected"
+                        : "Select more categories - \(burnerManager.selectedApps.categoryTokens.count) of \(burnerManager.minimumCategoriesRequired) required",
+                    color: burnerManager.isSetupValid ? .green : .orange
+                )
                 
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Categories Selected")
-                            .appSecondary()
-                            .foregroundColor(.gray)
-                        Text("\(burnerManager.selectedApps.categoryTokens.count)")
-                            .appBody()
-                            .foregroundColor(.white)
+                if !burnerManager.isSetupValid {
+                    Button(action: {
+                        showingAppPicker = true
+                    }) {
+                        HStack {
+                            Image(systemName: "square.grid.3x3.fill")
+                            Text("Open Category Selector")
+                                .appBody()
+                        }
+                        .foregroundColor(.blue)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.blue.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
-                    
-                    Spacer()
-                }
-            }
-            .padding(20)
-            .background(Color.gray.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .padding(.horizontal, 40)
-            .padding(.bottom, 24)
-            
-            // Action buttons
-            if !burnerManager.isSetupValid {
-                Button(action: {
-                    showingAppPicker = true
-                }) {
-                    HStack {
-                        Image(systemName: "square.grid.3x3.fill")
-                        Text("Open Category Selector")
-                            .appBody()
-                    }
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(Color.blue.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-            } else {
-                VStack(spacing: 12) {
+                } else {
                     Button(action: {
                         showingAppPicker = true
                     }) {
@@ -430,17 +413,14 @@ struct CategorySelectionSlide: View {
                                 .appBody()
                         }
                         .foregroundColor(.blue)
-                        .padding(.horizontal, 24)
+                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(Color.blue.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
-                    
-                    Text("You can always change this later in Settings")
-                        .appCaption()
-                        .foregroundColor(.gray)
                 }
             }
+            .padding(.horizontal, 40)
             
             Spacer()
         }

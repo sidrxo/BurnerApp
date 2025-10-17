@@ -8,7 +8,6 @@ struct OnboardingFlowView: View {
     
     @State private var currentStep: OnboardingStep = .signIn
     @State private var showingSignIn = true
-    @State private var showingBurnerSetup = false
     @Environment(\.dismiss) private var dismiss
     
     enum OnboardingStep {
@@ -23,32 +22,24 @@ struct OnboardingFlowView: View {
             
             // Sign In Step
             if currentStep == .signIn {
-                SignInSheetView(showingSignIn: $showingSignIn)
-                    .transition(.opacity)
+                SignInSheetView(
+                    showingSignIn: $showingSignIn,
+                    onSkip: {
+                        skipOnboarding()
+                    }
+                )
+                .transition(.opacity)
             }
             
-            // Burner Setup Step
+            // Burner Setup Step - goes directly to setup
             if currentStep == .burnerSetup {
-                if showingBurnerSetup {
-                    BurnerModeSetupView(burnerManager: burnerManager)
-                        .interactiveDismissDisabled()
-                        .onDisappear {
-                            completeBurnerSetup()
-                        }
-                        .transition(.move(edge: .trailing))
-                } else {
-                    BurnerSetupPromptView(
-                        onSetup: {
-                            withAnimation {
-                                showingBurnerSetup = true
-                            }
-                        },
-                        onSkip: {
-                            skipBurnerSetup()
-                        }
-                    )
-                    .transition(.opacity)
-                }
+                BurnerModeSetupView(
+                    burnerManager: burnerManager,
+                    onSkip: {
+                        skipBurnerSetup()
+                    }
+                )
+                .transition(.move(edge: .trailing))
             }
         }
         .onChange(of: showingSignIn) { oldValue, newValue in
@@ -77,8 +68,8 @@ struct OnboardingFlowView: View {
             if authService.currentUser != nil {
                 handleUserSignIn()
             } else {
-                // User skipped sign in - complete onboarding
-                onboardingManager.completeOnboarding()
+                // User closed sign in - skip entire onboarding
+                skipOnboarding()
             }
         }
     }
@@ -94,101 +85,12 @@ struct OnboardingFlowView: View {
         }
     }
     
-    private func completeBurnerSetup() {
-        onboardingManager.completeBurnerSetup()
-        onboardingManager.completeOnboarding()
-    }
-    
     private func skipBurnerSetup() {
         onboardingManager.skipBurnerSetup()
     }
-}
-
-// MARK: - Burner Setup Prompt View
-struct BurnerSetupPromptView: View {
-    let onSetup: () -> Void
-    let onSkip: () -> Void
     
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                Spacer()
-                
-                // Icon
-                Image(systemName: "flame.fill")
-                    .font(.appLargeIcon)
-                    .foregroundColor(.orange)
-                    .padding(.bottom, 32)
-                
-                // Title and description
-                VStack(spacing: 16) {
-                    Text("Stay Focused at Events")
-                        .appPageHeader()
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                    
-                    Text("Set up Burner Mode to block distracting apps during events and stay present in the moment.")
-                        .appBody()
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 40)
-                }
-                .padding(.bottom, 48)
-                
-                // Features
-                VStack(alignment: .leading, spacing: 20) {
-                    FeatureRow(
-                        icon: "lock.shield.fill",
-                        title: "Block Distractions",
-                        description: "Restrict access to apps during events"
-                    )
-                    
-                    FeatureRow(
-                        icon: "clock.fill",
-                        title: "Automatic Activation",
-                        description: "Activates during your ticket events"
-                    )
-                    
-                    FeatureRow(
-                        icon: "hand.raised.fill",
-                        title: "Privacy Protected",
-                        description: "No data collection or tracking"
-                    )
-                }
-                .padding(.horizontal, 40)
-                .padding(.bottom, 60)
-                
-                Spacer()
-                
-                // Buttons
-                VStack(spacing: 16) {
-                    Button(action: onSetup) {
-                        Text("Set Up Burner Mode")
-                            .appBody()
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    
-                    Button(action: onSkip) {
-                        Text("Skip for Now")
-                            .appBody()
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.gray.opacity(0.2))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 40)
-            }
-        }
+    private func skipOnboarding() {
+        onboardingManager.completeOnboarding()
     }
 }
 

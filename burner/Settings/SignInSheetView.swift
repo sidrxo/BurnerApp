@@ -8,6 +8,8 @@ import CryptoKit
 
 struct SignInSheetView: View {
     @Binding var showingSignIn: Bool
+    var onSkip: (() -> Void)? = nil
+    
     @State private var isLoading = false
     @State private var errorMessage = ""
     @State private var showingError = false
@@ -41,26 +43,30 @@ struct SignInSheetView: View {
             .ignoresSafeArea(.all)
 
             VStack(spacing: 0) {
-                // Close button
+                // Close button - using CloseButton component
                 HStack {
                     Spacer()
-                    Button {
-                        showingSignIn = false  // Removed withAnimation wrapper
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.appIcon)
-                            .foregroundColor(.white)
-                            .frame(width: 32, height: 32)
-                            .background(Color.white.opacity(0.2))
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                            )
+                    CloseButton {
+                        if let onSkip = onSkip {
+                            onSkip()
+                        } else {
+                            showingSignIn = false
+                        }
                     }
                     .padding(.trailing, 24)
                     .padding(.top, 16)
                 }
+                
+                Spacer()
+                    .frame(height: UIScreen.main.bounds.height * 0.33 - 150)
+                
+                // Transparent logo image
+                Image("transparent")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120)
+                    .padding(.bottom, 60)
+
                 
                 Spacer()
                 
@@ -244,7 +250,6 @@ struct SignInSheetView: View {
         request.requestedScopes = [.fullName, .email]
         request.nonce = sha256(nonce)
         
-        // Store the delegate and presentation context provider to prevent deallocation
         let delegate = AppleSignInDelegate(
             currentNonce: nonce,
             onSuccess: { credential in
@@ -267,7 +272,6 @@ struct SignInSheetView: View {
         
         let contextProvider = ApplePresentationContextProvider()
         
-        // Store references to prevent deallocation
         self.appleSignInDelegate = delegate
         self.presentationContextProvider = contextProvider
         
@@ -447,7 +451,6 @@ struct SignInSheetView: View {
             triggerSuccessFeedback()
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
             
-            // Let fullScreenCover handle its own dismiss animation
             showingSignIn = false
         }
     }

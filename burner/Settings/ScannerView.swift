@@ -58,7 +58,8 @@ struct ScannerView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("QR Code Data:")
-    .appBody()                                .foregroundColor(.gray)
+                                .appBody()
+                                .foregroundColor(.gray)
                             
                             Text(scannedValue)
                                 .appBody()
@@ -205,7 +206,7 @@ struct ScannerView: View {
                    let role = data["role"] as? String {
                     userRole = role
                 } else {
-                    userRole = "user" // default role
+                    userRole = "user"
                 }
             }
         }
@@ -217,7 +218,6 @@ struct ScannerView: View {
         switch result {
         case .success(let result):
             scannedValue = result.string
-            // Auto-process if it looks like a ticket QR code
             if isTicketQRCode(result.string) {
                 processTicketScan()
             }
@@ -228,11 +228,9 @@ struct ScannerView: View {
     }
     
     private func isTicketQRCode(_ qrData: String) -> Bool {
-        // Check if it's JSON format
         if let _ = try? JSONSerialization.jsonObject(with: Data(qrData.utf8)) {
             return qrData.contains("EVENT_TICKET") || qrData.contains("ticketId")
         }
-        // Check if it's the legacy format
         return qrData.contains("TICKET:") && qrData.contains("EVENT:")
     }
     
@@ -246,7 +244,6 @@ struct ScannerView: View {
         
         isProcessing = true
         
-        // Parse QR code data
         if let ticketData = parseQRCode(scannedValue) {
             markTicketAsUsed(ticketData: ticketData)
         } else {
@@ -257,7 +254,7 @@ struct ScannerView: View {
     }
     
     private func parseQRCode(_ qrData: String) -> TicketQRData? {
-        // Try parsing as JSON first (new format)
+        // Try parsing as JSON first
         if let data = qrData.data(using: .utf8),
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             
@@ -274,7 +271,7 @@ struct ScannerView: View {
             )
         }
         
-        // Fallback to legacy format parsing
+        // Fallback to legacy format
         let components = qrData.components(separatedBy: ":")
         guard components.count >= 6,
               components[0] == "TICKET",
@@ -290,7 +287,6 @@ struct ScannerView: View {
         let eventId = components[eventIdIndex + 1]
         let userId = components[userIdIndex + 1]
         
-        // Try to find ticket number
         var ticketNumber: String?
         if let numberIndex = components.firstIndex(of: "NUMBER"), numberIndex + 1 < components.count {
             ticketNumber = components[numberIndex + 1]
@@ -305,9 +301,9 @@ struct ScannerView: View {
     }
     
     private func markTicketAsUsed(ticketData: TicketQRData) {
-        // Update ticket in main tickets collection
         let ticketRef = db.collection("tickets").document(ticketData.ticketId)
         
+        // ✅ UPDATED: Add usedAt timestamp for Burner Mode monitoring
         let updateData: [String: Any] = [
             "status": "used",
             "usedAt": Timestamp(),
@@ -322,13 +318,16 @@ struct ScannerView: View {
                     errorMessage = "Failed to update ticket: \(error.localizedDescription)"
                     showingError = true
                 } else {
-                    // Also update in user's subcollection if userId is available
+                    // Also update in user's subcollection
                     if let userId = ticketData.userId {
-                        let userTicketRef = db.collection("users").document(userId).collection("tickets").document(ticketData.ticketId)
+                        let userTicketRef = db.collection("users")
+                            .document(userId)
+                            .collection("tickets")
+                            .document(ticketData.ticketId)
                         userTicketRef.updateData(updateData)
                     }
                     
-                    successMessage = "Ticket successfully marked as used!\n\nTicket: \(ticketData.ticketNumber ?? ticketData.ticketId)"
+                    successMessage = "Ticket successfully marked as used!\n\nTicket: \(ticketData.ticketNumber ?? ticketData.ticketId)\n\n🔥 Burner Mode will auto-enable for this user."
                     showingSuccess = true
                 }
             }

@@ -16,6 +16,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct BurnerApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var appState = AppState()
+    @State private var shouldResetApp = false
     
     var body: some Scene {
         WindowGroup {
@@ -30,6 +31,7 @@ struct BurnerApp: App {
                 }
                 .onAppear {
                     appState.loadInitialData()
+                    setupResetObserver()
                 }
                 .alert("Error", isPresented: $appState.showingError) {
                     Button("OK") {
@@ -40,6 +42,18 @@ struct BurnerApp: App {
                         Text(errorMessage)
                     }
                 }
+                .id(shouldResetApp) // Forces view recreation when this changes
+        }
+    }
+    
+    private func setupResetObserver() {
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("ResetOnboarding"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            // Toggle the state to force view recreation
+            shouldResetApp.toggle()
         }
     }
 }
