@@ -106,7 +106,6 @@ struct UnifiedEventRow: View {
             // Status badges for tickets
             statusBadges
             
-            // Price (only for event list)
         
         }
     }

@@ -2,8 +2,10 @@ import SwiftUI
 import Kingfisher
 
 struct HomeView: View {
-    @StateObject private var eventViewModel = EventViewModel()
-    @StateObject private var bookmarkManager = BookmarkManager()
+    // ✅ Use shared ViewModels from environment instead of creating new instances
+    @EnvironmentObject var eventViewModel: EventViewModel
+    @EnvironmentObject var bookmarkManager: BookmarkManager
+    
     @State private var searchText = ""
     @State private var selectedEvent: Event? = nil
 
@@ -34,36 +36,16 @@ struct HomeView: View {
                 VStack(spacing: 0) {
                     HeaderSection(title: "Explore")
                     
-                    if let featured = featuredEvent {
-                        NavigationLink(value: featured) {
-                            FeaturedHeroCard(event: featured, bookmarkManager: bookmarkManager)
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 40)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                    if eventViewModel.isLoading && eventViewModel.events.isEmpty {
+                        loadingView
+                    } else {
+                        contentView
                     }
-                                        
-                    PopularEventsSection(events: popularEvents, bookmarkManager: bookmarkManager)
-                    UpcomingEventsSection(events: upcomingEvents, bookmarkManager: bookmarkManager)
-                    
-                    if let secondFeatured = secondFeaturedEvent {
-                        NavigationLink(value: secondFeatured) {
-                            FeaturedHeroCard(event: secondFeatured, bookmarkManager: bookmarkManager)
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 40)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    
-                    AllEventsSection(events: allEvents, bookmarkManager: bookmarkManager)
                 }
                 .padding(.bottom, 100)
             }
             .navigationBarHidden(true)
             .background(Color.black)
-            .onAppear {
-                eventViewModel.fetchEvents()
-            }
             .refreshable {
                 eventViewModel.fetchEvents()
             }
@@ -72,178 +54,131 @@ struct HomeView: View {
             }
         }
     }
-}
-
-
-// MARK: - Popular Events Section
-struct PopularEventsSection: View {
-    let events: [Event]
-    let bookmarkManager: BookmarkManager
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Popular")
-                    .appSectionHeader()
-                    .foregroundColor(.white)
-                
-                Spacer()
-                
-                Button(action: {}) {
-                    Image(systemName: "chevron.right")
-                        .appBody()
-                        .foregroundColor(.gray)
-                        .frame(width: 32, height: 32)
-                        .background(Color.gray.opacity(0.2))
-                        .clipShape(Circle())
-                }
-            }
-            .padding(.horizontal, 20)
-            
-            LazyVStack(spacing: 12) {
-                ForEach(events) { event in
-                    NavigationLink(value: event) {
-                        EventListRow(event: event, bookmarkManager: bookmarkManager)
-                            .padding(.horizontal, 20)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-        }
-        .padding(.bottom, 40)
-    }
-}
-
-// MARK: - Upcoming Events Section
-struct UpcomingEventsSection: View {
-    let events: [Event]
-    let bookmarkManager: BookmarkManager
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Upcoming")
-                    .appSectionHeader()
-                    .appSectionHeader()
-                
-                Spacer()
-                
-                Button(action: {}) {
-                    Image(systemName: "chevron.right")
-                        .font(.appIcon)
-                        .foregroundColor(.gray)
-                        .frame(width: 32, height: 32)
-                        .background(Color.gray.opacity(0.2))
-                        .clipShape(Circle())
-                }
-            }
-            .padding(.horizontal, 20)
-            
-            LazyVStack(spacing: 12) {
-                ForEach(events) { event in
-                    NavigationLink(value: event) {
-                        EventListRow(event: event, bookmarkManager: bookmarkManager)
-                            .padding(.horizontal, 20)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-        }
-        .padding(.bottom, 40)
-    }
-}
-
-// MARK: - All Events Section
-struct AllEventsSection: View {
-    let events: [Event]
-    let bookmarkManager: BookmarkManager
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("All Events")
-                    .appSectionHeader()
-                    .foregroundColor(.white)
-                
-                Spacer()
-                
-                Button(action: {}) {
-                    Image(systemName: "chevron.right")
-                        .font(.appIcon)
-                        .foregroundColor(.gray)
-                        .frame(width: 32, height: 32)
-                        .background(Color.gray.opacity(0.2))
-                        .clipShape(Circle())
-                }
-            }
-            .padding(.horizontal, 20)
-            
-            LazyVStack(spacing: 12) {
-                ForEach(events) { event in
-                    NavigationLink(value: event) {
-                        EventListRow(event: event, bookmarkManager: bookmarkManager)
-                            .padding(.horizontal, 20)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-        }
-        .padding(.bottom, 40)
-    }
-}
-
-// MARK: - Event List Row
-struct EventListRow: View {
-    let event: Event
-    @ObservedObject var bookmarkManager: BookmarkManager
     
-    private var isBookmarked: Bool {
-        guard let eventId = event.id else { return false }
-        return bookmarkManager.isBookmarked(eventId)
+    // MARK: - Loading View
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.2)
+                .tint(.white)
+            Text("Loading events...")
+                .appBody()
+                .foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 300)
+    }
+    
+    // MARK: - Content View
+    private var contentView: some View {
+        VStack(spacing: 0) {
+            if let featured = featuredEvent {
+                NavigationLink(value: featured) {
+                    FeaturedHeroCard(event: featured, bookmarkManager: bookmarkManager)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 40)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+                                
+            if !popularEvents.isEmpty {
+                EventSection(
+                    title: "Popular",
+                    events: popularEvents,
+                    bookmarkManager: bookmarkManager
+                )
+            }
+            
+            if !upcomingEvents.isEmpty {
+                EventSection(
+                    title: "Upcoming",
+                    events: upcomingEvents,
+                    bookmarkManager: bookmarkManager
+                )
+            }
+            
+            if let secondFeatured = secondFeaturedEvent {
+                NavigationLink(value: secondFeatured) {
+                    FeaturedHeroCard(event: secondFeatured, bookmarkManager: bookmarkManager)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 40)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            
+            if !allEvents.isEmpty {
+                EventSection(
+                    title: "All Events",
+                    events: allEvents,
+                    bookmarkManager: bookmarkManager
+                )
+            }
+        }
+    }
+}
+
+// MARK: - Reusable Event Section Component
+struct EventSection: View {
+    let title: String
+    let events: [Event]
+    let bookmarkManager: BookmarkManager
+    let showViewAllButton: Bool
+    let onViewAllTapped: (() -> Void)?
+    
+    init(
+        title: String,
+        events: [Event],
+        bookmarkManager: BookmarkManager,
+        showViewAllButton: Bool = true,
+        onViewAllTapped: (() -> Void)? = nil
+    ) {
+        self.title = title
+        self.events = events
+        self.bookmarkManager = bookmarkManager
+        self.showViewAllButton = showViewAllButton
+        self.onViewAllTapped = onViewAllTapped
     }
     
     var body: some View {
-        HStack(spacing: 12) {
-            KFImage(URL(string: event.imageUrl))
-                .placeholder {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.3))
-                }
-                .resizable()
-                .scaledToFill()
-                .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(event.name)
-                    .appBody()
+        VStack(alignment: .leading, spacing: 16) {
+            // Section Header
+            HStack {
+                Text(title)
+                    .appSectionHeader()
                     .foregroundColor(.white)
-                    .lineLimit(1)
                 
-                Text(event.date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
-                    .appSecondary()
-                    .foregroundColor(.gray)
+                Spacer()
                 
-                Text(event.venue)
-                    .appSecondary()
-                    .foregroundColor(.gray)
-                    .lineLimit(1)
-            }
-            
-            Spacer()
-            
-            Button(action: {
-                Task {
-                    await bookmarkManager.toggleBookmark(for: event)
+                if showViewAllButton {
+                    Button(action: {
+                        onViewAllTapped?()
+                    }) {
+                        Image(systemName: "chevron.right")
+                            .font(.appIcon)
+                            .foregroundColor(.gray)
+                            .frame(width: 32, height: 32)
+                            .background(Color.gray.opacity(0.2))
+                            .clipShape(Circle())
+                    }
                 }
-            }) {
-                Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                    .font(.appIcon)
-                    .foregroundColor(isBookmarked ? .white : .gray)
-                    .scaleEffect(isBookmarked ? 1.1 : 1.0)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: isBookmarked)
+            }
+            .padding(.horizontal, 20)
+            
+            // Event List
+            LazyVStack(spacing: 12) {
+                ForEach(events) { event in
+                    NavigationLink(value: event) {
+                        UnifiedEventRow(
+                            event: event,
+                            bookmarkManager: bookmarkManager
+                        )
+                        .padding(.horizontal, 20)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
             }
         }
+        .padding(.bottom, 40)
     }
 }
 
@@ -251,6 +186,8 @@ struct EventListRow: View {
 struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
         HomeView()
+            .environmentObject(AppState().eventViewModel)
+            .environmentObject(AppState().bookmarkManager)
             .preferredColorScheme(.dark)
     }
 }

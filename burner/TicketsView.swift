@@ -1,22 +1,20 @@
 import SwiftUI
 import Kingfisher
-import FirebaseFirestore
 import FirebaseAuth
 import Combine
 
 struct TicketsView: View {
-    @StateObject private var viewModel = EventViewModel()
-    @State private var tickets: [Ticket] = []
-    @State private var isLoadingTickets = false
+    // ✅ Use shared ViewModels from environment
+    @EnvironmentObject var ticketsViewModel: TicketsViewModel
+    @EnvironmentObject var eventViewModel: EventViewModel
+    
     @State private var searchText = ""
-    @State private var selectedFilter: TicketsFilter = .upcoming // default to upcoming
-
-    private let db = Firestore.firestore()
+    @State private var selectedFilter: TicketsFilter = .upcoming
 
     private var ticketsWithEvents: [TicketWithEventData] {
         var result: [TicketWithEventData] = []
-        for ticket in tickets {
-            if let event = viewModel.events.first(where: { $0.id == ticket.eventId }) {
+        for ticket in ticketsViewModel.tickets {
+            if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
                 result.append(TicketWithEventData(ticket: ticket, event: event))
             } else {
                 // Create a placeholder event if event data is missing
@@ -65,7 +63,6 @@ struct TicketsView: View {
     }
 
     private var upcomingTickets: [TicketWithEventData] {
-        // Show all tickets (including used ones) as long as the event isn't past 6AM next day
         filteredTickets.filter { !isEventPast($0.event.date) }
     }
 
@@ -76,15 +73,15 @@ struct TicketsView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                if !tickets.isEmpty || isLoadingTickets || viewModel.isLoading {
+                if !ticketsViewModel.tickets.isEmpty || ticketsViewModel.isLoading {
                     HeaderSection(title: "My Tickets")
                     searchSection
                     filtersSection
                 }
                 
-                if isLoadingTickets || viewModel.isLoading {
+                if ticketsViewModel.isLoading && ticketsViewModel.tickets.isEmpty {
                     loadingView
-                } else if tickets.isEmpty {
+                } else if ticketsViewModel.tickets.isEmpty {
                     emptyStateView
                 } else if filteredTickets.isEmpty {
                     emptyFilteredView
@@ -94,13 +91,9 @@ struct TicketsView: View {
             }
             .background(Color.black)
             .navigationBarHidden(true)
-            .onAppear {
-                viewModel.fetchEvents()
-                fetchUserTicketsDirectly()
-            }
             .refreshable {
-                viewModel.fetchEvents()
-                fetchUserTicketsDirectly()
+                ticketsViewModel.fetchUserTickets()
+                eventViewModel.fetchEvents()
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
@@ -141,7 +134,6 @@ struct TicketsView: View {
     // MARK: - Search Bar
     private var searchSection: some View {
         VStack(spacing: 16) {
-            // Search Bar
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
                     .appBody()
@@ -178,40 +170,6 @@ struct TicketsView: View {
         .padding(.bottom, 16)
     }
 
-    // MARK: - Firestore Query
-    private func fetchUserTicketsDirectly() {
-        guard let userId = Auth.auth().currentUser?.uid else {
-            print("❌ No authenticated user")
-            return
-        }
-        isLoadingTickets = true
-        db.collection("tickets")
-            .whereField("userId", isEqualTo: userId)
-            .order(by: "purchaseDate", descending: true)
-            .addSnapshotListener { snapshot, error in
-                DispatchQueue.main.async {
-                    isLoadingTickets = false
-                    if let error = error {
-                        print("❌ Error fetching tickets: \(error.localizedDescription)")
-                        return
-                    }
-                    guard let documents = snapshot?.documents else {
-                        tickets = []
-                        return
-                    }
-                    tickets = documents.compactMap { doc in
-                        do {
-                            var ticket = try doc.data(as: Ticket.self)
-                            ticket.id = doc.documentID
-                            return ticket
-                        } catch {
-                            return nil
-                        }
-                    }
-                }
-            }
-    }
-
     private var loadingView: some View {
         VStack(spacing: 16) {
             ProgressView()
@@ -224,7 +182,6 @@ struct TicketsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
     }
-
 
     private var emptyFilteredView: some View {
         VStack(spacing: 16) {
@@ -249,7 +206,7 @@ struct TicketsView: View {
     private var ticketsList: some View {
         ScrollView {
             LazyVStack(spacing: 20) {
-                // Upcoming Events Section (no header)
+                // Upcoming Events Section
                 if !upcomingTickets.isEmpty {
                     LazyVStack(spacing: 12) {
                         ForEach(upcomingTickets, id: \.ticket.id) { ticketWithEvent in
@@ -268,11 +225,10 @@ struct TicketsView: View {
                         }
                     }
                 }
-                // Past Events Section - Always Displayed
+                
+                // Past Events Section
                 if !pastTickets.isEmpty {
                     VStack(alignment: .leading, spacing: 16) {
-              
-                        
                         LazyVStack(spacing: 12) {
                             ForEach(pastTickets, id: \.ticket.id) { ticketWithEvent in
                                 NavigationLink(
@@ -312,5 +268,7 @@ enum TicketsFilter: CaseIterable {
 
 #Preview {
     TicketsView()
+        .environmentObject(AppState().ticketsViewModel)
+        .environmentObject(AppState().eventViewModel)
         .preferredColorScheme(.dark)
 }

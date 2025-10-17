@@ -2,8 +2,10 @@ import SwiftUI
 import Kingfisher
 
 struct ExploreView: View {
-    @StateObject private var eventViewModel = EventViewModel()
-    @StateObject private var bookmarkManager = BookmarkManager()
+    // ✅ Use shared ViewModels from environment
+    @EnvironmentObject var eventViewModel: EventViewModel
+    @EnvironmentObject var bookmarkManager: BookmarkManager
+    
     @State private var searchText = ""
     @State private var sortBy: SortOption = .date
     
@@ -51,9 +53,6 @@ struct ExploreView: View {
             }
             .navigationBarHidden(true)
             .background(Color.black)
-            .onAppear {
-                eventViewModel.fetchEvents()
-            }
             .refreshable {
                 eventViewModel.fetchEvents()
             }
@@ -62,7 +61,7 @@ struct ExploreView: View {
     
     private var searchSection: some View {
         HStack(spacing: 12) {
-            // Search Bar with reduced width
+            // Search Bar
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
                     .font(.appIcon)
@@ -76,8 +75,6 @@ struct ExploreView: View {
             .padding(.vertical, 14)
             .background(Color(.systemGray6))
             .clipShape(RoundedRectangle(cornerRadius: 25))
-            
-            // Location button
         }
         .padding(.horizontal, 20)
     }
@@ -115,10 +112,8 @@ struct ExploreView: View {
         VStack(alignment: .leading, spacing: 0) {
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    if eventViewModel.isLoading {
-                        ProgressView("Loading events...")
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity, maxHeight: 200)
+                    if eventViewModel.isLoading && eventViewModel.events.isEmpty {
+                        loadingView
                     } else if filteredEvents.isEmpty {
                         EmptyEventsView(searchText: searchText)
                     } else {
@@ -136,6 +131,19 @@ struct ExploreView: View {
                 .padding(.bottom, 100)
             }
         }
+    }
+    
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.2)
+                .tint(.white)
+            Text("Loading events...")
+                .appBody()
+                .foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 200)
     }
 }
 
@@ -167,10 +175,11 @@ struct EmptyEventsView: View {
 }
 
 // MARK: - Preview
-
 struct ExploreView_Previews: PreviewProvider {
     static var previews: some View {
         ExploreView()
+            .environmentObject(AppState().eventViewModel)
+            .environmentObject(AppState().bookmarkManager)
             .preferredColorScheme(.dark)
     }
 }
