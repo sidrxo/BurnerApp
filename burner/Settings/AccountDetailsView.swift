@@ -1,8 +1,12 @@
+
 import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
 
 struct AccountDetailsView: View {
+    // ✅ NEW: Access AppState
+    @EnvironmentObject var appState: AppState
+    
     @State private var displayName = ""
     @State private var email = ""
     @State private var showingSignOut = false
@@ -18,7 +22,8 @@ struct AccountDetailsView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Name")
-.appBody()                            .foregroundColor(.white)
+                            .appBody()
+                            .foregroundColor(.white)
                         Text(displayName.isEmpty ? "(No Name Set)" : displayName)
                             .appSecondary()
                             .foregroundColor(.gray)
@@ -27,10 +32,12 @@ struct AccountDetailsView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
+                
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Email")
-.appBody()                            .foregroundColor(.white)
+                            .appBody()
+                            .foregroundColor(.white)
                         Text(email.isEmpty ? "(No Email Set)" : email)
                             .appSecondary()
                             .foregroundColor(.gray)
@@ -40,11 +47,13 @@ struct AccountDetailsView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
             }
+            
             CustomMenuSection(title: "ACCOUNT ACTIONS") {
                 Button(action: { showingSignOut = true }) {
                     HStack {
                         Text("Sign Out")
-.appBody()                            .foregroundColor(.red)
+                            .appBody()
+                            .foregroundColor(.red)
                         Spacer()
                         if isSigningOut {
                             ProgressView()
@@ -56,10 +65,12 @@ struct AccountDetailsView: View {
                     .padding(.vertical, 12)
                 }
                 .disabled(isSigningOut)
+                
                 Button(action: { showingDeleteAccount = true }) {
                     HStack {
                         Text("Delete Account")
-.appBody()                            .foregroundColor(.red)
+                            .appBody()
+                            .foregroundColor(.red)
                         Spacer()
                     }
                     .padding(.horizontal, 16)
@@ -102,7 +113,15 @@ struct AccountDetailsView: View {
     private func signOut() {
         isSigningOut = true
         do {
+            // ✅ FIXED: Notify AppState before signing out
+            appState.handleManualSignOut()
+            
             try Auth.auth().signOut()
+            
+            // ✅ Post notification for SettingsView to update
+            NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
+            
+            // Dismiss the view
             presentationMode.wrappedValue.dismiss()
         } catch {
             print("Error signing out: \(error.localizedDescription)")
@@ -112,10 +131,17 @@ struct AccountDetailsView: View {
     
     private func deleteAccount() {
         guard let user = Auth.auth().currentUser else { return }
+        
+        // ✅ FIXED: Notify AppState before deleting account
+        appState.handleManualSignOut()
+        
         user.delete { error in
             if let error = error {
                 print("Error deleting account: \(error.localizedDescription)")
             } else {
+                // ✅ Post notification
+                NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
+                
                 presentationMode.wrappedValue.dismiss()
             }
         }

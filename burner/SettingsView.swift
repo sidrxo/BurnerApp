@@ -6,6 +6,9 @@ import ManagedSettings
 import Combine
 
 struct SettingsView: View {
+    // ✅ NEW: Access AppState to control sign-in sheet
+    @EnvironmentObject var appState: AppState
+    
     @State private var showingSignIn = false
     @State private var currentUser: FirebaseAuth.User?
     @State private var userRole: String = ""
@@ -52,7 +55,6 @@ struct SettingsView: View {
                             
                             // APP Section
                             CustomMenuSection(title: "APP") {
-                                // Setup Burner Mode Button
                                 Button(action: {
                                     showingBurnerSetup = true
                                 }) {
@@ -88,6 +90,33 @@ struct SettingsView: View {
                                     CustomMenuItemContent(title: "Help & Support", subtitle: "Get help, terms, privacy")
                                 }
                             }
+                            
+                            // DEBUG Section
+                            #if DEBUG
+                            CustomMenuSection(title: "DEBUG") {
+                                Button(action: {
+                                    // Reset onboarding for testing
+                                    let onboarding = OnboardingManager()
+                                    onboarding.resetOnboarding()
+                                    
+                                    // Restart the app to show onboarding
+                                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                       let window = windowScene.windows.first {
+                                        window.rootViewController = UIHostingController(
+                                            rootView: ContentView()
+                                                .environmentObject(AppState())
+                                        )
+                                        window.makeKeyAndVisible()
+                                    }
+                                }) {
+                                    CustomMenuItemContent(
+                                        title: "Reset Onboarding",
+                                        subtitle: "Show first-time setup again"
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                            #endif
                         }
                         .padding(.horizontal, 20)
                         .padding(.bottom, 100)
@@ -112,6 +141,11 @@ struct SettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
             currentUser = Auth.auth().currentUser
             fetchUserRole()
+        }
+        // ✅ NEW: Listen for sign out events
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedOut"))) { _ in
+            currentUser = nil
+            userRole = ""
         }
         .fullScreenCover(isPresented: $showingSignIn) {
             SignInSheetView(showingSignIn: $showingSignIn)
@@ -176,7 +210,6 @@ struct SettingsView: View {
         .background(Color.black)
     }
 }
-
 
 struct CustomMenuSection<Content: View>: View {
     let title: String

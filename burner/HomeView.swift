@@ -2,32 +2,61 @@ import SwiftUI
 import Kingfisher
 
 struct HomeView: View {
-    // ✅ Use shared ViewModels from environment instead of creating new instances
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var bookmarkManager: BookmarkManager
     
     @State private var searchText = ""
     @State private var selectedEvent: Event? = nil
 
+    // MARK: - Featured Events (Randomized by Day)
+    var featuredEvents: [Event] {
+        let featured = eventViewModel.events.filter { $0.isFeatured }
+        
+        // Seed random with current day for consistent daily rotation
+        let calendar = Calendar.current
+        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: Date()) ?? 0
+        
+        var rng = SeededRandomNumberGenerator(seed: UInt64(dayOfYear))
+        return featured.shuffled(using: &rng)
+    }
+    
     var featuredEvent: Event? {
-        eventViewModel.events.filter { $0.isFeatured }.first
+        featuredEvents.first
     }
     
     var secondFeaturedEvent: Event? {
-        let featuredEvents = eventViewModel.events.filter { $0.isFeatured }
-        return featuredEvents.count > 1 ? featuredEvents[1] : nil
+        featuredEvents.count > 1 ? featuredEvents[1] : nil
     }
     
+    // MARK: - Popular Events (Sorted by Ticket Sell-Through %)
     var popularEvents: [Event] {
-        eventViewModel.events.filter { !$0.isFeatured }.prefix(4).map { $0 }
+        eventViewModel.events
+            .filter { !$0.isFeatured && $0.date > Date() }
+            .sorted { event1, event2 in
+                let sellThrough1 = Double(event1.ticketsSold) / Double(max(event1.maxTickets, 1))
+                let sellThrough2 = Double(event2.ticketsSold) / Double(max(event2.maxTickets, 1))
+                return sellThrough1 > sellThrough2
+            }
+            .prefix(5)  // ✅ CHANGED FROM 4 TO 5
+            .map { $0 }
     }
     
+    // MARK: - Upcoming Events (Sorted by Date - Soonest First)
     var upcomingEvents: [Event] {
-        eventViewModel.events.filter { $0.date > Date() }.prefix(4).map { $0 }
+        eventViewModel.events
+            .filter { $0.date > Date() && !$0.isFeatured }
+            .sorted { $0.date < $1.date }
+            .prefix(5)  // ✅ CHANGED FROM 4 TO 5
+            .map { $0 }
     }
     
+    // MARK: - All Events (Sorted by Date)
     var allEvents: [Event] {
-        Array(eventViewModel.events.prefix(6))
+        eventViewModel.events
+            .filter { $0.date > Date() }
+            .sorted { $0.date < $1.date }
+            .prefix(6)
+            .map { $0 }
     }
     
     var body: some View {
@@ -69,6 +98,7 @@ struct HomeView: View {
     // MARK: - Content View
     private var contentView: some View {
         VStack(spacing: 0) {
+            // Primary Featured Event
             if let featured = featuredEvent {
                 NavigationLink(value: featured) {
                     FeaturedHeroCard(event: featured, bookmarkManager: bookmarkManager)
@@ -77,7 +107,8 @@ struct HomeView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
             }
-                                
+            
+            // Popular Section (by ticket sales %)
             if !popularEvents.isEmpty {
                 EventSection(
                     title: "Popular",
@@ -86,6 +117,7 @@ struct HomeView: View {
                 )
             }
             
+            // Upcoming Section (by date proximity)
             if !upcomingEvents.isEmpty {
                 EventSection(
                     title: "Upcoming",
@@ -94,6 +126,7 @@ struct HomeView: View {
                 )
             }
             
+            // Secondary Featured Event
             if let secondFeatured = secondFeaturedEvent {
                 NavigationLink(value: secondFeatured) {
                     FeaturedHeroCard(event: secondFeatured, bookmarkManager: bookmarkManager)
@@ -103,6 +136,7 @@ struct HomeView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             
+            // All Events Section
             if !allEvents.isEmpty {
                 EventSection(
                     title: "All Events",
@@ -111,6 +145,20 @@ struct HomeView: View {
                 )
             }
         }
+    }
+}
+
+// MARK: - Seeded Random Number Generator
+struct SeededRandomNumberGenerator: RandomNumberGenerator {
+    private var state: UInt64
+    
+    init(seed: UInt64) {
+        state = seed
+    }
+    
+    mutating func next() -> UInt64 {
+        state = state &* 6364136223846793005 &+ 1442695040888963407
+        return state
     }
 }
 
@@ -161,8 +209,8 @@ struct EventSection: View {
             }
             .padding(.horizontal, 20)
             
-            // Event List
-            LazyVStack(spacing: 12) {
+            // Event List - ✅ CHANGED TO SPACING: 0 FOR TIGHTER ROWS
+            LazyVStack(spacing: 0) {
                 ForEach(events) { event in
                     NavigationLink(value: event) {
                         UnifiedEventRow(

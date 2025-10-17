@@ -1,3 +1,5 @@
+// PART 1: Update AppState.swift
+
 import SwiftUI
 import FirebaseAuth
 import Combine
@@ -15,6 +17,9 @@ class AppState: ObservableObject {
     @Published var isSignInSheetPresented = false
     @Published var showingError = false
     @Published var errorMessage: String?
+    
+    // ✅ NEW: Track if user manually signed out
+    @Published var userDidSignOut = false
     
     // Add flag to track initial auth check
     private var hasCompletedInitialAuthCheck = false
@@ -81,9 +86,14 @@ class AppState: ObservableObject {
                 
                 // After initial check, handle sign-in/sign-out normally
                 if user == nil {
-                    self.isSignInSheetPresented = true
+                    // ✅ FIXED: Only show sign-in sheet if user didn't manually sign out
+                    if !self.userDidSignOut {
+                        self.isSignInSheetPresented = true
+                    }
                     self.handleUserSignedOut()
                 } else {
+                    // ✅ Reset the sign-out flag when user signs back in
+                    self.userDidSignOut = false
                     self.handleUserSignedIn()
                 }
             }
@@ -120,6 +130,12 @@ class AppState: ObservableObject {
         eventViewModel.cleanup()
     }
     
+    // ✅ NEW: Method to handle manual sign out
+    func handleManualSignOut() {
+        userDidSignOut = true
+        isSignInSheetPresented = false
+    }
+    
     // MARK: - Global Error Handler
     func showError(_ message: String) {
         errorMessage = message
@@ -153,3 +169,4 @@ extension EnvironmentValues {
         set { self[AppStateKey.self] = newValue }
     }
 }
+

@@ -103,7 +103,7 @@ struct SignInSheetView: View {
                 HStack(spacing: 12) {
                     Image("google_logo")
                         .resizable()
-                        .frame(width: 20, height: 20)
+                        .frame(width: 22, height: 22)
                     
                     Text("Continue with Google")
                         .appBody()
