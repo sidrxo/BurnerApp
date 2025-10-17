@@ -2,7 +2,8 @@ import SwiftUI
 import Kingfisher
 
 struct BookmarksView: View {
-    @StateObject private var bookmarkManager = BookmarkManager()
+    // Use @EnvironmentObject instead of @StateObject
+    @EnvironmentObject var bookmarkManager: BookmarkManager
     @State private var searchText = ""
     
     private var filteredBookmarks: [Event] {
@@ -121,7 +122,7 @@ struct BookmarksView: View {
 // MARK: - Bookmark List Item
 struct BookmarkListItem: View {
     let event: Event
-    let bookmarkManager: BookmarkManager
+    @ObservedObject var bookmarkManager: BookmarkManager
     @State private var showingRemoveAlert = false
     
     var body: some View {
@@ -201,5 +202,6 @@ struct BookmarkListItem: View {
 // MARK: - Preview
 #Preview {
     BookmarksView()
+        .environmentObject(AppState().bookmarkManager)
         .preferredColorScheme(.dark)
 }

@@ -2,6 +2,7 @@ import Foundation
 import FirebaseAuth
 import FirebaseFunctions
 import Combine
+import UIKit
 
 // MARK: - Refactored Event ViewModel
 @MainActor
@@ -18,9 +19,9 @@ class EventViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     init(
-        eventRepository: EventRepository = EventRepository(),
-        ticketRepository: TicketRepository = TicketRepository(),
-        purchaseService: PurchaseService = PurchaseService()
+        eventRepository: EventRepository,
+        ticketRepository: TicketRepository,
+        purchaseService: PurchaseService
     ) {
         self.eventRepository = eventRepository
         self.ticketRepository = ticketRepository
@@ -59,10 +60,15 @@ class EventViewModel: ObservableObject {
         let eventIds = events.compactMap { $0.id }
         
         do {
-            userTicketStatus = try await ticketRepository.fetchUserTicketStatus(
+            let status = try await ticketRepository.fetchUserTicketStatus(
                 userId: userId,
                 eventIds: eventIds
             )
+            
+            // Update on main actor
+            await MainActor.run {
+                self.userTicketStatus = status
+            }
         } catch {
             print("Error fetching ticket status: \(error.localizedDescription)")
         }
@@ -190,8 +196,8 @@ class BookmarkManager: ObservableObject {
     private let eventRepository: EventRepository
     
     init(
-        bookmarkRepository: BookmarkRepository = BookmarkRepository(),
-        eventRepository: EventRepository = EventRepository()
+        bookmarkRepository: BookmarkRepository,
+        eventRepository: EventRepository
     ) {
         self.bookmarkRepository = bookmarkRepository
         self.eventRepository = eventRepository
@@ -234,7 +240,7 @@ class BookmarkManager: ObservableObject {
             return
         }
         
-        // Fetch all events (you could optimize this to only fetch bookmarked ones)
+        // Fetch all events
         var events: [Event] = []
         for eventId in eventIds {
             if let event = try? await eventRepository.fetchEvent(by: eventId) {
@@ -255,7 +261,9 @@ class BookmarkManager: ObservableObject {
             return date1 > date2
         }
         
-        bookmarkedEvents = sortedEvents
+        await MainActor.run {
+            self.bookmarkedEvents = sortedEvents
+        }
     }
     
     // MARK: - Toggle Bookmark
@@ -288,12 +296,16 @@ class BookmarkManager: ObservableObject {
             }
             
             // Haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            await MainActor.run {
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+            }
             
         } catch {
             // Revert optimistic update on error
-            bookmarkStatus[eventId] = isCurrentlyBookmarked
+            await MainActor.run {
+                self.bookmarkStatus[eventId] = isCurrentlyBookmarked
+            }
             print("❌ Error toggling bookmark: \(error.localizedDescription)")
         }
     }
@@ -310,7 +322,7 @@ class BookmarkManager: ObservableObject {
     }
 }
 
-// MARK: - Tickets ViewModel (NEW)
+// MARK: - Tickets ViewModel
 @MainActor
 class TicketsViewModel: ObservableObject {
     @Published var tickets: [Ticket] = []
@@ -319,7 +331,7 @@ class TicketsViewModel: ObservableObject {
     
     private let ticketRepository: TicketRepository
     
-    init(ticketRepository: TicketRepository = TicketRepository()) {
+    init(ticketRepository: TicketRepository) {
         self.ticketRepository = ticketRepository
     }
     

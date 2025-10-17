@@ -18,15 +18,22 @@ class AppState: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     
+    // Shared repository instances
+    private let eventRepository: EventRepository
+    private let ticketRepository: TicketRepository
+    private let bookmarkRepository: BookmarkRepository
+    private let userRepository: UserRepository
+    private let purchaseService: PurchaseService
+    
     init() {
         // Initialize repositories (shared instances)
-        let eventRepository = EventRepository()
-        let ticketRepository = TicketRepository()
-        let bookmarkRepository = BookmarkRepository()
-        let userRepository = UserRepository()
+        self.eventRepository = EventRepository()
+        self.ticketRepository = TicketRepository()
+        self.bookmarkRepository = BookmarkRepository()
+        self.userRepository = UserRepository()
         
         // Initialize services
-        let purchaseService = PurchaseService()
+        self.purchaseService = PurchaseService()
         
         // Initialize ViewModels with shared repositories
         self.eventViewModel = EventViewModel(

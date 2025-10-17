@@ -4,10 +4,11 @@ import FirebaseFunctions
 import Combine
 
 // MARK: - Purchase Service
+@MainActor
 class PurchaseService: Sendable {
     private let functions: Functions
     
-    init() {
+    nonisolated init() {
         #if DEBUG
         // Configure for local development if needed
         // functions = Functions.functions()
@@ -29,10 +30,10 @@ class PurchaseService: Sendable {
             return PurchaseResult(success: false, message: "Please log in to purchase a ticket")
         }
         
-        // Get fresh ID token
-        let token = try await user.getIDTokenForcingRefresh(true, completion: <#((String?, (any Error)?) -> Void)?#>)
+        // Get fresh ID token - FIXED: Removed invalid completion parameter
+        let token = try await user.getIDToken(forcingRefresh: true)
         
-        guard token != nil else {
+        guard !token.isEmpty else {
             return PurchaseResult(success: false, message: "Failed to get authentication token")
         }
         
@@ -127,7 +128,7 @@ class AuthenticationService: ObservableObject {
     ) async throws {
         let userExists = try await userRepository.userExists(userId: user.uid)
         
-        var userData: [String: Any] = [
+        let userData: [String: Any] = [
             "lastLoginAt": Date(),
             "provider": provider
         ]

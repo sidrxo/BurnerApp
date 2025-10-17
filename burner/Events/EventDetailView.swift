@@ -7,13 +7,16 @@ import PassKit
 
 struct EventDetailView: View {
     let event: Event
-    @StateObject private var bookmarkManager = BookmarkManager()
+    
+    // Use environment objects instead of creating new instances
+    @EnvironmentObject var bookmarkManager: BookmarkManager
+    @EnvironmentObject var eventViewModel: EventViewModel
+    
     @State private var showingPurchase = false
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var isSuccess = false
     @State private var userHasTicket = false
-    @StateObject private var viewModel = EventViewModel()
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var tabBarVisibility: TabBarVisibility
     
@@ -263,7 +266,7 @@ struct EventDetailView: View {
             tabBarVisibility.showTabBar()
         }
         .sheet(isPresented: $showingPurchase) {
-            TicketPurchaseView(event: event, viewModel: viewModel)
+            TicketPurchaseView(event: event, viewModel: eventViewModel)
                 .presentationDetents([.height(280)])
                 .presentationDragIndicator(.visible)
                 .onDisappear {
@@ -282,20 +285,20 @@ struct EventDetailView: View {
                 }
             )
         }
-        .onReceive(viewModel.$errorMessage) { errorMessage in
+        .onReceive(eventViewModel.$errorMessage) { errorMessage in
             if let errorMessage = errorMessage {
                 alertMessage = errorMessage
                 isSuccess = false
                 showingAlert = true
-                viewModel.clearMessages()
+                eventViewModel.clearMessages()
             }
         }
-        .onReceive(viewModel.$successMessage) { successMessage in
+        .onReceive(eventViewModel.$successMessage) { successMessage in
             if let successMessage = successMessage {
                 alertMessage = successMessage
                 isSuccess = true
                 showingAlert = true
-                viewModel.clearMessages()
+                eventViewModel.clearMessages()
                 checkUserTicketStatus()
             }
         }
@@ -304,7 +307,7 @@ struct EventDetailView: View {
     private func checkUserTicketStatus() {
         guard let eventId = event.id else { return }
         
-        viewModel.checkUserTicketStatus(for: eventId) { hasTicket in
+        eventViewModel.checkUserTicketStatus(for: eventId) { hasTicket in
             DispatchQueue.main.async {
                 self.userHasTicket = hasTicket
             }
@@ -369,6 +372,8 @@ struct EventDetailRow: View {
             description: "The Russian techno queen returns to fabric with her hypnotic blend of acid and experimental electronic music."
         ))
         .environmentObject(TabBarVisibility(isDetailViewPresented: .constant(false)))
+        .environmentObject(AppState().bookmarkManager)
+        .environmentObject(AppState().eventViewModel)
     }
     .preferredColorScheme(.dark)
 }
