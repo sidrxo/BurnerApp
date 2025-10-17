@@ -306,7 +306,7 @@ struct ScannerView: View {
         // ✅ UPDATED: Add usedAt timestamp for Burner Mode monitoring
         let updateData: [String: Any] = [
             "status": "used",
-            "usedAt": Timestamp(),
+            "usedAt": Timestamp(date: Date()), // ✅ Changed from Timestamp() to Timestamp(date: Date())
             "scannedBy": Auth.auth().currentUser?.uid ?? "unknown"
         ]
         

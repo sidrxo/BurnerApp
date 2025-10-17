@@ -130,7 +130,8 @@ class AppState: ObservableObject {
         eventViewModel.fetchEvents()
         ticketsViewModel.fetchUserTickets()
         
-        // Restart Burner Mode monitoring for new user
+        // ✅ FIXED: Restart Burner Mode monitoring for new user
+        burnerModeMonitor.stopMonitoring()
         burnerModeMonitor.startMonitoring()
     }
     
