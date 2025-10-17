@@ -169,7 +169,6 @@ struct EventSection: View {
                             event: event,
                             bookmarkManager: bookmarkManager
                         )
-                        .padding(.horizontal, 20)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }

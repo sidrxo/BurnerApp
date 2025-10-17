@@ -103,32 +103,15 @@ struct UnifiedEventRow: View {
                     .foregroundColor(.gray)
             }
             
-            // Status badges for tickets
-            statusBadges
-            
-        
-        }
-    }
-    
-    // MARK: - Status Badges
-    private var statusBadges: some View {
-        HStack(spacing: 8) {
-            if let ticket = ticket {
-                if ticket.status == "cancelled" {
+            // Only show cancelled badge here
+            if let ticket = ticket, ticket.status == "cancelled" {
+                HStack(spacing: 8) {
                     Text("Cancelled")
                         .appCaption()
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(Color.red.opacity(0.2))
                         .foregroundColor(.red)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                } else if isPastEvent {
-                    Text("Past Event")
-                        .appCaption()
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.gray.opacity(0.2))
-                        .foregroundColor(.gray)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
             }
@@ -147,20 +130,20 @@ struct UnifiedEventRow: View {
                 )
             }
             
-            // QR code or status for tickets
+            // QR code for active tickets or Past Event badge
             if let ticket = ticket {
-                if !isPastEvent && ticket.status == "confirmed" {
+                if isPastEvent {
+                    Text("Past Event")
+                        .appCaption()
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.gray.opacity(0.2))
+                        .foregroundColor(.gray)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                } else if ticket.status == "confirmed" {
                     Image(systemName: "qrcode")
                         .font(.appIcon)
                         .foregroundColor(.white)
-                } else if isPastEvent {
-                    Text("Attended")
-                        .appCaption()
-                        .foregroundColor(.green)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.green.opacity(0.2))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
             }
         }

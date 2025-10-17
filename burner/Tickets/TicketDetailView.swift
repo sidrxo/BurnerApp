@@ -2,7 +2,6 @@
 //  TicketViews.swift
 //  burner
 //
-//  Created by Sid Rao on 18/09/2025.
 //
 
 import SwiftUI
@@ -17,19 +16,18 @@ struct TicketDetailView: View {
     @State private var showingFullScreen = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Main Content
+        ScrollView {
             VStack(spacing: 0) {
-                Spacer()
-                
-                // Main Ticket Card (centered)
+                // Main Ticket Card
                 ticketCard
+                    .padding(.top, 40)
+                    .padding(.horizontal, 20)
                 
-                Spacer()
-            }
+                // Action Button
             
-            // Navigation Controls
-            navigationControls
+                Spacer()
+                    .frame(height: 40)
+            }
         }
         .background(Color.black)
         .navigationBarTitleDisplayMode(.inline)
@@ -60,261 +58,115 @@ struct TicketDetailView: View {
         )
     }
     
-    private func menuItem(_ title: String, isSelected: Bool = false) -> some View {
-        VStack(spacing: 0) {
-            Text(title)
-               .appBody()
-                .foregroundColor(isSelected ? .white : .gray)
-                .padding(.vertical, 16)
+    private var headerSection: some View {
+        VStack(spacing: 8) {
+            Text(ticketWithEvent.event.name)
+                .appHero()
+                .foregroundColor(.black)
+                .multilineTextAlignment(.center)
+                .lineLimit(nil)
+                .padding(.horizontal, 20)
             
-            Rectangle()
-                .fill(isSelected ? Color.white : Color.gray.opacity(0.3))
-                .frame(height: 1)
+            Text(ticketWithEvent.event.venue)
+                .appBody()
+                .foregroundColor(.black.opacity(0.6))
+                .multilineTextAlignment(.center)
         }
     }
     
- private var ticketCard: some View {
+    private var ticketCard: some View {
         VStack(spacing: 0) {
-            // Ticket Content
-            VStack(spacing: 20) {
-                // Artist Name - Fixed to prevent clipping
-                Text(ticketWithEvent.event.name.uppercased())
-                    .appPageHeader()
-                    .foregroundColor(.black)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(nil)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 30)
-                
-                // Date and Time
-                HStack {
-                    Text(ticketWithEvent.event.date.formatted(.dateTime.day().month().year()))
-                       .appBody()
-                        .foregroundColor(.black)
+            // Date/Time Bar
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Date")
+                        .appCaption()
+                        .foregroundColor(.black.opacity(0.5))
+                        .textCase(.uppercase)
+                        .tracking(0.5)
                     
-                    Spacer()
+                    Text(ticketWithEvent.event.date.formatted(.dateTime.day().month().year()))
+                        .appBody()
+                        .foregroundColor(.black)
+                }
+                
+                Spacer()
+                
+                Rectangle()
+                    .fill(Color.black.opacity(0.1))
+                    .frame(width: 1)
+                    .padding(.vertical, 8)
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("Time")
+                        .appCaption()
+                        .foregroundColor(.black.opacity(0.5))
+                        .textCase(.uppercase)
+                        .tracking(0.5)
                     
                     Text(ticketWithEvent.event.date.formatted(.dateTime.hour().minute()))
-                       .appBody()
+                        .appBody()
                         .foregroundColor(.black)
                 }
-                .padding(.horizontal, 30)
-                
-                // Divider
-                Rectangle()
-                    .fill(Color.black)
-                    .frame(height: 2)
-                    .padding(.horizontal, 30)
-                
-                // Venue and Status
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("VENUE")
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .background(Color(red: 0.8, green: 1.0, blue: 0.2))
+            
+            // Main ticket content
+            VStack(spacing: 24) {
+                // Header Section
+                headerSection
+                    .padding(.top, 8)
+                // QR Code Section
+                Button(action: {
+                    showingFullScreen = true
+                }) {
+                    VStack(spacing: 12) {
+                        QRCodeView(
+                            data: qrCodeData,
+                            size: 180,
+                            backgroundColor: .white,
+                            foregroundColor: .black
+                        )
+                        
+                        Text("Tap to scan")
                             .appSecondary()
-                            .foregroundColor(.black)
-                        Text(ticketWithEvent.event.venue.uppercased())
-                            .appBody()
-                            .foregroundColor(.black)
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("STATUS")
-                            .appSecondary()
-                            .foregroundColor(.black)
-                        Text(ticketWithEvent.ticket.status.uppercased())
-                            .appBody()
-                            .foregroundColor(.black)
+                            .foregroundColor(.black.opacity(0.4))
                     }
                 }
-                .padding(.horizontal, 30)
+                .buttonStyle(PlainButtonStyle())
                 
-                // Add more spacing before dashed line
-                Spacer()
-                    .frame(height: 20)
-                
-                // Dashed line separator (full width)
-                VStack(spacing: 20) {
-                    dashedLine
-                    
-                    // Bottom section with circular text and QR code
-                    VStack(spacing: 16) {
-                        HStack(alignment: .center, spacing: 20) {
-                            // Circular text on the left
-                            CircularTextView(text: "MEET ME IN THE MOMENT   ", radius: 50)
-                                .frame(width: 100, height: 100)
-                            
-                            Spacer()
-                            
-                            // QR Code on the right
-                            Button(action: {
-                                showingFullScreen = true
-                            }) {
-                                QRCodeView(
-                                    data: qrCodeData,
-                                    size: 120,
-                                    backgroundColor: .clear,
-                                    foregroundColor: .black
-                                )
-                                .background(Color.clear)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                    .padding(.horizontal, 30)
+                // Ticket Details
+                VStack(spacing: 16) {
+                    detailRow(label: "Ticket Number", value: ticketWithEvent.ticket.ticketNumber ?? "N/A")
+                    detailRow(label: "Status", value: ticketWithEvent.ticket.status.capitalized)
                 }
-                .padding(.bottom, 30)
+                .padding(.horizontal, 24)
             }
+            .padding(.vertical, 32)
+            .background(.white)
         }
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .padding(.horizontal, 20)
-    }
-
-    // MARK: - Dashed Line
-    private var dashedLine: some View {
-        GeometryReader { geometry in
-            Path { path in
-                path.move(to: CGPoint(x: 0, y: 0))
-                path.addLine(to: CGPoint(x: geometry.size.width, y: 0))
-            }
-            .stroke(style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
-            .foregroundColor(.black.opacity(0.6))
-        }
-        .frame(height: 2)
-    }
-
-    // MARK: - Circular Text View
-    struct CircularTextView: View {
-        let text: String
-        let radius: CGFloat
-        
-        var body: some View {
-            ZStack {
-                ForEach(Array(text.enumerated()), id: \.offset) { index, character in
-                    Text(String(character))
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(.black)
-                        .offset(y: -radius)
-                        .rotationEffect(.degrees(Double(index) * (360.0 / Double(text.count))))
-                }
-            }
-            .rotationEffect(.degrees(-90)) // Start from top
-        }
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: .white.opacity(0.05), radius: 20, y: 10)
     }
     
-    private var navigationControls: some View {
+    private func detailRow(label: String, value: String) -> some View {
         HStack {
-            // Progress indicators
-            HStack(spacing: 8) {
-                Rectangle()
-                    .fill(Color.gray)
-                    .frame(width: 30, height: 4)
-                    .clipShape(Capsule())
-                
-                Rectangle()
-                    .fill(Color(red: 0.8, green: 1.0, blue: 0.2))
-                    .frame(width: 30, height: 4)
-                    .clipShape(Capsule())
-                
-                Rectangle()
-                    .fill(Color.gray)
-                    .frame(width: 30, height: 4)
-                    .clipShape(Capsule())
-            }
+            Text(label)
+                .appSecondary()
+                .foregroundColor(.black.opacity(0.5))
             
             Spacer()
             
-            Button(action: {
-                // Next action
-            }) {
-                HStack(spacing: 8) {
-                    Text("NEXT")
-                       .appBody()
-                        .foregroundColor(.white)
-                    
-                    Image(systemName: "arrow.right")
-                       .appBody()
-                        .foregroundColor(.white)
-                }
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 30)
-        .padding(.bottom, 40)
-    }
-    
-    private var statusBadge: some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 8, height: 8)
-            
-            Text(ticketWithEvent.ticket.status.capitalized)
-                .appFont(size: 14, weight: .medium)
-                .foregroundColor(statusColor)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(
-            Capsule()
-                .fill(statusColor.opacity(0.15))
-                .overlay(
-                    Capsule()
-                        .stroke(statusColor.opacity(0.3), lineWidth: 1)
-                )
-        )
-    }
-    
-    private var statusColor: Color {
-        switch ticketWithEvent.ticket.status {
-        case "confirmed": return .green
-        case "cancelled": return .red
-        case "pending": return .orange
-        default: return .gray
+            Text(value)
+                .appBody()
+                .foregroundColor(.black)
         }
     }
     
-    private var eventDetailsCard: some View {
-        // This component is no longer needed in the new design
-        EmptyView()
-    }
-    
-    private var qrCodeSection: some View {
-        // This component is no longer needed in the new design
-        EmptyView()
-    }
-    
-    private var cancelledTicketView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.red)
-            
-            VStack(spacing: 8) {
-                Text("Ticket Cancelled")
-                    .appFont(size: 20, weight: .semibold)
-                    .foregroundColor(.red)
-                
-                Text("This ticket has been cancelled and cannot be used for entry. Please contact support if you believe this is an error.")
-                    .appFont(size: 14)
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(2)
-            }
-        }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.red.opacity(0.08))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.red.opacity(0.2), lineWidth: 1)
-                )
-        )
-    }
     
     // MARK: - Computed Properties
     
@@ -385,11 +237,74 @@ struct TicketDetailView: View {
     }
 }
 
-// MARK: - Ticket QR Code View
+// MARK: - Full Screen QR Code View
+struct FullScreenQRCodeView: View {
+    let ticketWithEvent: TicketWithEventData
+    let qrCodeData: String
+    @Environment(\.presentationMode) var presentationMode
+    @State private var originalBrightness: CGFloat = 0
+    
+    var body: some View {
+        ZStack {
+            Color.black
+                .ignoresSafeArea()
+            
+            VStack(spacing: 24) {
+                Spacer()
+                
+                // Event name
+                Text(ticketWithEvent.event.name)
+                    .appSectionHeader()
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                
+                // QR Code
+                QRCodeView(
+                    data: qrCodeData,
+                    size: min(UIScreen.main.bounds.width - 80, 320),
+                    backgroundColor: .white,
+                    foregroundColor: .black
+                )
+                
+                // Ticket number
+                Text(ticketWithEvent.ticket.ticketNumber ?? "")
+                    .appSecondary()
+                    .foregroundColor(.gray)
+                    .tracking(2)
+                
+                Spacer()
+                
+                // Close button
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Text("Close")
+                        .appBody()
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .padding(.horizontal, 40)
+                }
+                .padding(.bottom, 40)
+            }
+        }
+        .onAppear {
+            originalBrightness = UIScreen.main.brightness
+            UIScreen.main.brightness = 1.0
+        }
+        .onDisappear {
+            UIScreen.main.brightness = originalBrightness
+        }
+    }
+}
+
+// MARK: - Ticket QR Code View (for reuse elsewhere)
 struct TicketQRCodeView: View {
     let ticketWithEvent: TicketWithEventData
     @State private var showingFullScreen = false
-    @State private var brightness: Double = UIScreen.main.brightness
     
     private var qrCodeData: String {
         guard let ticketId = ticketWithEvent.ticket.id,
@@ -405,39 +320,17 @@ struct TicketQRCodeView: View {
     }
     
     var body: some View {
-        VStack(spacing: 16) {
-            Button(action: {
-                showingFullScreen = true
-            }) {
-                VStack(spacing: 12) {
-                    QRCodeView(
-                        data: qrCodeData,
-                        size: 200,
-                        backgroundColor: .white,
-                        foregroundColor: .black
-                    )
-                    
-                    Text(ticketWithEvent.ticket.ticketNumber ?? "No Ticket Number")
-                        .appFont(size: 12, weight: .medium)
-                        .foregroundColor(.gray)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.gray.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                }
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            VStack(spacing: 8) {
-                Button(action: {
-                    showingFullScreen = true
-                }) {
-                    Text("Tap to enlarge")
-                        .appFont(size: 12, weight: .medium)
-                        .foregroundColor(.blue)
-                }
-            }
+        Button(action: {
+            showingFullScreen = true
+        }) {
+            QRCodeView(
+                data: qrCodeData,
+                size: 200,
+                backgroundColor: .white,
+                foregroundColor: .black
+            )
         }
+        .buttonStyle(PlainButtonStyle())
         .fullScreenCover(isPresented: $showingFullScreen) {
             FullScreenQRCodeView(
                 ticketWithEvent: ticketWithEvent,
@@ -446,95 +339,37 @@ struct TicketQRCodeView: View {
         }
     }
 }
-
-// MARK: - Full Screen QR Code View
-struct FullScreenQRCodeView: View {
-    let ticketWithEvent: TicketWithEventData
-    let qrCodeData: String
-    @Environment(\.presentationMode) var presentationMode
-    @State private var originalBrightness: CGFloat = 0
-    
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.3)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    presentationMode.wrappedValue.dismiss()
-                }
-            
-            VStack {
-                Spacer()
-                
-                // QR Code only
-                QRCodeView(
-                    data: qrCodeData,
-                    size: min(UIScreen.main.bounds.width - 80, 300),
-                    backgroundColor: .white,
-                    foregroundColor: .black
+#Preview {
+    NavigationView {
+        TicketDetailView(
+            ticketWithEvent: TicketWithEventData(
+                ticket: Ticket(
+                    id: "preview-ticket-123",
+                    eventId: "preview-event-456",
+                    eventName: "Summer Music Festival 2025",
+                    eventDate: Date().addingTimeInterval(86400),
+                    venue: "Madison Square Garden",
+                    userId: "preview-user-789",
+                    pricePerTicket: 75.00,
+                    totalPrice: 75.00,
+                    purchaseDate: Date(),
+                    status: "confirmed",
+                    qrCode: "PREVIEW_QR_CODE",
+                    ticketNumber: "TKT-2025-001"
+                ),
+                event: Event(
+                    id: "preview-event-456",
+                    name: "Summer Music Festival 2025",
+                    venue: "Madison Square Garden",
+                    date: Date().addingTimeInterval(86400),
+                    price: 75.00,
+                    maxTickets: 1000,
+                    ticketsSold: 450,
+                    imageUrl: "https://example.com/festival.jpg",
+                    isFeatured: true,
+                    description: "An amazing music festival featuring top artists"
                 )
-                .shadow(color: .black.opacity(0.3), radius: 20)
-                
-                Spacer()
-            }
-        }
-        .onAppear {
-            originalBrightness = UIScreen.main.brightness
-            UIScreen.main.brightness = 1.0
-        }
-        .onDisappear {
-            UIScreen.main.brightness = originalBrightness
-        }
-    }
-}
-
-// MARK: - Enhanced Ticket Detail Row
-struct EnhancedTicketDetailRow: View {
-    let icon: String
-    let title: String
-    let value: String
-    let iconColor: Color
-
-    var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(iconColor.opacity(0.15))
-                    .frame(width: 28, height: 28)
-                
-                Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(iconColor)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .appFont(size: 13)
-                    .foregroundColor(.gray)
-                
-                Text(value)
-                    .appFont(size: 14, weight: .medium)
-                    .foregroundColor(.white)
-                    .lineLimit(nil)
-            }
-            
-            Spacer()
-        }
-        .padding(.vertical, 8)
-    }
-}
-
-// MARK: - View Extensions
-extension View {
-    func ticketCard() -> some View {
-        self
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.gray.opacity(0.08))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.gray.opacity(0.15), lineWidth: 1)
-                    )
             )
+        )
     }
 }
