@@ -2,11 +2,13 @@ import SwiftUI
 import Kingfisher
 import FirebaseAuth
 import PassKit
+import Combine
 
 struct TicketPurchaseView: View {
     let event: Event
     @ObservedObject var viewModel: EventViewModel
-    @State private var isPurchasing = false
+    @StateObject private var paymentService = StripePaymentService()
+    
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var isSuccess = false
@@ -22,7 +24,7 @@ struct TicketPurchaseView: View {
             Color.black.ignoresSafeArea()
             
             VStack(spacing: 12) {
-                // Event summary - centered
+                // Event summary
                 VStack(spacing: 4) {
                     Text(event.name)
                         .appSectionHeader()
@@ -39,7 +41,7 @@ struct TicketPurchaseView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
                 
-                // Price info - simplified and compact
+                // Price info
                 HStack {
                     Text("Total")
                         .appBody()
@@ -59,52 +61,69 @@ struct TicketPurchaseView: View {
                 
                 // Apple Pay Button
                 if showApplePayButton {
-                    ApplePayButtonView {
+                    Button(action: {
                         handleApplePay()
+                    }) {
+                        HStack(spacing: 8) {
+                            if paymentService.isProcessing {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .tint(.white)
+                                Text("Processing...")
+                                    .appFont(size: 22)
+                            } else {
+                                Image(systemName: "applelogo")
+                                    .font(.system(size: 20))
+                                Text("Pay")
+                                    .appFont(size: 22)
+                            }
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 46)
+                        .background(paymentService.isProcessing ? Color.gray.opacity(0.5) : Color.black)
+                        .clipShape(RoundedRectangle(cornerRadius: 23))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 23)
+                                .stroke(Color.white, lineWidth: 1)
+                        )
                     }
-                    .frame(height: 46)
+                    .disabled(paymentService.isProcessing)
                     .padding(.horizontal, 20)
                     .padding(.top, 4)
                 }
                 
-                // Purchase button
+                // Card payment button (future implementation)
                 Button(action: {
-                    purchaseTicket()
+                    // TODO: Implement card payment flow
+                    alertMessage = "Card payment coming soon! Please use Apple Pay."
+                    isSuccess = false
+                    showingAlert = true
                 }) {
-                    HStack {
-                        if isPurchasing {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .tint(.black)
-                        }
-                        HStack(spacing: 8) {
-                            Text(isPurchasing ? "Processing..." : "Pay with")
-                                .appFont(size: 22)
-                                .foregroundColor(.black)
-                            
-                            if !isPurchasing {
-                                Image(systemName: "creditcard")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.black)
-                            }
-                        }
+                    HStack(spacing: 8) {
+                        Text("Pay with")
+                            .appFont(size: 22)
+                            .foregroundColor(.black)
+                        
+                        Image(systemName: "creditcard")
+                            .font(.system(size: 20))
+                            .foregroundColor(.black)
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)
                     .background(Color.white)
                     .clipShape(RoundedRectangle(cornerRadius: 23))
                 }
-                .disabled(isPurchasing)
                 .padding(.horizontal, 20)
                 .padding(.top, showApplePayButton ? 0 : 4)
                 .padding(.bottom, 12)
             }
         }
-        .presentationDetents([.height(showApplePayButton ? 240 : 200)])
+        .presentationDetents([.height(showApplePayButton ? 260 : 220)])
         .presentationDragIndicator(.visible)
         .alert(isPresented: $showingAlert) {
             Alert(
-                title: Text(isSuccess ? "Success!" : "Purchase Failed"),
+                title: Text(isSuccess ? "Success!" : "Error"),
                 message: Text(alertMessage),
                 dismissButton: .default(Text("OK")) {
                     if isSuccess {
@@ -114,7 +133,9 @@ struct TicketPurchaseView: View {
             )
         }
         .onAppear {
-            showApplePayButton = ApplePayHandler.canMakePayments()
+            showApplePayButton = PKPaymentAuthorizationController.canMakePayments(
+                usingNetworks: [.visa, .masterCard, .amex, .discover]
+            )
         }
     }
     
@@ -133,76 +154,46 @@ struct TicketPurchaseView: View {
             return
         }
         
-        isPurchasing = true
-        
-        ApplePayHandler.shared.startPayment(
+        paymentService.processApplePayPayment(
             eventName: event.name,
             amount: event.price,
-            onSuccess: { payment in
-                self.processPurchaseWithPayment(eventId: eventId, payment: payment)
-            },
-            onFailure: { error in
-                DispatchQueue.main.async {
-                    self.isPurchasing = false
-                    self.alertMessage = error.localizedDescription
-                    self.isSuccess = false
-                    self.showingAlert = true
+            eventId: event.id ?? "2"
+        ) { result in
+            DispatchQueue.main.async {
+                if result.success {
+                    alertMessage = result.message
+                    isSuccess = true
+                    showingAlert = true
+                    
+                    // Refresh events to update ticket count
+                    viewModel.fetchEvents()
+                } else {
+                    alertMessage = result.message
+                    isSuccess = false
+                    showingAlert = true
                 }
             }
+        }
+    }
+}
+
+// MARK: - Preview
+#Preview {
+    TicketPurchaseView(
+        event: Event(
+            name: "Test Event",
+            venue: "Test Venue",
+            price: 25.0,
+            maxTickets: 100,
+            ticketsSold: 50,
+            imageUrl: "",
+            isFeatured: false
+        ),
+        viewModel: EventViewModel(
+            eventRepository: EventRepository(),
+            ticketRepository: TicketRepository(),
+            purchaseService: PurchaseService()
         )
-    }
-    
-    private func processPurchaseWithPayment(eventId: String, payment: PKPayment) {
-        viewModel.purchaseTicket(eventId: eventId) { success, error in
-            DispatchQueue.main.async {
-                isPurchasing = false
-                
-                if success {
-                    alertMessage = "Ticket purchased successfully! Check your ticket in the profile tab."
-                    isSuccess = true
-                    showingAlert = true
-                } else {
-                    alertMessage = error ?? "Purchase failed. Please try again."
-                    isSuccess = false
-                    showingAlert = true
-                }
-            }
-        }
-    }
-    
-    private func purchaseTicket() {
-        print("maxTickets: \(event.maxTickets), ticketsSold: \(event.ticketsSold)")
-        print("availableTickets: \(availableTickets)")
-        guard let eventId = event.id else {
-            alertMessage = "Invalid event"
-            isSuccess = false
-            showingAlert = true
-            return
-        }
-        
-        guard Auth.auth().currentUser != nil else {
-            alertMessage = "Please log in to purchase a ticket"
-            isSuccess = false
-            showingAlert = true
-            return
-        }
-        
-        isPurchasing = true
-        
-        viewModel.purchaseTicket(eventId: eventId) { [self] success, error in
-            DispatchQueue.main.async {
-                isPurchasing = false
-                
-                if success {
-                    alertMessage = "Ticket purchased successfully! Check your ticket in the profile tab."
-                    isSuccess = true
-                    showingAlert = true
-                } else {
-                    alertMessage = error ?? "Purchase failed. Please try again."
-                    isSuccess = false
-                    showingAlert = true
-                }
-            }
-        }
-    }
+    )
+    .preferredColorScheme(.dark)
 }

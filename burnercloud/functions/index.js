@@ -9,6 +9,8 @@ const userValidation = require('./admin/userValidation');
 const venueManagement = require('./venues/venueManagement');
 const purchaseTicket = require('./tickets/purchaseTicket');
 const ticketQueries = require('./tickets/ticketQueries');
+const stripePayment = require('./payments/stripePayment');
+
 
 // ============ ADMIN MANAGEMENT ============
 exports.createAdmin = adminManagement.createAdmin;
@@ -25,3 +27,9 @@ exports.createVenue = venueManagement.createVenue;
 exports.purchaseTicket = purchaseTicket.purchaseTicket;
 exports.checkUserTicket = ticketQueries.checkUserTicket;
 exports.getUserTickets = ticketQueries.getUserTickets;
+
+// ============ PAYMENT PROCESSING ============
+exports.createPaymentIntent = stripePayment.createPaymentIntent;
+exports.confirmPurchase = stripePayment.confirmPurchase;
+exports.getPaymentMethods = stripePayment.getPaymentMethods;
+exports.confirmApplePayPayment = stripePayment.confirmApplePayPayment;
