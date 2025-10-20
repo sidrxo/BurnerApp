@@ -9,12 +9,12 @@ class TicketLiveActivityManager {
         let attributes = TicketActivityAttributes(
             eventName: ticketWithEvent.event.name,
             venue: ticketWithEvent.event.venue,
-            eventDate: ticketWithEvent.event.startTime ?? Date()
+            startTime: ticketWithEvent.event.startTime ?? Date()
         )
         
         // Create content state
         let contentState = TicketActivityAttributes.ContentState(
-            timeUntilEvent: calculateTimeUntilEvent(ticketWithEvent.event.startTime)
+            timeUntilEvent: calculateTimeUntilEvent(ticketWithEvent.event.startTime ?? Date(),)
         )
         
         do {
@@ -41,7 +41,7 @@ class TicketLiveActivityManager {
         
         for activity in activities {
             let newContentState = TicketActivityAttributes.ContentState(
-                timeUntilEvent: calculateTimeUntilEvent(activity.attributes.eventDate)
+                timeUntilEvent: calculateTimeUntilEvent(activity.attributes.startTime)
             )
             
             Task {
@@ -68,14 +68,14 @@ class TicketLiveActivityManager {
         }
     }
     
-    private static func calculateTimeUntilEvent(_ eventDate: Date) -> String {
+    private static func calculateTimeUntilEvent(_ startTime: Date) -> String {
         let now = Date()
         let calendar = Calendar.current
         
-        if calendar.isDate(eventDate, inSameDayAs: now) {
-            let components = calendar.dateComponents([.hour, .minute], from: now, to: eventDate)
+        if calendar.isDate(startTime, inSameDayAs: now) {
+            let components = calendar.dateComponents([.hour, .minute], from: now, to: startTime)
             
-            if eventDate <= now {
+            if startTime <= now {
                 return "Event Started"
             } else if let hours = components.hour, let minutes = components.minute {
                 if hours > 0 {
@@ -86,7 +86,7 @@ class TicketLiveActivityManager {
             }
         }
         
-        let components = calendar.dateComponents([.day], from: now, to: eventDate)
+        let components = calendar.dateComponents([.day], from: now, to: startTime)
         if let days = components.day {
             if days == 0 {
                 return "Today"

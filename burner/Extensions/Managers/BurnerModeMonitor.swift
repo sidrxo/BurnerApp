@@ -77,13 +77,13 @@ class BurnerModeMonitor: ObservableObject {
             print("🎫 Checking ticket: \(document.documentID)")
             print("   Status: \(data["status"] as? String ?? "unknown")")
             
-            guard let eventDate = (data["eventDate"] as? Timestamp)?.dateValue() else {
-                print("⚠️ BurnerModeMonitor: No eventDate in ticket \(document.documentID)")
+            guard let startTime = (data["startTime"] as? Timestamp)?.dateValue() else {
+                print("⚠️ BurnerModeMonitor: No startTime in ticket \(document.documentID)")
                 continue
             }
             
             // Check if event is today
-            let eventDay = calendar.startOfDay(for: eventDate)
+            let eventDay = calendar.startOfDay(for: startTime)
             guard eventDay == today else {
                 print("📅 Ticket \(document.documentID): Event date \(eventDay) is not today \(today)")
                 continue

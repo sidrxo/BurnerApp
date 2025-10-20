@@ -24,7 +24,7 @@ struct TicketsView: View {
                 let placeholderEvent = Event(
                     name: ticket.eventName,
                     venue: ticket.venue,
-                    date: ticket.eventDate,
+                    startTime: ticket.startTime,
                     price: ticket.ticketPrice,
                     maxTickets: 100,
                     ticketsSold: 0,
@@ -41,20 +41,21 @@ struct TicketsView: View {
     }
 
     // Helper function to determine if an event should be considered "past"
-    private func isEventPast(_ eventDate: Date) -> Bool {
+    private func isEventPast(_ event: Event) -> Bool {
+        guard let startTime = event.startTime else { return true }
         let calendar = Calendar.current
-        let nextDay6AM = calendar.dateInterval(of: .day, for: eventDate)?.end ?? eventDate
-        let nextDay6AMDate = calendar.date(byAdding: .hour, value: 6, to: nextDay6AM) ?? eventDate
-        return Date() > nextDay6AMDate
+        let nextDayEnd = calendar.dateInterval(of: .day, for: startTime)?.end ?? startTime
+        let nextDay6AM = calendar.date(byAdding: .hour, value: 6, to: nextDayEnd) ?? startTime
+        return Date() > nextDay6AM
     }
 
     private var filteredTickets: [TicketWithEventData] {
         var result = ticketsWithEvents
         switch selectedFilter {
         case .upcoming:
-            result = result.filter { !isEventPast($0.event.eventDate) }
+            result = result.filter { !isEventPast($0.event) }
         case .past:
-            result = result.filter { isEventPast($0.event.eventDate) }
+            result = result.filter { isEventPast($0.event) }
         }
         if !searchText.isEmpty {
             result = result.filter { ticketWithEvent in
@@ -62,15 +63,17 @@ struct TicketsView: View {
                 ticketWithEvent.event.venue.localizedCaseInsensitiveContains(searchText)
             }
         }
-        return result.sorted { $0.event.eventDate > $1.event.eventDate }
+        return result.sorted {
+            ($0.event.startTime ?? Date.distantPast) > ($1.event.startTime ?? Date.distantPast)
+        }
     }
 
     private var upcomingTickets: [TicketWithEventData] {
-        filteredTickets.filter { !isEventPast($0.event.eventDate) }
+        filteredTickets.filter { !isEventPast($0.event) }
     }
 
     private var pastTickets: [TicketWithEventData] {
-        filteredTickets.filter { isEventPast($0.event.eventDate) }
+        filteredTickets.filter { isEventPast($0.event) }
     }
 
     var body: some View {

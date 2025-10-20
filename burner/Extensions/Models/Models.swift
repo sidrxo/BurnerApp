@@ -14,10 +14,6 @@ struct Event: Identifiable, Codable, Sendable {
     var startTime: Date? // Event start time
     var endTime: Date?   // Event end time
     
-    var date: Date? {
-        return startTime
-    }
-    
     var price: Double
     var maxTickets: Int
     var ticketsSold: Int
@@ -40,7 +36,7 @@ struct Ticket: Identifiable, Codable, Sendable {
     @DocumentID var id: String?
     var eventId: String
     var eventName: String
-    var eventDate: Date
+    var startTime: Date
     var venue: String
     var userId: String
     

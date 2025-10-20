@@ -33,7 +33,10 @@ struct HomeView: View {
     // MARK: - Popular Events (Sorted by Ticket Sell-Through %)
     var popularEvents: [Event] {
         eventViewModel.events
-            .filter { !$0.isFeatured && $0.eventDate > Date() }
+            .filter { event in
+                guard let startTime = event.startTime else { return false }
+                return !event.isFeatured && startTime > Date()
+            }
             .sorted { event1, event2 in
                 let sellThrough1 = Double(event1.ticketsSold) / Double(max(event1.maxTickets, 1))
                 let sellThrough2 = Double(event2.ticketsSold) / Double(max(event2.maxTickets, 1))
@@ -61,27 +64,33 @@ struct HomeView: View {
         let popularEventIds = Set(popularEvents.compactMap { $0.id })
         
         return eventViewModel.events
-            .filter {
-                !$0.isFeatured &&
-                $0.eventDate >= now &&
-                $0.eventDate < weekEnd &&
-                !popularEventIds.contains($0.id ?? "")
+            .filter { event in
+                guard let startTime = event.startTime else { return false }
+                return !event.isFeatured &&
+                       startTime >= now &&
+                       startTime < weekEnd &&
+                       !popularEventIds.contains(event.id ?? "")
             }
-            .sorted { $0.eventDate < $1.eventDate }
+            .sorted { event1, event2 in
+                (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
+            }
             .prefix(5)
             .map { $0 }
     }
     
-    // MARK: - Genre-Based Events (NEW)
+    // MARK: - Genre-Based Events
     func eventsForGenre(_ genre: String, excludingIds: Set<String>) -> [Event] {
         eventViewModel.events
-            .filter {
-                !$0.isFeatured &&
-                $0.eventDate > Date() &&
-                !excludingIds.contains($0.id ?? "") &&
-                ($0.tags?.contains { $0.localizedCaseInsensitiveCompare(genre) == .orderedSame } ?? false)
+            .filter { event in
+                guard let startTime = event.startTime else { return false }
+                return !event.isFeatured &&
+                       startTime > Date() &&
+                       !excludingIds.contains(event.id ?? "") &&
+                       (event.tags?.contains { $0.localizedCaseInsensitiveCompare(genre) == .orderedSame } ?? false)
             }
-            .sorted { $0.eventDate < $1.eventDate }
+            .sorted { event1, event2 in
+                (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
+            }
             .prefix(5)
             .map { $0 }
     }
@@ -99,13 +108,16 @@ struct HomeView: View {
         }
         
         return eventViewModel.events
-            .filter {
-                $0.eventDate > Date() &&
-                !popularEventIds.contains($0.id ?? "") &&
-                !thisWeekEventIds.contains($0.id ?? "") &&
-                !genreEventIds.contains($0.id ?? "")
+            .filter { event in
+                guard let startTime = event.startTime else { return false }
+                return startTime > Date() &&
+                       !popularEventIds.contains(event.id ?? "") &&
+                       !thisWeekEventIds.contains(event.id ?? "") &&
+                       !genreEventIds.contains(event.id ?? "")
             }
-            .sorted { $0.eventDate < $1.eventDate }
+            .sorted { event1, event2 in
+                (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
+            }
             .prefix(6)
             .map { $0 }
     }
@@ -187,7 +199,7 @@ struct HomeView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             
-            // MARK: - Genre Sections (NEW)
+            // MARK: - Genre Sections
             genreSections
             
             // All Events Section
@@ -201,7 +213,7 @@ struct HomeView: View {
         }
     }
     
-    // MARK: - Genre Sections View (NEW)
+    // MARK: - Genre Sections View
     private var genreSections: some View {
         let popularEventIds = Set(popularEvents.compactMap { $0.id })
         let thisWeekEventIds = Set(thisWeekEvents.compactMap { $0.id })

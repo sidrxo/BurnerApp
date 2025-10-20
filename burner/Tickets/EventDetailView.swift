@@ -186,7 +186,7 @@ struct EventDetailView: View {
                                     EventDetailRow(
                                         icon: "calendar",
                                         title: "Date & Time",
-                                        value: event.eventDate.formatted(.dateTime.weekday(.abbreviated).day().month().year().hour().minute())
+                                        value: (event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month().year().hour().minute())
                                     )
                                     
                                     EventDetailRow(

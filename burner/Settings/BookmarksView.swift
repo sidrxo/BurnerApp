@@ -161,7 +161,7 @@ struct BookmarkListItem: View {
                         .appCaption()
                         .foregroundColor(.gray)
                     
-                    Text(event.eventDate.formatted(.dateTime.weekday(.abbreviated).day().month()))
+                    Text((event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month()))
                         .appCaption()
                         .foregroundColor(.gray)
                 }

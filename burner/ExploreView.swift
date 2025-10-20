@@ -213,7 +213,7 @@ class ExploreViewModel: ObservableObject {
             )
             
             events = fetchedEvents
-            lastDocument = fetchedEvents.last?.date
+            lastDocument = fetchedEvents.last?.startTime
             hasMoreEvents = fetchedEvents.count >= 20
             
         } catch {
@@ -237,7 +237,7 @@ class ExploreViewModel: ObservableObject {
             )
             
             events.append(contentsOf: fetchedEvents)
-            lastDocument = fetchedEvents.last?.date
+            lastDocument = fetchedEvents.last?.startTime
             hasMoreEvents = fetchedEvents.count >= 20
             
         } catch {
@@ -307,7 +307,7 @@ class OptimizedEventRepository {
     
     // MARK: - Fetch Upcoming Events (Paginated)
     func fetchUpcomingEvents(
-        sortBy: String = "date",
+        sortBy: String = "startTime",
         limit: Int = 20,
         startAfter: Date? = nil
     ) async throws -> [Event] {
@@ -331,7 +331,7 @@ class OptimizedEventRepository {
 
     func searchEvents(
         searchText: String,
-        sortBy: String = "date",
+        sortBy: String = "startTime",
         limit: Int = 50
     ) async throws -> [Event] {
         let snapshot = try await db.collection("events")

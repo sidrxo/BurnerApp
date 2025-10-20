@@ -23,7 +23,7 @@ class EventRepository: ObservableObject {
     // MARK: - Fetch Events with Real-time Updates
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void) {
         eventsListener = db.collection("events")
-            .order(by: "date", descending: false)
+            .order(by: "startTime", descending: false)
             .addSnapshotListener { snapshot, error in
                 if let error = error {
                     completion(.failure(error))
@@ -138,7 +138,7 @@ struct BookmarkData: Identifiable, Codable, Sendable {
     let eventId: String
     let eventName: String
     let eventVenue: String
-    let eventDate: Date
+    let startTime: Date
     let eventPrice: Double
     let eventImageUrl: String
     let bookmarkedAt: Date

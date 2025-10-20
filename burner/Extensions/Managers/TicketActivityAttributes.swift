@@ -17,5 +17,5 @@ struct TicketActivityAttributes: ActivityAttributes {
     
     var eventName: String
     var venue: String
-    var eventDate: Date
+    var startTime: Date
 }

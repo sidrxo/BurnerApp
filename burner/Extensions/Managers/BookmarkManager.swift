@@ -105,7 +105,7 @@ class BookmarkManager: ObservableObject {
                     eventId: eventId,
                     eventName: event.name,
                     eventVenue: event.venue,
-                    eventDate: event.startTime,
+                    startTime: event.startTime ?? Date(),
                     eventPrice: event.price,
                     eventImageUrl: event.imageUrl,
                     bookmarkedAt: Date()

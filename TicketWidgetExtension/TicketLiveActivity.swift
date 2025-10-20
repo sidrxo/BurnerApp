@@ -97,7 +97,7 @@ struct TicketLiveActivity_Previews: PreviewProvider {
     static let attributes = TicketActivityAttributes(
         eventName: "RESISTANCE LONDON SATURDAY",
         venue: "DRUMSHEDS",
-        eventDate: Calendar.current.date(byAdding: .hour, value: 2, to: Date()) ?? Date()
+        startTime: Calendar.current.date(byAdding: .hour, value: 2, to: Date()) ?? Date()
     )
     
     static let contentState = TicketActivityAttributes.ContentState(
