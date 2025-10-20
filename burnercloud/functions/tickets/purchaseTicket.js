@@ -1,5 +1,5 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { getFirestore } = require("firebase-admin/firestore");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { generateQRCodeData, generateTicketNumber } = require("./ticketHelpers");
 
 const db = getFirestore();
@@ -49,31 +49,42 @@ exports.purchaseTicket = onCall(async (request) => {
       }
 
       // Check if event date hasn't passed
-      if (event.date && event.date.toDate() <= new Date()) {
+      const eventDate = event.startTime || event.date;
+      if (eventDate && eventDate.toDate() <= new Date()) {
         throw new HttpsError("failed-precondition", "Cannot purchase tickets for past events");
       }
 
       const ticketRef = db.collection("tickets").doc();
       const ticketId = ticketRef.id;
       const ticketNumber = generateTicketNumber();
-      const totalPrice = event.price;
       const qrCodeData = generateQRCodeData(ticketId, eventId, userId, ticketNumber);
 
+      // ✅ STREAMLINED TICKET DATA
       const ticketData = {
+        // Identity
         eventId: eventId,
         userId: userId,
-        purchasePrice: event.price,
-        venueId: event.venueId,
-        purchaseDate: new Date(),
+        ticketNumber: ticketNumber,
+        
+        // Event info (for fallback when event document unavailable)
+        eventName: event.name,
+        venue: event.venue,
+        startTime: event.startTime,  // Already a Firestore Timestamp
+        
+        // Purchase info
+        totalPrice: event.price,
+        purchaseDate: FieldValue.serverTimestamp(),  // ✅ Use serverTimestamp for consistency
+        
+        // Status & QR
         status: "confirmed",
         qrCode: qrCodeData,
-        ticketNumber: ticketNumber,
-        createdAt: new Date()
+        
+        // Optional metadata
+        venueId: event.venueId || null
       };
 
       // Add ticket to main collection
       transaction.set(ticketRef, ticketData);
-  
 
       // Update event ticket count atomically
       transaction.update(eventRef, {
@@ -83,7 +94,7 @@ exports.purchaseTicket = onCall(async (request) => {
       return {
         success: true,
         ticketId: ticketId,
-        totalPrice: totalPrice,
+        totalPrice: event.price,
         qrCode: qrCodeData,
         ticketNumber: ticketNumber,
         message: "Ticket purchased successfully!",

@@ -7,6 +7,7 @@ struct HomeView: View {
     
     @State private var searchText = ""
     @State private var selectedEvent: Event? = nil
+    @State private var navigationPath = NavigationPath()
     
     // MARK: - Define Your Genres (Configure these based on your events)
     private let displayGenres = ["Techno", "House", "Drum & Bass", "Trance", "Hip Hop"]
@@ -22,108 +23,90 @@ struct HomeView: View {
         return featured.shuffled(using: &rng)
     }
     
-    var featuredEvent: Event? {
-        featuredEvents.first
-    }
-    
-    var secondFeaturedEvent: Event? {
-        featuredEvents.count > 1 ? featuredEvents[1] : nil
-    }
-    
-    // MARK: - Popular Events (Sorted by Ticket Sell-Through %)
-    var popularEvents: [Event] {
-        eventViewModel.events
-            .filter { event in
-                guard let startTime = event.startTime else { return false }
-                return !event.isFeatured && startTime > Date()
-            }
-            .sorted { event1, event2 in
-                let sellThrough1 = Double(event1.ticketsSold) / Double(max(event1.maxTickets, 1))
-                let sellThrough2 = Double(event2.ticketsSold) / Double(max(event2.maxTickets, 1))
-                return sellThrough1 > sellThrough2
-            }
-            .prefix(5)
-            .map { $0 }
-    }
-    
-    // MARK: - This Week Events (Current Week Ending Sunday)
+    // MARK: - This Week Events (Next 7 Days from Now)
     var thisWeekEvents: [Event] {
         let calendar = Calendar.current
         let now = Date()
         
-        var weekStartComponents = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)
-        weekStartComponents.weekday = 1
-        guard let weekStart = calendar.date(from: weekStartComponents) else {
+        guard let startOfToday = calendar.startOfDay(for: now) as Date?,
+              let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfToday) else {
             return []
         }
-        
-        guard let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) else {
-            return []
-        }
-        
-        let popularEventIds = Set(popularEvents.compactMap { $0.id })
         
         return eventViewModel.events
             .filter { event in
                 guard let startTime = event.startTime else { return false }
                 return !event.isFeatured &&
                        startTime >= now &&
-                       startTime < weekEnd &&
-                       !popularEventIds.contains(event.id ?? "")
+                       startTime < endOfWeek
             }
             .sorted { event1, event2 in
                 (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
             }
-            .prefix(5)
-            .map { $0 }
     }
     
-    // MARK: - Genre-Based Events
-    func eventsForGenre(_ genre: String, excludingIds: Set<String>) -> [Event] {
+    var thisWeekEventsPreview: [Event] {
+        Array(thisWeekEvents.prefix(5))
+    }
+    
+    // MARK: - Popular Events (Sorted by Ticket Sell-Through %, excluding This Week events)
+    var popularEvents: [Event] {
+        let thisWeekEventIds = Set(thisWeekEvents.compactMap { $0.id })
+        
+        return eventViewModel.events
+            .filter { event in
+                guard let startTime = event.startTime else { return false }
+                return !event.isFeatured &&
+                       startTime > Date() &&
+                       !thisWeekEventIds.contains(event.id ?? "")
+            }
+            .sorted { event1, event2 in
+                let sellThrough1 = Double(event1.ticketsSold) / Double(max(event1.maxTickets, 1))
+                let sellThrough2 = Double(event2.ticketsSold) / Double(max(event2.maxTickets, 1))
+                return sellThrough1 > sellThrough2
+            }
+    }
+    
+    var popularEventsPreview: [Event] {
+        Array(popularEvents.prefix(5))
+    }
+    
+    // MARK: - Genre-Based Events (can overlap with Popular/This Week)
+    func allEventsForGenre(_ genre: String) -> [Event] {
         eventViewModel.events
             .filter { event in
                 guard let startTime = event.startTime else { return false }
                 return !event.isFeatured &&
                        startTime > Date() &&
-                       !excludingIds.contains(event.id ?? "") &&
                        (event.tags?.contains { $0.localizedCaseInsensitiveCompare(genre) == .orderedSame } ?? false)
             }
             .sorted { event1, event2 in
                 (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
             }
-            .prefix(5)
-            .map { $0 }
     }
     
-    // MARK: - All Events (Sorted by Date)
+    func eventsForGenrePreview(_ genre: String) -> [Event] {
+        Array(allEventsForGenre(genre).prefix(5))
+    }
+    
+    // MARK: - All Events (Chronological, everything)
     var allEvents: [Event] {
-        let popularEventIds = Set(popularEvents.compactMap { $0.id })
-        let thisWeekEventIds = Set(thisWeekEvents.compactMap { $0.id })
-        
-        // Also exclude genre events
-        var genreEventIds = Set<String>()
-        for genre in displayGenres {
-            let genreEvents = eventsForGenre(genre, excludingIds: popularEventIds.union(thisWeekEventIds))
-            genreEventIds.formUnion(Set(genreEvents.compactMap { $0.id }))
-        }
-        
-        return eventViewModel.events
+        eventViewModel.events
             .filter { event in
                 guard let startTime = event.startTime else { return false }
-                return startTime > Date() &&
-                       !popularEventIds.contains(event.id ?? "") &&
-                       !thisWeekEventIds.contains(event.id ?? "") &&
-                       !genreEventIds.contains(event.id ?? "")
+                return startTime > Date()
             }
             .sorted { event1, event2 in
                 (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
             }
-            .prefix(6)
-            .map { $0 }
+    }
+    
+    var allEventsPreview: [Event] {
+        Array(allEvents.prefix(6))
     }
     
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ScrollView {
                 VStack(spacing: 0) {
                     HeaderSection(title: "Explore")
@@ -144,6 +127,12 @@ struct HomeView: View {
             .navigationDestination(for: Event.self) { event in
                 EventDetailView(event: event)
             }
+            .navigationDestination(for: EventSectionDestination.self) { destination in
+                FilteredEventsView(
+                    title: destination.title,
+                    events: destination.events
+                )
+            }
         }
     }
     
@@ -161,8 +150,8 @@ struct HomeView: View {
     // MARK: - Content View
     private var contentView: some View {
         VStack(spacing: 0) {
-            // Primary Featured Event
-            if let featured = featuredEvent {
+            // 1. First Featured Hero Card
+            if let featured = featuredEvents.first {
                 NavigationLink(value: featured) {
                     FeaturedHeroCard(event: featured, bookmarkManager: bookmarkManager)
                         .padding(.horizontal, 20)
@@ -171,65 +160,116 @@ struct HomeView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             
-            // Popular Section
+            // 2. Popular Section
             if !popularEvents.isEmpty {
                 EventSection(
                     title: "Popular",
-                    events: popularEvents,
-                    bookmarkManager: bookmarkManager
+                    events: popularEventsPreview,
+                    bookmarkManager: bookmarkManager,
+                    showViewAllButton: false,
+                    onViewAllTapped: {
+                        navigationPath.append(EventSectionDestination(
+                            title: "Popular",
+                            events: popularEvents
+                        ))
+                    }
                 )
             }
             
-            // This Week Section
+            // 3. This Week Section (if there are events)
             if !thisWeekEvents.isEmpty {
                 EventSection(
                     title: "This Week",
-                    events: thisWeekEvents,
-                    bookmarkManager: bookmarkManager
+                    events: thisWeekEventsPreview,
+                    bookmarkManager: bookmarkManager,
+                    showViewAllButton: false,
+                    onViewAllTapped: {
+                        navigationPath.append(EventSectionDestination(
+                            title: "This Week",
+                            events: thisWeekEvents
+                        ))
+                    }
                 )
             }
             
-            // Secondary Featured Event
-            if let secondFeatured = secondFeaturedEvent {
-                NavigationLink(value: secondFeatured) {
-                    FeaturedHeroCard(event: secondFeatured, bookmarkManager: bookmarkManager)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 40)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
+            // 4. Genre Sections with Featured Cards
+            genreSectionsWithFeaturedCards
             
-            // MARK: - Genre Sections
-            genreSections
-            
-            // All Events Section
+            // 5. All Events Section
             if !allEvents.isEmpty {
                 EventSection(
                     title: "All Events",
-                    events: allEvents,
-                    bookmarkManager: bookmarkManager
+                    events: allEventsPreview,
+                    bookmarkManager: bookmarkManager,
+                    showViewAllButton: allEvents.count > 6,
+                    onViewAllTapped: {
+                        navigationPath.append(EventSectionDestination(
+                            title: "All Events",
+                            events: allEvents
+                        ))
+                    }
                 )
             }
         }
     }
     
-    // MARK: - Genre Sections View
-    private var genreSections: some View {
-        let popularEventIds = Set(popularEvents.compactMap { $0.id })
-        let thisWeekEventIds = Set(thisWeekEvents.compactMap { $0.id })
-        let excludedIds = popularEventIds.union(thisWeekEventIds)
+    private var genreSectionsWithFeaturedCards: some View {
+        // First, filter genres to only those with events
+        let genresWithEvents = displayGenres.filter { genre in
+            !allEventsForGenre(genre).isEmpty
+        }
         
-        return ForEach(displayGenres, id: \.self) { genre in
-            let genreEvents = eventsForGenre(genre, excludingIds: excludedIds)
+        return ForEach(Array(genresWithEvents.enumerated()), id: \.offset) { index, genre in
+            let genreEvents = allEventsForGenre(genre)
+            let genrePreview = eventsForGenrePreview(genre)
             
-            if !genreEvents.isEmpty {
+            Group {
+                // Insert featured card before every 2 genres (at index 0, 2, 4, etc.)
+                if index % 2 == 0 {
+                    // Calculate which featured card to show
+                    // After Popular/This Week is featured[1], then featured[2], etc.
+                    let featuredIndex = 1 + (index / 2)
+                    if featuredIndex < featuredEvents.count {
+                        NavigationLink(value: featuredEvents[featuredIndex]) {
+                            FeaturedHeroCard(event: featuredEvents[featuredIndex], bookmarkManager: bookmarkManager)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 40)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                
+                // Show genre section (we know it has events because we filtered above)
                 EventSection(
                     title: genre,
-                    events: genreEvents,
-                    bookmarkManager: bookmarkManager
+                    events: genrePreview,
+                    bookmarkManager: bookmarkManager,
+                    showViewAllButton: genreEvents.count > 5,
+                    onViewAllTapped: {
+                        navigationPath.append(EventSectionDestination(
+                            title: genre,
+                            events: genreEvents
+                        ))
+                    }
                 )
             }
         }
+    }
+}
+
+// MARK: - Event Section Destination (for Navigation)
+struct EventSectionDestination: Hashable {
+    let title: String
+    let events: [Event]
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(title)
+        hasher.combine(events.compactMap { $0.id })
+    }
+    
+    static func == (lhs: EventSectionDestination, rhs: EventSectionDestination) -> Bool {
+        lhs.title == rhs.title &&
+        lhs.events.compactMap { $0.id } == rhs.events.compactMap { $0.id }
     }
 }
 

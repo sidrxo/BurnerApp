@@ -1,11 +1,3 @@
-//
-//  FilteredEventsView.swift
-//  burner
-//
-//  Created by Sid Rao on 20/10/2025.
-//
-
-
 import SwiftUI
 import Kingfisher
 
@@ -14,44 +6,20 @@ struct FilteredEventsView: View {
     let title: String
     let events: [Event]
     @EnvironmentObject var bookmarkManager: BookmarkManager
-    @Environment(\.dismiss) var dismiss
     
     var body: some View {
         VStack(spacing: 0) {
-            // Custom Header with back button
-            HStack {
-                Button(action: { dismiss() }) {
-                    Image(systemName: "chevron.left")
-                        .font(.appIcon)
-                        .foregroundColor(.white)
-                        .frame(width: 32, height: 32)
-                        .background(Color.gray.opacity(0.2))
-                        .clipShape(Circle())
-                }
-                
-                Spacer()
-                
-                Text(title)
-                    .appSectionHeader()
-                    .foregroundColor(.white)
-                
-                Spacer()
-                
-                // Invisible spacer for symmetry
-                Color.clear
-                    .frame(width: 32, height: 32)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 50)
-            .padding(.bottom, 20)
-            
             if events.isEmpty {
                 emptyStateView
             } else {
+                SettingsHeaderSection(title: title)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(events) { event in
-                            NavigationLink(destination: EventDetailView(event: event)) {
+                            NavigationLink(value: event) {
                                 UnifiedEventRow(
                                     event: event,
                                     bookmarkManager: bookmarkManager
@@ -62,10 +30,16 @@ struct FilteredEventsView: View {
                     }
                     .padding(.bottom, 100)
                 }
+              
             }
+            
         }
         .background(Color.black)
-        .navigationBarHidden(true)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color.black, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        }
     }
     
     private var emptyStateView: some View {
@@ -87,7 +61,7 @@ struct FilteredEventsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-}
+
 
 #Preview {
     NavigationStack {

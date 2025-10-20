@@ -26,90 +26,124 @@ struct SettingsView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Only show header when signed in
-                if currentUser != nil {
-                    HeaderSection(title: "Settings")
-                }
+            ZStack {
+                Color.black
+                    .edgesIgnoringSafeArea(.all)
                 
-                if currentUser != nil {
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            // ACCOUNT Section
-                            CustomMenuSection(title: "ACCOUNT") {
-                                NavigationLink(destination: AccountDetailsView()) {
-                                    CustomMenuItemContent(
-                                        title: "Account Details",
-                                        subtitle: currentUser?.email ?? "View Account"
-                                    )
-                                }
-                                NavigationLink(destination: BookmarksView()) {
-                                    CustomMenuItemContent(title: "Bookmarks", subtitle: "Saved events")
-                                }
-                                NavigationLink(destination: PaymentSettingsView()) {
-                                    CustomMenuItemContent(title: "Payment", subtitle: "Cards & billing")
-                                }
-                                
-                                // Only show scanner option if user has scanner role
-                                if userRole == "scanner" || userRole == "siteAdmin" || userRole == "venueAdmin" {
-                                    NavigationLink(destination: ScannerView()) {
-                                        CustomMenuItemContent(title: "Scanner", subtitle: "Scan QR codes")
+                // Main content
+                VStack(spacing: 0) {
+                    // Only show header when signed in
+                    if currentUser != nil {
+                        HeaderSection(title: "Settings")
+                    }
+                    
+                    if currentUser != nil {
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                // ACCOUNT Section
+                                CustomMenuSection(title: "ACCOUNT") {
+                                    NavigationLink(destination: AccountDetailsView()) {
+                                        CustomMenuItemContent(
+                                            title: "Account Details",
+                                            subtitle: currentUser?.email ?? "View Account"
+                                        )
+                                    }
+                                    NavigationLink(destination: BookmarksView()) {
+                                        CustomMenuItemContent(title: "Bookmarks", subtitle: "Saved events")
+                                    }
+                                    NavigationLink(destination: PaymentSettingsView()) {
+                                        CustomMenuItemContent(title: "Payment", subtitle: "Cards & billing")
+                                    }
+                                    
+                                    // Only show scanner option if user has scanner role
+                                    if userRole == "scanner" || userRole == "siteAdmin" || userRole == "venueAdmin" {
+                                        NavigationLink(destination: ScannerView()) {
+                                            CustomMenuItemContent(title: "Scanner", subtitle: "Scan QR codes")
+                                        }
                                     }
                                 }
-                            }
-                            
-                            // APP Section
-                            CustomMenuSection(title: "APP") {
-                                Button(action: {
-                                    showingBurnerSetup = true
-                                }) {
-                                    CustomMenuItemContent(
-                                        title: "Setup Burner Mode",
-                                        subtitle: "Step-by-step setup guide"
-                                    )
-                                }
-                                .buttonStyle(PlainButtonStyle())
                                 
-            
-                                
-                                NavigationLink(destination: SupportView()) {
-                                    CustomMenuItemContent(title: "Help & Support", subtitle: "Get help, terms, privacy")
+                                // APP Section
+                                CustomMenuSection(title: "APP") {
+                                    // 🔘 Manual Burner Mode Toggle
+                                    Toggle(isOn: $isBurnerModeEnabled) {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Burner Mode")
+                                                .appBody()
+                                                .foregroundColor(.white)
+                                            Text("Manually enable or disable blocking")
+                                                .appSecondary()
+                                                .foregroundColor(.gray)
+                                        }
+                                    }
+                                    .tint(.white)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .onChange(of: isBurnerModeEnabled) { enabled in
+                                        if enabled {
+                                            if burnerManager.isSetupValid {
+                                                burnerManager.enable()
+                                            } else {
+                                                // Revert toggle if setup invalid
+                                                isBurnerModeEnabled = false
+                                                appState.showError("Please complete Burner Mode setup first.")
+                                                showingBurnerSetup = true
+                                            }
+                                        } else {
+                                            burnerManager.disable()
+                                        }
+                                    }
+                                    Divider().background(Color.gray.opacity(0.3))
+
+                                    // ⚙️ Setup Guide Button
+                                    Button(action: {
+                                        showingBurnerSetup = true
+                                    }) {
+                                        CustomMenuItemContent(
+                                            title: "Setup Burner Mode",
+                                            subtitle: "Step-by-step setup guide"
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+
+                                    NavigationLink(destination: SupportView()) {
+                                        CustomMenuItemContent(title: "Help & Support", subtitle: "Get help, terms, privacy")
+                                    }
                                 }
-                            }
-                            
-                            // DEBUG Section
-                            #if DEBUG
-                            CustomMenuSection(title: "DEBUG") {
-                                Button(action: {
-                                    resetOnboarding()
-                                }) {
-                                    CustomMenuItemContent(
-                                        title: "Reset Onboarding",
-                                        subtitle: "Show first-time setup again"
-                                    )
+
+                                // DEBUG Section
+                                #if DEBUG
+                                CustomMenuSection(title: "DEBUG") {
+                                    Button(action: {
+                                        resetOnboarding()
+                                    }) {
+                                        CustomMenuItemContent(
+                                            title: "Reset Onboarding",
+                                            subtitle: "Show first-time setup again"
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                                #endif
                             }
-                            #endif
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 100)
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 100)
-                    }
-                    .familyActivityPicker(
-                        isPresented: $showingAppPicker,
-                        selection: Binding(
-                            get: { burnerManager.selectedApps },
-                            set: { burnerManager.selectedApps = $0 }
+                        .familyActivityPicker(
+                            isPresented: $showingAppPicker,
+                            selection: Binding(
+                                get: { burnerManager.selectedApps },
+                                set: { burnerManager.selectedApps = $0 }
+                            )
                         )
-                    )
-                } else {
-                    notSignedInSection
+                    } else {
+                        notSignedInSection
+                    }
                 }
+                              
             }
-            .background(Color.black)
             .navigationBarHidden(true)
         }
-        .background(Color.black)
         .onAppear {
             currentUser = Auth.auth().currentUser
             fetchUserRole()
@@ -146,6 +180,7 @@ struct SettingsView: View {
         }
     }
     
+    // MARK: - Fetch Role
     private func fetchUserRole() {
         guard let userId = Auth.auth().currentUser?.uid else {
             userRole = ""
@@ -158,12 +193,13 @@ struct SettingsView: View {
                    let role = data["role"] as? String {
                     userRole = role
                 } else {
-                    userRole = "user" // default role
+                    userRole = "user"
                 }
             }
         }
     }
     
+    // MARK: - Not signed in view
     private var notSignedInSection: some View {
         VStack(spacing: 20) {
             Spacer()
@@ -201,13 +237,10 @@ struct SettingsView: View {
         .background(Color.black)
     }
     
-    // MARK: - Reset Onboarding (Fixed)
+    // MARK: - Reset Onboarding
     private func resetOnboarding() {
-        // Reset onboarding state
         let onboarding = OnboardingManager()
         onboarding.resetOnboarding()
-        
-        // Post notification to trigger app restart at root level
         NotificationCenter.default.post(name: NSNotification.Name("ResetOnboarding"), object: nil)
     }
 }
