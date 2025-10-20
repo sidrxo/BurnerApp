@@ -122,38 +122,39 @@ class StripePaymentService: NSObject, ObservableObject {
 
 // MARK: - PKPaymentAuthorizationControllerDelegate
 extension StripePaymentService: PKPaymentAuthorizationControllerDelegate {
-    nonisolated func paymentAuthorizationController(_ controller: PKPaymentAuthorizationController,
-                                                   didAuthorizePayment payment: PKPayment,
-                                                   handler completion: @escaping (PKPaymentAuthorizationResult) -> Void) {
+    nonisolated func paymentAuthorizationController(
+        _ controller: PKPaymentAuthorizationController,
+        didAuthorizePayment payment: PKPayment,
+        handler completion: @escaping (PKPaymentAuthorizationResult) -> Void
+    ) {
         Task { @MainActor in
             do {
-                guard let paymentIntentId = self.currentPaymentIntentId else { throw PaymentError.paymentFailed }
-                let tokenData = payment.token.paymentData.base64EncodedString()
-                
-                // Call backend to confirm Apple Pay payment
-                let result = try await functions.httpsCallable("confirmApplePayPayment").call([
-                    "paymentIntentId": paymentIntentId,
-                    "paymentToken": tokenData
-                ])
-                
-                guard let data = result.data as? [String: Any],
-                      let status = data["status"] as? String,
-                      status == "succeeded" else {
+                guard let paymentIntentId = self.currentPaymentIntentId else {
                     throw PaymentError.paymentFailed
                 }
                 
-                // Now call confirmPurchase to create ticket
-                let ticketResult = try await confirmPurchase(paymentIntentId: paymentIntentId)
-                completion(PKPaymentAuthorizationResult(status: .success, errors: nil))
+                // Just send the payment intent ID - no token needed
+                let result = try await functions.httpsCallable("confirmApplePayPayment").call([
+                    "paymentIntentId": paymentIntentId
+                ])
                 
-                self.isProcessing = false
-                self.paymentCompletion?(ticketResult)
-                self.paymentCompletion = nil
+                guard let data = result.data as? [String: Any],
+                      let status = data["status"] as? String else {
+                    throw PaymentError.invalidResponse
+                }
+                
+                if status == "succeeded" {
+                    completion(PKPaymentAuthorizationResult(status: .success, errors: nil))
+                    // Proceed with ticket creation
+                    let ticketResult = try await confirmPurchase(paymentIntentId: paymentIntentId)
+                    self.paymentCompletion?(ticketResult)
+                } else {
+                    throw PaymentError.paymentFailed
+                }
+                
             } catch {
                 completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
-                self.isProcessing = false
-                self.paymentCompletion?(PaymentResult(success: false, message: error.localizedDescription, ticketId: nil))
-                self.paymentCompletion = nil
+                self.handlePaymentError(error as? PaymentError ?? .paymentFailed)
             }
         }
     }
