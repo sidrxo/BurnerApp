@@ -47,11 +47,10 @@ exports.getUserTickets = onCall(async (request) => {
 
     const userId = request.auth.uid;
 
-    const ticketsSnapshot = await db.collection("users")
-      .doc(userId)
-      .collection("tickets")
-      .orderBy("purchaseDate", "desc")
-      .get();
+ const ticketsSnapshot = await db.collection("tickets")
+  .where("userId", "==", userId)
+  .orderBy("purchaseDate", "desc")
+  .get();
 
     const tickets = ticketsSnapshot.docs.map((doc) => {
       const data = doc.data();

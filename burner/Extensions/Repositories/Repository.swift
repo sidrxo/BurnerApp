@@ -242,4 +242,25 @@ struct UserProfile: Codable, Sendable {
     var venuePermissions: [String]
     var createdAt: Date?
     var lastLoginAt: Date?
+    
+    // NEW: Additional fields from Phase 4
+    var phoneNumber: String?
+    var stripeCustomerId: String?
+    var profileImageUrl: String?
+    var preferences: UserPreferences?
 }
+
+// NEW: Preferences struct
+struct UserPreferences: Codable, Sendable {
+    var notifications: Bool
+    var emailMarketing: Bool
+    var pushNotifications: Bool
+    
+    // Default values
+    init(notifications: Bool = true, emailMarketing: Bool = false, pushNotifications: Bool = true) {
+        self.notifications = notifications
+        self.emailMarketing = emailMarketing
+        self.pushNotifications = pushNotifications
+    }
+}
+

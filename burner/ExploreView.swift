@@ -312,7 +312,7 @@ class OptimizedEventRepository {
         startAfter: Date? = nil
     ) async throws -> [Event] {
         var query = db.collection("events")
-            .whereField("date", isGreaterThan: Date())
+            .whereField("startTime", isGreaterThan: Date()) // Changed from "date"
             .order(by: sortBy)
             .limit(to: limit)
         
@@ -328,16 +328,14 @@ class OptimizedEventRepository {
             return event
         }
     }
-    
-    // MARK: - Search Events (Client-side for now)
+
     func searchEvents(
         searchText: String,
         sortBy: String = "date",
         limit: Int = 50
     ) async throws -> [Event] {
-        // Fetch more events for search
         let snapshot = try await db.collection("events")
-            .whereField("date", isGreaterThan: Date())
+            .whereField("startTime", isGreaterThan: Date()) // Changed from "date"
             .order(by: sortBy)
             .limit(to: limit)
             .getDocuments()

@@ -92,13 +92,19 @@ struct UnifiedEventRow: View {
             
             // Date formatting based on configuration
             if configuration.showDetailedDate {
-                HStack(spacing: 4) {
-                    Text(event.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                if let startTime = event.startTime {
+                    HStack(spacing: 4) {
+                        Text(startTime.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                            .appSecondary()
+                            .foregroundColor(.gray)
+                    }
+                } else {
+                    Text("-")
                         .appSecondary()
                         .foregroundColor(.gray)
                 }
             } else {
-                Text(event.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                Text(event.startTime?.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()) ?? "-")
                     .appSecondary()
                     .foregroundColor(.gray)
             }
@@ -163,10 +169,12 @@ struct UnifiedEventRow: View {
     
     // MARK: - Helper Properties
     private var isPastEvent: Bool {
+        guard let startTime = event.startTime else { return false }
+        
         let calendar = Calendar.current
-        let nextDay6AM = calendar.dateInterval(of: .day, for: event.date)?.end ?? event.date
-        let nextDay6AMDate = calendar.date(byAdding: .hour, value: 6, to: nextDay6AM) ?? event.date
-        return Date() > nextDay6AMDate
+        let nextDayEnd = calendar.dateInterval(of: .day, for: startTime)?.end ?? startTime
+        let nextDay6AM = calendar.date(byAdding: .hour, value: 6, to: nextDayEnd) ?? startTime
+        return Date() > nextDay6AM
     }
 }
 
@@ -183,7 +191,6 @@ extension UnifiedEventRow {
         let backgroundColor: Color
         let cornerRadius: CGFloat
         
-        // Predefined configurations
         static let eventList = Configuration(
             showBookmark: true,
             showPrice: true,
@@ -224,7 +231,6 @@ extension UnifiedEventRow {
 
 // MARK: - Convenience Initializers
 extension UnifiedEventRow {
-    // For event lists (Explore/Home views)
     init(event: Event, bookmarkManager: BookmarkManager) {
         self.init(
             event: event,
@@ -235,7 +241,6 @@ extension UnifiedEventRow {
         )
     }
     
-    // For ticket rows
     init(ticketWithEvent: TicketWithEventData, isPast: Bool, onCancel: @escaping () -> Void) {
         self.init(
             event: ticketWithEvent.event,
@@ -246,7 +251,6 @@ extension UnifiedEventRow {
         )
     }
     
-    // For ticket rows with bookmark
     init(ticketWithEvent: TicketWithEventData, isPast: Bool, bookmarkManager: BookmarkManager, onCancel: @escaping () -> Void) {
         self.init(
             event: ticketWithEvent.event,

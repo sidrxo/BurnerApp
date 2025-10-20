@@ -73,10 +73,7 @@ exports.purchaseTicket = onCall(async (request) => {
 
       // Add ticket to main collection
       transaction.set(ticketRef, ticketData);
-
-      // Add ticket to user's subcollection for easy querying
-      const userTicketRef = db.collection("users").doc(userId).collection("tickets").doc(ticketId);
-      transaction.set(userTicketRef, ticketData);
+  
 
       // Update event ticket count atomically
       transaction.update(eventRef, {

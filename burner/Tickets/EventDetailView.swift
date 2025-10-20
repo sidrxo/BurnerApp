@@ -186,7 +186,7 @@ struct EventDetailView: View {
                                     EventDetailRow(
                                         icon: "calendar",
                                         title: "Date & Time",
-                                        value: event.date.formatted(.dateTime.weekday(.abbreviated).day().month().year().hour().minute())
+                                        value: event.eventDate.formatted(.dateTime.weekday(.abbreviated).day().month().year().hour().minute())
                                     )
                                     
                                     EventDetailRow(
@@ -363,7 +363,6 @@ struct EventDetailRow: View {
         EventDetailView(event: Event(
             name: "fabric Presents: Nina Kraviz",
             venue: "fabric London",
-            date: Date(),
             price: 25.0,
             maxTickets: 100,
             ticketsSold: 50,

@@ -7,12 +7,14 @@ struct HomeView: View {
     
     @State private var searchText = ""
     @State private var selectedEvent: Event? = nil
+    
+    // MARK: - Define Your Genres (Configure these based on your events)
+    private let displayGenres = ["Techno", "House", "Drum & Bass", "Trance", "Hip Hop"]
 
     // MARK: - Featured Events (Randomized by Day)
     var featuredEvents: [Event] {
         let featured = eventViewModel.events.filter { $0.isFeatured }
         
-        // Seed random with current day for consistent daily rotation
         let calendar = Calendar.current
         let dayOfYear = calendar.ordinality(of: .day, in: .year, for: Date()) ?? 0
         
@@ -31,30 +33,79 @@ struct HomeView: View {
     // MARK: - Popular Events (Sorted by Ticket Sell-Through %)
     var popularEvents: [Event] {
         eventViewModel.events
-            .filter { !$0.isFeatured && $0.date > Date() }
+            .filter { !$0.isFeatured && $0.eventDate > Date() }
             .sorted { event1, event2 in
                 let sellThrough1 = Double(event1.ticketsSold) / Double(max(event1.maxTickets, 1))
                 let sellThrough2 = Double(event2.ticketsSold) / Double(max(event2.maxTickets, 1))
                 return sellThrough1 > sellThrough2
             }
-            .prefix(5)  // ✅ CHANGED FROM 4 TO 5
+            .prefix(5)
             .map { $0 }
     }
     
-    // MARK: - Upcoming Events (Sorted by Date - Soonest First)
-    var upcomingEvents: [Event] {
+    // MARK: - This Week Events (Current Week Ending Sunday)
+    var thisWeekEvents: [Event] {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        var weekStartComponents = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)
+        weekStartComponents.weekday = 1
+        guard let weekStart = calendar.date(from: weekStartComponents) else {
+            return []
+        }
+        
+        guard let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) else {
+            return []
+        }
+        
+        let popularEventIds = Set(popularEvents.compactMap { $0.id })
+        
+        return eventViewModel.events
+            .filter {
+                !$0.isFeatured &&
+                $0.eventDate >= now &&
+                $0.eventDate < weekEnd &&
+                !popularEventIds.contains($0.id ?? "")
+            }
+            .sorted { $0.eventDate < $1.eventDate }
+            .prefix(5)
+            .map { $0 }
+    }
+    
+    // MARK: - Genre-Based Events (NEW)
+    func eventsForGenre(_ genre: String, excludingIds: Set<String>) -> [Event] {
         eventViewModel.events
-            .filter { $0.date > Date() && !$0.isFeatured }
-            .sorted { $0.date < $1.date }
-            .prefix(5)  // ✅ CHANGED FROM 4 TO 5
+            .filter {
+                !$0.isFeatured &&
+                $0.eventDate > Date() &&
+                !excludingIds.contains($0.id ?? "") &&
+                ($0.tags?.contains { $0.localizedCaseInsensitiveCompare(genre) == .orderedSame } ?? false)
+            }
+            .sorted { $0.eventDate < $1.eventDate }
+            .prefix(5)
             .map { $0 }
     }
     
     // MARK: - All Events (Sorted by Date)
     var allEvents: [Event] {
-        eventViewModel.events
-            .filter { $0.date > Date() }
-            .sorted { $0.date < $1.date }
+        let popularEventIds = Set(popularEvents.compactMap { $0.id })
+        let thisWeekEventIds = Set(thisWeekEvents.compactMap { $0.id })
+        
+        // Also exclude genre events
+        var genreEventIds = Set<String>()
+        for genre in displayGenres {
+            let genreEvents = eventsForGenre(genre, excludingIds: popularEventIds.union(thisWeekEventIds))
+            genreEventIds.formUnion(Set(genreEvents.compactMap { $0.id }))
+        }
+        
+        return eventViewModel.events
+            .filter {
+                $0.eventDate > Date() &&
+                !popularEventIds.contains($0.id ?? "") &&
+                !thisWeekEventIds.contains($0.id ?? "") &&
+                !genreEventIds.contains($0.id ?? "")
+            }
+            .sorted { $0.eventDate < $1.eventDate }
             .prefix(6)
             .map { $0 }
     }
@@ -108,7 +159,7 @@ struct HomeView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             
-            // Popular Section (by ticket sales %)
+            // Popular Section
             if !popularEvents.isEmpty {
                 EventSection(
                     title: "Popular",
@@ -117,11 +168,11 @@ struct HomeView: View {
                 )
             }
             
-            // Upcoming Section (by date proximity)
-            if !upcomingEvents.isEmpty {
+            // This Week Section
+            if !thisWeekEvents.isEmpty {
                 EventSection(
-                    title: "Upcoming",
-                    events: upcomingEvents,
+                    title: "This Week",
+                    events: thisWeekEvents,
                     bookmarkManager: bookmarkManager
                 )
             }
@@ -136,11 +187,33 @@ struct HomeView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             
+            // MARK: - Genre Sections (NEW)
+            genreSections
+            
             // All Events Section
             if !allEvents.isEmpty {
                 EventSection(
                     title: "All Events",
                     events: allEvents,
+                    bookmarkManager: bookmarkManager
+                )
+            }
+        }
+    }
+    
+    // MARK: - Genre Sections View (NEW)
+    private var genreSections: some View {
+        let popularEventIds = Set(popularEvents.compactMap { $0.id })
+        let thisWeekEventIds = Set(thisWeekEvents.compactMap { $0.id })
+        let excludedIds = popularEventIds.union(thisWeekEventIds)
+        
+        return ForEach(displayGenres, id: \.self) { genre in
+            let genreEvents = eventsForGenre(genre, excludingIds: excludedIds)
+            
+            if !genreEvents.isEmpty {
+                EventSection(
+                    title: genre,
+                    events: genreEvents,
                     bookmarkManager: bookmarkManager
                 )
             }
@@ -209,7 +282,7 @@ struct EventSection: View {
             }
             .padding(.horizontal, 20)
             
-            // Event List - ✅ CHANGED TO SPACING: 0 FOR TIGHTER ROWS
+            // Event List
             LazyVStack(spacing: 0) {
                 ForEach(events) { event in
                     NavigationLink(value: event) {
@@ -236,7 +309,7 @@ struct HomeView_Previews: PreviewProvider {
     }
 }
 
-// MARK: - Event Equatable & Hashable (for NavigationLink value)
+// MARK: - Event Equatable & Hashable
 extension Event: Hashable {
     public static func == (lhs: Event, rhs: Event) -> Bool {
         lhs.id == rhs.id

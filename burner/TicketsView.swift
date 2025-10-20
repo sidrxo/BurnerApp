@@ -25,7 +25,7 @@ struct TicketsView: View {
                     name: ticket.eventName,
                     venue: ticket.venue,
                     date: ticket.eventDate,
-                    price: ticket.pricePerTicket,
+                    price: ticket.ticketPrice,
                     maxTickets: 100,
                     ticketsSold: 0,
                     imageUrl: "",
@@ -52,9 +52,9 @@ struct TicketsView: View {
         var result = ticketsWithEvents
         switch selectedFilter {
         case .upcoming:
-            result = result.filter { !isEventPast($0.event.date) }
+            result = result.filter { !isEventPast($0.event.eventDate) }
         case .past:
-            result = result.filter { isEventPast($0.event.date) }
+            result = result.filter { isEventPast($0.event.eventDate) }
         }
         if !searchText.isEmpty {
             result = result.filter { ticketWithEvent in
@@ -62,15 +62,15 @@ struct TicketsView: View {
                 ticketWithEvent.event.venue.localizedCaseInsensitiveContains(searchText)
             }
         }
-        return result.sorted { $0.event.date > $1.event.date }
+        return result.sorted { $0.event.eventDate > $1.event.eventDate }
     }
 
     private var upcomingTickets: [TicketWithEventData] {
-        filteredTickets.filter { !isEventPast($0.event.date) }
+        filteredTickets.filter { !isEventPast($0.event.eventDate) }
     }
 
     private var pastTickets: [TicketWithEventData] {
-        filteredTickets.filter { isEventPast($0.event.date) }
+        filteredTickets.filter { isEventPast($0.event.eventDate) }
     }
 
     var body: some View {
@@ -149,6 +149,19 @@ struct TicketsView: View {
                 TextField("Search tickets", text: $searchText)
                     .appBody()
                     .foregroundColor(.white)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                
+                // Clear button
+                if !searchText.isEmpty {
+                    Button(action: {
+                        searchText = ""
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.appIcon)
+                            .foregroundColor(.gray)
+                    }
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)

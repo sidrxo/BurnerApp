@@ -9,12 +9,12 @@ class TicketLiveActivityManager {
         let attributes = TicketActivityAttributes(
             eventName: ticketWithEvent.event.name,
             venue: ticketWithEvent.event.venue,
-            eventDate: ticketWithEvent.event.date
+            eventDate: ticketWithEvent.event.startTime ?? Date()
         )
         
         // Create content state
         let contentState = TicketActivityAttributes.ContentState(
-            timeUntilEvent: calculateTimeUntilEvent(ticketWithEvent.event.date)
+            timeUntilEvent: calculateTimeUntilEvent(ticketWithEvent.event.startTime)
         )
         
         do {

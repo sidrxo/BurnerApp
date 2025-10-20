@@ -22,7 +22,7 @@ struct FeaturedHeroCard: View {
                     .scaledToFill()
                     .frame(width: geometry.size.width, height: 500)
                     .clipShape(RoundedRectangle(cornerRadius: 20))
-            
+                
                 // Gradient overlay
                 LinearGradient(
                     gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.8)]),
@@ -31,7 +31,7 @@ struct FeaturedHeroCard: View {
                 )
                 .frame(width: geometry.size.width, height: 500)
                 .clipShape(RoundedRectangle(cornerRadius: 20))
-            
+                
                 VStack {
                     HStack {
                         Spacer()
@@ -57,14 +57,24 @@ struct FeaturedHeroCard: View {
                                     .multilineTextAlignment(.leading)
                                     .fixedSize(horizontal: false, vertical: true)
                                 
-                                Text("\(event.date.formatted(.dateTime.weekday().day().month())) • \(event.venue)")
-        .appBody()                                    .foregroundColor(.white.opacity(0.8))
+                                // ✅ Safe unwrapping of optional date
+                                if let startTime = event.startTime {
+                                    Text("\(startTime.formatted(.dateTime.weekday().day().month())) • \(event.venue)")
+                                        .appBody()
+                                        .foregroundColor(.white.opacity(0.8))
+                                } else {
+                                    Text("- • \(event.venue)")
+                                        .appBody()
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
                                 
                                 Text("£\(String(format: "%.2f", event.price))")
-        .appBody()                                    .foregroundColor(.white)
+                                    .appBody()
+                                    .foregroundColor(.white)
                             }
                             
                             Spacer()
+                            
                             Button(action: {
                                 Task {
                                     await bookmarkManager.toggleBookmark(for: event)
@@ -77,7 +87,6 @@ struct FeaturedHeroCard: View {
                                     .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: isBookmarked)
                             }
                         }
-                        
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)

@@ -85,7 +85,7 @@ struct TicketDetailView: View {
                         .textCase(.uppercase)
                         .tracking(0.5)
                     
-                    Text(ticketWithEvent.event.date.formatted(.dateTime.day().month().year()))
+                    Text(ticketWithEvent.event.eventDate.formatted(.dateTime.day().month().year()))
                         .appBody()
                         .foregroundColor(.black)
                 }
@@ -106,7 +106,7 @@ struct TicketDetailView: View {
                         .textCase(.uppercase)
                         .tracking(0.5)
                     
-                    Text(ticketWithEvent.event.date.formatted(.dateTime.hour().minute()))
+                    Text(ticketWithEvent.event.eventDate.formatted(.dateTime.hour().minute()))
                         .appBody()
                         .foregroundColor(.black)
                 }
@@ -173,14 +173,14 @@ struct TicketDetailView: View {
     private var shouldShowLiveActivityInfo: Bool {
         let calendar = Calendar.current
         let now = Date()
-        let isToday = calendar.isDate(ticketWithEvent.event.date, inSameDayAs: now)
-        let isTomorrow = calendar.isDate(ticketWithEvent.event.date, inSameDayAs: calendar.date(byAdding: .day, value: 1, to: now) ?? now)
+        let isToday = calendar.isDate(ticketWithEvent.event.eventDate, inSameDayAs: now)
+        let isTomorrow = calendar.isDate(ticketWithEvent.event.eventDate, inSameDayAs: calendar.date(byAdding: .day, value: 1, to: now) ?? now)
         
         return (isToday || isTomorrow) && ticketWithEvent.ticket.status == "confirmed"
     }
     
     private var isEventToday: Bool {
-        Calendar.current.isDate(ticketWithEvent.event.date, inSameDayAs: Date())
+        Calendar.current.isDate(ticketWithEvent.event.eventDate, inSameDayAs: Date())
     }
     
     // MARK: - Live Activity Methods
@@ -201,7 +201,7 @@ struct TicketDetailView: View {
         
         let existingActivity = Activity<TicketActivityAttributes>.activities.first { activity in
             activity.attributes.eventName == ticketWithEvent.event.name &&
-            Calendar.current.isDate(activity.attributes.eventDate, inSameDayAs: ticketWithEvent.event.date)
+            Calendar.current.isDate(activity.attributes.eventDate, inSameDayAs: ticketWithEvent.event.eventDate)
         }
         
         if existingActivity != nil {
@@ -228,7 +228,7 @@ struct TicketDetailView: View {
         
         let hasActiveActivity = Activity<TicketActivityAttributes>.activities.contains { activity in
             activity.attributes.eventName == ticketWithEvent.event.name &&
-            Calendar.current.isDate(activity.attributes.eventDate, inSameDayAs: ticketWithEvent.event.date)
+            Calendar.current.isDate(activity.attributes.eventDate, inSameDayAs: ticketWithEvent.event.eventDate)
         }
         
         withAnimation(.easeInOut(duration: 0.3)) {
@@ -337,39 +337,5 @@ struct TicketQRCodeView: View {
                 qrCodeData: qrCodeData
             )
         }
-    }
-}
-#Preview {
-    NavigationView {
-        TicketDetailView(
-            ticketWithEvent: TicketWithEventData(
-                ticket: Ticket(
-                    id: "preview-ticket-123",
-                    eventId: "preview-event-456",
-                    eventName: "Summer Music Festival 2025",
-                    eventDate: Date().addingTimeInterval(86400),
-                    venue: "Madison Square Garden",
-                    userId: "preview-user-789",
-                    pricePerTicket: 75.00,
-                    totalPrice: 75.00,
-                    purchaseDate: Date(),
-                    status: "confirmed",
-                    qrCode: "PREVIEW_QR_CODE",
-                    ticketNumber: "TKT-2025-001"
-                ),
-                event: Event(
-                    id: "preview-event-456",
-                    name: "Summer Music Festival 2025",
-                    venue: "Madison Square Garden",
-                    date: Date().addingTimeInterval(86400),
-                    price: 75.00,
-                    maxTickets: 1000,
-                    ticketsSold: 450,
-                    imageUrl: "https://example.com/festival.jpg",
-                    isFeatured: true,
-                    description: "An amazing music festival featuring top artists"
-                )
-            )
-        )
     }
 }
