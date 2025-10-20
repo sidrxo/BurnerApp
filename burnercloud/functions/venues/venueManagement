@@ -1,0 +1,43 @@
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { getFirestore } = require("firebase-admin/firestore");
+const { verifyAdminPermission } = require("../shared/permissions");
+
+const db = getFirestore();
+
+exports.createVenue = onCall(async (request) => {
+  console.log("=== CREATE VENUE FUNCTION START ===");
+  
+  try {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentication required");
+    }
+
+    await verifyAdminPermission(request.auth.uid, 'siteAdmin');
+
+    const { name, adminEmail } = request.data;
+
+    if (!name || !adminEmail) {
+      throw new HttpsError("invalid-argument", "Venue name and admin email are required");
+    }
+
+    const venueRef = await db.collection("venues").add({
+      name: name.trim(),
+      admins: [adminEmail.trim()],
+      subAdmins: [],
+      createdAt: new Date(),
+      createdBy: request.auth.uid,
+      active: true
+    });
+    
+    return {
+      success: true,
+      venueId: venueRef.id,
+      message: `Venue "${name}" created successfully`
+    };
+
+  } catch (error) {
+    console.error("Create venue error:", error.message);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", `Failed to create venue: ${error.message}`);
+  }
+});
