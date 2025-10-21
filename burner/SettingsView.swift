@@ -79,7 +79,7 @@ struct SettingsView: View {
                                     .tint(.white)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
-                                    .onChange(of: isBurnerModeEnabled) { enabled in
+                                    .onChange(of: isBurnerModeEnabled) { _, enabled in
                                         if enabled {
                                             if burnerManager.isSetupValid {
                                                 burnerManager.enable()

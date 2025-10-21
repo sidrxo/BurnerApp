@@ -68,11 +68,8 @@ class BurnerModeMonitor: ObservableObject {
         print("🔍 BurnerModeMonitor: Checking \(documents.count) tickets against today's date: \(today)")
         
         for document in documents {
-            guard let data = document.data() as? [String: Any] else {
-                print("⚠️ BurnerModeMonitor: Could not parse ticket data")
-                continue
-            }
-            
+            let data = document.data()
+
             // Debug: Print ticket ID and status
             print("🎫 Checking ticket: \(document.documentID)")
             print("   Status: \(data["status"] as? String ?? "unknown")")

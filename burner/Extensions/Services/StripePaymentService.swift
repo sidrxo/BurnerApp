@@ -435,20 +435,22 @@ class StripePaymentService: ObservableObject {
 // MARK: - STPAuthenticationContext
 extension StripePaymentService: STPAuthenticationContext {
     nonisolated func authenticationPresentingViewController() -> UIViewController {
-        // Get the topmost view controller for presenting authentication UI
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let rootViewController = window.rootViewController else {
-            return UIViewController()
-        }
-
-        func getTopmostViewController(from viewController: UIViewController) -> UIViewController {
-            if let presented = viewController.presentedViewController {
-                return getTopmostViewController(from: presented)
+        return MainActor.assumeIsolated { () -> UIViewController in
+            // Get the topmost view controller for presenting authentication UI
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let window = windowScene.windows.first,
+                  let rootViewController = window.rootViewController else {
+                return UIViewController()
             }
-            return viewController
-        }
 
-        return getTopmostViewController(from: rootViewController)
+            func getTopmostViewController(from viewController: UIViewController) -> UIViewController {
+                if let presented = viewController.presentedViewController {
+                    return getTopmostViewController(from: presented)
+                }
+                return viewController
+            }
+
+            return getTopmostViewController(from: rootViewController)
+        }
     }
 }
