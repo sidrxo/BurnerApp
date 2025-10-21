@@ -10,6 +10,7 @@ const venueManagement = require('./venues/venueManagement');
 const purchaseTicket = require('./tickets/purchaseTicket');
 const ticketQueries = require('./tickets/ticketQueries');
 const stripePayment = require('./payments/stripePayment');
+const scannerManagement = require('./admin/scannerManagement');
 
 
 // ============ ADMIN MANAGEMENT ============
@@ -38,3 +39,8 @@ exports.getPaymentMethods = stripePayment.getPaymentMethods;
 exports.savePaymentMethod = stripePayment.savePaymentMethod;
 exports.deletePaymentMethod = stripePayment.deletePaymentMethod;
 exports.setDefaultPaymentMethod = stripePayment.setDefaultPaymentMethod;
+
+// ============ SCANNER MANAGEMENT ============
+exports.createScanner = scannerManagement.createScanner;
+exports.setScannerStatus = scannerManagement.setScannerStatus;
+exports.deleteScanner = scannerManagement.deleteScanner;
