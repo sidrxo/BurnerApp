@@ -75,7 +75,7 @@ struct TicketDetailView: View {
     @State private var hasStartedLiveActivity = false
     @State private var isLiveActivityActive = false
     @State private var showingFullScreen = false
-    @Environment(\.appState) var appState
+    @EnvironmentObject var appState: AppState
 
     var body: some View {
         ZStack {
@@ -503,6 +503,7 @@ struct TicketViews_Previews: PreviewProvider {
         NavigationView {
             TicketDetailView(ticketWithEvent: sampleTicketWithEvent)
         }
+        .environmentObject(AppState())
         .preferredColorScheme(.dark)
     }
 }
