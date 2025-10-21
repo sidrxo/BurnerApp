@@ -46,16 +46,9 @@ struct TicketDetailView: View {
     // MARK: - UI Components
     
     private var qrCodeData: String {
-        guard let ticketId = ticketWithEvent.ticket.id,
-              let eventId = ticketWithEvent.event.id else {
-            return ticketWithEvent.ticket.qrCode ?? "INVALID_TICKET"
-        }
-        
-        return QRCodeGenerator.generateQRCodeData(
-            ticketId: ticketId,
-            eventId: eventId,
-            userId: ticketWithEvent.ticket.userId
-        )
+        // Use server-generated QR code from ticket data
+        // QR codes are generated server-side for security (includes hash)
+        return ticketWithEvent.ticket.qrCode ?? "INVALID_TICKET"
     }
     
     private var headerSection: some View {
@@ -307,16 +300,9 @@ struct TicketQRCodeView: View {
     @State private var showingFullScreen = false
     
     private var qrCodeData: String {
-        guard let ticketId = ticketWithEvent.ticket.id,
-              let eventId = ticketWithEvent.event.id else {
-            return ticketWithEvent.ticket.qrCode ?? "INVALID_TICKET"
-        }
-        
-        return QRCodeGenerator.generateQRCodeData(
-            ticketId: ticketId,
-            eventId: eventId,
-            userId: ticketWithEvent.ticket.userId
-        )
+        // Use server-generated QR code from ticket data
+        // QR codes are generated server-side for security (includes hash)
+        return ticketWithEvent.ticket.qrCode ?? "INVALID_TICKET"
     }
     
     var body: some View {
