@@ -33,3 +33,4 @@ exports.createPaymentIntent = stripePayment.createPaymentIntent;
 exports.confirmPurchase = stripePayment.confirmPurchase;
 exports.getPaymentMethods = stripePayment.getPaymentMethods;
 exports.confirmApplePayPayment = stripePayment.confirmApplePayPayment;
+exports.processApplePayPayment = stripePayment.processApplePayPayment;

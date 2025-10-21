@@ -1,8 +1,7 @@
 import SwiftUI
 import Kingfisher
 import FirebaseAuth
-import PassKit
-import Combine
+import StripePaymentSheet
 
 struct TicketPurchaseView: View {
     let event: Event
@@ -12,7 +11,6 @@ struct TicketPurchaseView: View {
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var isSuccess = false
-    @State private var showApplePayButton = false
     @Environment(\.presentationMode) var presentationMode
     
     private var availableTickets: Int {
@@ -59,67 +57,47 @@ struct TicketPurchaseView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .padding(.horizontal, 20)
                 
-                // Apple Pay Button
-                if showApplePayButton {
+                // Payment Button
+                if paymentService.isProcessing {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .tint(.white)
+                        Text("Processing...")
+                            .appFont(size: 22)
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 46)
+                    .background(Color.gray.opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 23))
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
+                    .padding(.bottom, 12)
+                } else {
                     Button(action: {
-                        handleApplePay()
+                        handlePayment()
                     }) {
-                        HStack(spacing: 8) {
-                            if paymentService.isProcessing {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                    .tint(.white)
-                                Text("Processing...")
-                                    .appFont(size: 22)
-                            } else {
-                                Image(systemName: "applelogo")
-                                    .font(.system(size: 20))
-                                Text("Pay")
-                                    .appFont(size: 22)
-                            }
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 46)
-                        .background(paymentService.isProcessing ? Color.gray.opacity(0.5) : Color.black)
-                        .clipShape(RoundedRectangle(cornerRadius: 23))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 23)
-                                .stroke(Color.white, lineWidth: 1)
-                        )
+                        Text("Buy Ticket")
+                            .appFont(size: 22)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 46)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 23))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 23)
+                                    .stroke(Color.white, lineWidth: 1)
+                            )
                     }
                     .disabled(paymentService.isProcessing)
                     .padding(.horizontal, 20)
                     .padding(.top, 4)
+                    .padding(.bottom, 12)
                 }
-                
-                // Card payment button (future implementation)
-                Button(action: {
-                    // TODO: Implement card payment flow
-                    alertMessage = "Card payment coming soon! Please use Apple Pay."
-                    isSuccess = false
-                    showingAlert = true
-                }) {
-                    HStack(spacing: 8) {
-                        Text("Pay with")
-                            .appFont(size: 22)
-                            .foregroundColor(.black)
-                        
-                        Image(systemName: "creditcard")
-                            .font(.system(size: 20))
-                            .foregroundColor(.black)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 46)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 23))
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, showApplePayButton ? 0 : 4)
-                .padding(.bottom, 12)
             }
         }
-        .presentationDetents([.height(showApplePayButton ? 260 : 220)])
+        .presentationDetents([.height(220)])
         .presentationDragIndicator(.visible)
         .alert(isPresented: $showingAlert) {
             Alert(
@@ -132,14 +110,54 @@ struct TicketPurchaseView: View {
                 }
             )
         }
-        .onAppear {
-            showApplePayButton = PKPaymentAuthorizationController.canMakePayments(
-                usingNetworks: [.visa, .masterCard, .amex, .discover]
-            )
+        .onChange(of: paymentService.isPaymentSheetReady) { oldValue, newValue in
+            if newValue {
+                presentPaymentSheet()
+            }
         }
     }
     
-    private func handleApplePay() {
+    private func presentPaymentSheet() {
+        print("🔵 Attempting to present payment sheet")
+        
+        guard let paymentSheet = paymentService.paymentSheet else {
+            print("❌ Payment sheet is nil")
+            paymentService.isPaymentSheetReady = false
+            return
+        }
+        
+        // Get the presenting view controller (the one that presented this sheet)
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first,
+              let rootViewController = window.rootViewController else {
+            print("❌ Could not get root view controller")
+            alertMessage = "Unable to present payment sheet"
+            isSuccess = false
+            showingAlert = true
+            paymentService.isPaymentSheetReady = false
+            return
+        }
+        
+        // Find the topmost view controller that's not already presenting
+        func getTopmostViewController(from viewController: UIViewController) -> UIViewController {
+            if let presented = viewController.presentedViewController {
+                return getTopmostViewController(from: presented)
+            }
+            return viewController
+        }
+        
+        let presentingVC = getTopmostViewController(from: rootViewController)
+        
+        print("✅ Presenting payment sheet from: \(type(of: presentingVC))")
+        
+        paymentSheet.present(from: presentingVC) { result in
+            print("🔵 Payment sheet completed with result: \(result)")
+            handlePaymentSheetResult(result)
+            paymentService.paymentSheet = nil
+        }
+    }
+    
+    private func handlePayment() {
         guard let eventId = event.id else {
             alertMessage = "Invalid event"
             isSuccess = false
@@ -154,21 +172,48 @@ struct TicketPurchaseView: View {
             return
         }
         
-        paymentService.processApplePayPayment(
+        print("🔵 Starting payment flow for event: \(eventId)")
+        
+        paymentService.processPayment(
             eventName: event.name,
             amount: event.price,
-            eventId: event.id ?? "2"
+            eventId: eventId
         ) { result in
+            if !result.success {
+                print("❌ Payment setup failed: \(result.message)")
+                alertMessage = result.message
+                isSuccess = false
+                showingAlert = true
+            }
+        }
+    }
+    
+    private func handlePaymentSheetResult(_ result: PaymentSheetResult) {
+        print("🔵 Processing payment sheet result")
+        
+        guard let paymentIntentId = paymentService.currentPaymentIntentId else {
+            print("❌ No payment intent ID found")
+            alertMessage = "Payment session expired"
+            isSuccess = false
+            showingAlert = true
+            return
+        }
+        
+        print("🔵 Payment intent ID: \(paymentIntentId)")
+        
+        paymentService.onPaymentCompletion(result: result, paymentIntentId: paymentIntentId) { ticketResult in
             DispatchQueue.main.async {
-                if result.success {
-                    alertMessage = result.message
+                if ticketResult.success {
+                    print("✅ Ticket created successfully: \(ticketResult.ticketId ?? "unknown")")
+                    alertMessage = ticketResult.message
                     isSuccess = true
                     showingAlert = true
                     
                     // Refresh events to update ticket count
                     viewModel.fetchEvents()
                 } else {
-                    alertMessage = result.message
+                    print("❌ Ticket creation failed: \(ticketResult.message)")
+                    alertMessage = ticketResult.message
                     isSuccess = false
                     showingAlert = true
                 }
