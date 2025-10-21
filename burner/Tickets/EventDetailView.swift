@@ -36,7 +36,7 @@ struct EventDetailView: View {
     
     var buttonText: String {
         if userHasTicket {
-            return "Ticket Purchased"
+            return "You already own a ticket."
         } else if availableTickets > 0 {
             return "Buy Ticket"
         } else {

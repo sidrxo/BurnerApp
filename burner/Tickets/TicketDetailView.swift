@@ -75,6 +75,7 @@ struct TicketDetailView: View {
     @State private var hasStartedLiveActivity = false
     @State private var isLiveActivityActive = false
     @State private var showingFullScreen = false
+    @Environment(\.appState) var appState
 
     var body: some View {
         ZStack {
@@ -174,26 +175,49 @@ struct TicketDetailView: View {
                         .padding(.vertical, 20)
                     
 
-                    // Bottom section - QR code
+                    // Bottom section - QR code or setup message
                     VStack(spacing: 10) {
-                        Button(action: {
-                            showingFullScreen = true
-                        }) {
-                            VStack(spacing: 16) {
-                                QRCodeView(
-                                    data: qrCodeData,
-                                    size: 200,
-                                    backgroundColor: .white,
-                                    foregroundColor: .black
-                                )
+                        if appState.burnerManager.isSetupValid {
+                            // Show QR code when burner mode is set up
+                            Button(action: {
+                                showingFullScreen = true
+                            }) {
+                                VStack(spacing: 16) {
+                                    QRCodeView(
+                                        data: qrCodeData,
+                                        size: 200,
+                                        backgroundColor: .white,
+                                        foregroundColor: .black
+                                    )
 
-                                Text("TAP TO SCAN")
-                                    .appCaption()
-                                    .foregroundColor(.black.opacity(0.4))
-                                    .tracking(1.5)
+                                    Text("TAP TO SCAN")
+                                        .appCaption()
+                                        .foregroundColor(.black.opacity(0.4))
+                                        .tracking(1.5)
+                                }
                             }
+                            .buttonStyle(PlainButtonStyle())
+                        } else {
+                            // Show message when burner mode is not set up
+                            VStack(spacing: 16) {
+                                Image(systemName: "lock.shield")
+                                    .font(.system(size: 80))
+                                    .foregroundColor(.black.opacity(0.2))
+
+                                VStack(spacing: 8) {
+                                    Text("QR Code Hidden")
+                                        .appSectionHeader()
+                                        .foregroundColor(.black)
+
+                                    Text("Enable Burner Mode in Settings to view your ticket QR code")
+                                        .appBody()
+                                        .foregroundColor(.black.opacity(0.6))
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 20)
+                                }
+                            }
+                            .frame(height: 200)
                         }
-                        .buttonStyle(PlainButtonStyle())
 
                         // Ticket number with accent
                         HStack(spacing: 12) {
