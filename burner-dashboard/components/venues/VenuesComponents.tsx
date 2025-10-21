@@ -374,11 +374,19 @@ export function VenueGridCard({ venue, user, actionLoading, handleRemoveVenue }:
           </div>
         </CardContent>
         <CardFooter className="pt-0">
-          <div className="flex w-full items-center justify-between gap-2">
+          <div className="flex w-full gap-2">
+            {user.role === "siteAdmin" && (
+              <Button asChild variant="outline" className="flex-1">
+                <Link href="/admin-management" className="flex items-center justify-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Manage Admins
+                </Link>
+              </Button>
+            )}
             <Button asChild variant="outline" className="flex-1">
-              <Link href={`/venues/${venue.id}/dashboard`} className="flex items-center justify-center gap-2">
-                <Settings className="h-4 w-4" />
-                Open dashboard
+              <Link href="/events" className="flex items-center justify-center gap-2">
+                <CalendarCheck className="h-4 w-4" />
+                View Events
               </Link>
             </Button>
           </div>
@@ -441,13 +449,23 @@ export function VenueCard({ venue, user, actionLoading, handleRemoveVenue }: Ven
           )}
         </div>
       </CardHeader>
-      <CardContent>
-        <Button asChild variant="link" className="px-0">
-          <Link href={`/venues/${venue.id}/dashboard`} className="inline-flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            View Dashboard
-          </Link>
-        </Button>
+      <CardContent className="space-y-2">
+        <div className="flex gap-2">
+          {user.role === "siteAdmin" && (
+            <Button asChild variant="link" className="px-0">
+              <Link href="/admin-management" className="inline-flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Manage Admins
+              </Link>
+            </Button>
+          )}
+          <Button asChild variant="link" className="px-0">
+            <Link href="/events" className="inline-flex items-center gap-2">
+              <CalendarCheck className="h-4 w-4" />
+              View Events
+            </Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

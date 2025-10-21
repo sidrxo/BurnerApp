@@ -1,5 +1,5 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { getFirestore } = require("firebase-admin/firestore");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getAuth } = require("firebase-admin/auth");
 const crypto = require("crypto");
 const { verifyAdminPermission } = require("../shared/permissions");
@@ -79,7 +79,7 @@ exports.createAdmin = onCall(async (request) => {
       const venueRef = db.collection("venues").doc(venueId);
       const adminField = role === 'venueAdmin' ? 'admins' : 'subAdmins';
       await venueRef.update({
-        [adminField]: db.FieldValue.arrayUnion(email)
+        [adminField]: FieldValue.arrayUnion(email)
       });
     }
     
@@ -146,7 +146,7 @@ exports.updateAdmin = onCall(async (request) => {
         const oldVenueRef = db.collection("venues").doc(currentData.venueId);
         const oldAdminField = currentData.role === 'venueAdmin' ? 'admins' : 'subAdmins';
         await oldVenueRef.update({
-          [oldAdminField]: db.FieldValue.arrayRemove(currentData.email)
+          [oldAdminField]: FieldValue.arrayRemove(currentData.email)
         });
       }
 
@@ -155,11 +155,11 @@ exports.updateAdmin = onCall(async (request) => {
         if (!newVenueDoc.exists) {
           throw new HttpsError("not-found", "New venue not found");
         }
-        
+
         const newVenueRef = db.collection("venues").doc(updates.venueId);
         const newAdminField = (updates.role || currentData.role) === 'venueAdmin' ? 'admins' : 'subAdmins';
         await newVenueRef.update({
-          [newAdminField]: db.FieldValue.arrayUnion(currentData.email)
+          [newAdminField]: FieldValue.arrayUnion(currentData.email)
         });
       }
 
@@ -215,7 +215,7 @@ exports.deleteAdmin = onCall(async (request) => {
       const venueRef = db.collection("venues").doc(adminData.venueId);
       const adminField = adminData.role === 'venueAdmin' ? 'admins' : 'subAdmins';
       await venueRef.update({
-        [adminField]: db.FieldValue.arrayRemove(adminData.email)
+        [adminField]: FieldValue.arrayRemove(adminData.email)
       });
     }
 
