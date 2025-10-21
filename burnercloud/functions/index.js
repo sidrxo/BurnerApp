@@ -31,6 +31,10 @@ exports.getUserTickets = ticketQueries.getUserTickets;
 // ============ PAYMENT PROCESSING ============
 exports.createPaymentIntent = stripePayment.createPaymentIntent;
 exports.confirmPurchase = stripePayment.confirmPurchase;
-exports.getPaymentMethods = stripePayment.getPaymentMethods;
-exports.confirmApplePayPayment = stripePayment.confirmApplePayPayment;
 exports.processApplePayPayment = stripePayment.processApplePayPayment;
+
+// ============ PAYMENT METHOD MANAGEMENT ============
+exports.getPaymentMethods = stripePayment.getPaymentMethods;
+exports.savePaymentMethod = stripePayment.savePaymentMethod;
+exports.deletePaymentMethod = stripePayment.deletePaymentMethod;
+exports.setDefaultPaymentMethod = stripePayment.setDefaultPaymentMethod;
