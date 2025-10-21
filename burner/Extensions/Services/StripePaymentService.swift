@@ -1,12 +1,15 @@
 import Foundation
 import FirebaseAuth
 import FirebaseFunctions
-import StripePaymentSheet
+@_spi(STP) import StripePaymentSheet
+import StripeCore
+import StripeApplePay
 import Combine
 import UIKit
+import PassKit
 
 @MainActor
-class StripePaymentService: ObservableObject {
+class StripePaymentService: NSObject, ObservableObject {
     @Published var isProcessing = false
     @Published var errorMessage: String?
     @Published var paymentSheet: PaymentSheet?
@@ -22,13 +25,14 @@ class StripePaymentService: ObservableObject {
         let ticketId: String?
     }
 
-    init() {
+    override init() {
+        super.init()
         // Configure Stripe with your publishable key
         // TODO: Replace with your actual Stripe publishable key
         StripeAPI.defaultPublishableKey = "pk_test_51SKOqrFxXnVDuRLXw30ABLXPF9QyorMesOCHN9sMbRAIokEIL8gptsxxX4APRJSO0b8SRGvyAUBNzBZqCCgOSvVI00fxiHOZNe"
-        
+
         // Log if key is not set
-        if StripeAPI.defaultPublishableKey == "pk_test" {
+        if StripeAPI.defaultPublishableKey == "pk_test_51SKOqrFxXnVDuRLXw30ABLXPF9QyorMesOCHN9sMbRAIokEIL8gptsxxX4APRJSO0b8SRGvyAUBNzBZqCCgOSvVI00fxiHOZNe" {
             print("⚠️ WARNING: Stripe publishable key not set! Get it from https://dashboard.stripe.com/test/apikeys")
         }
     }
@@ -105,10 +109,8 @@ class StripePaymentService: ObservableObject {
                     if let details = error.userInfo["details"] as? String {
                         errorMessage = details
                         print("❌ Firebase error details: \(details)")
-                    } else if let userInfo = error.userInfo as? [String: Any] {
-                        print("❌ Firebase error userInfo: \(userInfo)")
-                        errorMessage = error.localizedDescription
                     } else {
+                        print("❌ Firebase error userInfo: \(error.userInfo)")
                         errorMessage = error.localizedDescription
                     }
                     
@@ -254,6 +256,182 @@ class StripePaymentService: ObservableObject {
     }
 
     // -------------------------
+    // Process Apple Pay Payment (Custom Flow)
+    // -------------------------
+    func processApplePayPayment(eventName: String, amount: Double, eventId: String, completion: @escaping (PaymentResult) -> Void) {
+        guard !isProcessing else {
+            print("⚠️ Payment already in progress, ignoring duplicate call")
+            return
+        }
+
+        Task {
+            await MainActor.run {
+                self.isProcessing = true
+                self.errorMessage = nil
+            }
+
+            do {
+                print("🔵 Creating payment intent for Apple Pay: \(eventId)")
+
+                // Step 1: Create payment intent on backend
+                let (clientSecret, intentId) = try await createPaymentIntent(eventId: eventId)
+
+                print("✅ Payment intent created for Apple Pay: \(intentId)")
+
+                // Store payment intent ID
+                await MainActor.run {
+                    self.currentPaymentIntentId = intentId
+                }
+
+                // Step 2: Present Apple Pay
+                await MainActor.run {
+                    ApplePayHandler.shared.startPayment(
+                        eventName: eventName,
+                        amount: amount,
+                        onSuccess: { payment in
+                            print("✅ Apple Pay authorized successfully")
+
+                            // Step 3: Confirm the PaymentIntent with Stripe using the Apple Pay payment method
+                            Task {
+                                print("🔵 Confirming PaymentIntent with Apple Pay payment method")
+
+                                // Create API client to confirm payment intent with Apple Pay token
+                                let apiClient = STPAPIClient.shared
+
+                                apiClient.createPaymentMethod(with: payment) { paymentMethod, error in
+                                    Task {
+                                        if let error = error {
+                                            print("❌ Failed to create payment method: \(error)")
+                                            await MainActor.run {
+                                                self.isProcessing = false
+                                                completion(PaymentResult(
+                                                    success: false,
+                                                    message: "Failed to process Apple Pay: \(error.localizedDescription)",
+                                                    ticketId: nil
+                                                ))
+                                            }
+                                            return
+                                        }
+
+                                        guard let paymentMethod = paymentMethod else {
+                                            print("❌ No payment method created")
+                                            await MainActor.run {
+                                                self.isProcessing = false
+                                                completion(PaymentResult(
+                                                    success: false,
+                                                    message: "Failed to create payment method",
+                                                    ticketId: nil
+                                                ))
+                                            }
+                                            return
+                                        }
+
+                                        print("✅ Payment method created: \(paymentMethod.stripeId)")
+
+                                        // Now confirm the payment intent with the payment method
+                                        let paymentIntentParams = STPPaymentIntentParams(clientSecret: clientSecret)
+                                        paymentIntentParams.paymentMethodId = paymentMethod.stripeId
+
+                                        apiClient.confirmPaymentIntent(with: paymentIntentParams) { confirmResult, confirmError in
+                                            Task {
+                                                if let confirmError = confirmError {
+                                                    print("❌ Payment confirmation failed: \(confirmError)")
+                                                    await MainActor.run {
+                                                        self.isProcessing = false
+                                                        completion(PaymentResult(
+                                                            success: false,
+                                                            message: "Payment failed: \(confirmError.localizedDescription)",
+                                                            ticketId: nil
+                                                        ))
+                                                    }
+                                                    return
+                                                }
+
+                                                if let paymentIntent = confirmResult, paymentIntent.status == .succeeded {
+                                                    print("✅ Payment confirmed successfully")
+
+                                                    // Step 4: Create ticket on backend
+                                                    do {
+                                                        let ticketResult = try await self.confirmPurchase(paymentIntentId: intentId)
+                                                        await MainActor.run {
+                                                            self.isProcessing = false
+                                                            completion(ticketResult)
+                                                        }
+                                                    } catch {
+                                                        print("❌ Error creating ticket: \(error)")
+                                                        await MainActor.run {
+                                                            self.isProcessing = false
+                                                            completion(PaymentResult(
+                                                                success: false,
+                                                                message: "Payment succeeded but ticket creation failed: \(error.localizedDescription)",
+                                                                ticketId: nil
+                                                            ))
+                                                        }
+                                                    }
+                                                } else {
+                                                    print("❌ Payment not succeeded, status: \(String(confirmResult?.status.rawValue ?? -1))")
+                                                    await MainActor.run {
+                                                        self.isProcessing = false
+                                                        completion(PaymentResult(
+                                                            success: false,
+                                                            message: "Payment was not completed",
+                                                            ticketId: nil
+                                                        ))
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        onFailure: { error in
+                            print("❌ Apple Pay failed: \(error)")
+                            Task {
+                                await MainActor.run {
+                                    self.isProcessing = false
+                                    completion(PaymentResult(
+                                        success: false,
+                                        message: "Apple Pay failed: \(error.localizedDescription)",
+                                        ticketId: nil
+                                    ))
+                                }
+                            }
+                        }
+                    )
+                }
+
+            } catch let error as NSError {
+                print("❌ Error setting up Apple Pay: \(error)")
+
+                let errorMessage: String
+                if error.domain == "FIRFunctionsErrorDomain" {
+                    if let details = error.userInfo["details"] as? String {
+                        errorMessage = details
+                    } else {
+                        errorMessage = error.localizedDescription
+                    }
+                } else {
+                    errorMessage = error.localizedDescription
+                }
+
+                await MainActor.run {
+                    self.isProcessing = false
+                    self.errorMessage = errorMessage
+                    completion(PaymentResult(success: false, message: errorMessage, ticketId: nil))
+                }
+            }
+        }
+    }
+
+    // -------------------------
+    // Get Authentication Context for Stripe
+    // -------------------------
+    func getAuthenticationContext() -> STPAuthenticationContext {
+        return AuthenticationContext()
+    }
+
+    // -------------------------
     // Payment Errors
     // -------------------------
     enum PaymentError: LocalizedError {
@@ -261,7 +439,7 @@ class StripePaymentService: ObservableObject {
         case invalidResponse
         case paymentFailed
         case cancelled
-        
+
         var errorDescription: String? {
             switch self {
             case .notAuthenticated:
@@ -274,5 +452,34 @@ class StripePaymentService: ObservableObject {
                 return "Payment was cancelled"
             }
         }
+    }
+}
+
+// MARK: - Authentication Context Helper
+@MainActor
+class AuthenticationContext: NSObject, STPAuthenticationContext {
+    nonisolated func authenticationPresentingViewController() -> UIViewController {
+        // Get the topmost view controller for presenting authentication UI
+        var viewController: UIViewController = UIViewController()
+
+        DispatchQueue.main.sync {
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let window = windowScene.windows.first,
+                  let rootViewController = window.rootViewController else {
+                viewController = UIViewController()
+                return
+            }
+
+            func getTopmostViewController(from vc: UIViewController) -> UIViewController {
+                if let presented = vc.presentedViewController {
+                    return getTopmostViewController(from: presented)
+                }
+                return vc
+            }
+
+            viewController = getTopmostViewController(from: rootViewController)
+        }
+
+        return viewController
     }
 }
