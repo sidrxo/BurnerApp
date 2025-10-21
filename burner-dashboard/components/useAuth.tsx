@@ -172,14 +172,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log("Auth state changed:", !!firebaseUser);
       setLoading(true);
-      
+
       if (firebaseUser) {
         try {
-          // Wait a moment for custom claims to be available after login
-          console.log("Waiting for claims to be available...");
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          const validatedUser = await validateAndSyncUser(firebaseUser);
+          // Retry logic with exponential backoff to wait for custom claims
+          // Try up to 5 times with increasing delays: 100ms, 200ms, 400ms, 800ms, 1600ms
+          let validatedUser: AppUser | null = null;
+          let retries = 0;
+          const maxRetries = 5;
+
+          while (retries < maxRetries && !validatedUser) {
+            try {
+              if (retries > 0) {
+                const delay = Math.min(100 * Math.pow(2, retries - 1), 1600);
+                console.log(`Retry ${retries}: Waiting ${delay}ms for claims...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
+
+              validatedUser = await validateAndSyncUser(firebaseUser);
+
+              // If we got a valid user with proper claims, break out
+              if (validatedUser && validatedUser.role !== 'user') {
+                console.log("Successfully loaded user with claims:", validatedUser.role);
+                break;
+              }
+
+              retries++;
+            } catch (error) {
+              console.error(`Validation attempt ${retries + 1} failed:`, error);
+              retries++;
+              if (retries >= maxRetries) {
+                throw error;
+              }
+            }
+          }
+
           setUser(validatedUser);
           console.log("Final user set:", validatedUser);
         } catch (error) {
@@ -189,7 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setUser(null);
       }
-      
+
       setLoading(false);
     });
 

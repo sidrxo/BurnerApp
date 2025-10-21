@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, doc, getDocs, updateDoc, setDoc, addDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDocs, updateDoc, setDoc, addDoc, deleteDoc, arrayUnion, arrayRemove, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/components/useAuth";
 import { toast } from "sonner";
@@ -45,7 +45,20 @@ export function useVenuesData() {
 
   const fetchVenues = async () => {
     try {
-      const snapshot = await getDocs(collection(db, "venues"));
+      let snapshot;
+
+      // Optimize query based on role - only fetch what the user needs
+      if (user && user.role === "venueAdmin" && user.venueId) {
+        // venueAdmin only needs their own venue
+        const venueDoc = await getDocs(
+          query(collection(db, "venues"), where("__name__", "==", user.venueId))
+        );
+        snapshot = venueDoc;
+      } else {
+        // siteAdmin and others can see all venues
+        snapshot = await getDocs(collection(db, "venues"));
+      }
+
       const fetched: Venue[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
@@ -64,11 +77,7 @@ export function useVenuesData() {
         });
       });
 
-      if (user && user.role === "venueAdmin") {
-        setVenues(fetched.filter((v) => v.id === user.venueId));
-      } else {
-        setVenues(fetched);
-      }
+      setVenues(fetched);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch venues");
@@ -108,28 +117,28 @@ export function useVenuesData() {
         eventCount: 0,
       });
 
-      // Check if user already exists
-      const usersSnapshot = await getDocs(collection(db, "users"));
-      let userDocId: string | null = null;
-      usersSnapshot.forEach((doc) => {
-        if (doc.data().email === newVenueAdminEmail.trim()) {
-          userDocId = doc.id;
-        }
-      });
+      // Check if user already exists using query instead of loading all users
+      const usersQuery = query(
+        collection(db, "users"),
+        where("email", "==", newVenueAdminEmail.trim())
+      );
+      const usersSnapshot = await getDocs(usersQuery);
 
       // Create or update user document
-      if (userDocId) {
-        const userRef = doc(db, "users", userDocId);
-        await updateDoc(userRef, { 
-          role: "venueAdmin", 
-          venueId: venueRef.id 
+      if (!usersSnapshot.empty) {
+        // User exists, update their role
+        const userDoc = usersSnapshot.docs[0];
+        await updateDoc(userDoc.ref, {
+          role: "venueAdmin",
+          venueId: venueRef.id
         });
       } else {
+        // Create new user document
         const newUserRef = doc(db, "users", newVenueAdminEmail.trim());
-        await setDoc(newUserRef, { 
-          email: newVenueAdminEmail.trim(), 
-          role: "venueAdmin", 
-          venueId: venueRef.id 
+        await setDoc(newUserRef, {
+          email: newVenueAdminEmail.trim(),
+          role: "venueAdmin",
+          venueId: venueRef.id
         });
       }
 
@@ -158,16 +167,17 @@ export function useVenuesData() {
     setActionLoading(true);
     try {
       await deleteDoc(doc(db, "venues", venueId));
-      
-      // Reset all users associated with this venue
-      const usersSnapshot = await getDocs(collection(db, "users"));
-      const updatePromises: Promise<void>[] = [];
-      usersSnapshot.forEach((docSnap) => {
-        if (docSnap.data().venueId === venueId) {
-          const userRef = doc(db, "users", docSnap.id);
-          updatePromises.push(updateDoc(userRef, { role: "user", venueId: null }));
-        }
-      });
+
+      // Reset all users associated with this venue using query
+      const usersQuery = query(
+        collection(db, "users"),
+        where("venueId", "==", venueId)
+      );
+      const usersSnapshot = await getDocs(usersQuery);
+
+      const updatePromises = usersSnapshot.docs.map((docSnap) =>
+        updateDoc(docSnap.ref, { role: "user", venueId: null })
+      );
       await Promise.all(updatePromises);
 
       toast.success(`Venue "${venue.name}" and all associated admins removed successfully`);
@@ -195,36 +205,41 @@ export function useVenuesData() {
 
     setActionLoading(true);
     try {
-      // Lookup user by email
-      const usersSnapshot = await getDocs(collection(db, "users"));
-      let userDocId: string | null = null;
-      usersSnapshot.forEach((doc) => {
-        if (doc.data().email === newAdminEmail.trim()) userDocId = doc.id;
-      });
-
       if (!user) throw new Error("User not found");
 
-      if (userDocId) {
-        const userRef = doc(db, "users", userDocId);
-        const newRole = user.role === "siteAdmin" ? "venueAdmin" : "subAdmin";
-        await updateDoc(userRef, { role: newRole, venueId: venueId });
+      // Lookup user by email using query instead of loading all users
+      const usersQuery = query(
+        collection(db, "users"),
+        where("email", "==", newAdminEmail.trim())
+      );
+      const usersSnapshot = await getDocs(usersQuery);
+
+      const newRole = user.role === "siteAdmin" ? "venueAdmin" : "subAdmin";
+
+      if (!usersSnapshot.empty) {
+        // User exists, update their role
+        const userDoc = usersSnapshot.docs[0];
+        await updateDoc(userDoc.ref, {
+          role: newRole,
+          venueId: venueId
+        });
       } else {
+        // Create new user document
         const newUserRef = doc(db, "users", newAdminEmail.trim());
-        const newRole = user.role === "siteAdmin" ? "venueAdmin" : "subAdmin";
-        await setDoc(newUserRef, { 
-          email: newAdminEmail.trim(), 
-          role: newRole, 
-          venueId: venueId 
+        await setDoc(newUserRef, {
+          email: newAdminEmail.trim(),
+          role: newRole,
+          venueId: venueId
         });
       }
 
       const venueRef = doc(db, "venues", venueId);
       const venue = venues.find((v) => v.id === venueId);
       if (!venue) throw new Error("Venue not found");
-      
+
       const arrayField = user.role === "siteAdmin" ? "admins" : "subAdmins";
-      await updateDoc(venueRef, { 
-        [arrayField]: [...(venue[arrayField] || []), newAdminEmail.trim()] 
+      await updateDoc(venueRef, {
+        [arrayField]: arrayUnion(newAdminEmail.trim())
       });
 
       const roleType = user.role === "siteAdmin" ? "venue admin" : "sub-admin";
@@ -246,21 +261,26 @@ export function useVenuesData() {
       const venueRef = doc(db, "venues", venueId);
       const venue = venues.find((v) => v.id === venueId);
       if (!venue) throw new Error("Venue not found");
-      
-      const arrayField = isVenueAdmin ? "admins" : "subAdmins";
-      const updatedArray = venue[arrayField].filter((e) => e !== email);
-      await updateDoc(venueRef, { [arrayField]: updatedArray });
 
-      // Update user's role in /users
-      const usersSnapshot = await getDocs(collection(db, "users"));
-      const updatePromises: Promise<void>[] = [];
-      usersSnapshot.forEach((docSnap) => {
-        if (docSnap.data().email === email) {
-          const userRef = doc(db, "users", docSnap.id);
-          updatePromises.push(updateDoc(userRef, { role: "user", venueId: null }));
-        }
+      const arrayField = isVenueAdmin ? "admins" : "subAdmins";
+      await updateDoc(venueRef, {
+        [arrayField]: arrayRemove(email)
       });
-      await Promise.all(updatePromises);
+
+      // Update user's role in /users using query instead of loading all users
+      const usersQuery = query(
+        collection(db, "users"),
+        where("email", "==", email)
+      );
+      const usersSnapshot = await getDocs(usersQuery);
+
+      if (!usersSnapshot.empty) {
+        const userDoc = usersSnapshot.docs[0];
+        await updateDoc(userDoc.ref, {
+          role: "user",
+          venueId: null
+        });
+      }
 
       const roleType = isVenueAdmin ? "venue admin" : "sub-admin";
       toast.success(`${roleType} removed successfully`);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collectionGroup, getDocs, updateDoc, Timestamp } from "firebase/firestore";
+import { collectionGroup, getDocs, updateDoc, Timestamp, collection, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/components/useAuth";
 import { toast } from "sonner";
@@ -53,11 +53,12 @@ export function useTicketsData() {
 
   const loadTickets = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
-      const snap = await getDocs(collectionGroup(db, "tickets"));
-      let allTickets = snap.docs.map(doc => {
+      let allTickets: Ticket[] = [];
+
+      const transformTicket = (doc: any) => {
         const data = doc.data();
         const status = (data.status || (data.isUsed ? "used" : "confirmed")) as string;
         const totalPrice = typeof data.totalPrice === "number"
@@ -73,16 +74,51 @@ export function useTicketsData() {
           status,
           isUsed: status.toLowerCase() === 'used',
         } as Ticket;
-      });
+      };
 
-      // Filter by venue for venue admins and sub-admins
-      if (user.role === "venueAdmin" || user.role === "subAdmin") {
+      if (user.role === "siteAdmin") {
+        // Site admin sees all tickets
+        const snap = await getDocs(collectionGroup(db, "tickets"));
+        allTickets = snap.docs.map(transformTicket);
+      } else if (user.role === "venueAdmin" || user.role === "subAdmin") {
         if (!user.venueId) {
           toast.error("No venue assigned to your account");
           setLoading(false);
           return;
         }
-        allTickets = allTickets.filter(ticket => ticket.venueId === user.venueId);
+
+        // More efficient: Query events for this venue first, then get tickets for those events
+        const eventsQuery = query(
+          collection(db, "events"),
+          where("venueId", "==", user.venueId)
+        );
+        const eventsSnap = await getDocs(eventsQuery);
+
+        // Fetch tickets for each event in parallel
+        const ticketPromises = eventsSnap.docs.map(async (eventDoc) => {
+          const ticketsSnap = await getDocs(collection(db, "events", eventDoc.id, "tickets"));
+          return ticketsSnap.docs.map(transformTicket);
+        });
+
+        const ticketArrays = await Promise.all(ticketPromises);
+        allTickets = ticketArrays.flat();
+      } else {
+        // For scanners or other roles with venue access
+        if (user.venueId) {
+          const eventsQuery = query(
+            collection(db, "events"),
+            where("venueId", "==", user.venueId)
+          );
+          const eventsSnap = await getDocs(eventsQuery);
+
+          const ticketPromises = eventsSnap.docs.map(async (eventDoc) => {
+            const ticketsSnap = await getDocs(collection(db, "events", eventDoc.id, "tickets"));
+            return ticketsSnap.docs.map(transformTicket);
+          });
+
+          const ticketArrays = await Promise.all(ticketPromises);
+          allTickets = ticketArrays.flat();
+        }
       }
 
       setTickets(allTickets);

@@ -212,13 +212,13 @@ export function SearchAndStats({
   );
 }
 
-export function EmptyEventsState({ 
-  search, 
-  setOpenForm, 
-  userRole 
+export function EmptyEventsState({
+  search,
+  onCreateClick,
+  userRole
 }: {
   search: string;
-  setOpenForm: (open: boolean) => void;
+  onCreateClick: () => void;
   userRole: string;
 }) {
   return (
@@ -227,15 +227,15 @@ export function EmptyEventsState({
         <Calendar className="mx-auto h-16 w-16 text-muted-foreground/50 mb-6" />
         <h3 className="text-xl font-semibold mb-3">No events found</h3>
         <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-          {search 
-            ? "Try adjusting your search terms to find what you're looking for" 
+          {search
+            ? "Try adjusting your search terms to find what you're looking for"
             : userRole === "siteAdmin"
               ? "Create your first event to get started with managing your events"
               : "Create your first event for your venue to get started"
           }
         </p>
         {!search && (
-          <Button onClick={() => setOpenForm(true)} size="lg">
+          <Button onClick={onCreateClick} size="lg">
             <Plus className="mr-2 h-4 w-4" />
             Create Your First Event
           </Button>
@@ -250,11 +250,10 @@ export function EventCard({
   index,
   eventStatus,
   ticketProgress,
-  user, 
-  onToggleFeatured, 
-  onDelete, 
-  setEditing, 
-  setOpenForm
+  user,
+  onToggleFeatured,
+  onDelete,
+  onEditClick
 }: {
   ev: Event;
   index: number;
@@ -263,8 +262,7 @@ export function EventCard({
   user: any;
   onToggleFeatured: (event: Event) => void;
   onDelete: (event: Event) => void;
-  setEditing: (event: Event) => void;
-  setOpenForm: (open: boolean) => void;
+  onEditClick: () => void;
 }) {
   const startTimestamp: any = ev.startTime ?? ev.date;
   const endTimestamp: any = ev.endTime ?? null;
@@ -421,10 +419,10 @@ export function EventCard({
 
       <CardFooter className="p-4 bg-muted/30">
         <div className="flex gap-2 w-full">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
-            onClick={() => { setEditing(ev); setOpenForm(true); }}
+            onClick={onEditClick}
             className="flex-1 hover:bg-primary hover:text-primary-foreground transition-colors"
           >
             <Edit className="h-3 w-3 mr-2" />
