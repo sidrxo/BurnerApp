@@ -5,10 +5,12 @@ import { onAuthStateChanged, User as FirebaseUser, getAuth } from "firebase/auth
 import { httpsCallable, getFunctions } from "firebase/functions";
 import { initializeApp, getApps } from "firebase/app";
 
+type Role = "siteAdmin" | "venueAdmin" | "subAdmin" | "scanner" | "user";
+
 type AppUser = {
   uid: string;
   email: string | null;
-  role: "siteAdmin" | "venueAdmin" | "subAdmin" | "user";
+  role: Role;
   venueId?: string | null;
   active: boolean;
 };
@@ -40,9 +42,9 @@ const functions = getFunctions(app);
 const auth = getAuth(app);
 
 // Helper function to validate role type
-function isValidRole(role: any): role is "siteAdmin" | "venueAdmin" | "subAdmin" | "user" {
-  return typeof role === 'string' && 
-         ['siteAdmin', 'venueAdmin', 'subAdmin', 'user'].includes(role);
+function isValidRole(role: any): role is Role {
+  return typeof role === 'string' &&
+         ['siteAdmin', 'venueAdmin', 'subAdmin', 'scanner', 'user'].includes(role);
 }
 
 // Helper function to validate venueId type

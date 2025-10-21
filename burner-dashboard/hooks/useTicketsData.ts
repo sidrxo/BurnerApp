@@ -7,12 +7,14 @@ import { toast } from "sonner";
 export type Ticket = {
   id: string;
   userID: string;
-  userEmail: string;
+  userEmail?: string;
   eventName: string;
   eventId?: string;
   venueId?: string;
-  ticketPrice: number;
+  ticketNumber?: string;
+  totalPrice: number;
   purchaseDate: any;
+  status: string;
   isUsed: boolean;
   usedAt?: any;
   docRef?: any;
@@ -57,12 +59,19 @@ export function useTicketsData() {
       const snap = await getDocs(collectionGroup(db, "tickets"));
       let allTickets = snap.docs.map(doc => {
         const data = doc.data();
+        const status = (data.status || (data.isUsed ? "used" : "confirmed")) as string;
+        const totalPrice = typeof data.totalPrice === "number"
+          ? data.totalPrice
+          : typeof data.ticketPrice === "number"
+            ? data.ticketPrice
+            : 0;
         return {
           id: doc.id,
           docRef: doc.ref,
           ...data,
-          // Ensure ticketPrice is always a valid number
-          ticketPrice: typeof data.ticketPrice === 'number' && !isNaN(data.ticketPrice) ? data.ticketPrice : 0,
+          totalPrice,
+          status,
+          isUsed: status.toLowerCase() === 'used',
         } as Ticket;
       });
 
@@ -105,7 +114,7 @@ export function useTicketsData() {
       const group = groups[eventKey];
       group.tickets.push(ticket);
       // Safely add ticketPrice with fallback to 0
-      const price = typeof ticket.ticketPrice === 'number' && !isNaN(ticket.ticketPrice) ? ticket.ticketPrice : 0;
+      const price = typeof ticket.totalPrice === 'number' && !isNaN(ticket.totalPrice) ? ticket.totalPrice : 0;
       group.totalRevenue += price;
       group.totalCount++;
       if (ticket.isUsed) {
@@ -144,7 +153,7 @@ export function useTicketsData() {
     if (ticket.isUsed) return;
     try {
       if (ticket.docRef) {
-        await updateDoc(ticket.docRef, { isUsed: true, usedAt: Timestamp.now() });
+        await updateDoc(ticket.docRef, { status: 'used', usedAt: Timestamp.now() });
       }
       toast.success("Ticket marked as used!");
       loadTickets();
@@ -166,9 +175,8 @@ export function useTicketsData() {
   const stats: TicketsStats = {
     totalTickets: tickets.length,
     usedTickets: tickets.filter(t => t.isUsed).length,
-    // Safely calculate total revenue with proper null checking
     totalRevenue: tickets.reduce((sum, t) => {
-      const price = typeof t.ticketPrice === 'number' && !isNaN(t.ticketPrice) ? t.ticketPrice : 0;
+      const price = typeof t.totalPrice === 'number' && !isNaN(t.totalPrice) ? t.totalPrice : 0;
       return sum + price;
     }, 0),
     activeEvents: eventGroups.length

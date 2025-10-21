@@ -166,29 +166,36 @@ export function useAccountData() {
     
     switch (authUser.role) {
       case "siteAdmin":
-        return { 
-          title: "Site Administrator", 
+        return {
+          title: "Site Administrator",
           variant: "default",
           icon: null,
           description: "Full system access across all venues"
         };
       case "venueAdmin":
-        return { 
-          title: "Venue Administrator", 
+        return {
+          title: "Venue Administrator",
           variant: "secondary",
           icon: null,
           description: "Manage events and staff for your venue"
         };
       case "subAdmin":
-        return { 
-          title: "Sub Administrator", 
+        return {
+          title: "Sub Administrator",
           variant: "outline",
           icon: null,
           description: "Assist with venue management tasks"
         };
+      case "scanner":
+        return {
+          title: "Scanner",
+          variant: "secondary",
+          icon: null,
+          description: "Check in guests and validate tickets"
+        };
       default:
-        return { 
-          title: "User", 
+        return {
+          title: "User",
           variant: "secondary",
           icon: null,
           description: "Standard user account"

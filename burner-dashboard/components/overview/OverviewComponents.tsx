@@ -120,9 +120,11 @@ export function MetricsCards({ metrics, userRole }: {
           <Calendar className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{0}</div>
+          <div className="text-2xl font-bold">{metrics.totalEvents.toLocaleString()}</div>
           <p className="text-xs text-muted-foreground">
-            {userRole === "siteAdmin" ? "Total events created" : "Your venue events"}
+            {userRole === "siteAdmin"
+              ? `${metrics.activeEvents} active`
+              : `${metrics.activeEvents} active for your venue`}
           </p>
         </CardContent>
       </Card>
@@ -215,10 +217,29 @@ export function SalesChart({ dailySales, userRole }: {
   );
 }
 
-export function EventPerformanceTable({ eventStats, userRole }: { 
-  eventStats: EventStats[]; 
-  userRole: string; 
+export function EventPerformanceTable({ eventStats, userRole }: {
+  eventStats: EventStats[];
+  userRole: string;
 }) {
+  const getStatusVariant = (status?: string) => {
+    const normalized = (status || "").toLowerCase();
+    switch (normalized) {
+      case "active":
+        return "default" as const;
+      case "scheduled":
+        return "outline" as const;
+      case "soldout":
+      case "sold_out":
+        return "destructive" as const;
+      case "cancelled":
+        return "destructive" as const;
+      case "completed":
+        return "secondary" as const;
+      default:
+        return "secondary" as const;
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -236,6 +257,7 @@ export function EventPerformanceTable({ eventStats, userRole }: {
             <TableHeader>
               <TableRow>
                 <TableHead>Event Name</TableHead>
+                <TableHead>Start</TableHead>
                 <TableHead className="text-right">Tickets Sold</TableHead>
                 <TableHead className="text-right">Revenue</TableHead>
                 <TableHead className="text-right">Usage Rate</TableHead>
@@ -244,16 +266,31 @@ export function EventPerformanceTable({ eventStats, userRole }: {
             </TableHeader>
             <TableBody>
               {eventStats.slice(0, 10).map((event, index) => {
-                const eventUsageRate = (event.usedTickets / event.ticketCount) * 100;
+                const eventUsageRate = event.ticketCount > 0 ? (event.usedTickets / event.ticketCount) * 100 : 0;
+                const statusLabel = event.status
+                  ? event.status.charAt(0).toUpperCase() + event.status.slice(1)
+                  : index < 3
+                    ? "Top Performer"
+                    : "Active";
+                const statusVariant = getStatusVariant(event.status);
+                const startLabel = event.startTime
+                  ? event.startTime.toLocaleString("en-GB", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "—";
                 return (
                   <TableRow key={`${event.eventName}-${index}`}>
                     <TableCell className="font-medium">{event.eventName}</TableCell>
+                    <TableCell>{startLabel}</TableCell>
                     <TableCell className="text-right">{event.ticketCount}</TableCell>
                     <TableCell className="text-right">{formatCurrency(event.revenue)}</TableCell>
                     <TableCell className="text-right">{eventUsageRate.toFixed(1)}%</TableCell>
                     <TableCell className="text-right">
-                      <Badge variant={index < 3 ? "default" : "secondary"}>
-                        {index < 3 ? "Top Performer" : "Active"}
+                      <Badge variant={statusVariant}>
+                        {statusLabel}
                       </Badge>
                     </TableCell>
                   </TableRow>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { collectionGroup, getDocs } from "firebase/firestore";
+import { collection, collectionGroup, getDocs, query, where } from "firebase/firestore";
+
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/components/useAuth";
 import { toast } from "sonner";
@@ -7,13 +8,13 @@ import { toast } from "sonner";
 export type Ticket = {
   id: string;
   userID: string;
-  userEmail: string;
+  userEmail?: string;
   eventName: string;
   eventId?: string;
   venueId?: string;
-  ticketPrice: number;
+  totalPrice: number;
   purchaseDate: any;
-  isUsed: boolean;
+  status: string;
   usedAt?: any;
 };
 
@@ -26,10 +27,14 @@ export type UserStats = {
 };
 
 export type EventStats = {
+  eventId?: string;
   eventName: string;
   ticketCount: number;
   revenue: number;
   usedTickets: number;
+  status?: string;
+  startTime?: Date | null;
+  venueName?: string;
 };
 
 export type DailySales = {
@@ -45,6 +50,8 @@ export type OverviewMetrics = {
   usedTickets: number;
   usageRate: number;
   avgRevenuePerUser: number;
+  totalEvents: number;
+  activeEvents: number;
 };
 
 export function useOverviewData() {
@@ -64,29 +71,40 @@ export function useOverviewData() {
 
   async function loadTicketsAndUsers() {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       let allTickets: Ticket[] = [];
 
+      const transformTicket = (doc: any) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          totalPrice:
+            typeof data.totalPrice === "number"
+              ? data.totalPrice
+              : typeof data.ticketPrice === "number"
+              ? data.ticketPrice
+              : 0,
+          status: data.status || (data.isUsed ? "used" : "confirmed"),
+          usedAt: data.usedAt,
+        } as Ticket;
+      };
+
       if (user.role === "siteAdmin") {
         const ticketsSnap = await getDocs(collectionGroup(db, "tickets"));
-        allTickets = ticketsSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Ticket));
+        allTickets = ticketsSnap.docs.map(transformTicket);
       } else if (user.role === "venueAdmin" || user.role === "subAdmin") {
         if (!user.venueId) {
           toast.error("No venue assigned to your account");
           setLoading(false);
           return;
         }
-
         const ticketsSnap = await getDocs(collectionGroup(db, "tickets"));
-        allTickets = ticketsSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Ticket)).filter(ticket => ticket.venueId === user.venueId);
+        allTickets = ticketsSnap.docs
+          .map(transformTicket)
+          .filter((ticket) => ticket.venueId === user.venueId);
       } else {
         setLoading(false);
         return;
@@ -94,51 +112,96 @@ export function useOverviewData() {
 
       setTickets(allTickets);
       processUserStats(allTickets);
-      processEventStats(allTickets);
+      const aggregatedLoaded = await loadAggregatedEventStats();
+      if (!aggregatedLoaded) {
+        processEventStats(allTickets);
+      }
       processDailySales(allTickets);
-
-    } catch (e: any) {
-      toast.error("Failed to load overview: " + e.message);
+    } catch (error: any) {
+      toast.error("Failed to load overview: " + error.message);
     } finally {
       setLoading(false);
     }
   }
 
+  async function loadAggregatedEventStats() {
+    try {
+      let statsQuery;
+      if (user?.role === "siteAdmin") {
+        statsQuery = collection(db, "eventStats");
+      } else if (user?.venueId) {
+        statsQuery = query(collection(db, "eventStats"), where("venueId", "==", user.venueId));
+      } else {
+        return false;
+      }
+
+      const statsSnap = await getDocs(statsQuery);
+      if (statsSnap.empty) {
+        return false;
+      }
+
+      const aggregated: EventStats[] = statsSnap.docs.map((doc) => {
+        const data = doc.data() as any;
+        return {
+          eventId: doc.id,
+          eventName: data.eventName || doc.id,
+          ticketCount: data.totalTickets || 0,
+          revenue: data.totalRevenue || 0,
+          usedTickets: data.usedTickets || 0,
+          status: data.status,
+          startTime: data.startTime?.toDate ? data.startTime.toDate() : data.startTime || null,
+          venueName: data.venueName,
+        };
+      });
+
+      aggregated.sort((a, b) => (b.revenue || 0) - (a.revenue || 0));
+      setEventStats(aggregated);
+      return true;
+    } catch (error) {
+      console.warn("Unable to load aggregated event stats", error);
+      return false;
+    }
+  }
+
   function processUserStats(allTickets: Ticket[]) {
     const userMap: Record<string, UserStats> = {};
-    allTickets.forEach(t => {
-      if (!userMap[t.userID]) {
-        userMap[t.userID] = {
-          userID: t.userID,
-          email: t.userEmail || "Unknown",
+    allTickets.forEach((ticket) => {
+      if (!userMap[ticket.userID]) {
+        userMap[ticket.userID] = {
+          userID: ticket.userID,
+          email: ticket.userEmail || "Unknown",
           ticketCount: 0,
           totalSpent: 0,
-          events: []
+          events: [],
         };
       }
-      const u = userMap[t.userID];
-      u.ticketCount++;
-      u.totalSpent += t.ticketPrice || 0;
-      if (t.eventName && !u.events.includes(t.eventName)) u.events.push(t.eventName);
+      const target = userMap[ticket.userID];
+      target.ticketCount++;
+      target.totalSpent += ticket.totalPrice || 0;
+      if (ticket.eventName && !target.events.includes(ticket.eventName)) {
+        target.events.push(ticket.eventName);
+      }
     });
     setUsers(Object.values(userMap));
   }
 
   function processEventStats(allTickets: Ticket[]) {
     const eventMap: Record<string, EventStats> = {};
-    allTickets.forEach(t => {
-      if (!eventMap[t.eventName]) {
-        eventMap[t.eventName] = {
-          eventName: t.eventName,
+    allTickets.forEach((ticket) => {
+      if (!eventMap[ticket.eventName]) {
+        eventMap[ticket.eventName] = {
+          eventName: ticket.eventName,
           ticketCount: 0,
           revenue: 0,
-          usedTickets: 0
+          usedTickets: 0,
         };
       }
-      const e = eventMap[t.eventName];
-      e.ticketCount++;
-      e.revenue += t.ticketPrice || 0;
-      if (t.isUsed) e.usedTickets++;
+      const event = eventMap[ticket.eventName];
+      event.ticketCount++;
+      event.revenue += ticket.totalPrice || 0;
+      if (ticket.status?.toLowerCase() === "used") {
+        event.usedTickets++;
+      }
     });
     setEventStats(Object.values(eventMap).sort((a, b) => b.revenue - a.revenue));
   }
@@ -146,24 +209,22 @@ export function useOverviewData() {
   function processDailySales(allTickets: Ticket[]) {
     const salesMap: Record<string, DailySales> = {};
     const now = new Date();
-    
-    // Initialize all days for the selected period with 0 values
+
     for (let i = 0; i < daysToShow; i++) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      salesMap[dateStr] = {
-        date: dateStr,
+      const key = date.toISOString().split("T")[0];
+      salesMap[key] = {
+        date: key,
         tickets: 0,
-        revenue: 0
+        revenue: 0,
       };
     }
 
-    // Populate with actual ticket data
-    allTickets.forEach(ticket => {
+    allTickets.forEach((ticket) => {
       if (ticket.purchaseDate) {
         let purchaseDate: Date;
-        
+
         if (ticket.purchaseDate.toDate) {
           purchaseDate = ticket.purchaseDate.toDate();
         } else if (ticket.purchaseDate instanceof Date) {
@@ -171,38 +232,46 @@ export function useOverviewData() {
         } else {
           purchaseDate = new Date(ticket.purchaseDate);
         }
-        
-        const dateStr = purchaseDate.toISOString().split('T')[0];
-        
-        if (salesMap[dateStr]) {
-          salesMap[dateStr].tickets++;
-          salesMap[dateStr].revenue += ticket.ticketPrice || 0;
+
+        const key = purchaseDate.toISOString().split("T")[0];
+
+        if (salesMap[key]) {
+          salesMap[key].tickets++;
+          salesMap[key].revenue += ticket.totalPrice || 0;
         }
       }
     });
 
-    // Convert to array and sort by date
     const dailySalesArray = Object.values(salesMap)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map(day => ({
+      .map((day) => ({
         ...day,
-        date: new Date(day.date).toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric' 
-        })
+        date: new Date(day.date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        }),
       }));
 
     setDailySales(dailySalesArray);
   }
 
-  // Computed metrics
+  const activeEvents = eventStats.filter((event) => (event.status || "").toLowerCase() === "active").length;
+
   const metrics: OverviewMetrics = {
     totalTickets: tickets.length,
     totalUsers: users.length,
-    totalRevenue: users.reduce((sum, u) => sum + u.totalSpent, 0),
-    usedTickets: tickets.filter(t => t.isUsed).length,
-    usageRate: tickets.length > 0 ? (tickets.filter(t => t.isUsed).length / tickets.length) * 100 : 0,
-    avgRevenuePerUser: users.length > 0 ? users.reduce((sum, u) => sum + u.totalSpent, 0) / users.length : 0
+    totalRevenue: users.reduce((sum, user) => sum + user.totalSpent, 0),
+    usedTickets: tickets.filter((ticket) => ticket.status?.toLowerCase() === "used").length,
+    usageRate:
+      tickets.length > 0
+        ? (tickets.filter((ticket) => ticket.status?.toLowerCase() === "used").length / tickets.length) * 100
+        : 0,
+    avgRevenuePerUser:
+      users.length > 0
+        ? users.reduce((sum, user) => sum + user.totalSpent, 0) / users.length
+        : 0,
+    totalEvents: eventStats.length,
+    activeEvents,
   };
 
   return {
@@ -213,6 +282,6 @@ export function useOverviewData() {
     users,
     eventStats,
     dailySales,
-    metrics
+    metrics,
   };
 }

@@ -39,6 +39,7 @@ import {
   Key,
   AlertTriangle,
   CheckCircle,
+  Ticket,
   Info
 } from "lucide-react";
 import { PasswordFormData, RoleInfo } from "@/hooks/useAccountData";
@@ -69,6 +70,8 @@ export function AccountInfoCard({
   roleInfo: RoleInfo;
   formatDate: (timestamp: string | null) => string;
 }) {
+  const ScanIcon = () => <Ticket className="h-4 w-4 text-emerald-600" />;
+
   const getRoleIcon = () => {
     switch (authUser?.role) {
       case "siteAdmin":
@@ -77,6 +80,8 @@ export function AccountInfoCard({
         return <Shield className="h-4 w-4 text-blue-600" />;
       case "subAdmin":
         return <Settings2 className="h-4 w-4 text-purple-600" />;
+      case "scanner":
+        return <ScanIcon />;
       default:
         return <User className="h-4 w-4 text-gray-600" />;
     }

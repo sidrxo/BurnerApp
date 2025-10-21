@@ -29,19 +29,36 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { formatDateSafe } from "@/lib/utils";
-import { 
-  Ticket as TicketIcon, 
-  RefreshCw, 
-  Search, 
-  CheckCircle, 
-  Clock, 
-  ChevronDown, 
+import {
+  Ticket as TicketIcon,
+  RefreshCw,
+  Search,
+  CheckCircle,
+  Clock,
+  ChevronDown,
   ChevronRight,
   Users,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  AlertCircle
 } from "lucide-react";
 import { Ticket, EventGroup, TicketsStats } from "@/hooks/useTicketsData";
+
+function getTicketStatusMeta(status: string) {
+  const value = (status || "").toLowerCase();
+  switch (value) {
+    case "used":
+      return { label: "Used", variant: "default" as const, icon: CheckCircle };
+    case "confirmed":
+      return { label: "Confirmed", variant: "secondary" as const, icon: Clock };
+    case "cancelled":
+      return { label: "Cancelled", variant: "destructive" as const, icon: AlertCircle };
+    case "refunded":
+      return { label: "Refunded", variant: "outline" as const, icon: TrendingUp };
+    default:
+      return { label: status || "Pending", variant: "outline" as const, icon: Clock };
+  }
+}
 
 export function AccessDenied() {
   return (
@@ -289,8 +306,13 @@ export function GroupedTicketsView({
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {group.tickets.map((ticket, index) => (
+                    <TableBody>
+                    {group.tickets.map((ticket, index) => {
+                      const statusMeta = getTicketStatusMeta(ticket.status);
+                      const StatusIcon = statusMeta.icon;
+                      const disabled = ticket.status?.toLowerCase() !== 'confirmed';
+
+                      return (
                       <TableRow key={`${group.eventName}-ticket-${ticket.id}-${index}`}>
                         <TableCell>
                           <div className="space-y-1">
@@ -304,35 +326,23 @@ export function GroupedTicketsView({
                           {formatDateSafe(ticket.purchaseDate)}
                         </TableCell>
                         <TableCell>
-                          £{ticket.ticketPrice.toFixed(2)}
+                          £{(ticket.totalPrice || 0).toFixed(2)}
                         </TableCell>
                         <TableCell>
-                          <Badge 
-                            variant={ticket.isUsed ? "default" : "secondary"}
-                            className="gap-1"
-                          >
-                            {ticket.isUsed ? (
-                              <>
-                                <CheckCircle className="h-3 w-3" />
-                                Used
-                              </>
-                            ) : (
-                              <>
-                                <Clock className="h-3 w-3" />
-                                Active
-                              </>
-                            )}
+                          <Badge variant={statusMeta.variant} className="gap-1">
+                            <StatusIcon className="h-3 w-3" />
+                            {statusMeta.label}
                           </Badge>
-                          {ticket.isUsed && ticket.usedAt && (
+                          {ticket.usedAt && (
                             <div className="text-xs text-muted-foreground mt-1">
                               {formatDateSafe(ticket.usedAt)}
                             </div>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          {ticket.isUsed ? (
+                          {disabled ? (
                             <Button variant="ghost" size="sm" disabled>
-                              Used
+                              {statusMeta.label}
                             </Button>
                           ) : (
                             <AlertDialog>
@@ -359,7 +369,7 @@ export function GroupedTicketsView({
                           )}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    );})}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -405,7 +415,12 @@ export function ListTicketsView({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTickets.map((ticket, index) => (
+              {filteredTickets.map((ticket, index) => {
+                const statusMeta = getTicketStatusMeta(ticket.status);
+                const StatusIcon = statusMeta.icon;
+                const disabled = ticket.status?.toLowerCase() !== 'confirmed';
+
+                return (
                 <TableRow key={`all-tickets-${ticket.id}-${index}`}>
                   <TableCell className="font-medium">
                     {ticket.eventName}
@@ -422,35 +437,23 @@ export function ListTicketsView({
                     {formatDateSafe(ticket.purchaseDate)}
                   </TableCell>
                   <TableCell>
-                    £{ticket.ticketPrice.toFixed(2)}
+                    £{(ticket.totalPrice || 0).toFixed(2)}
                   </TableCell>
                   <TableCell>
-                    <Badge 
-                      variant={ticket.isUsed ? "default" : "secondary"}
-                      className="gap-1"
-                    >
-                      {ticket.isUsed ? (
-                        <>
-                          <CheckCircle className="h-3 w-3" />
-                          Used
-                        </>
-                      ) : (
-                        <>
-                          <Clock className="h-3 w-3" />
-                          Active
-                        </>
-                      )}
+                    <Badge variant={statusMeta.variant} className="gap-1">
+                      <StatusIcon className="h-3 w-3" />
+                      {statusMeta.label}
                     </Badge>
-                    {ticket.isUsed && ticket.usedAt && (
+                    {ticket.usedAt && (
                       <div className="text-xs text-muted-foreground mt-1">
                         {formatDateSafe(ticket.usedAt)}
                       </div>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {ticket.isUsed ? (
+                    {disabled ? (
                       <Button variant="ghost" size="sm" disabled>
-                        Used
+                        {statusMeta.label}
                       </Button>
                     ) : (
                       <AlertDialog>
@@ -477,7 +480,7 @@ export function ListTicketsView({
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+              );})}
             </TableBody>
           </Table>
         )}

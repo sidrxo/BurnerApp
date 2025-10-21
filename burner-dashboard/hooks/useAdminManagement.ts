@@ -24,6 +24,16 @@ export interface Admin {
   needsPasswordReset?: boolean;
 }
 
+export interface Scanner {
+  id: string;
+  email: string;
+  name: string;
+  venueId?: string | null;
+  active: boolean;
+  createdAt?: Date;
+  lastActiveAt?: Date | null;
+}
+
 export interface Venue {
   id: string;
   name: string;
@@ -41,10 +51,18 @@ export interface CreateAdminData {
   venueId?: string;
 }
 
+export interface CreateScannerData {
+  email: string;
+  name: string;
+  venueId?: string | null;
+  phoneNumber?: string;
+}
+
 export function useAdminManagement() {
   const { user, loading: authLoading, refreshUser } = useAuth();
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [scanners, setScanners] = useState<Scanner[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -79,8 +97,32 @@ export function useAdminManagement() {
           createdAt: doc.data().createdAt?.toDate() || new Date(),
           lastLogin: doc.data().lastLogin?.toDate()
         } as Admin));
-      
+
       setAdmins(adminsData);
+
+      try {
+        const scannersSnap = await getDocs(
+          query(collection(db, "scanners"), orderBy("createdAt", "desc"))
+        );
+
+        const scannersData: Scanner[] = scannersSnap.docs.map(doc => {
+          const data = doc.data() as any;
+          return {
+            id: doc.id,
+            email: data.email,
+            name: data.name || data.displayName || 'Scanner',
+            venueId: data.venueId ?? null,
+            active: data.active !== false,
+            createdAt: data.createdAt?.toDate?.(),
+            lastActiveAt: data.lastActiveAt?.toDate?.() ?? null,
+          };
+        });
+
+        setScanners(scannersData);
+      } catch (scannerError) {
+        console.warn("Scanner collection unavailable:", scannerError);
+        setScanners([]);
+      }
     } catch (error) {
       console.error("Error loading admin management data:", error);
       toast.error("Failed to load admin data");
@@ -235,7 +277,7 @@ export function useAdminManagement() {
   const createVenue = async (name: string, adminEmail: string) => {
     try {
       setLoading(true);
-      
+
       // Call Cloud Function to create venue securely
       const createVenueFunction = httpsCallable(functions, 'createVenue');
       const result = await createVenueFunction({
@@ -275,16 +317,129 @@ export function useAdminManagement() {
     }
   };
 
+  const createScanner = async (scannerData: CreateScannerData) => {
+    try {
+      setLoading(true);
+
+      const createScannerFn = httpsCallable(functions, 'createScanner');
+      const result = await createScannerFn({
+        email: scannerData.email.trim(),
+        name: scannerData.name.trim(),
+        venueId: scannerData.venueId || null,
+        phoneNumber: scannerData.phoneNumber?.trim() || null,
+      });
+
+      const response = result.data as any;
+
+      if (!response?.success) {
+        throw new Error(response?.message || 'Failed to create scanner');
+      }
+
+      toast.success(response.message || 'Scanner created successfully');
+      await loadData();
+      return { success: true, scannerId: response.scannerId as string | undefined };
+    } catch (error: any) {
+      console.error('Error creating scanner:', error);
+
+      let errorMessage = 'Failed to create scanner';
+      if (error.code === 'functions/not-found') {
+        errorMessage = 'Scanner function not deployed. Please deploy backend updates.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateScanner = async (scannerId: string, updates: Partial<Scanner>) => {
+    try {
+      setLoading(true);
+
+      const updateScannerFn = httpsCallable(functions, 'updateScanner');
+      const result = await updateScannerFn({
+        scannerId,
+        updates: {
+          ...(updates.name && { name: updates.name }),
+          ...(updates.email && { email: updates.email }),
+          ...(updates.venueId !== undefined && { venueId: updates.venueId }),
+          ...(typeof updates.active === 'boolean' && { active: updates.active }),
+        },
+      });
+
+      const response = result.data as any;
+
+      if (!response?.success) {
+        throw new Error(response?.message || 'Failed to update scanner');
+      }
+
+      toast.success(response.message || 'Scanner updated');
+      await loadData();
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error updating scanner:', error);
+
+      let errorMessage = 'Failed to update scanner';
+      if (error.code === 'functions/not-found') {
+        errorMessage = 'Scanner update function not found. Please update backend.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteScanner = async (scannerId: string) => {
+    try {
+      setLoading(true);
+
+      const deleteScannerFn = httpsCallable(functions, 'deleteScanner');
+      const result = await deleteScannerFn({ scannerId });
+      const response = result.data as any;
+
+      if (!response?.success) {
+        throw new Error(response?.message || 'Failed to delete scanner');
+      }
+
+      toast.success(response.message || 'Scanner removed');
+      await loadData();
+    } catch (error: any) {
+      console.error('Error deleting scanner:', error);
+
+      let errorMessage = 'Failed to delete scanner';
+      if (error.code === 'functions/not-found') {
+        errorMessage = 'Scanner delete function not found. Please update backend.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     user,
     authLoading,
     loading,
     admins,
     venues,
+    scanners,
     createAdmin,
     deleteAdmin,
     updateAdmin,
     createVenue,
+    createScanner,
+    updateScanner,
+    deleteScanner,
     loadData,
     refreshUser
   };

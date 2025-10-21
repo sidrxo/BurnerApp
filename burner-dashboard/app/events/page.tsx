@@ -21,6 +21,11 @@ function EventsPageContent() {
     loading,
     search,
     setSearch,
+    statusFilter,
+    setStatusFilter,
+    tagFilter,
+    setTagFilter,
+    availableTags,
     filtered,
     onToggleFeatured,
     onDelete,
@@ -62,13 +67,19 @@ function EventsPageContent() {
           setEditing={setEditing}
           user={user}
           venues={venues}
+          availableTags={availableTags}
           setEvents={setEvents}
         />
       </div>
 
-      <SearchAndStats 
+      <SearchAndStats
         search={search}
         setSearch={setSearch}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        tagFilter={tagFilter}
+        setTagFilter={setTagFilter}
+        availableTags={availableTags}
         events={events}
       />
 

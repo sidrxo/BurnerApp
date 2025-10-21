@@ -6,6 +6,8 @@ import {
   AdminManagementHeader,
   CreateAdminForm,
   AdminsTable,
+  CreateScannerForm,
+  ScannersTable,
   LoadingSkeleton,
   AccessDenied
 } from "@/components/adminmanagement/AdminManagementComponents";
@@ -17,9 +19,13 @@ function AdminManagementPageContent() {
     loading,
     admins,
     venues,
+    scanners,
     createAdmin,
     deleteAdmin,
-    updateAdmin
+    updateAdmin,
+    createScanner,
+    updateScanner,
+    deleteScanner
   } = useAdminManagement();
 
   // Show loading state while auth is loading
@@ -44,20 +50,35 @@ function AdminManagementPageContent() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <AdminManagementHeader />
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <CreateAdminForm 
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-1 space-y-6">
+          <CreateAdminForm
             venues={venues}
             onCreateAdmin={createAdmin}
           />
+          <CreateScannerForm
+            venues={venues}
+            currentUserRole={user.role}
+            defaultVenueId={user.venueId}
+            onCreateScanner={createScanner}
+            actionLoading={loading}
+          />
         </div>
-        
-        <div className="lg:col-span-2">
-          <AdminsTable 
+
+        <div className="xl:col-span-2 space-y-6">
+          <AdminsTable
             admins={admins}
             venues={venues}
             onDeleteAdmin={deleteAdmin}
             onUpdateAdmin={updateAdmin}
+          />
+
+          <ScannersTable
+            scanners={scanners}
+            venues={venues}
+            onUpdateScanner={updateScanner}
+            onDeleteScanner={deleteScanner}
+            loading={loading}
           />
         </div>
       </div>

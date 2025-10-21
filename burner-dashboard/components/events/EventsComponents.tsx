@@ -3,9 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
+import {
+  AlertDialog,
+  AlertDialogAction,
   AlertDialogCancel, 
   AlertDialogContent, 
   AlertDialogDescription, 
@@ -21,11 +21,13 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Plus, Edit, Trash2, Star, StarOff, Calendar, MapPin, 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Plus, Edit, Trash2, Star, StarOff, Calendar, MapPin,
   Clock, Users, AlertCircle
 } from "lucide-react";
 import { Event, Venue, useEventForm } from "@/hooks/useEventsData";
+import { EVENT_STATUS_OPTIONS, EVENT_TAG_OPTIONS } from "@/lib/constants";
 
 export function EventSkeleton() {
   return (
@@ -71,14 +73,15 @@ export function AccessDenied({ user }: { user: any }) {
   );
 }
 
-export function CreateEventDialog({ 
-  openForm, 
-  setOpenForm, 
-  editing, 
-  setEditing, 
-  user, 
-  venues, 
-  setEvents 
+export function CreateEventDialog({
+  openForm,
+  setOpenForm,
+  editing,
+  setEditing,
+  user,
+  venues,
+  availableTags,
+  setEvents
 }: {
   openForm: boolean;
   setOpenForm: (open: boolean) => void;
@@ -86,6 +89,7 @@ export function CreateEventDialog({
   setEditing: (event: Event | null) => void;
   user: any;
   venues: Venue[];
+  availableTags: string[];
   setEvents: React.Dispatch<React.SetStateAction<Event[]>>;
 }) {
   return (
@@ -106,6 +110,7 @@ export function CreateEventDialog({
           existing={editing}
           user={user}
           venues={venues}
+          availableTags={availableTags}
           onClose={() => setOpenForm(false)}
           onSaved={(e) => {
             setEvents(prev => {
@@ -119,39 +124,89 @@ export function CreateEventDialog({
   );
 }
 
-export function SearchAndStats({ 
-  search, 
-  setSearch, 
-  events 
+export function SearchAndStats({
+  search,
+  setSearch,
+  statusFilter,
+  setStatusFilter,
+  tagFilter,
+  setTagFilter,
+  availableTags,
+  events,
 }: {
   search: string;
   setSearch: (search: string) => void;
+  statusFilter: string;
+  setStatusFilter: (value: string) => void;
+  tagFilter: string;
+  setTagFilter: (value: string) => void;
+  availableTags: string[];
   events: Event[];
 }) {
+  const tagOptions = Array.from(new Set([...availableTags, ...EVENT_TAG_OPTIONS])).filter(Boolean);
+  const totalSoldOut = events.filter((event) => (event.ticketsSold ?? 0) >= (event.maxTickets ?? 0)).length;
+  const totalActive = events.filter((event) => (event.status ?? "").toLowerCase() === "active").length;
+
   return (
-    <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-      <div className="relative max-w-sm w-full">
-        <Input 
-          placeholder="Search events..." 
-          value={search}
-          onChange={e => setSearch(e.target.value)} 
-          className="pl-4 pr-4 h-11 border-2 focus:border-primary/50 transition-colors"
-        />
+    <div className="space-y-4">
+      <div className="flex flex-col lg:flex-row gap-4 lg:items-center justify-between">
+        <div className="relative max-w-md w-full">
+          <Input
+            placeholder="Search events..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-4 pr-4 h-11 border-2 focus:border-primary/50 transition-colors"
+          />
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {EVENT_STATUS_OPTIONS.map((status) => (
+                <SelectItem key={status.value} value={status.value}>
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={tagFilter} onValueChange={setTagFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Filter by tag" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All tags</SelectItem>
+              {tagOptions.map((tag) => (
+                <SelectItem key={tag} value={tag}>
+                  #{tag}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      
-      <div className="flex gap-4 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-          <span>{events.length} Total</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-          <span>{events.filter(e => e.isFeatured).length} Featured</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-          <span>{events.filter(e => e.ticketsSold >= e.maxTickets).length} Sold Out</span>
-        </div>
+
+      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+        <span className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-blue-500 rounded-full" />
+          {events.length} total
+        </span>
+        <span className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full" />
+          {totalActive} active
+        </span>
+        <span className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+          {events.filter((event) => event.isFeatured).length} featured
+        </span>
+        <span className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-red-500 rounded-full" />
+          {totalSoldOut} sold out
+        </span>
       </div>
     </div>
   );
@@ -190,16 +245,16 @@ export function EmptyEventsState({
   );
 }
 
-export function EventCard({ 
-  ev, 
-  index, 
-  eventStatus, 
-  ticketProgress, 
+export function EventCard({
+  ev,
+  index,
+  eventStatus,
+  ticketProgress,
   user, 
   onToggleFeatured, 
   onDelete, 
   setEditing, 
-  setOpenForm 
+  setOpenForm
 }: {
   ev: Event;
   index: number;
@@ -211,9 +266,47 @@ export function EventCard({
   setEditing: (event: Event) => void;
   setOpenForm: (open: boolean) => void;
 }) {
+  const startTimestamp: any = ev.startTime ?? ev.date;
+  const endTimestamp: any = ev.endTime ?? null;
+
+  const startDate = startTimestamp?.toDate
+    ? startTimestamp.toDate()
+    : startTimestamp?.seconds
+      ? new Date(startTimestamp.seconds * 1000)
+      : undefined;
+  const endDate = endTimestamp?.toDate
+    ? endTimestamp.toDate()
+    : endTimestamp?.seconds
+      ? new Date(endTimestamp.seconds * 1000)
+      : undefined;
+
+  const formattedDate = startDate
+    ? startDate.toLocaleDateString("en-GB", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      })
+    : "Date TBA";
+
+  const formattedStartTime = startDate
+    ? startDate.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
+
+  const formattedEndTime = endDate
+    ? endDate.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
+  const primaryTag = ev.tags?.[0];
+
   return (
-    <Card 
-      key={`event-${ev.id}-${index}`} 
+    <Card
+      key={`event-${ev.id}-${index}`}
       className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-gradient-to-br from-background to-background/50"
     >
       {/* Image Header */}
@@ -234,19 +327,21 @@ export function EventCard({
         )}
         
         {/* Badges below image */}
-        <div className="flex gap-2 p-4 pt-4 pb-0">
+        <div className="flex flex-wrap gap-2 p-4 pt-4 pb-0">
           {ev.isFeatured && (
             <Badge className="bg-yellow-500/90 text-white border-0 shadow-lg backdrop-blur-sm">
               <Star className="h-3 w-3 mr-1 fill-current" />
               Featured
             </Badge>
           )}
-          <Badge 
-            variant={eventStatus.variant}
-            className="backdrop-blur-sm shadow-lg border-0"
-          >
+          <Badge variant={eventStatus.variant} className="backdrop-blur-sm shadow-lg border-0">
             {eventStatus.label}
           </Badge>
+          {primaryTag && (
+            <Badge variant="outline" className="backdrop-blur-sm border-primary/40 text-primary">
+              #{primaryTag}
+            </Badge>
+          )}
         </div>
         
         {/* Price Badge */}
@@ -272,29 +367,19 @@ export function EventCard({
 
         {/* Event Details */}
         <div className="space-y-3">
-          {ev.date && (
-            <div className="flex items-center gap-3 text-sm">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Clock className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <div className="font-medium">
-                  {new Date(ev.date.seconds * 1000).toLocaleDateString('en-GB', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric'
-                  })}
-                </div>
-                <div className="text-muted-foreground text-xs">
-                  {new Date(ev.date.seconds * 1000).toLocaleTimeString('en-GB', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </div>
+          <div className="flex items-center gap-3 text-sm">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Clock className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <div className="font-medium">{formattedDate}</div>
+              <div className="text-muted-foreground text-xs">
+                {formattedStartTime}
+                {formattedEndTime ? ` – ${formattedEndTime}` : null}
               </div>
             </div>
-          )}
-          
+          </div>
+
           <div className="flex items-center gap-3 text-sm">
             <div className="p-2 bg-blue-500/10 rounded-lg">
               <MapPin className="h-4 w-4 text-blue-600" />
@@ -406,12 +491,14 @@ export function EventForm({
   existing,
   user,
   venues,
+  availableTags,
   onSaved,
   onClose,
 }: {
   existing: Event | null;
   user: any;
   venues: Venue[];
+  availableTags: string[];
   onSaved: (e: Event) => void;
   onClose: () => void;
 }) {
@@ -423,9 +510,12 @@ export function EventForm({
     progress,
     saving,
     onSubmit,
-    resetPasswordForm,
-    isEdit
-  } = useEventForm(existing, user, venues, onSaved, onClose);
+    resetForm,
+    isEdit,
+    statusOptions,
+    categoryOptions,
+    tagOptions
+  } = useEventForm(existing, user, venues, onSaved, onClose, availableTags);
 
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
@@ -445,15 +535,15 @@ export function EventForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="name">Event Name *</Label>
-          <Input 
-            id="name" 
-            value={form.name} 
-            onChange={e => setForm(s=>({...s, name: e.target.value}))} 
+          <Input
+            id="name"
+            value={form.name}
+            onChange={(e) => setForm((state) => ({ ...state, name: e.target.value }))}
             placeholder="Summer Music Festival"
-            required 
+            required
           />
         </div>
-        
+
         {user.role === "siteAdmin" && (
           <div className="space-y-2">
             <Label htmlFor="venue-select">Venue *</Label>
@@ -461,7 +551,7 @@ export function EventForm({
               id="venue-select"
               className="w-full p-2 border border-input bg-background rounded-md"
               value={form.venueId}
-              onChange={(e) => setForm(s=>({...s, venueId: e.target.value}))}
+              onChange={(e) => setForm((state) => ({ ...state, venueId: e.target.value }))}
               required
             >
               <option value="">Select a venue</option>
@@ -489,50 +579,122 @@ export function EventForm({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="dt">Date & Time *</Label>
-        <Input 
-          id="dt" 
-          type="datetime-local" 
-          value={form.datetime} 
-          onChange={e => setForm(s=>({...s, datetime: e.target.value}))} 
-          required 
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="start">Start *</Label>
+          <Input
+            id="start"
+            type="datetime-local"
+            value={form.startDateTime}
+            onChange={(e) => setForm((state) => ({ ...state, startDateTime: e.target.value }))}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="end">End</Label>
+          <Input
+            id="end"
+            type="datetime-local"
+            value={form.endDateTime}
+            onChange={(e) => setForm((state) => ({ ...state, endDateTime: e.target.value }))}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Ticket Price (£) *</Label>
-          <Input 
-            type="number" 
-            step="0.01" 
+          <Input
+            type="number"
+            step="0.01"
             min="0"
-            value={form.price} 
-            onChange={e => setForm(s=>({...s, price: Number(e.target.value)}))} 
+            value={form.price}
+            onChange={(e) => setForm((state) => ({ ...state, price: Number(e.target.value) }))}
             placeholder="25.00"
-            required 
+            required
           />
         </div>
         <div className="space-y-2">
           <Label>Maximum Tickets *</Label>
-          <Input 
-            type="number" 
+          <Input
+            type="number"
             min="1"
-            value={form.maxTickets} 
-            onChange={e => setForm(s=>({...s, maxTickets: Number(e.target.value)}))} 
+            value={form.maxTickets}
+            onChange={(e) => setForm((state) => ({ ...state, maxTickets: Number(e.target.value) }))}
             placeholder="100"
-            required 
+            required
           />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <Select
+            value={form.status}
+            onValueChange={(value) => setForm((state) => ({ ...state, status: value as typeof form.status }))}
+          >
+            <SelectTrigger id="status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="category">Category</Label>
+          <Select
+            value={form.category}
+            onValueChange={(value) => setForm((state) => ({ ...state, category: value }))}
+          >
+            <SelectTrigger id="category">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {categoryOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Tag</Label>
+          <div className="flex flex-wrap gap-2">
+            {tagOptions.map((tag) => (
+              <Button
+                key={tag}
+                type="button"
+                size="sm"
+                variant={form.tag === tag ? "default" : "outline"}
+                onClick={() => setForm((state) => ({ ...state, tag }))}
+              >
+                #{tag}
+              </Button>
+            ))}
+          </div>
+          <Input
+            value={form.tag}
+            onChange={(e) => setForm((state) => ({ ...state, tag: e.target.value }))}
+            placeholder="Custom tag (one tag per event)"
+          />
+          <p className="text-xs text-muted-foreground">Only one tag can be associated with each event.</p>
         </div>
       </div>
 
       {/* Only show featured checkbox for site admins */}
       {user.role === "siteAdmin" && (
         <div className="flex items-center space-x-2">
-          <Checkbox 
-            id="featured" 
-            checked={form.isFeatured} 
-            onCheckedChange={(v)=>setForm(s=>({...s, isFeatured: !!v}))}
+          <Checkbox
+            id="featured"
+            checked={form.isFeatured}
+            onCheckedChange={(value) => setForm((state) => ({ ...state, isFeatured: !!value }))}
           />
           <Label htmlFor="featured" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
             Mark as featured event
@@ -567,10 +729,10 @@ export function EventForm({
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button 
-          type="button" 
-          variant="outline" 
-          onClick={resetPasswordForm}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={resetForm}
           disabled={saving}
         >
           Reset

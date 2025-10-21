@@ -20,6 +20,16 @@ function VenuesPageContent() {
     setNewVenueName,
     newVenueAdminEmail,
     setNewVenueAdminEmail,
+    newVenueAddress,
+    setNewVenueAddress,
+    newVenueCity,
+    setNewVenueCity,
+    newVenueCapacity,
+    setNewVenueCapacity,
+    newVenueContactEmail,
+    setNewVenueContactEmail,
+    newVenueWebsite,
+    setNewVenueWebsite,
     showCreateVenueDialog,
     setShowCreateVenueDialog,
     handleCreateVenueWithAdmin,
@@ -41,9 +51,8 @@ function VenuesPageContent() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <VenuesHeader 
+      <VenuesHeader
         user={user}
-        showCreateVenueDialog={showCreateVenueDialog}
         setShowCreateVenueDialog={setShowCreateVenueDialog}
       />
 
@@ -55,6 +64,16 @@ function VenuesPageContent() {
           setNewVenueName={setNewVenueName}
           newVenueAdminEmail={newVenueAdminEmail}
           setNewVenueAdminEmail={setNewVenueAdminEmail}
+          newVenueAddress={newVenueAddress}
+          setNewVenueAddress={setNewVenueAddress}
+          newVenueCity={newVenueCity}
+          setNewVenueCity={setNewVenueCity}
+          newVenueCapacity={newVenueCapacity}
+          setNewVenueCapacity={setNewVenueCapacity}
+          newVenueContactEmail={newVenueContactEmail}
+          setNewVenueContactEmail={setNewVenueContactEmail}
+          newVenueWebsite={newVenueWebsite}
+          setNewVenueWebsite={setNewVenueWebsite}
           actionLoading={actionLoading}
           handleCreateVenueWithAdmin={handleCreateVenueWithAdmin}
           resetCreateForm={resetCreateForm}

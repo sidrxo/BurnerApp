@@ -9,6 +9,13 @@ export type Venue = {
   name: string;
   admins: string[];
   subAdmins: string[];
+  address?: string;
+  city?: string;
+  capacity?: number;
+  contactEmail?: string;
+  website?: string;
+  active?: boolean;
+  eventCount?: number;
 };
 
 export type CreateVenueForm = {
@@ -23,6 +30,11 @@ export function useVenuesData() {
   const [actionLoading, setActionLoading] = useState(false);
   const [newVenueName, setNewVenueName] = useState("");
   const [newVenueAdminEmail, setNewVenueAdminEmail] = useState("");
+  const [newVenueAddress, setNewVenueAddress] = useState("");
+  const [newVenueCity, setNewVenueCity] = useState("");
+  const [newVenueCapacity, setNewVenueCapacity] = useState<string>("");
+  const [newVenueContactEmail, setNewVenueContactEmail] = useState("");
+  const [newVenueWebsite, setNewVenueWebsite] = useState("");
   const [showCreateVenueDialog, setShowCreateVenueDialog] = useState(false);
 
   useEffect(() => {
@@ -42,6 +54,13 @@ export function useVenuesData() {
           name: data.name,
           admins: data.admins || [],
           subAdmins: data.subAdmins || [],
+          address: data.address,
+          city: data.city,
+          capacity: data.capacity,
+          contactEmail: data.contactEmail,
+          website: data.website,
+          active: data.active,
+          eventCount: data.eventCount,
         });
       });
 
@@ -76,8 +95,17 @@ export function useVenuesData() {
       // Create the venue first
       const venueRef = await addDoc(collection(db, "venues"), {
         name: newVenueName.trim(),
+        address: newVenueAddress.trim() || null,
+        city: newVenueCity.trim() || null,
+        capacity: newVenueCapacity ? Number(newVenueCapacity) : null,
+        contactEmail: newVenueContactEmail.trim() || null,
+        website: newVenueWebsite.trim() || null,
         admins: [newVenueAdminEmail.trim()],
         subAdmins: [],
+        createdAt: new Date(),
+        createdBy: user?.uid ?? null,
+        active: true,
+        eventCount: 0,
       });
 
       // Check if user already exists
@@ -108,6 +136,11 @@ export function useVenuesData() {
       toast.success(`Venue "${newVenueName}" created with admin ${newVenueAdminEmail}`);
       setNewVenueName("");
       setNewVenueAdminEmail("");
+      setNewVenueAddress("");
+      setNewVenueCity("");
+      setNewVenueCapacity("");
+      setNewVenueContactEmail("");
+      setNewVenueWebsite("");
       setShowCreateVenueDialog(false);
       fetchVenues();
     } catch (err) {
@@ -243,6 +276,11 @@ export function useVenuesData() {
   const resetCreateForm = () => {
     setNewVenueName("");
     setNewVenueAdminEmail("");
+    setNewVenueAddress("");
+    setNewVenueCity("");
+    setNewVenueCapacity("");
+    setNewVenueContactEmail("");
+    setNewVenueWebsite("");
   };
 
   return {
@@ -256,6 +294,16 @@ export function useVenuesData() {
     setNewVenueName,
     newVenueAdminEmail,
     setNewVenueAdminEmail,
+    newVenueAddress,
+    setNewVenueAddress,
+    newVenueCity,
+    setNewVenueCity,
+    newVenueCapacity,
+    setNewVenueCapacity,
+    newVenueContactEmail,
+    setNewVenueContactEmail,
+    newVenueWebsite,
+    setNewVenueWebsite,
     showCreateVenueDialog,
     setShowCreateVenueDialog,
     fetchVenues,
