@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, Home, Settings, Ticket, Users, MapPin, Shield } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Calendar, Home, Settings, Ticket, MapPin, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/components/useAuth"; // custom hook to get current user with role/venueId
+import { useAuth } from "@/components/useAuth";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { Separator } from "@/components/ui/separator";
 
 export function AppNavbar() {
   const pathname = usePathname();
-  const { user } = useAuth(); // { uid, role, venueId }
+  const { user } = useAuth();
   const [venueName, setVenueName] = useState<string>("");
 
   // Fetch venue name when user changes
@@ -69,40 +69,45 @@ export function AppNavbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="w-full px-6 flex h-16 items-center relative">
-        {/* Logo with Dynamic Venue Name */}
-        <div className="absolute left-6 flex items-center space-x-2">
-          <h1 className="text-xl font-bold">{venueName}</h1>
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-full flex-col">
+        {/* Logo/Header */}
+        <div className="flex h-16 items-center border-b px-6">
+          <h1 className="text-xl font-bold tracking-tight">{venueName || "BURNER"}</h1>
         </div>
 
-        {/* Centered Navigation */}
-        <nav className="flex-1 flex items-center justify-center">
-          <div className="flex items-center space-x-6">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.url;
-              return (
-                <Link key={item.url} href={item.url}>
-                  <Button
-                    variant={isActive ? "default" : "ghost"}
-                    className={cn(
-                      "flex items-center space-x-2 px-4 py-2",
-                      isActive && "bg-primary text-primary-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </Button>
-                </Link>
-              );
-            })}
-          </div>
+        {/* Navigation */}
+        <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.url;
+            return (
+              <Link
+                key={item.url}
+                href={item.url}
+                className={cn(
+                  "flex items-center space-x-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-accent",
+                  isActive
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                <span>{item.title}</span>
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* Right side placeholder for balance */}
-        <div className="absolute right-6 w-20"></div>
+        {/* Footer with user info */}
+        <div className="border-t p-4">
+          <div className="rounded-lg bg-muted/50 p-3">
+            <p className="text-xs font-medium text-muted-foreground">Signed in as</p>
+            <p className="mt-1 text-sm font-semibold truncate">{user?.email || "User"}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground capitalize">{user?.role || "user"}</p>
+          </div>
+        </div>
       </div>
-    </header>
+    </aside>
   );
 }

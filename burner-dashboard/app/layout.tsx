@@ -12,10 +12,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-background text-foreground">
         <AuthProvider>
           <RequireAuth>
-            <div className="min-h-screen flex flex-col">
+            <div className="min-h-screen">
               <AppNavbar />
-              <main className="flex-1 p-6 max-w-[1400px] mx-auto w-full">
-                {children}
+              {/* Main content with left margin to account for fixed sidebar */}
+              <main className="ml-64 p-6">
+                <div className="max-w-[1400px] mx-auto w-full">
+                  {children}
+                </div>
               </main>
             </div>
           </RequireAuth>

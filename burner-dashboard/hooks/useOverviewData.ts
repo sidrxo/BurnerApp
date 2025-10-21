@@ -93,6 +93,7 @@ export function useOverviewData() {
       };
 
       if (user.role === "siteAdmin") {
+        // Site admin sees all tickets
         const ticketsSnap = await getDocs(collectionGroup(db, "tickets"));
         allTickets = ticketsSnap.docs.map(transformTicket);
       } else if (user.role === "venueAdmin" || user.role === "subAdmin") {
@@ -101,10 +102,22 @@ export function useOverviewData() {
           setLoading(false);
           return;
         }
-        const ticketsSnap = await getDocs(collectionGroup(db, "tickets"));
-        allTickets = ticketsSnap.docs
-          .map(transformTicket)
-          .filter((ticket) => ticket.venueId === user.venueId);
+
+        // More efficient: Query events for this venue first, then get tickets for those events
+        const eventsQuery = query(
+          collection(db, "events"),
+          where("venueId", "==", user.venueId)
+        );
+        const eventsSnap = await getDocs(eventsQuery);
+
+        // Fetch tickets for each event in parallel
+        const ticketPromises = eventsSnap.docs.map(async (eventDoc) => {
+          const ticketsSnap = await getDocs(collection(db, "events", eventDoc.id, "tickets"));
+          return ticketsSnap.docs.map(transformTicket);
+        });
+
+        const ticketArrays = await Promise.all(ticketPromises);
+        allTickets = ticketArrays.flat();
       } else {
         setLoading(false);
         return;

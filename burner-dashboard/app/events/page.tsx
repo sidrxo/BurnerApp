@@ -2,17 +2,20 @@
 
 import RequireAuth from "@/components/require-auth";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useEventsData, Event } from "@/hooks/useEventsData";
 import {
   EventSkeleton,
   AccessDenied,
-  CreateEventDialog,
   SearchAndStats,
   EmptyEventsState,
   EventCard
 } from "@/components/events/EventsComponents";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 function EventsPageContent() {
+  const router = useRouter();
   const {
     user,
     authLoading,
@@ -34,8 +37,6 @@ function EventsPageContent() {
     setEvents
   } = useEventsData();
 
-  const [openForm, setOpenForm] = useState(false);
-  const [editing, setEditing] = useState<Event | null>(null);
 
   // Show loading state while auth is loading
   if (authLoading) {
@@ -60,16 +61,14 @@ function EventsPageContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Events</h1>
-        <CreateEventDialog
-          openForm={openForm}
-          setOpenForm={setOpenForm}
-          editing={editing}
-          setEditing={setEditing}
-          user={user}
-          venues={venues}
-          availableTags={availableTags}
-          setEvents={setEvents}
-        />
+        <Button
+          onClick={() => router.push("/events/create")}
+          size="lg"
+          className="shadow-md"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Create Event
+        </Button>
       </div>
 
       <SearchAndStats
@@ -88,16 +87,16 @@ function EventsPageContent() {
         {loading ? (
           Array.from({length: 6}).map((_, i) => <EventSkeleton key={i} />)
         ) : filtered.length === 0 ? (
-          <EmptyEventsState 
+          <EmptyEventsState
             search={search}
-            setOpenForm={setOpenForm}
+            onCreateClick={() => router.push("/events/create")}
             userRole={user.role}
           />
         ) : (
           filtered.map((ev, index) => {
             const eventStatus = getEventStatus(ev);
             const ticketProgress = getTicketProgress(ev);
-            
+
             return (
               <EventCard
                 key={`event-${ev.id}-${index}`}
@@ -108,8 +107,7 @@ function EventsPageContent() {
                 user={user}
                 onToggleFeatured={onToggleFeatured}
                 onDelete={onDelete}
-                setEditing={setEditing}
-                setOpenForm={setOpenForm}
+                onEditClick={() => router.push(`/events/${ev.id}/edit`)}
               />
             );
           })
