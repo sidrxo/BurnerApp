@@ -25,24 +25,8 @@ struct TicketPurchaseView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            ScrollView {
                 VStack(spacing: 12) {
                     // Event summary
-                    VStack(spacing: 4) {
-                        Text(event.name)
-                            .appSectionHeader()
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-
-                        Text(event.venue)
-                            .appBody()
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(1)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
 
                     // Price info
                     HStack {
@@ -61,6 +45,8 @@ struct TicketPurchaseView: View {
                     .background(Color.gray.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .padding(.horizontal, 20)
+                    .padding(.top, 10)
+
 
                     if paymentService.isProcessing {
                         // Processing state
@@ -69,7 +55,7 @@ struct TicketPurchaseView: View {
                                 .scaleEffect(0.8)
                                 .tint(.white)
                             Text("Processing...")
-                                .appFont(size: 22)
+                                .appFont(size: 23)
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -128,6 +114,10 @@ struct TicketPurchaseView: View {
                                 .frame(height: 46)
                                 .clipShape(RoundedRectangle(cornerRadius: 23))
                                 .padding(.horizontal, 20)
+                                .overlay(
+                                       RoundedRectangle(cornerRadius: 23)
+                                           .stroke(Color.white.opacity(0.8), lineWidth: 2)
+                                   )
                             }
 
                             // Or divider
@@ -150,22 +140,30 @@ struct TicketPurchaseView: View {
                                     showCardInput = true
                                 }
                             }) {
-                                Text("Pay with Card")
-                                    .appBody()
-                                    .foregroundColor(.white)
+                                HStack(spacing: 4) {
+                                    Text("Buy with")
+                                    Image(systemName: "creditcard")
+                                }
+                                .font(.appFont(size: 23))
+                                    .foregroundColor(.black)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 46)
-                                    .background(Color.white.opacity(0.15))
+                                    .background(Color.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 23))
+                                    .overlay(
+                                           RoundedRectangle(cornerRadius: 23)
+                                               .stroke(Color.white.opacity(0.8), lineWidth: 2)
+                                       )
                             }
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 4)
                         }
                         .padding(.top, 4)
+                        .padding(.horizontal, 10)
                     }
 
                     Spacer(minLength: 12)
                 }
-            }
+            
         }
         .presentationDetents([.height(showCardInput ? 380 : 320)])
         .presentationDragIndicator(.visible)

@@ -67,9 +67,5 @@ struct Ticket: Identifiable, Codable, Sendable {
     var transferredAt: Date?
     
     var updatedAt: Date?
-    
-    // Computed property for backward compatibility
-    var ticketPrice: Double {
-        return totalPrice
-    }
+
 }

@@ -25,7 +25,7 @@ struct TicketsView: View {
                     name: ticket.eventName,
                     venue: ticket.venue,
                     startTime: ticket.startTime,
-                    price: ticket.ticketPrice,
+                    price: ticket.totalPrice,
                     maxTickets: 100,
                     ticketsSold: 0,
                     imageUrl: "",
