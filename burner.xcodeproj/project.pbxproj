@@ -24,6 +24,7 @@
 		8B7FF6482E7CF1DC007072DD /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B7FF6462E7CF1CB007072DD /* ActivityKit.framework */; };
 		8BB619ED2EA6FAB300CFABD4 /* StripePaymentSheet in Frameworks */ = {isa = PBXBuildFile; productRef = 8BB619EC2EA6FAB300CFABD4 /* StripePaymentSheet */; };
 		8BB619EF2EA70A6800CFABD4 /* Stripe in Frameworks */ = {isa = PBXBuildFile; productRef = 8BB619EE2EA70A6800CFABD4 /* Stripe */; };
+		8BB619FD2EA7BD7D00CFABD4 /* StripePaymentsUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8BB619FC2EA7BD7D00CFABD4 /* StripePaymentsUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -124,6 +125,7 @@
 				8B1F297F2E7F9A5800B13ED2 /* FamilyControls.framework in Frameworks */,
 				8BB619ED2EA6FAB300CFABD4 /* StripePaymentSheet in Frameworks */,
 				8B1F297D2E7F946E00B13ED2 /* ManagedSettings.framework in Frameworks */,
+				8BB619FD2EA7BD7D00CFABD4 /* StripePaymentsUI in Frameworks */,
 				8B1F297B2E7F946500B13ED2 /* DeviceActivity.framework in Frameworks */,
 				8B66F9422E6864FB00760E4E /* Kingfisher in Frameworks */,
 				8B7FF5B62E7C6E6B007072DD /* FirebaseFunctions in Frameworks */,
@@ -220,6 +222,7 @@
 				8B36D9172E7E31AE00EDDF0F /* CodeScanner */,
 				8BB619EC2EA6FAB300CFABD4 /* StripePaymentSheet */,
 				8BB619EE2EA70A6800CFABD4 /* Stripe */,
+				8BB619FC2EA7BD7D00CFABD4 /* StripePaymentsUI */,
 			);
 			productName = burner;
 			productReference = 8B36D8C72E7DAB7F00EDDF0F /* burner.app */;
@@ -701,6 +704,10 @@
 		8BB619EE2EA70A6800CFABD4 /* Stripe */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Stripe;
+		};
+		8BB619FC2EA7BD7D00CFABD4 /* StripePaymentsUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = StripePaymentsUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
