@@ -22,23 +22,14 @@ struct CardTextField: UIViewRepresentable {
     @Binding var cardParams: STPPaymentMethodCardParams?
     @Binding var isValid: Bool
 
-    func makeUIView(context: Context) -> STPPaymentCardTextField {
-        let cardTextField = STPPaymentCardTextField()
-        cardTextField.borderWidth = 0
-        cardTextField.backgroundColor = .clear
-        cardTextField.textColor = .white
-        cardTextField.placeholderColor = .gray
-        cardTextField.borderColor = .clear
-        cardTextField.delegate = context.coordinator
-
-        // Customize appearance
-        cardTextField.font = UIFont.systemFont(ofSize: 16)
-        cardTextField.postalCodeEntryEnabled = true
-
-        return cardTextField
+    func makeUIView(context: Context) -> STPCardFormView {
+        let cardFormView = STPCardFormView(billingAddressCollection: .automatic)
+        cardFormView.backgroundColor = .clear
+        cardFormView.delegate = context.coordinator
+        return cardFormView
     }
 
-    func updateUIView(_ uiView: STPPaymentCardTextField, context: Context) {
+    func updateUIView(_ uiView: STPCardFormView, context: Context) {
         // Update UI if needed
     }
 
@@ -46,24 +37,19 @@ struct CardTextField: UIViewRepresentable {
         Coordinator(self)
     }
 
-    class Coordinator: NSObject, STPPaymentCardTextFieldDelegate {
+    class Coordinator: NSObject, STPCardFormViewDelegate {
         var parent: CardTextField
 
         init(_ parent: CardTextField) {
             self.parent = parent
         }
 
-        func paymentCardTextFieldDidChange(_ textField: STPPaymentCardTextField) {
-            parent.isValid = textField.isValid
+        func cardFormView(_ form: STPCardFormView, didChangeToStateComplete complete: Bool) {
+            parent.isValid = complete
 
-            if textField.isValid {
-                // Create card params from the text field
-                let cardParams = STPPaymentMethodCardParams()
-                cardParams.number = textField.cardNumber
-                cardParams.expMonth = NSNumber(value: textField.expirationMonth)
-                cardParams.expYear = NSNumber(value: textField.expirationYear)
-                cardParams.cvc = textField.cvc
-
+            if complete {
+                // Create card params from the form
+                let cardParams = form.cardParams
                 parent.cardParams = cardParams
             } else {
                 parent.cardParams = nil
