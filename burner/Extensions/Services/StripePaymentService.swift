@@ -460,13 +460,15 @@ class StripePaymentService: NSObject, ObservableObject {
 class AuthenticationContext: NSObject, STPAuthenticationContext {
     nonisolated func authenticationPresentingViewController() -> UIViewController {
         // Get the topmost view controller for presenting authentication UI
-        var viewController: UIViewController = UIViewController()
+        var viewController: UIViewController!
 
         DispatchQueue.main.sync {
             guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                   let window = windowScene.windows.first,
                   let rootViewController = window.rootViewController else {
-                viewController = UIViewController()
+                viewController = MainActor.assumeIsolated {
+                    UIViewController()
+                }
                 return
             }
 
