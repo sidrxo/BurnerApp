@@ -502,3 +502,304 @@ exports.confirmPurchase = onCall(
     }
   }
 );
+
+// -------------------------
+// Get Payment Methods
+// -------------------------
+exports.getPaymentMethods = onCall(
+  { secrets: [stripeSecretKey] },
+  async (request) => {
+    try {
+      logger.info('getPaymentMethods called', {
+        hasAuth: !!request.auth
+      });
+
+      if (!request.auth) {
+        throw new HttpsError("unauthenticated", "Authentication required");
+      }
+
+      const userId = request.auth.uid;
+
+      // Get user's Stripe customer ID
+      const userDoc = await db.collection("users").doc(userId).get();
+      const customerId = userDoc.data()?.stripeCustomerId;
+
+      if (!customerId) {
+        logger.info('No customer ID found for user', { userId });
+        return {
+          paymentMethods: []
+        };
+      }
+
+      const stripe = getStripe();
+
+      // Retrieve all payment methods for this customer
+      const paymentMethods = await stripe.paymentMethods.list({
+        customer: customerId,
+        type: 'card'
+      });
+
+      // Get customer to check default payment method
+      const customer = await stripe.customers.retrieve(customerId);
+
+      logger.info('Payment methods retrieved', {
+        userId,
+        count: paymentMethods.data.length
+      });
+
+      // Format payment methods for client
+      const formattedMethods = paymentMethods.data.map(pm => ({
+        id: pm.id,
+        brand: pm.card.brand,
+        last4: pm.card.last4,
+        expMonth: pm.card.exp_month,
+        expYear: pm.card.exp_year,
+        isDefault: customer.invoice_settings.default_payment_method === pm.id
+      }));
+
+      return {
+        paymentMethods: formattedMethods
+      };
+
+    } catch (error) {
+      logger.error('Error getting payment methods', error, {
+        userId: request.auth?.uid
+      });
+
+      if (error.code && error.code.includes('/')) {
+        throw error;
+      }
+
+      throw new HttpsError(
+        "internal",
+        error.message || "Error retrieving payment methods"
+      );
+    }
+  }
+);
+
+// -------------------------
+// Save Payment Method
+// -------------------------
+exports.savePaymentMethod = onCall(
+  { secrets: [stripeSecretKey] },
+  async (request) => {
+    try {
+      logger.info('savePaymentMethod called', {
+        hasAuth: !!request.auth
+      });
+
+      if (!request.auth) {
+        throw new HttpsError("unauthenticated", "Authentication required");
+      }
+
+      const userId = request.auth.uid;
+      const { paymentMethodId, setAsDefault } = request.data;
+
+      if (!paymentMethodId) {
+        throw new HttpsError("invalid-argument", "Payment method ID required");
+      }
+
+      const stripe = getStripe();
+
+      // Get or create customer
+      const userDoc = await db.collection("users").doc(userId).get();
+      let customerId = userDoc.data()?.stripeCustomerId;
+      const userEmail = userDoc.data()?.email || request.auth.token.email || null;
+
+      if (!customerId) {
+        logger.info('Creating new Stripe customer', { userId, email: userEmail });
+        const customerData = {
+          metadata: {
+            firebaseUID: userId,
+            createdAt: new Date().toISOString()
+          }
+        };
+
+        if (userEmail) {
+          customerData.email = userEmail;
+        }
+
+        const customer = await stripe.customers.create(customerData);
+        customerId = customer.id;
+        await db.collection("users").doc(userId).update({
+          stripeCustomerId: customerId,
+          updatedAt: FieldValue.serverTimestamp()
+        });
+        logger.info('Stripe customer created', { customerId });
+      }
+
+      // Attach payment method to customer
+      await stripe.paymentMethods.attach(paymentMethodId, {
+        customer: customerId
+      });
+
+      logger.info('Payment method attached', { paymentMethodId, customerId });
+
+      // Set as default if requested
+      if (setAsDefault) {
+        await stripe.customers.update(customerId, {
+          invoice_settings: {
+            default_payment_method: paymentMethodId
+          }
+        });
+        logger.info('Payment method set as default', { paymentMethodId });
+      }
+
+      return {
+        success: true,
+        message: "Payment method saved successfully"
+      };
+
+    } catch (error) {
+      logger.error('Error saving payment method', error, {
+        userId: request.auth?.uid
+      });
+
+      if (error.code && error.code.includes('/')) {
+        throw error;
+      }
+
+      throw new HttpsError(
+        "internal",
+        error.message || "Error saving payment method"
+      );
+    }
+  }
+);
+
+// -------------------------
+// Delete Payment Method
+// -------------------------
+exports.deletePaymentMethod = onCall(
+  { secrets: [stripeSecretKey] },
+  async (request) => {
+    try {
+      logger.info('deletePaymentMethod called', {
+        hasAuth: !!request.auth
+      });
+
+      if (!request.auth) {
+        throw new HttpsError("unauthenticated", "Authentication required");
+      }
+
+      const userId = request.auth.uid;
+      const { paymentMethodId } = request.data;
+
+      if (!paymentMethodId) {
+        throw new HttpsError("invalid-argument", "Payment method ID required");
+      }
+
+      const stripe = getStripe();
+
+      // Verify the payment method belongs to this user's customer
+      const userDoc = await db.collection("users").doc(userId).get();
+      const customerId = userDoc.data()?.stripeCustomerId;
+
+      if (!customerId) {
+        throw new HttpsError("not-found", "Customer not found");
+      }
+
+      // Retrieve payment method to verify it belongs to this customer
+      const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+
+      if (paymentMethod.customer !== customerId) {
+        throw new HttpsError("permission-denied", "Unauthorized");
+      }
+
+      // Detach payment method from customer
+      await stripe.paymentMethods.detach(paymentMethodId);
+
+      logger.info('Payment method deleted', { paymentMethodId, userId });
+
+      return {
+        success: true,
+        message: "Payment method deleted successfully"
+      };
+
+    } catch (error) {
+      logger.error('Error deleting payment method', error, {
+        userId: request.auth?.uid
+      });
+
+      if (error.code && error.code.includes('/')) {
+        throw error;
+      }
+
+      throw new HttpsError(
+        "internal",
+        error.message || "Error deleting payment method"
+      );
+    }
+  }
+);
+
+// -------------------------
+// Set Default Payment Method
+// -------------------------
+exports.setDefaultPaymentMethod = onCall(
+  { secrets: [stripeSecretKey] },
+  async (request) => {
+    try {
+      logger.info('setDefaultPaymentMethod called', {
+        hasAuth: !!request.auth
+      });
+
+      if (!request.auth) {
+        throw new HttpsError("unauthenticated", "Authentication required");
+      }
+
+      const userId = request.auth.uid;
+      const { paymentMethodId } = request.data;
+
+      if (!paymentMethodId) {
+        throw new HttpsError("invalid-argument", "Payment method ID required");
+      }
+
+      const stripe = getStripe();
+
+      // Get customer
+      const userDoc = await db.collection("users").doc(userId).get();
+      const customerId = userDoc.data()?.stripeCustomerId;
+
+      if (!customerId) {
+        throw new HttpsError("not-found", "Customer not found");
+      }
+
+      // Verify the payment method belongs to this customer
+      const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+
+      if (paymentMethod.customer !== customerId) {
+        throw new HttpsError("permission-denied", "Unauthorized");
+      }
+
+      // Update customer's default payment method
+      await stripe.customers.update(customerId, {
+        invoice_settings: {
+          default_payment_method: paymentMethodId
+        }
+      });
+
+      logger.info('Default payment method set', { paymentMethodId, userId });
+
+      return {
+        success: true,
+        message: "Default payment method updated successfully"
+      };
+
+    } catch (error) {
+      logger.error('Error setting default payment method', error, {
+        userId: request.auth?.uid
+      });
+
+      if (error.code && error.code.includes('/')) {
+        throw error;
+      }
+
+      throw new HttpsError(
+        "internal",
+        error.message || "Error setting default payment method"
+      );
+    }
+  }
+);

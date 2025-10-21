@@ -15,9 +15,18 @@ class StripePaymentService: NSObject, ObservableObject {
     @Published var paymentSheet: PaymentSheet?
     @Published var currentPaymentIntentId: String?
     @Published var isPaymentSheetReady = false
+    @Published var paymentMethods: [PaymentMethodInfo] = []
 
-    
     private let functions = Functions.functions(region: "us-central1")
+
+    struct PaymentMethodInfo: Identifiable {
+        let id: String
+        let brand: String
+        let last4: String
+        let expMonth: Int
+        let expYear: Int
+        let isDefault: Bool
+    }
 
     struct PaymentResult {
         let success: Bool
@@ -422,6 +431,305 @@ class StripePaymentService: NSObject, ObservableObject {
                 }
             }
         }
+    }
+
+    // -------------------------
+    // Process Card Payment
+    // -------------------------
+    func processCardPayment(cardParams: STPPaymentMethodCardParams, eventName: String, amount: Double, eventId: String, completion: @escaping (PaymentResult) -> Void) {
+        guard !isProcessing else {
+            print("⚠️ Payment already in progress, ignoring duplicate call")
+            return
+        }
+
+        Task {
+            await MainActor.run {
+                self.isProcessing = true
+                self.errorMessage = nil
+            }
+
+            do {
+                print("🔵 Creating payment intent for card payment: \(eventId)")
+
+                // Step 1: Create payment intent on backend
+                let (clientSecret, intentId) = try await createPaymentIntent(eventId: eventId)
+
+                print("✅ Payment intent created for card payment: \(intentId)")
+
+                // Store payment intent ID
+                await MainActor.run {
+                    self.currentPaymentIntentId = intentId
+                }
+
+                // Step 2: Create payment method from card params
+                let paymentMethodParams = STPPaymentMethodParams(card: cardParams, billingDetails: nil, metadata: nil)
+
+                let apiClient = STPAPIClient.shared
+
+                print("🔵 Creating payment method from card")
+
+                // Create payment method
+                let (paymentMethod, pmError) = await withCheckedContinuation { continuation in
+                    apiClient.createPaymentMethod(with: paymentMethodParams) { paymentMethod, error in
+                        continuation.resume(returning: (paymentMethod, error))
+                    }
+                }
+
+                if let pmError = pmError {
+                    print("❌ Failed to create payment method: \(pmError)")
+                    await MainActor.run {
+                        self.isProcessing = false
+                        completion(PaymentResult(
+                            success: false,
+                            message: "Failed to process card: \(pmError.localizedDescription)",
+                            ticketId: nil
+                        ))
+                    }
+                    return
+                }
+
+                guard let paymentMethod = paymentMethod else {
+                    print("❌ No payment method created")
+                    await MainActor.run {
+                        self.isProcessing = false
+                        completion(PaymentResult(
+                            success: false,
+                            message: "Failed to create payment method",
+                            ticketId: nil
+                        ))
+                    }
+                    return
+                }
+
+                print("✅ Payment method created: \(paymentMethod.stripeId)")
+
+                // Step 3: Confirm payment intent with the payment method
+                let paymentIntentParams = STPPaymentIntentParams(clientSecret: clientSecret)
+                paymentIntentParams.paymentMethodId = paymentMethod.stripeId
+
+                print("🔵 Confirming payment intent")
+
+                let (confirmResult, confirmError) = await withCheckedContinuation { continuation in
+                    apiClient.confirmPaymentIntent(with: paymentIntentParams) { result, error in
+                        continuation.resume(returning: (result, error))
+                    }
+                }
+
+                if let confirmError = confirmError {
+                    print("❌ Payment confirmation failed: \(confirmError)")
+                    await MainActor.run {
+                        self.isProcessing = false
+                        completion(PaymentResult(
+                            success: false,
+                            message: "Payment failed: \(confirmError.localizedDescription)",
+                            ticketId: nil
+                        ))
+                    }
+                    return
+                }
+
+                if let paymentIntent = confirmResult, paymentIntent.status == .succeeded {
+                    print("✅ Payment confirmed successfully")
+
+                    // Step 4: Create ticket on backend
+                    do {
+                        let ticketResult = try await self.confirmPurchase(paymentIntentId: intentId)
+                        await MainActor.run {
+                            self.isProcessing = false
+                            completion(ticketResult)
+                        }
+                    } catch {
+                        print("❌ Error creating ticket: \(error)")
+                        await MainActor.run {
+                            self.isProcessing = false
+                            completion(PaymentResult(
+                                success: false,
+                                message: "Payment succeeded but ticket creation failed: \(error.localizedDescription)",
+                                ticketId: nil
+                            ))
+                        }
+                    }
+                } else {
+                    print("❌ Payment not succeeded, status: \(String(confirmResult?.status.rawValue ?? -1))")
+                    await MainActor.run {
+                        self.isProcessing = false
+                        completion(PaymentResult(
+                            success: false,
+                            message: "Payment was not completed",
+                            ticketId: nil
+                        ))
+                    }
+                }
+
+            } catch let error as NSError {
+                print("❌ Error setting up card payment: \(error)")
+
+                let errorMessage: String
+                if error.domain == "FIRFunctionsErrorDomain" {
+                    if let details = error.userInfo["details"] as? String {
+                        errorMessage = details
+                    } else {
+                        errorMessage = error.localizedDescription
+                    }
+                } else {
+                    errorMessage = error.localizedDescription
+                }
+
+                await MainActor.run {
+                    self.isProcessing = false
+                    self.errorMessage = errorMessage
+                    completion(PaymentResult(success: false, message: errorMessage, ticketId: nil))
+                }
+            }
+        }
+    }
+
+    // -------------------------
+    // Get Payment Methods
+    // -------------------------
+    func fetchPaymentMethods() async throws {
+        print("🔵 Fetching payment methods")
+
+        guard Auth.auth().currentUser != nil else {
+            throw PaymentError.notAuthenticated
+        }
+
+        let result = try await functions.httpsCallable("getPaymentMethods").call()
+
+        guard let data = result.data as? [String: Any],
+              let methods = data["paymentMethods"] as? [[String: Any]] else {
+            print("❌ Invalid response from getPaymentMethods")
+            throw PaymentError.invalidResponse
+        }
+
+        print("✅ Fetched \(methods.count) payment methods")
+
+        await MainActor.run {
+            self.paymentMethods = methods.compactMap { methodData in
+                guard let id = methodData["id"] as? String,
+                      let brand = methodData["brand"] as? String,
+                      let last4 = methodData["last4"] as? String,
+                      let expMonth = methodData["expMonth"] as? Int,
+                      let expYear = methodData["expYear"] as? Int,
+                      let isDefault = methodData["isDefault"] as? Bool else {
+                    return nil
+                }
+
+                return PaymentMethodInfo(
+                    id: id,
+                    brand: brand,
+                    last4: last4,
+                    expMonth: expMonth,
+                    expYear: expYear,
+                    isDefault: isDefault
+                )
+            }
+        }
+    }
+
+    // -------------------------
+    // Save Payment Method
+    // -------------------------
+    func savePaymentMethod(cardParams: STPPaymentMethodCardParams, setAsDefault: Bool = false) async throws {
+        print("🔵 Saving payment method")
+
+        guard Auth.auth().currentUser != nil else {
+            throw PaymentError.notAuthenticated
+        }
+
+        // Create payment method
+        let paymentMethodParams = STPPaymentMethodParams(card: cardParams, billingDetails: nil, metadata: nil)
+        let apiClient = STPAPIClient.shared
+
+        let (paymentMethod, error) = await withCheckedContinuation { continuation in
+            apiClient.createPaymentMethod(with: paymentMethodParams) { paymentMethod, error in
+                continuation.resume(returning: (paymentMethod, error))
+            }
+        }
+
+        if let error = error {
+            print("❌ Failed to create payment method: \(error)")
+            throw error
+        }
+
+        guard let paymentMethod = paymentMethod else {
+            print("❌ No payment method created")
+            throw PaymentError.paymentFailed
+        }
+
+        print("✅ Payment method created: \(paymentMethod.stripeId)")
+
+        // Save to backend
+        let result = try await functions.httpsCallable("savePaymentMethod").call([
+            "paymentMethodId": paymentMethod.stripeId,
+            "setAsDefault": setAsDefault
+        ])
+
+        guard let data = result.data as? [String: Any],
+              let success = data["success"] as? Bool,
+              success else {
+            print("❌ Failed to save payment method")
+            throw PaymentError.paymentFailed
+        }
+
+        print("✅ Payment method saved successfully")
+
+        // Refresh payment methods
+        try await fetchPaymentMethods()
+    }
+
+    // -------------------------
+    // Delete Payment Method
+    // -------------------------
+    func deletePaymentMethod(paymentMethodId: String) async throws {
+        print("🔵 Deleting payment method: \(paymentMethodId)")
+
+        guard Auth.auth().currentUser != nil else {
+            throw PaymentError.notAuthenticated
+        }
+
+        let result = try await functions.httpsCallable("deletePaymentMethod").call([
+            "paymentMethodId": paymentMethodId
+        ])
+
+        guard let data = result.data as? [String: Any],
+              let success = data["success"] as? Bool,
+              success else {
+            print("❌ Failed to delete payment method")
+            throw PaymentError.paymentFailed
+        }
+
+        print("✅ Payment method deleted successfully")
+
+        // Refresh payment methods
+        try await fetchPaymentMethods()
+    }
+
+    // -------------------------
+    // Set Default Payment Method
+    // -------------------------
+    func setDefaultPaymentMethod(paymentMethodId: String) async throws {
+        print("🔵 Setting default payment method: \(paymentMethodId)")
+
+        guard Auth.auth().currentUser != nil else {
+            throw PaymentError.notAuthenticated
+        }
+
+        let result = try await functions.httpsCallable("setDefaultPaymentMethod").call([
+            "paymentMethodId": paymentMethodId
+        ])
+
+        guard let data = result.data as? [String: Any],
+              let success = data["success"] as? Bool,
+              success else {
+            print("❌ Failed to set default payment method")
+            throw PaymentError.paymentFailed
+        }
+
+        print("✅ Default payment method set successfully")
+
+        // Refresh payment methods
+        try await fetchPaymentMethods()
     }
 
     // -------------------------
