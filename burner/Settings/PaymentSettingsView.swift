@@ -78,18 +78,22 @@ struct PaymentSettingsView: View {
                         .padding(.bottom, 20)
                     }
                 } else {
-                    // Payment methods list
-                    if paymentService.paymentMethods.isEmpty {
-                        VStack(spacing: 16) {
-                            Spacer()
-                            Text("No payment methods")
-                                .appBody()
-                                .foregroundColor(.gray)
-                            Spacer()
-                        }
-                    } else {
-                        ScrollView {
-                            VStack(spacing: 12) {
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            if paymentService.paymentMethods.isEmpty {
+                                VStack(spacing: 12) {
+                                    Text("No payment methods")
+                                        .appBody()
+                                        .foregroundColor(.gray)
+
+                                    Text("Add one to speed up checkout next time.")
+                                        .appSecondary()
+                                        .foregroundColor(.gray.opacity(0.8))
+                                        .multilineTextAlignment(.center)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 80)
+                            } else {
                                 ForEach(paymentService.paymentMethods) { method in
                                     PaymentMethodRow(
                                         method: method,
@@ -102,32 +106,27 @@ struct PaymentSettingsView: View {
                                     )
                                 }
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.top, 16)
-                            .padding(.bottom, 100)
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
+                        .padding(.bottom, 20)
                     }
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        ZStack {
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.black.opacity(0.85),
+                                    Color.black
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .ignoresSafeArea()
 
-                    if !showAddCard {
-                        VStack {
-                            Spacer()
-                            Button(action: {
-                                showAddCard = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.system(size: 20))
-                                    Text("Add Payment Method")
-                                        .appBody()
-                                }
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 50)
-                                .background(Color.white.opacity(0.15))
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 20)
+                            addPaymentButton
+                                .padding(.horizontal, 16)
+                                .padding(.top, 16)
+                                .padding(.bottom, 20)
                         }
                     }
                 }
@@ -143,6 +142,26 @@ struct PaymentSettingsView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
+    }
+
+    private var addPaymentButton: some View {
+        Button(action: {
+            showAddCard = true
+        }) {
+            HStack(spacing: 12) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 18, weight: .semibold))
+
+                Text("Add Payment Method")
+                    .appBody()
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(Color.white.opacity(0.15))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 
     private func loadPaymentMethods() {

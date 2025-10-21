@@ -67,10 +67,117 @@ struct EventDetailView: View {
     var isButtonDisabled: Bool {
         return userHasTicket || availableTickets == 0
     }
-    
+
+    private let metaGridColumns: [GridItem] = [
+        GridItem(.adaptive(minimum: 160), spacing: 12)
+    ]
+
+    private let tagColumns: [GridItem] = [
+        GridItem(.adaptive(minimum: 80), spacing: 8)
+    ]
+
     private var isBookmarked: Bool {
         guard let eventId = event.id else { return false }
         return bookmarkManager.isBookmarked(eventId)
+    }
+
+    private var formattedDate: String {
+        guard let start = event.startTime else { return "Date TBC" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        return formatter.string(from: start)
+    }
+
+    private var weekdayText: String? {
+        guard let start = event.startTime else { return nil }
+        return start.formatted(.dateTime.weekday(.wide)).uppercased()
+    }
+
+    private var timeRangeText: String {
+        guard let start = event.startTime else { return "Time TBC" }
+        let startTime = start.formatted(.dateTime.hour().minute())
+
+        if let end = event.endTime {
+            let endTime = end.formatted(.dateTime.hour().minute())
+            return "\(startTime) – \(endTime)"
+        }
+
+        return startTime
+    }
+
+    private var durationText: String? {
+        guard let start = event.startTime, let end = event.endTime, end > start else { return nil }
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.hour, .minute]
+        formatter.unitsStyle = .short
+
+        if let formatted = formatter.string(from: start, to: end) {
+            return "Duration \(formatted)"
+        }
+
+        return nil
+    }
+
+    private var priceText: String {
+        "£\(String(format: "%.2f", event.price))"
+    }
+
+    private var priceSecondaryText: String {
+        availableTickets > 0 ? "per ticket" : "last listed price"
+    }
+
+    private var ticketAvailabilityPrimary: String {
+        availableTickets > 0 ? "\(availableTickets) left" : "Sold Out"
+    }
+
+    private var ticketAvailabilitySecondary: String {
+        var parts: [String] = ["\(event.maxTickets) total"]
+        if let status = event.status?.replacingOccurrences(of: "_", with: " "), !status.isEmpty {
+            parts.append(status.capitalized)
+        }
+        return parts.joined(separator: " • ")
+    }
+
+    private var metaCards: [EventMetaCardData] {
+        var cards: [EventMetaCardData] = [
+            EventMetaCardData(
+                title: "Date",
+                primaryText: formattedDate,
+                secondaryText: weekdayText
+            ),
+            EventMetaCardData(
+                title: "Time",
+                primaryText: timeRangeText,
+                secondaryText: durationText
+            ),
+            EventMetaCardData(
+                title: "Venue",
+                primaryText: event.venue,
+                secondaryText: nil
+            ),
+            EventMetaCardData(
+                title: "Tickets",
+                primaryText: ticketAvailabilityPrimary,
+                secondaryText: ticketAvailabilitySecondary
+            ),
+            EventMetaCardData(
+                title: "Price",
+                primaryText: priceText,
+                secondaryText: priceSecondaryText
+            )
+        ]
+
+        if let category = event.category, !category.isEmpty {
+            cards.append(
+                EventMetaCardData(
+                    title: "Category",
+                    primaryText: category.capitalized,
+                    secondaryText: nil
+                )
+            )
+        }
+
+        return cards
     }
     
     var body: some View {
@@ -157,59 +264,53 @@ struct EventDetailView: View {
                         .padding(.bottom, 30)
                         
                         // Content Section - More compact spacing
-                        VStack(spacing: 16) {
-                           
-                            // Description - more compact
+                        VStack(alignment: .leading, spacing: 24) {
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("At a glance")
+                                    .appBody()
+                                    .foregroundColor(.white)
+
+                                LazyVGrid(columns: metaGridColumns, spacing: 12) {
+                                    ForEach(metaCards) { card in
+                                        EventMetaCard(data: card)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
+
+                            if let tags = event.tags, !tags.isEmpty {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Tags")
+                                        .appBody()
+                                        .foregroundColor(.white)
+
+                                    LazyVGrid(columns: tagColumns, spacing: 8) {
+                                        ForEach(tags, id: \.self) { tag in
+                                            EventTagChip(text: tag)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+                            }
+
                             if let description = event.description, !description.isEmpty {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("About")
                                         .appBody()
                                         .foregroundColor(.white)
-                                    
+
                                     Text(description)
                                         .appBody()
                                         .foregroundColor(.gray)
                                         .lineSpacing(2)
-                                        .lineLimit(6)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 20)
                             }
-                            
-                            // Event details - more compact
-                            VStack(spacing: 12) {
-                                Text("Event Details")
-        .appBody()                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                
-                                VStack(spacing: 8) {
-                                    EventDetailRow(
-                                        icon: "calendar",
-                                        title: "Date & Time",
-                                        value: (event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month().year().hour().minute())
-                                    )
-                                    
-                                    EventDetailRow(
-                                        icon: "location",
-                                        title: "Venue",
-                                        value: event.venue
-                                    )
-                                    
-                                    EventDetailRow(
-                                        icon: "creditcard",
-                                        title: "Price",
-                                        value: "£\(String(format: "%.2f", event.price))"
-                                    )
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                            
-                            // Bottom spacing for floating button
-                            Spacer(minLength: 100)
                         }
+                        .padding(.bottom, 120)
                     }
                 }
-                
+
                 // Floating bottom bar
                 VStack {
                     Spacer()
@@ -221,19 +322,21 @@ struct EventDetailView: View {
                             }
                         }) {
                             Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-    .appBody()                                .foregroundColor(.white)
+                                .appBody()
+                                .foregroundColor(.white)
                                 .frame(width: 44, height: 44)
                                 .background(Color.gray.opacity(0.2))
                                 .clipShape(Circle())
                         }
-                        
+
                         Button(action: {
                             if !userHasTicket && availableTickets > 0 {
                                 showingPurchase = true
                             }
                         }) {
                             Text(buttonText)
-    .appBody()                                .foregroundColor(buttonTextColor)
+                                .appBody()
+                                .foregroundColor(buttonTextColor)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 44)
                                 .background(buttonColor)
@@ -326,35 +429,58 @@ struct RepresentedApplePayButton: UIViewRepresentable {
     func updateUIView(_ uiView: PKPaymentButton, context: Context) {}
 }
 
-// MARK: - Event Detail Row - More compact
-struct EventDetailRow: View {
-    let icon: String
+// MARK: - Event Meta Views
+private struct EventMetaCardData: Identifiable {
+    var id: String { title }
     let title: String
-    let value: String
-    
+    let primaryText: String
+    let secondaryText: String?
+}
+
+private struct EventMetaCard: View {
+    let data: EventMetaCardData
+
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.appIcon)
-                .frame(width: 16)
-            
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
+        VStack(alignment: .leading, spacing: 8) {
+            Text(data.title.uppercased())
+                .appCaption()
+                .foregroundColor(.white.opacity(0.7))
+                .tracking(1.2)
+
+            Text(data.primaryText)
+                .appSectionHeader()
+                .foregroundColor(.white)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let secondary = data.secondaryText, !secondary.isEmpty {
+                Text(secondary)
                     .appSecondary()
-                    .foregroundColor(.gray)
-                
-                Text(value)
-                    .appBody()
-                    .foregroundColor(.white)
-                    .lineLimit(2)
+                    .foregroundColor(.white.opacity(0.6))
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            
-            Spacer()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color.gray.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color.white.opacity(0.05))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+private struct EventTagChip: View {
+    let text: String
+
+    var body: some View {
+        Text(text.uppercased())
+            .appCaption()
+            .foregroundColor(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color.white.opacity(0.08))
+            .clipShape(Capsule())
     }
 }
 
