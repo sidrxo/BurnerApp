@@ -109,7 +109,7 @@ class EventViewModel: ObservableObject {
     // MARK: - Purchase Ticket
     func purchaseTicket(eventId: String, completion: @escaping (Bool, String?) -> Void) {
         if userHasTicket(for: eventId) {
-            completion(false, "You already have a ticket for this event")
+            completion(false, "Ticket Purchased")
             return
         }
         

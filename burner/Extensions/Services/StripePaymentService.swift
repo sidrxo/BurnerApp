@@ -738,7 +738,119 @@ class StripePaymentService: NSObject, ObservableObject {
     func getAuthenticationContext() -> STPAuthenticationContext {
         return AuthenticationContext()
     }
+    // ✅ NEW: Process Payment with Saved Card
+    func processSavedCardPayment(
+        paymentMethodId: String,
+        eventName: String,
+        amount: Double,
+        eventId: String,
+        completion: @escaping (PaymentResult) -> Void
+    ) {
+        guard !isProcessing else {
+            print("⚠️ Payment already in progress, ignoring duplicate call")
+            return
+        }
 
+        Task {
+            await MainActor.run {
+                self.isProcessing = true
+                self.errorMessage = nil
+            }
+
+            do {
+                print("🔵 Creating payment intent with saved card for event: \(eventId)")
+
+                // Step 1: Create payment intent
+                let (clientSecret, intentId) = try await createPaymentIntent(eventId: eventId)
+
+                print("✅ Payment intent created: \(intentId)")
+
+                await MainActor.run {
+                    self.currentPaymentIntentId = intentId
+                }
+
+                let stripe = STPAPIClient.shared
+
+                // Step 2: Confirm payment intent with saved payment method
+                print("🔵 Confirming payment intent with saved card: \(paymentMethodId)")
+
+                let paymentIntentParams = STPPaymentIntentParams(clientSecret: clientSecret)
+                paymentIntentParams.paymentMethodId = paymentMethodId
+
+                let (confirmResult, confirmError) = await withCheckedContinuation { continuation in
+                    stripe.confirmPaymentIntent(with: paymentIntentParams) { result, error in
+                        continuation.resume(returning: (result, error))
+                    }
+                }
+
+                if let confirmError = confirmError {
+                    print("❌ Payment confirmation failed: \(confirmError)")
+                    await MainActor.run {
+                        self.isProcessing = false
+                        completion(PaymentResult(
+                            success: false,
+                            message: "Payment failed: \(confirmError.localizedDescription)",
+                            ticketId: nil
+                        ))
+                    }
+                    return
+                }
+
+                if let paymentIntent = confirmResult, paymentIntent.status == .succeeded {
+                    print("✅ Payment confirmed successfully")
+
+                    // Step 3: Create ticket on backend
+                    do {
+                        let ticketResult = try await self.confirmPurchase(paymentIntentId: intentId)
+                        await MainActor.run {
+                            self.isProcessing = false
+                            completion(ticketResult)
+                        }
+                    } catch {
+                        print("❌ Error creating ticket: \(error)")
+                        await MainActor.run {
+                            self.isProcessing = false
+                            completion(PaymentResult(
+                                success: false,
+                                message: "Payment succeeded but ticket creation failed: \(error.localizedDescription)",
+                                ticketId: nil
+                            ))
+                        }
+                    }
+                } else {
+                    print("❌ Payment not succeeded, status: \(String(confirmResult?.status.rawValue ?? -1))")
+                    await MainActor.run {
+                        self.isProcessing = false
+                        completion(PaymentResult(
+                            success: false,
+                            message: "Payment was not completed",
+                            ticketId: nil
+                        ))
+                    }
+                }
+
+            } catch let error as NSError {
+                print("❌ Error processing saved card payment: \(error)")
+
+                let errorMessage: String
+                if error.domain == "FIRFunctionsErrorDomain" {
+                    if let details = error.userInfo["details"] as? String {
+                        errorMessage = details
+                    } else {
+                        errorMessage = error.localizedDescription
+                    }
+                } else {
+                    errorMessage = error.localizedDescription
+                }
+
+                await MainActor.run {
+                    self.isProcessing = false
+                    self.errorMessage = errorMessage
+                    completion(PaymentResult(success: false, message: errorMessage, ticketId: nil))
+                }
+            }
+        }
+    }
     // -------------------------
     // Payment Errors
     // -------------------------

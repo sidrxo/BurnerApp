@@ -2,6 +2,7 @@ import SwiftUI
 import CodeScanner
 import FirebaseFirestore
 import FirebaseAuth
+import FirebaseFunctions
 internal import AVFoundation
 
 struct ScannerView: View {
@@ -11,12 +12,26 @@ struct ScannerView: View {
     @State private var errorMessage = ""
     @State private var showingSuccess = false
     @State private var successMessage = ""
+    @State private var showingAlreadyUsed = false
+    @State private var alreadyUsedDetails: AlreadyUsedTicket?
     @State private var isProcessing = false
     @State private var userRole: String = ""
     @State private var manualTicketNumber: String = ""
+    @State private var showManualEntry = false // ✅ NEW: Control manual entry visibility
     
     @Environment(\.presentationMode) var presentationMode
     private let db = Firestore.firestore()
+    private let functions = Functions.functions()
+    
+    // ✅ NEW: Struct to hold already-used ticket details
+    struct AlreadyUsedTicket {
+        let ticketNumber: String
+        let eventName: String
+        let userName: String
+        let scannedAt: String
+        let scannedBy: String
+        let scannedByEmail: String?
+    }
     
     var body: some View {
         ZStack {
@@ -39,10 +54,28 @@ struct ScannerView: View {
         }
         .alert("Success", isPresented: $showingSuccess) {
             Button("Done") {
-                presentationMode.wrappedValue.dismiss()
+                // Don't dismiss, allow multiple scans
             }
         } message: {
             Text(successMessage)
+        }
+        // ✅ NEW: Already used alert with details
+        .alert("Ticket Already Used", isPresented: $showingAlreadyUsed) {
+            Button("OK") { }
+        } message: {
+            if let details = alreadyUsedDetails {
+                Text("""
+                This ticket was already scanned.
+                
+                Event: \(details.eventName)
+                Ticket: \(details.ticketNumber)
+                Guest: \(details.userName)
+                
+                Scanned: \(details.scannedAt)
+                By: \(details.scannedBy)
+                \(details.scannedByEmail != nil ? "(\(details.scannedByEmail!))" : "")
+                """)
+            }
         }
     }
     
@@ -100,11 +133,11 @@ struct ScannerView: View {
                         
                         VStack(spacing: 8) {
                             Text("QR Code Scanner")
-                                .appBody()
+                                .appPageHeader()
                                 .foregroundColor(.white)
                             
                             Text("Scan a ticket QR code to verify entry")
-                                .appSecondary()
+                                .appSectionHeader()
                                 .foregroundColor(.gray)
                                 .multilineTextAlignment(.center)
                         }
@@ -130,68 +163,73 @@ struct ScannerView: View {
                     }
                     .padding(.horizontal, 20)
                     
-                    // Divider
-                    HStack {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(height: 1)
-                        
-                        Text("OR")
-                            .appCaption()
-                            .foregroundColor(.gray)
-                            .padding(.horizontal, 12)
-                        
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(height: 1)
+                    // ✅ NEW: Toggle for manual entry
+                    Button(action: {
+                        withAnimation {
+                            showManualEntry.toggle()
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: showManualEntry ? "chevron.up" : "chevron.down")
+                                .font(.appCaption)
+                            
+                            Text(showManualEntry ? "Hide Manual Entry" : "Manual Entry")
+                                .appBody()
+                        }
+                        .foregroundColor(.gray)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
                     }
                     .padding(.horizontal, 20)
                     
-                    // Manual entry section
-                    VStack(spacing: 16) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Manual Entry")
+                    // ✅ UPDATED: Manual entry section - collapsible
+                    if showManualEntry {
+                        VStack(spacing: 16) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Manual Entry")
+                                    .appBody()
+                                    .foregroundColor(.white)
+                                
+                                Text("Enter ticket number manually")
+                                    .appSecondary()
+                                    .foregroundColor(.gray)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            TextField("Ticket Number", text: $manualTicketNumber)
                                 .appBody()
                                 .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 14)
+                                .background(Color.gray.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.characters)
                             
-                            Text("Enter ticket number manually")
-                                .appSecondary()
-                                .foregroundColor(.gray)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        TextField("Ticket Number", text: $manualTicketNumber)
-                            .appBody()
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
-                            .background(Color.gray.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .autocorrectionDisabled()
-                            .textInputAutocapitalization(.characters)
-                        
-                        Button(action: {
-                            processManualTicket()
-                        }) {
-                            HStack(spacing: 8) {
-                                if isProcessing {
-                                    ProgressView()
-                                        .scaleEffect(0.8)
-                                        .tint(.black)
+                            Button(action: {
+                                processManualTicket()
+                            }) {
+                                HStack(spacing: 8) {
+                                    if isProcessing {
+                                        ProgressView()
+                                            .scaleEffect(0.8)
+                                            .tint(.black)
+                                    }
+                                    
+                                    Text(isProcessing ? "Processing..." : "Verify Ticket")
+                                        .appBody()
                                 }
-                                
-                                Text(isProcessing ? "Processing..." : "Verify Ticket")
-                                    .appBody()
+                                .foregroundColor(canProcessTicket ? .black : .gray)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(canProcessTicket ? Color.white : Color.gray.opacity(0.3))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
-                            .foregroundColor(canProcessTicket ? .black : .gray)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(canProcessTicket ? Color.white : Color.gray.opacity(0.3))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .disabled(!canProcessTicket)
                         }
-                        .disabled(!canProcessTicket)
+                        .padding(.horizontal, 20)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
-                    .padding(.horizontal, 20)
                 }
                 .padding(.bottom, 100)
             }
@@ -252,7 +290,7 @@ struct ScannerView: View {
         switch result {
         case .success(let result):
             scannedValue = result.string
-            processTicket(ticketId: extractTicketId(from: scannedValue))
+            processTicket(qrCodeData: scannedValue)
         case .failure(let error):
             errorMessage = "Scanning failed: \(error.localizedDescription)"
             showingError = true
@@ -260,10 +298,11 @@ struct ScannerView: View {
     }
     
     private func processManualTicket() {
-        processTicket(ticketId: manualTicketNumber.trimmingCharacters(in: .whitespacesAndNewlines))
+        let ticketId = manualTicketNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        processTicket(qrCodeData: nil, ticketId: ticketId)
     }
     
-    private func extractTicketId(from qrData: String) -> String {
+    private func extractTicketId(from qrData: String) -> String? {
         // JSON format
         if let data = qrData.data(using: .utf8),
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -275,57 +314,127 @@ struct ScannerView: View {
         if let ticketIdIndex = components.firstIndex(of: "TICKET"), ticketIdIndex + 1 < components.count {
             return components[ticketIdIndex + 1]
         }
-        return qrData // fallback to entire string
+        return nil
     }
     
-    private func processTicket(ticketId: String) {
-        guard !ticketId.isEmpty else { return }
+    // ✅ UPDATED: Process ticket using Cloud Function with better error handling
+    private func processTicket(qrCodeData: String? = nil, ticketId: String? = nil) {
+        guard !isProcessing else { return }
+        
+        let finalTicketId: String
+        
+        if let ticketId = ticketId {
+            finalTicketId = ticketId
+        } else if let qrData = qrCodeData, let extracted = extractTicketId(from: qrData) {
+            finalTicketId = extracted
+        } else if let qrData = qrCodeData {
+            finalTicketId = qrData
+        } else {
+            errorMessage = "Invalid ticket data"
+            showingError = true
+            return
+        }
+        
+        guard !finalTicketId.isEmpty else {
+            errorMessage = "Invalid ticket ID"
+            showingError = true
+            return
+        }
+        
         isProcessing = true
         
-        let ticketRef = db.collection("tickets").document(ticketId)
-        ticketRef.getDocument { snapshot, error in
+        // Call Cloud Function
+        let scanFunction = functions.httpsCallable("scanTicket")
+        let data: [String: Any] = [
+            "ticketId": finalTicketId,
+            "qrCodeData": qrCodeData as Any
+        ]
+        
+        scanFunction.call(data) { result, error in
             DispatchQueue.main.async {
-                isProcessing = false
+                self.isProcessing = false
+                self.manualTicketNumber = ""
                 
-                if let error = error {
-                    errorMessage = "Failed to fetch ticket: \(error.localizedDescription)"
-                    showingError = true
+                if let error = error as NSError? {
+                    let errorMsg = error.localizedDescription
+                    self.errorMessage = errorMsg
+                    self.showingError = true
                     return
                 }
                 
-                guard let data = snapshot?.data() else {
-                    errorMessage = "Ticket not found."
-                    showingError = true
+                guard let data = result?.data as? [String: Any] else {
+                    self.errorMessage = "Invalid response from server"
+                    self.showingError = true
                     return
                 }
                 
-                if let status = data["status"] as? String, status == "used" {
-                    errorMessage = "This ticket has already been used."
-                    showingError = true
-                    return
-                }
+                let success = data["success"] as? Bool ?? false
+                let message = data["message"] as? String ?? ""
+                let ticketStatus = data["ticketStatus"] as? String ?? ""
                 
-                // Mark ticket as used
-                let updateData: [String: Any] = [
-                    "status": "used",
-                    "usedAt": Timestamp(date: Date()),
-                    "scannedBy": Auth.auth().currentUser?.uid ?? "unknown"
-                ]
-                
-                ticketRef.updateData(updateData) { error in
-                    DispatchQueue.main.async {
-                        if let error = error {
-                            errorMessage = "Failed to update ticket: \(error.localizedDescription)"
-                            showingError = true
-                        } else {
-                            successMessage = "Ticket successfully verified!"
-                            showingSuccess = true
-                            manualTicketNumber = ""
-                        }
+                if success {
+                    // Ticket successfully scanned
+                    self.successMessage = message
+                    self.showingSuccess = true
+                    
+                    // Haptic feedback
+                    let generator = UINotificationFeedbackGenerator()
+                    generator.notificationOccurred(.success)
+                } else if ticketStatus == "used" {
+                    // ✅ Ticket already used - show detailed alert
+                    if let ticketData = data["ticket"] as? [String: Any],
+                       let scannedAt = data["usedAt"] as? String,
+                       let scannedByName = data["scannedByName"] as? String {
+                        
+                        let eventName = ticketData["eventName"] as? String ?? "Unknown Event"
+                        let userName = ticketData["userName"] as? String ?? "Unknown"
+                        let ticketNumber = ticketData["ticketNumber"] as? String ?? "N/A"
+                        let scannedByEmail = data["scannedByEmail"] as? String
+                        
+                        // Format the scanned time
+                        let formattedTime = self.formatScanTime(scannedAt)
+                        
+                        self.alreadyUsedDetails = AlreadyUsedTicket(
+                            ticketNumber: ticketNumber,
+                            eventName: eventName,
+                            userName: userName,
+                            scannedAt: formattedTime,
+                            scannedBy: scannedByName,
+                            scannedByEmail: scannedByEmail
+                        )
+                        self.showingAlreadyUsed = true
+                        
+                        // Haptic feedback for error
+                        let generator = UINotificationFeedbackGenerator()
+                        generator.notificationOccurred(.error)
+                    } else {
+                        self.errorMessage = message
+                        self.showingError = true
                     }
+                } else {
+                    // Other error
+                    self.errorMessage = message
+                    self.showingError = true
+                    
+                    // Haptic feedback
+                    let generator = UINotificationFeedbackGenerator()
+                    generator.notificationOccurred(.error)
                 }
             }
         }
+    }
+    
+    // ✅ NEW: Format scan time for display
+    private func formatScanTime(_ isoString: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        guard let date = formatter.date(from: isoString) else {
+            return isoString
+        }
+        
+        let displayFormatter = DateFormatter()
+        displayFormatter.dateStyle = .medium
+        displayFormatter.timeStyle = .short
+        return displayFormatter.string(from: date)
     }
 }
 

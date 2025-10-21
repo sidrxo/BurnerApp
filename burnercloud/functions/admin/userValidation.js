@@ -16,15 +16,28 @@ exports.validateUser = onCall(async (request) => {
     const userId = request.auth.uid;
     const userRecord = await auth.getUser(userId);
 
+    // If no custom claims, set default user role
     if (!userRecord.customClaims || !userRecord.customClaims.role) {
       await auth.setCustomUserClaims(userId, { role: 'user', active: true });
+      console.log(`Set default role for user ${userId}`);
     } else {
-      if (['siteAdmin', 'venueAdmin', 'subAdmin'].includes(userRecord.customClaims.role)) {
+      // Validate admin/scanner roles against Firestore
+      const role = userRecord.customClaims.role;
+      
+      if (['siteAdmin', 'venueAdmin', 'subAdmin'].includes(role)) {
         const adminDoc = await db.collection("admins").doc(userId).get();
         
         if (!adminDoc.exists || !adminDoc.data().active) {
           await auth.setCustomUserClaims(userId, { role: 'user', active: true });
           console.log(`Revoked admin privileges for ${userId}`);
+        }
+      } else if (role === 'scanner') {
+        // ✅ Validate scanner role
+        const scannerDoc = await db.collection("scanners").doc(userId).get();
+        
+        if (!scannerDoc.exists || !scannerDoc.data().active) {
+          await auth.setCustomUserClaims(userId, { role: 'user', active: true });
+          console.log(`Revoked scanner privileges for ${userId}`);
         }
       }
     }
