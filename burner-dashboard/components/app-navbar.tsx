@@ -38,29 +38,34 @@ export function AppNavbar() {
     fetchVenueName();
   }, [user]);
 
-  const navigationItems = [
+  let navigationItems = [
     { title: "Overview", url: "/overview", icon: Home },
     { title: "Events", url: "/events", icon: Calendar },
     { title: "Tickets", url: "/tickets", icon: Ticket },
     { title: "Account", url: "/account", icon: Settings },
   ];
 
-  // Conditionally add "Venues" tab for siteAdmins and venueAdmins
-  if (user && (user.role === "siteAdmin" || user.role === "venueAdmin")) {
-    navigationItems.splice(3, 0, {
-      title: "Venues",
-      url: "/venues",
-      icon: MapPin,
-    });
-  }
+  if (user?.role === "scanner") {
+    navigationItems = [
+      { title: "Tickets", url: "/tickets", icon: Ticket },
+      { title: "Account", url: "/account", icon: Settings },
+    ];
+  } else {
+    if (user && (user.role === "siteAdmin" || user.role === "venueAdmin")) {
+      navigationItems.splice(3, 0, {
+        title: "Venues",
+        url: "/venues",
+        icon: MapPin,
+      });
+    }
 
-  // Add "Admin Management" tab for siteAdmins only
-  if (user && user.role === "siteAdmin") {
-    navigationItems.splice(4, 0, {
-      title: "Admin Management",
-      url: "/admin-management",
-      icon: Shield,
-    });
+    if (user && user.role === "siteAdmin") {
+      navigationItems.splice(4, 0, {
+        title: "Admin Management",
+        url: "/admin-management",
+        icon: Shield,
+      });
+    }
   }
 
   return (

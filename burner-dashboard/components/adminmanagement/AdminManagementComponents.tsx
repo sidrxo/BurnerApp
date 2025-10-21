@@ -8,16 +8,19 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
 } from "@/components/ui/dialog";
-import { Trash2, Edit, UserPlus, Shield, Building } from "lucide-react";
-import { Admin, Venue, CreateAdminData } from "@/hooks/useAdminManagement";
+import { Trash2, Edit, UserPlus, Shield, Building, Scan, Activity, Power } from "lucide-react";
+import { Admin, Venue, CreateAdminData, Scanner, CreateScannerData } from "@/hooks/useAdminManagement";
+import { formatDateSafe } from "@/lib/utils";
 
 export function AdminManagementHeader() {
   return (
@@ -32,6 +35,29 @@ export function AdminManagementHeader() {
 interface CreateAdminFormProps {
   venues: Venue[];
   onCreateAdmin: (data: CreateAdminData) => Promise<{ success: boolean; error?: string }>;
+}
+
+interface CreateScannerFormProps {
+  venues: Venue[];
+  currentUserRole: string;
+  defaultVenueId?: string | null;
+  onCreateScanner: (data: CreateScannerData) => Promise<{ success: boolean; error?: string }>;
+  actionLoading: boolean;
+}
+
+interface AdminsTableProps {
+  admins: Admin[];
+  venues: Venue[];
+  onDeleteAdmin: (adminId: string) => void;
+  onUpdateAdmin: (adminId: string, updates: Partial<Admin>) => void;
+}
+
+interface ScannersTableProps {
+  scanners: Scanner[];
+  venues: Venue[];
+  onUpdateScanner: (scannerId: string, updates: Partial<Scanner>) => Promise<any>;
+  onDeleteScanner: (scannerId: string) => Promise<any>;
+  loading: boolean;
 }
 
 export function CreateAdminForm({ venues, onCreateAdmin }: CreateAdminFormProps) {
@@ -144,11 +170,124 @@ export function CreateAdminForm({ venues, onCreateAdmin }: CreateAdminFormProps)
   );
 }
 
-interface AdminsTableProps {
-  admins: Admin[];
-  venues: Venue[];
-  onDeleteAdmin: (adminId: string) => void;
-  onUpdateAdmin: (adminId: string, updates: Partial<Admin>) => void;
+export function CreateScannerForm({
+  venues,
+  currentUserRole,
+  defaultVenueId,
+  onCreateScanner,
+  actionLoading
+}: CreateScannerFormProps) {
+  const initialVenue = currentUserRole === 'siteAdmin' ? '' : defaultVenueId || '';
+  const [formData, setFormData] = useState<CreateScannerData>({
+    email: '',
+    name: '',
+    venueId: initialVenue,
+    phoneNumber: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    const payload: CreateScannerData = {
+      email: formData.email.trim(),
+      name: formData.name.trim(),
+      venueId: currentUserRole === 'siteAdmin' ? (formData.venueId || null) : defaultVenueId || null,
+      phoneNumber: formData.phoneNumber?.trim() || undefined,
+    };
+
+    const result = await onCreateScanner(payload);
+    if (result.success) {
+      setFormData({
+        email: '',
+        name: '',
+        venueId: initialVenue,
+        phoneNumber: '',
+      });
+    }
+
+    setSubmitting(false);
+  };
+
+  const disableSubmit = submitting || actionLoading || !formData.email || !formData.name || (currentUserRole === 'siteAdmin' && !formData.venueId);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <Scan className="h-5 w-5" />
+          <span>Create Scanner</span>
+        </CardTitle>
+        <CardDescription>
+          Provision QR code scanners for fast check-ins at events
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="scanner-email">Email</Label>
+            <Input
+              id="scanner-email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="scanner-name">Name</Label>
+            <Input
+              id="scanner-name"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="scanner-phone">Contact Number (optional)</Label>
+            <Input
+              id="scanner-phone"
+              value={formData.phoneNumber || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+              placeholder="+44 1234 567890"
+            />
+          </div>
+
+          {currentUserRole === 'siteAdmin' ? (
+            <div>
+              <Label htmlFor="scanner-venue">Assign Venue</Label>
+              <Select
+                value={formData.venueId || ''}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, venueId: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select venue" />
+                </SelectTrigger>
+                <SelectContent>
+                  {venues.map((venue) => (
+                    <SelectItem key={venue.id} value={venue.id}>
+                      {venue.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="p-3 bg-muted/50 rounded-md text-sm text-muted-foreground">
+              Scanners created from your account are automatically linked to your venue.
+            </div>
+          )}
+
+          <Button type="submit" disabled={disableSubmit} className="w-full">
+            {submitting || actionLoading ? 'Creating...' : 'Create Scanner'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function AdminsTable({ admins, venues, onDeleteAdmin, onUpdateAdmin }: AdminsTableProps) {
@@ -257,6 +396,113 @@ export function AdminsTable({ admins, venues, onDeleteAdmin, onUpdateAdmin }: Ad
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function ScannersTable({ scanners, venues, onUpdateScanner, onDeleteScanner, loading }: ScannersTableProps) {
+  const getVenueName = (venueId?: string | null) => {
+    if (!venueId) return 'All Venues';
+    const venue = venues.find(v => v.id === venueId);
+    return venue?.name || venueId;
+  };
+
+  if (scanners.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Activity className="h-5 w-5" />
+            <span>Active Scanners</span>
+          </CardTitle>
+          <CardDescription>
+            Monitor scanner accounts and their permissions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground p-6 border border-dashed rounded-md text-center">
+            No scanners created yet. Add a scanner to allow staff to validate tickets at the door.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <Activity className="h-5 w-5" />
+          <span>Active Scanners</span>
+        </CardTitle>
+        <CardDescription>
+          Manage who can scan tickets and which venues they can access
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Venue</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Last Active</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {scanners.map((scanner) => (
+                <TableRow key={scanner.id}>
+                  <TableCell className="font-medium">{scanner.name}</TableCell>
+                  <TableCell>{scanner.email}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{getVenueName(scanner.venueId)}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={scanner.active !== false}
+                        disabled={loading}
+                        onCheckedChange={(checked) => onUpdateScanner(scanner.id, { active: checked })}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {scanner.active !== false ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <TooltipProvider delayDuration={150}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-sm text-muted-foreground">
+                            {scanner.lastActiveAt ? formatDateSafe(scanner.lastActiveAt) : '—'}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Last check-in activity</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => onDeleteScanner(scanner.id)}
+                      disabled={loading}
+                    >
+                      <Power className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
