@@ -2,6 +2,8 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
+const { validateTicketAvailability, initiateRefund } = require("./paymentHelpers");
+const { createTicketInTransaction } = require("../tickets/ticketHelpers");
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
@@ -122,98 +124,43 @@ exports.processApplePayPayment = onCall(
 
       // Step 6: Create ticket in transaction
       const result = await db.runTransaction(async (transaction) => {
-        const eventRef = db.collection("events").doc(eventId);
-        const eventDoc = await transaction.get(eventRef);
-
-        if (!eventDoc.exists) {
-          throw new HttpsError("not-found", "Event not found");
-        }
-
-        const event = eventDoc.data();
-
-        // Verify ticket availability
-        if (event.maxTickets - event.ticketsSold < 1) {
-          logger.info('Event sold out, initiating refund');
-          await stripe.refunds.create({
-            payment_intent: paymentIntentId,
-            reason: 'requested_by_customer'
-          });
-          throw new HttpsError("failed-precondition", "Event sold out - refund initiated");
-        }
-
-        // Check for duplicate ticket
-        const existingTickets = await db.collection("tickets")
-          .where("userId", "==", userId)
-          .where("eventId", "==", eventId)
-          .where("status", "==", "confirmed")
-          .limit(1)
-          .get();
-
-        if (!existingTickets.empty) {
-          logger.info('Duplicate ticket detected, initiating refund');
-          await stripe.refunds.create({
-            payment_intent: paymentIntentId,
-            reason: 'duplicate'
-          });
-          throw new HttpsError("failed-precondition", "You already have a ticket - refund initiated");
-        }
-
-        // Generate ticket data
-        const ticketRef = db.collection("tickets").doc();
-        const ticketId = ticketRef.id;
-        let ticketNumber, qrCodeData;
-        
+        // Validate ticket availability within transaction
+        let event, eventRef;
         try {
-          const { generateQRCodeData, generateTicketNumber } = require("../tickets/ticketHelpers");
-          ticketNumber = generateTicketNumber();
-          qrCodeData = generateQRCodeData(ticketId, eventId, userId, ticketNumber);
-          logger.info('Ticket data generated', { ticketId, ticketNumber });
-        } catch (helperError) {
-          logger.error('Error with ticketHelpers, using fallback', helperError);
-          ticketNumber = Math.floor(100000 + Math.random() * 900000).toString();
-          qrCodeData = JSON.stringify({
-            ticketId,
-            eventId,
-            userId,
-            ticketNumber,
-            timestamp: new Date().toISOString()
-          });
+          const validation = await validateTicketAvailability(userId, eventId, transaction);
+          event = validation.event;
+          eventRef = validation.eventRef;
+        } catch (validationError) {
+          // Initiate refund if validation fails
+          logger.info('Validation failed, initiating refund', { error: validationError.message });
+          await initiateRefund(stripe, paymentIntentId,
+            validationError.message.includes('already have') ? 'duplicate' : 'requested_by_customer'
+          );
+          throw validationError;
         }
 
-        // Build ticket metadata
-        const ticketMetadata = {
-          paymentMethod: "apple_pay",
+        // Prepare payment method details
+        const paymentMethodDetails = {
+          id: paymentMethod.id,
           last4: paymentMethod.card?.last4 || null,
-          brand: paymentMethod.card?.brand || null
+          brand: paymentMethod.card?.brand || null,
+          wallet: "apple_pay",
+          type: "apple_pay"
         };
-        
-        if (request.auth.token.email) {
-          ticketMetadata.customerEmail = request.auth.token.email;
-        }
 
-        const ticketData = {
-          eventId,
+        // Create ticket using consolidated helper
+        const ticketRef = db.collection("tickets").doc();
+        const { ticketId } = createTicketInTransaction(transaction, {
+          ticketRef,
+          eventRef,
+          event: { ...event, id: eventId },
           userId,
-          ticketNumber,
-          eventName: event.name,
-          venue: event.venue,
-          startTime: event.startTime,
-          totalPrice: event.price,
-          purchaseDate: FieldValue.serverTimestamp(),
-          status: "confirmed",
-          qrCode: qrCodeData,
-          venueId: event.venueId || null,
           paymentIntentId,
-          paymentMethodId: paymentMethod.id,
-          metadata: ticketMetadata
-        };
-
-        // Update documents
-        transaction.set(ticketRef, ticketData);
-        transaction.update(eventRef, {
-          ticketsSold: event.ticketsSold + 1,
-          updatedAt: FieldValue.serverTimestamp()
+          paymentMethodDetails,
+          customerEmail: request.auth.token.email || null
         });
+
+        // Update pending payment status
         transaction.update(pendingPaymentDoc.ref, {
           status: "completed",
           ticketId,
@@ -283,34 +230,9 @@ exports.createPaymentIntent = onCall(
 
       logger.info('Creating payment intent', { userId, eventId });
 
-      // Get event details
-      const eventDoc = await db.collection("events").doc(eventId).get();
-      if (!eventDoc.exists) {
-        logger.error('Event not found', { userId, eventId });
-        throw new HttpsError("not-found", "Event not found");
-      }
-
-      const event = eventDoc.data();
-      logger.info('Event found', { eventName: event.name, price: event.price });
-
-      // Check ticket availability
-      if (event.maxTickets - event.ticketsSold < 1) {
-        logger.error('No tickets available', { userId, eventId });
-        throw new HttpsError("failed-precondition", "No tickets available");
-      }
-
-      // Check for existing ticket
-      const existingTicket = await db.collection("tickets")
-        .where("userId", "==", userId)
-        .where("eventId", "==", eventId)
-        .where("status", "==", "confirmed")
-        .limit(1)
-        .get();
-
-      if (!existingTicket.empty) {
-        logger.error('User already has ticket', { userId, eventId });
-        throw new HttpsError("failed-precondition", "You already have a ticket for this event");
-      }
+      // Validate ticket availability (consolidated validation)
+      const { event } = await validateTicketAvailability(userId, eventId);
+      logger.info('Event validated', { eventName: event.name, price: event.price });
 
       const stripe = getStripe();
       logger.info('Stripe initialized');
@@ -494,118 +416,53 @@ exports.confirmPurchase = onCall(
 
       // Process ticket creation in transaction
       return await db.runTransaction(async (transaction) => {
-        const eventRef = db.collection("events").doc(eventId);
-        const eventDoc = await transaction.get(eventRef);
-
-        if (!eventDoc.exists) {
-          logger.error('Event not found', { eventId });
-          throw new HttpsError("not-found", "Event not found");
-        }
-
-        const event = eventDoc.data();
-
-        // Verify ticket availability
-        if (event.maxTickets - event.ticketsSold < 1) {
-          // Initiate refund if sold out
-          logger.info('Event sold out, initiating refund');
-          await stripe.refunds.create({
-            payment_intent: paymentIntentId,
-            reason: 'requested_by_customer'
-          });
-          throw new HttpsError("failed-precondition", "Event sold out - refund initiated");
-        }
-
-        // Check for duplicate ticket
-        const existingTickets = await db.collection("tickets")
-          .where("userId", "==", userId)
-          .where("eventId", "==", eventId)
-          .where("status", "==", "confirmed")
-          .limit(1)
-          .get();
-
-        if (!existingTickets.empty) {
-          logger.info('Duplicate ticket detected, initiating refund');
-          await stripe.refunds.create({
-            payment_intent: paymentIntentId,
-            reason: 'duplicate'
-          });
-          throw new HttpsError("failed-precondition", "You already have a ticket - refund initiated");
-        }
-
-        // Generate ticket data using ticketHelpers
-        const ticketRef = db.collection("tickets").doc();
-        const ticketId = ticketRef.id;
-        let ticketNumber, qrCodeData;
-        
+        // Validate ticket availability within transaction
+        let event, eventRef;
         try {
-          const { generateQRCodeData, generateTicketNumber } = require("./ticketHelpers");
-          ticketNumber = generateTicketNumber();
-          qrCodeData = generateQRCodeData(ticketId, eventId, userId, ticketNumber);
-          logger.info('Ticket data generated with helpers', { ticketId, ticketNumber });
-        } catch (helperError) {
-          logger.error('Error loading ticketHelpers, using fallback', helperError);
-          // Fallback if ticketHelpers not available
-          ticketNumber = Math.floor(100000 + Math.random() * 900000).toString();
-          qrCodeData = JSON.stringify({
-            ticketId,
-            eventId,
-            userId,
-            ticketNumber,
-            timestamp: new Date().toISOString()
-          });
+          const validation = await validateTicketAvailability(userId, eventId, transaction);
+          event = validation.event;
+          eventRef = validation.eventRef;
+        } catch (validationError) {
+          // Initiate refund if validation fails
+          logger.info('Validation failed, initiating refund', { error: validationError.message });
+          await initiateRefund(stripe, paymentIntentId,
+            validationError.message.includes('already have') ? 'duplicate' : 'requested_by_customer'
+          );
+          throw validationError;
         }
 
         // Get payment method details
         const paymentMethodId = paymentIntent.payment_method;
-        let paymentMethodDetails = {};
-        
+        let paymentMethodDetails = null;
+
         if (paymentMethodId) {
           try {
             const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
             paymentMethodDetails = {
+              id: paymentMethodId,
               last4: paymentMethod.card?.last4 || null,
               brand: paymentMethod.card?.brand || null,
-              wallet: paymentMethod.card?.wallet?.type || null
+              wallet: paymentMethod.card?.wallet?.type || null,
+              type: "card"
             };
           } catch (pmError) {
             logger.error('Error retrieving payment method', pmError);
-            // Continue without payment method details
           }
         }
 
-        // Build ticket metadata (handle undefined email)
-        const ticketMetadata = {
-          paymentMethod: paymentMethodDetails.wallet || "card",
-          ...paymentMethodDetails
-        };
-        
-        // Only add customerEmail if it exists
-        if (request.auth.token.email) {
-          ticketMetadata.customerEmail = request.auth.token.email;
-        }
-
-        const ticketData = {
-          eventId,
+        // Create ticket using consolidated helper
+        const ticketRef = db.collection("tickets").doc();
+        const { ticketId } = createTicketInTransaction(transaction, {
+          ticketRef,
+          eventRef,
+          event: { ...event, id: eventId },
           userId,
-          ticketNumber,
-          eventName: event.name,
-          venue: event.venue,
-          startTime: event.startTime,
-          totalPrice: event.price,
-          purchaseDate: FieldValue.serverTimestamp(),
-          status: "confirmed",
-          qrCode: qrCodeData,
-          venueId: event.venueId || null,
           paymentIntentId,
-          metadata: ticketMetadata
-        };
-
-        // Update documents in transaction
-        transaction.set(ticketRef, ticketData);
-        transaction.update(eventRef, {
-          ticketsSold: event.ticketsSold + 1,
-          updatedAt: FieldValue.serverTimestamp()
+          paymentMethodDetails,
+          customerEmail: request.auth.token.email || null
         });
+
+        // Update pending payment status
         transaction.update(pendingPaymentDoc.ref, {
           status: "completed",
           ticketId,
@@ -616,7 +473,7 @@ exports.confirmPurchase = onCall(
           ticketId,
           eventId,
           userId,
-          paymentMethod: paymentMethodDetails.wallet || "card"
+          paymentMethod: paymentMethodDetails?.wallet || paymentMethodDetails?.type || "card"
         });
 
         return {

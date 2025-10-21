@@ -9,13 +9,18 @@ import SwiftUI
 import CoreImage.CIFilterBuiltins
 
 // MARK: - Data Models
+/// QR Code data structure for ticket validation
+/// NOTE: QR codes are ONLY generated server-side for security (includes hash)
+/// Client should never generate QR data - only display what's received from backend
 struct QRCodeData: Codable {
     let type: String
     let ticketId: String
     let eventId: String
     let userId: String
+    let ticketNumber: String?
     let timestamp: TimeInterval
     let version: String
+    let hash: String  // Security hash - validated server-side
 }
 
 struct ScannedTicketData {
@@ -27,68 +32,68 @@ struct ScannedTicketData {
 }
 
 // MARK: - QR Code Generator
+/// Handles QR code IMAGE generation (display only)
+/// IMPORTANT: QR code DATA is generated server-side only for security
 struct QRCodeGenerator {
+    /// Generates a QR code image from a QR data string
+    /// - Parameters:
+    ///   - string: The QR code data string (received from backend)
+    ///   - size: The size of the QR code image to generate
+    /// - Returns: UIImage of the QR code, or nil if generation fails
     static func generateQRCode(from string: String, size: CGSize = CGSize(width: 200, height: 200)) -> UIImage? {
         let context = CIContext()
         let filter = CIFilter.qrCodeGenerator()
-        
+
         filter.message = Data(string.utf8)
         filter.correctionLevel = "M"
-        
+
         if let outputImage = filter.outputImage {
             let scaleX = size.width / outputImage.extent.size.width
             let scaleY = size.height / outputImage.extent.size.height
             let transformedImage = outputImage.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
-            
+
             if let cgimg = context.createCGImage(transformedImage, from: transformedImage.extent) {
                 return UIImage(cgImage: cgimg)
             }
         }
         return nil
     }
-    
-    static func generateQRCodeData(ticketId: String, eventId: String, userId: String) -> String {
-        let qrData = QRCodeData(
-            type: "EVENT_TICKET",
-            ticketId: ticketId,
-            eventId: eventId,
-            userId: userId,
-            timestamp: Date().timeIntervalSince1970,
-            version: "1.0"
-        )
-        
-        if let jsonData = try? JSONEncoder().encode(qrData),
-           let jsonString = String(data: jsonData, encoding: .utf8) {
-            return jsonString
-        }
-        
-        return "TICKET:\(ticketId):EVENT:\(eventId):USER:\(userId)"
-    }
+
+    // REMOVED: generateQRCodeData() function
+    // QR code data MUST be generated server-side to include security hash
+    // Client should only display QR codes received from Cloud Functions
 }
 
 // MARK: - QR Code Validator
 struct QRCodeValidator {
+    /// Validates a ticket QR code for basic structure
+    /// NOTE: Full validation (including hash verification) happens server-side
+    /// - Parameters:
+    ///   - qrString: The QR code data string to validate
+    ///   - eventId: The event ID to validate against
+    /// - Returns: True if QR code structure is valid (client-side checks only)
     static func validateTicketQRCode(_ qrString: String, for eventId: String) -> Bool {
         // Parse QR code data
         if let data = qrString.data(using: .utf8),
            let qrData = try? JSONDecoder().decode(QRCodeData.self, from: data) {
-            
+
             guard qrData.type == "EVENT_TICKET",
                   qrData.eventId == eventId,
-                  !qrData.ticketId.isEmpty else {
+                  !qrData.ticketId.isEmpty,
+                  !qrData.hash.isEmpty else {  // Ensure hash exists (server-generated)
                 return false
             }
-            
+
             // Check timestamp (tickets shouldn't be too old)
             let age = Date().timeIntervalSince1970 - qrData.timestamp
-            guard age < 86400 * 30 else { // 30 days max
+            guard age < 86400 * 365 else { // Max 1 year
                 return false
             }
-            
+
             return true
         }
-        
-        // Fallback validation for simple format
+
+        // Fallback validation for legacy simple format (should phase out)
         let components = qrString.components(separatedBy: ":")
         return components.count >= 6 &&
                components[0] == "TICKET" &&

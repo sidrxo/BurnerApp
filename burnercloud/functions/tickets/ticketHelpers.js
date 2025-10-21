@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { FieldValue } = require("firebase-admin/firestore");
 
 function generateQRCodeData(ticketId, eventId, userId, ticketNumber) {
   try {
@@ -43,8 +44,91 @@ function generateTicketNumber() {
   }
 }
 
+/**
+ * Creates a ticket in a Firestore transaction with all necessary fields
+ * This consolidates ticket creation logic used across multiple payment flows
+ *
+ * @param {FirebaseFirestore.Transaction} transaction - Firestore transaction
+ * @param {Object} params - Ticket creation parameters
+ * @param {FirebaseFirestore.DocumentReference} params.ticketRef - Reference to ticket document
+ * @param {FirebaseFirestore.DocumentReference} params.eventRef - Reference to event document
+ * @param {Object} params.event - Event data object
+ * @param {string} params.userId - User's Firebase UID
+ * @param {string} [params.paymentIntentId] - Stripe payment intent ID (optional)
+ * @param {Object} [params.paymentMethodDetails] - Payment method details from Stripe (optional)
+ * @param {string} [params.customerEmail] - Customer email (optional)
+ * @returns {Object} Created ticket data including ticketId, ticketNumber, qrCodeData
+ */
+function createTicketInTransaction(transaction, {
+  ticketRef,
+  eventRef,
+  event,
+  userId,
+  paymentIntentId = null,
+  paymentMethodDetails = null,
+  customerEmail = null
+}) {
+  const ticketId = ticketRef.id;
+  const ticketNumber = generateTicketNumber();
+  const qrCodeData = generateQRCodeData(ticketId, event.id || eventRef.id, userId, ticketNumber);
+
+  // Build base ticket data
+  const ticketData = {
+    eventId: event.id || eventRef.id,
+    userId,
+    ticketNumber,
+    eventName: event.name,
+    venue: event.venue,
+    startTime: event.startTime,
+    totalPrice: event.price,
+    purchaseDate: FieldValue.serverTimestamp(),
+    status: "confirmed",
+    qrCode: qrCodeData,
+    venueId: event.venueId || null,
+  };
+
+  // Add payment-related fields if provided
+  if (paymentIntentId) {
+    ticketData.paymentIntentId = paymentIntentId;
+  }
+
+  // Add payment method metadata if provided
+  if (paymentMethodDetails) {
+    ticketData.metadata = {
+      paymentMethod: paymentMethodDetails.wallet || paymentMethodDetails.type || "card",
+      ...paymentMethodDetails
+    };
+
+    if (customerEmail) {
+      ticketData.metadata.customerEmail = customerEmail;
+    }
+  } else if (customerEmail) {
+    ticketData.metadata = { customerEmail };
+  }
+
+  // Add payment method ID if available
+  if (paymentMethodDetails?.id) {
+    ticketData.paymentMethodId = paymentMethodDetails.id;
+  }
+
+  // Create ticket and update event in transaction
+  transaction.set(ticketRef, ticketData);
+  transaction.update(eventRef, {
+    ticketsSold: event.ticketsSold + 1,
+    updatedAt: FieldValue.serverTimestamp()
+  });
+
+  return {
+    ticketId,
+    ticketNumber,
+    qrCodeData,
+    ticketData
+  };
+}
+
 module.exports = {
   generateQRCodeData,
   generateSecurityHash,
-  generateTicketNumber
+  generateTicketNumber,
+  createTicketInTransaction
 };

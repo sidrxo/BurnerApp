@@ -1,3 +1,20 @@
+/**
+ * @deprecated This function is deprecated and should not be used in production.
+ *
+ * All client-facing ticket purchases should use the Stripe payment flow:
+ *   1. createPaymentIntent (creates payment intent)
+ *   2. Client collects payment via Stripe Payment Sheet
+ *   3. confirmPurchase (creates ticket after payment succeeds)
+ *
+ * This function may be retained for:
+ *   - Admin-initiated complimentary tickets
+ *   - Testing purposes in development
+ *   - Manual ticket creation by venue staff
+ *
+ * WARNING: This function bypasses payment processing and should be
+ * restricted to admin users only if kept in production.
+ */
+
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { generateQRCodeData, generateTicketNumber } = require("./ticketHelpers");
@@ -5,6 +22,10 @@ const { generateQRCodeData, generateTicketNumber } = require("./ticketHelpers");
 const db = getFirestore();
 
 exports.purchaseTicket = onCall(async (request) => {
+  // TODO: Add admin role check if this function is kept for admin use
+  // if (!request.auth?.token?.role || !['admin', 'siteAdmin', 'venueAdmin'].includes(request.auth.token.role)) {
+  //   throw new HttpsError("permission-denied", "This function is restricted to admins only");
+  // }
   console.log("=== PURCHASE TICKET FUNCTION START ===");
   
   try {
