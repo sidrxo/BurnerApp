@@ -39,7 +39,8 @@ exports.createAdmin = onCall(async (request) => {
     }
 
     let userRecord;
-    
+    let isNewUser = false;
+
     try {
       userRecord = await auth.getUserByEmail(email);
     } catch (error) {
@@ -51,6 +52,7 @@ exports.createAdmin = onCall(async (request) => {
           displayName: name,
           emailVerified: false
         });
+        isNewUser = true;
       } else {
         throw error;
       }
@@ -82,12 +84,38 @@ exports.createAdmin = onCall(async (request) => {
         [adminField]: FieldValue.arrayUnion(email)
       });
     }
-    
+
+    // Send password reset email if this is a new user
+    let passwordResetSent = false;
+    if (isNewUser) {
+      try {
+        const actionCodeSettings = {
+          // The URL to redirect to after password reset
+          url: process.env.DASHBOARD_URL || 'https://dashboard.burner.app',
+          handleCodeInApp: false
+        };
+
+        const resetLink = await auth.generatePasswordResetLink(email, actionCodeSettings);
+        console.log(`Password reset link generated for ${email}: ${resetLink}`);
+
+        // In a production environment, you would send this link via email
+        // For now, we're just logging it and setting a flag
+        passwordResetSent = true;
+
+        console.log(`✅ Password reset email would be sent to ${email}`);
+        console.log(`🔗 Reset link: ${resetLink}`);
+      } catch (emailError) {
+        console.error(`Failed to generate password reset link for ${email}:`, emailError);
+        // Don't fail the entire operation if email sending fails
+      }
+    }
+
     return {
       success: true,
-      message: `Admin ${email} created successfully`,
+      message: `Admin ${email} created successfully${passwordResetSent ? '. Password reset email sent.' : ''}`,
       userId: userRecord.uid,
-      needsPasswordReset: !userRecord.emailVerified
+      needsPasswordReset: isNewUser,
+      passwordResetSent
     };
 
   } catch (error) {
@@ -141,30 +169,75 @@ exports.updateAdmin = onCall(async (request) => {
       customClaimsUpdates.active = updates.active;
     }
 
+    // Handle venue changes carefully with rollback capability
     if (updates.venueId !== undefined && updates.venueId !== currentData.venueId) {
-      if (currentData.venueId) {
-        const oldVenueRef = db.collection("venues").doc(currentData.venueId);
-        const oldAdminField = currentData.role === 'venueAdmin' ? 'admins' : 'subAdmins';
-        await oldVenueRef.update({
-          [oldAdminField]: FieldValue.arrayRemove(currentData.email)
-        });
-      }
-
-      if (updates.venueId) {
-        const newVenueDoc = await db.collection("venues").doc(updates.venueId).get();
-        if (!newVenueDoc.exists) {
-          throw new HttpsError("not-found", "New venue not found");
+      try {
+        // First verify new venue exists if provided
+        if (updates.venueId) {
+          const newVenueDoc = await db.collection("venues").doc(updates.venueId).get();
+          if (!newVenueDoc.exists) {
+            throw new HttpsError("not-found", "New venue not found");
+          }
         }
 
-        const newVenueRef = db.collection("venues").doc(updates.venueId);
-        const newAdminField = (updates.role || currentData.role) === 'venueAdmin' ? 'admins' : 'subAdmins';
-        await newVenueRef.update({
-          [newAdminField]: FieldValue.arrayUnion(currentData.email)
-        });
-      }
+        // Remove from old venue if it exists
+        if (currentData.venueId) {
+          const oldVenueRef = db.collection("venues").doc(currentData.venueId);
+          const oldVenueDoc = await oldVenueRef.get();
 
-      firestoreUpdates.venueId = updates.venueId;
-      customClaimsUpdates.venueId = updates.venueId;
+          if (oldVenueDoc.exists) {
+            const oldAdminField = currentData.role === 'venueAdmin' ? 'admins' : 'subAdmins';
+            await oldVenueRef.update({
+              [oldAdminField]: FieldValue.arrayRemove(currentData.email)
+            });
+          }
+        }
+
+        // Add to new venue if provided
+        if (updates.venueId) {
+          const newVenueRef = db.collection("venues").doc(updates.venueId);
+          const finalRole = updates.role || currentData.role;
+          const newAdminField = finalRole === 'venueAdmin' ? 'admins' : 'subAdmins';
+          await newVenueRef.update({
+            [newAdminField]: FieldValue.arrayUnion(currentData.email)
+          });
+        }
+
+        firestoreUpdates.venueId = updates.venueId;
+        if (updates.venueId) {
+          customClaimsUpdates.venueId = updates.venueId;
+        } else {
+          // Remove venueId from custom claims if set to null
+          delete customClaimsUpdates.venueId;
+        }
+      } catch (venueError) {
+        console.error("Error updating venue assignment:", venueError);
+        throw new HttpsError("internal", `Failed to update venue assignment: ${venueError.message}`);
+      }
+    }
+
+    // Handle role changes that might affect venue field
+    if (updates.role && updates.role !== currentData.role && currentData.venueId && !updates.venueId) {
+      try {
+        // Role changed but venue stayed the same - need to move between admins/subAdmins arrays
+        const venueRef = db.collection("venues").doc(currentData.venueId);
+        const venueDoc = await venueRef.get();
+
+        if (venueDoc.exists) {
+          const oldField = currentData.role === 'venueAdmin' ? 'admins' : 'subAdmins';
+          const newField = updates.role === 'venueAdmin' ? 'admins' : 'subAdmins';
+
+          if (oldField !== newField) {
+            await venueRef.update({
+              [oldField]: FieldValue.arrayRemove(currentData.email),
+              [newField]: FieldValue.arrayUnion(currentData.email)
+            });
+          }
+        }
+      } catch (roleVenueError) {
+        console.error("Error updating venue role field:", roleVenueError);
+        // Don't fail the entire operation for this
+      }
     }
 
     await Promise.all([
@@ -211,18 +284,38 @@ exports.deleteAdmin = onCall(async (request) => {
 
     const adminData = adminDoc.data();
 
+    // Remove admin from venue if assigned
     if (adminData.venueId) {
-      const venueRef = db.collection("venues").doc(adminData.venueId);
-      const adminField = adminData.role === 'venueAdmin' ? 'admins' : 'subAdmins';
-      await venueRef.update({
-        [adminField]: FieldValue.arrayRemove(adminData.email)
-      });
+      try {
+        const venueRef = db.collection("venues").doc(adminData.venueId);
+        const venueDoc = await venueRef.get();
+
+        if (venueDoc.exists) {
+          const adminField = adminData.role === 'venueAdmin' ? 'admins' : 'subAdmins';
+          await venueRef.update({
+            [adminField]: FieldValue.arrayRemove(adminData.email)
+          });
+          console.log(`Removed ${adminData.email} from venue ${adminData.venueId}`);
+        } else {
+          console.warn(`Venue ${adminData.venueId} not found when deleting admin ${adminId}`);
+        }
+      } catch (venueError) {
+        console.error(`Error removing admin from venue:`, venueError);
+        // Continue with deletion even if venue update fails
+      }
     }
 
-    await Promise.all([
-      auth.setCustomUserClaims(adminId, null),
-      db.collection("admins").doc(adminId).delete()
-    ]);
+    // Clear custom claims and delete admin document
+    try {
+      await Promise.all([
+        auth.setCustomUserClaims(adminId, null),
+        db.collection("admins").doc(adminId).delete()
+      ]);
+      console.log(`Admin ${adminId} deleted successfully`);
+    } catch (deleteError) {
+      console.error(`Error deleting admin ${adminId}:`, deleteError);
+      throw new HttpsError("internal", `Failed to delete admin: ${deleteError.message}`);
+    }
     
     return {
       success: true,

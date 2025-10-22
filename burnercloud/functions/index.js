@@ -12,6 +12,8 @@ const purchaseTicket = require('./tickets/purchaseTicket');
 const ticketQueries = require('./tickets/ticketQueries');
 const scanTicket = require('./tickets/scanTicket');
 const stripePayment = require('./payments/stripePayment');
+const ticketTriggers = require('./triggers/ticketTriggers');
+const auditTriggers = require('./triggers/auditTriggers');
 
 // ============ ADMIN MANAGEMENT ============
 exports.createAdmin = adminManagement.createAdmin;
@@ -47,3 +49,19 @@ exports.getPaymentMethods = stripePayment.getPaymentMethods;
 exports.savePaymentMethod = stripePayment.savePaymentMethod;
 exports.deletePaymentMethod = stripePayment.deletePaymentMethod;
 exports.setDefaultPaymentMethod = stripePayment.setDefaultPaymentMethod;
+
+// ============ FIRESTORE TRIGGERS ============
+// Ticket triggers for eventStats auto-updates
+exports.onTicketCreated = ticketTriggers.onTicketCreated;
+exports.onTicketUpdated = ticketTriggers.onTicketUpdated;
+exports.onTicketDeleted = ticketTriggers.onTicketDeleted;
+
+// Audit triggers for logging admin actions
+exports.onAdminCreated = auditTriggers.onAdminCreated;
+exports.onAdminUpdated = auditTriggers.onAdminUpdated;
+exports.onAdminDeleted = auditTriggers.onAdminDeleted;
+exports.onScannerCreated = auditTriggers.onScannerCreated;
+exports.onScannerUpdated = auditTriggers.onScannerUpdated;
+exports.onScannerDeleted = auditTriggers.onScannerDeleted;
+exports.onEventDeleted = auditTriggers.onEventDeleted;
+exports.onTicketRefunded = auditTriggers.onTicketRefunded;
