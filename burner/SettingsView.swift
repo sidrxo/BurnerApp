@@ -16,7 +16,9 @@ struct SettingsView: View {
     @State private var showingAppPicker = false
     @State private var showingBurnerSetup = false
     @State private var showingAutoEnabledAlert = false
-    
+    @State private var showingLockScreen = false
+    @State private var isScannerActive = false
+
     private let db = Firestore.firestore()
     
     // Use shared burner manager from AppState
@@ -54,9 +56,9 @@ struct SettingsView: View {
                                     NavigationLink(destination: PaymentSettingsView()) {
                                         CustomMenuItemContent(title: "Payment", subtitle: "Cards & billing")
                                     }
-                                    
-                                    // Only show scanner option if user has scanner role
-                                    if userRole == "scanner" || userRole == "siteAdmin" || userRole == "venueAdmin" {
+
+                                    // Only show scanner option if user has scanner role AND active scanner document
+                                    if (userRole == "scanner" && isScannerActive) || userRole == "siteAdmin" || userRole == "venueAdmin" {
                                         NavigationLink(destination: ScannerView()) {
                                             CustomMenuItemContent(title: "Scanner", subtitle: "Scan QR codes")
                                         }
@@ -65,43 +67,13 @@ struct SettingsView: View {
                                 
                                 // APP Section
                                 CustomMenuSection(title: "APP") {
-                                    // 🔘 Manual Burner Mode Toggle
-                                    Toggle(isOn: $isBurnerModeEnabled) {
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text("Burner Mode")
-                                                .appBody()
-                                                .foregroundColor(.white)
-                                            Text("Manually enable or disable blocking")
-                                                .appSecondary()
-                                                .foregroundColor(.gray)
-                                        }
-                                    }
-                                    .tint(.white)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .onChange(of: isBurnerModeEnabled) { oldValue, newValue in
-                                        if newValue {
-                                            if burnerManager.isSetupValid {
-                                                burnerManager.enable()
-                                            } else {
-                                                // Revert toggle if setup invalid
-                                                isBurnerModeEnabled = false
-                                                appState.showError("Please complete Burner Mode setup first.")
-                                                showingBurnerSetup = true
-                                            }
-                                        } else {
-                                            burnerManager.disable()
-                                        }
-                                    }
-                                    Divider().background(Color.gray.opacity(0.3))
-
                                     // ⚙️ Setup Guide Button
                                     Button(action: {
                                         showingBurnerSetup = true
                                     }) {
                                         CustomMenuItemContent(
                                             title: "Setup Burner Mode",
-                                            subtitle: "Step-by-step setup guide"
+                                            subtitle: "Configure app blocking"
                                         )
                                     }
                                     .buttonStyle(PlainButtonStyle())
@@ -147,8 +119,14 @@ struct SettingsView: View {
         .onAppear {
             currentUser = Auth.auth().currentUser
             fetchUserRole()
+            checkScannerAccess()
             isBurnerModeEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
-            
+
+            // Check if burner mode is enabled and show lock screen
+            if isBurnerModeEnabled {
+                showingLockScreen = true
+            }
+
             // Setup notification observer for auto-enabled burner mode
             NotificationCenter.default.addObserver(
                 forName: NSNotification.Name("BurnerModeAutoEnabled"),
@@ -157,6 +135,7 @@ struct SettingsView: View {
             ) { _ in
                 showingAutoEnabledAlert = true
                 isBurnerModeEnabled = true
+                showingLockScreen = true
             }
         }
         .alert("Burner Mode Enabled", isPresented: $showingAutoEnabledAlert) {
@@ -178,6 +157,14 @@ struct SettingsView: View {
         .fullScreenCover(isPresented: $showingBurnerSetup) {
             BurnerModeSetupView(burnerManager: burnerManager)
         }
+        .fullScreenCover(isPresented: $showingLockScreen) {
+            BurnerModeLockScreen()
+                .environmentObject(appState)
+                .onDisappear {
+                    // Update the burner mode state when lock screen is dismissed
+                    isBurnerModeEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
+                }
+        }
     }
     
     // MARK: - Fetch Role
@@ -186,7 +173,7 @@ struct SettingsView: View {
             userRole = ""
             return
         }
-        
+
         db.collection("users").document(userId).getDocument { snapshot, error in
             DispatchQueue.main.async {
                 if let data = snapshot?.data(),
@@ -194,6 +181,27 @@ struct SettingsView: View {
                     userRole = role
                 } else {
                     userRole = "user"
+                }
+            }
+        }
+    }
+
+    private func checkScannerAccess() {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            isScannerActive = false
+            return
+        }
+
+        db.collection("scanners").document(userId).getDocument { snapshot, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("Error checking scanner access: \(error.localizedDescription)")
+                    self.isScannerActive = false
+                } else if let data = snapshot?.data() {
+                    self.isScannerActive = data["active"] as? Bool ?? false
+                } else {
+                    // No scanner document found
+                    self.isScannerActive = false
                 }
             }
         }

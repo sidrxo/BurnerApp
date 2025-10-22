@@ -47,16 +47,17 @@ struct FilteredEventsView: View {
             Image(systemName: "calendar.badge.exclamationmark")
                 .font(.appLargeIcon)
                 .foregroundColor(.gray)
-            
+
             VStack(spacing: 8) {
                 Text("No Events Found")
                     .appSectionHeader()
                     .foregroundColor(.white)
-                
+
                 Text("No events available in this category")
                     .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
