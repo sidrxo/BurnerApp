@@ -131,11 +131,57 @@ exports.processApplePayPayment = onCall(
           event = validation.event;
           eventRef = validation.eventRef;
         } catch (validationError) {
+          // Log failed purchase for manual reconciliation
+          const failureReason = validationError.message;
+          await db.collection("failedPurchases").add({
+            userId,
+            eventId,
+            paymentIntentId,
+            amount: paymentIntent.amount / 100,
+            reason: failureReason,
+            status: 'refund_initiated',
+            paymentMethod: 'apple_pay',
+            createdAt: FieldValue.serverTimestamp(),
+            metadata: {
+              eventName: pendingPayment.metadata?.eventName,
+              customerEmail: request.auth.token.email
+            }
+          });
+
           // Initiate refund if validation fails
-          logger.info('Validation failed, initiating refund', { error: validationError.message });
-          await initiateRefund(stripe, paymentIntentId,
-            validationError.message.includes('already have') ? 'duplicate' : 'requested_by_customer'
-          );
+          logger.info('Validation failed, initiating refund', { error: failureReason });
+          try {
+            await initiateRefund(stripe, paymentIntentId,
+              failureReason.includes('already have') ? 'duplicate' : 'requested_by_customer'
+            );
+
+            // Update failed purchase record with refund status
+            await db.collection("failedPurchases")
+              .where("paymentIntentId", "==", paymentIntentId)
+              .limit(1)
+              .get()
+              .then(snapshot => {
+                if (!snapshot.empty) {
+                  snapshot.docs[0].ref.update({ status: 'refunded', refundedAt: FieldValue.serverTimestamp() });
+                }
+              });
+          } catch (refundError) {
+            logger.error('Refund failed', refundError);
+            // Update failed purchase with refund failure
+            await db.collection("failedPurchases")
+              .where("paymentIntentId", "==", paymentIntentId)
+              .limit(1)
+              .get()
+              .then(snapshot => {
+                if (!snapshot.empty) {
+                  snapshot.docs[0].ref.update({
+                    status: 'refund_failed',
+                    refundError: refundError.message,
+                    updatedAt: FieldValue.serverTimestamp()
+                  });
+                }
+              });
+          }
           throw validationError;
         }
 
@@ -230,9 +276,16 @@ exports.createPaymentIntent = onCall(
 
       logger.info('Creating payment intent', { userId, eventId });
 
-      // Validate ticket availability (consolidated validation)
-      const { event } = await validateTicketAvailability(userId, eventId);
-      logger.info('Event validated', { eventName: event.name, price: event.price });
+      // Get event data (soft check - real validation happens in transaction during confirmPurchase)
+      const eventRef = db.collection("events").doc(eventId);
+      const eventDoc = await eventRef.get();
+
+      if (!eventDoc.exists) {
+        throw new HttpsError("not-found", "Event not found");
+      }
+
+      const event = eventDoc.data();
+      logger.info('Event found', { eventName: event.name, price: event.price });
 
       const stripe = getStripe();
       logger.info('Stripe initialized');
@@ -423,11 +476,56 @@ exports.confirmPurchase = onCall(
           event = validation.event;
           eventRef = validation.eventRef;
         } catch (validationError) {
+          // Log failed purchase for manual reconciliation
+          const failureReason = validationError.message;
+          await db.collection("failedPurchases").add({
+            userId,
+            eventId,
+            paymentIntentId,
+            amount: paymentIntent.amount / 100,
+            reason: failureReason,
+            status: 'refund_initiated',
+            createdAt: FieldValue.serverTimestamp(),
+            metadata: {
+              eventName: pendingPayment.metadata?.eventName,
+              customerEmail: request.auth.token.email
+            }
+          });
+
           // Initiate refund if validation fails
-          logger.info('Validation failed, initiating refund', { error: validationError.message });
-          await initiateRefund(stripe, paymentIntentId,
-            validationError.message.includes('already have') ? 'duplicate' : 'requested_by_customer'
-          );
+          logger.info('Validation failed, initiating refund', { error: failureReason });
+          try {
+            await initiateRefund(stripe, paymentIntentId,
+              failureReason.includes('already have') ? 'duplicate' : 'requested_by_customer'
+            );
+
+            // Update failed purchase record with refund status
+            await db.collection("failedPurchases")
+              .where("paymentIntentId", "==", paymentIntentId)
+              .limit(1)
+              .get()
+              .then(snapshot => {
+                if (!snapshot.empty) {
+                  snapshot.docs[0].ref.update({ status: 'refunded', refundedAt: FieldValue.serverTimestamp() });
+                }
+              });
+          } catch (refundError) {
+            logger.error('Refund failed', refundError);
+            // Update failed purchase with refund failure
+            await db.collection("failedPurchases")
+              .where("paymentIntentId", "==", paymentIntentId)
+              .limit(1)
+              .get()
+              .then(snapshot => {
+                if (!snapshot.empty) {
+                  snapshot.docs[0].ref.update({
+                    status: 'refund_failed',
+                    refundError: refundError.message,
+                    updatedAt: FieldValue.serverTimestamp()
+                  });
+                }
+              });
+          }
           throw validationError;
         }
 
@@ -488,12 +586,40 @@ exports.confirmPurchase = onCall(
         userId: request.auth?.uid,
         paymentIntentId: request.data?.paymentIntentId
       });
-      
+
+      // If payment succeeded but we're throwing an error, log as failed purchase
+      if (request.data?.paymentIntentId) {
+        try {
+          const existingFailure = await db.collection("failedPurchases")
+            .where("paymentIntentId", "==", request.data.paymentIntentId)
+            .limit(1)
+            .get();
+
+          if (existingFailure.empty) {
+            // Only log if we haven't already logged this failure
+            await db.collection("failedPurchases").add({
+              userId: request.auth?.uid,
+              paymentIntentId: request.data.paymentIntentId,
+              reason: error.message || "Unknown error during confirmation",
+              status: 'error',
+              createdAt: FieldValue.serverTimestamp(),
+              errorDetails: {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+              }
+            });
+          }
+        } catch (logError) {
+          logger.error('Failed to log failed purchase', logError);
+        }
+      }
+
       // Re-throw HttpsErrors as-is
       if (error.code && error.code.includes('/')) {
         throw error;
       }
-      
+
       // Wrap other errors
       throw new HttpsError(
         "internal",

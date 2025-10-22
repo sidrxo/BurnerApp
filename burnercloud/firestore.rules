@@ -129,5 +129,35 @@ service cloud.firestore {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow write: if false; // Transactions are managed server-side
     }
+
+    // --- Failed Purchases Collection ---
+    match /failedPurchases/{purchaseId} {
+      allow read: if isSiteAdmin();
+      allow write: if false; // Managed server-side only
+    }
+
+    // --- Audit Logs Collection ---
+    match /auditLogs/{logId} {
+      allow read: if isSiteAdmin();
+      allow write: if false; // Managed server-side only
+    }
+
+    // --- Metrics Collection (Daily Aggregations) ---
+    match /metrics/{dateId} {
+      allow read: if isSiteAdmin() || isVenueAdmin();
+      allow write: if false; // Managed by scheduled functions
+    }
+
+    // --- Event Stats Collection (Per-Event Metrics) ---
+    match /eventStats/{eventId} {
+      allow read: if isSiteAdmin() || isVenueAdmin();
+      allow write: if false; // Managed by triggers
+    }
+
+    // --- Pending Payments Collection ---
+    match /pendingPayments/{paymentIntentId} {
+      allow read: if isSiteAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow write: if false; // Managed server-side only
+    }
   }
 }
