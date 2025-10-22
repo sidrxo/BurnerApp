@@ -141,7 +141,7 @@ struct FAQView: View {
                     Spacer()
 
                     Image(systemName: expandedQuestions.contains(id) ? "chevron.up" : "chevron.down")
-                        .font(.appCaption())
+                        .appFont(size: 12)
                         .foregroundColor(.gray)
                 }
                 .padding(16)

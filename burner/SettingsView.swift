@@ -57,8 +57,12 @@ struct SettingsView: View {
                                         CustomMenuItemContent(title: "Payment", subtitle: "Cards & billing")
                                     }
 
-                                    // Only show scanner option if user has scanner role AND active scanner document
-                                    if (userRole == "scanner" && isScannerActive) || userRole == "siteAdmin" || userRole == "venueAdmin" {
+                                    // Only show scanner option if user has scanner role AND active status
+                                    // Admin roles (siteAdmin, venueAdmin, subAdmin) can always access scanner
+                                    if (userRole == "scanner" && isScannerActive) ||
+                                       userRole == "siteAdmin" ||
+                                       userRole == "venueAdmin" ||
+                                       userRole == "subAdmin" {
                                         NavigationLink(destination: ScannerView()) {
                                             CustomMenuItemContent(title: "Scanner", subtitle: "Scan QR codes")
                                         }
@@ -96,6 +100,16 @@ struct SettingsView: View {
                                         )
                                     }
                                     .buttonStyle(PlainButtonStyle())
+                                    
+                                    Button(action: {
+                                        refreshCustomClaims()
+                                    }) {
+                                        CustomMenuItemContent(
+                                            title: "Refresh Custom Claims",
+                                            subtitle: "Force reload user permissions"
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
                                 #endif
                             }
@@ -119,8 +133,8 @@ struct SettingsView: View {
         }
         .onAppear {
             currentUser = Auth.auth().currentUser
-            fetchUserRole()
-            checkScannerAccess()
+            fetchUserRoleFromClaims()
+            checkScannerAccessFromClaims()
             isBurnerModeEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
 
             // Check if burner mode is enabled and show lock screen
@@ -146,11 +160,13 @@ struct SettingsView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
             currentUser = Auth.auth().currentUser
-            fetchUserRole()
+            fetchUserRoleFromClaims()
+            checkScannerAccessFromClaims()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedOut"))) { _ in
             currentUser = nil
             userRole = ""
+            isScannerActive = false
         }
         .fullScreenCover(isPresented: $showingSignIn) {
             SignInSheetView(showingSignIn: $showingSignIn)
@@ -168,40 +184,55 @@ struct SettingsView: View {
         }
     }
     
-    // MARK: - Fetch Role
-    private func fetchUserRole() {
-        guard let userId = Auth.auth().currentUser?.uid else {
+    // MARK: - Fetch Role from Custom Claims
+    private func fetchUserRoleFromClaims() {
+        guard Auth.auth().currentUser != nil else {
             userRole = ""
             return
         }
 
-        db.collection("users").document(userId).getDocument { snapshot, error in
-            DispatchQueue.main.async {
-                if let data = snapshot?.data(),
-                   let role = data["role"] as? String {
-                    userRole = role
+        print("🔵 [Settings] Fetching role from custom claims")
+        
+        Task {
+            do {
+                if let role = try await appState.authService.getUserRole() {
+                    await MainActor.run {
+                        self.userRole = role
+                        print("✅ [Settings] User role from custom claims: \(role)")
+                    }
                 } else {
-                    userRole = "user"
+                    await MainActor.run {
+                        self.userRole = "user"
+                        print("⚠️ [Settings] No role in custom claims, defaulting to 'user'")
+                    }
+                }
+            } catch {
+                print("🔴 [Settings] Error fetching custom claims: \(error.localizedDescription)")
+                await MainActor.run {
+                    self.userRole = "user"
                 }
             }
         }
     }
 
-    private func checkScannerAccess() {
-        guard let userId = Auth.auth().currentUser?.uid else {
+    private func checkScannerAccessFromClaims() {
+        guard Auth.auth().currentUser != nil else {
             isScannerActive = false
             return
         }
 
-        db.collection("scanners").document(userId).getDocument { snapshot, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    print("Error checking scanner access: \(error.localizedDescription)")
-                    self.isScannerActive = false
-                } else if let data = snapshot?.data() {
-                    self.isScannerActive = data["active"] as? Bool ?? false
-                } else {
-                    // No scanner document found
+        print("🔵 [Settings] Checking scanner access from custom claims")
+        
+        Task {
+            do {
+                let active = try await appState.authService.isScannerActive()
+                await MainActor.run {
+                    self.isScannerActive = active
+                    print("✅ [Settings] Scanner active from custom claims: \(active)")
+                }
+            } catch {
+                print("🔴 [Settings] Error checking scanner access: \(error.localizedDescription)")
+                await MainActor.run {
                     self.isScannerActive = false
                 }
             }
@@ -251,6 +282,13 @@ struct SettingsView: View {
         let onboarding = OnboardingManager()
         onboarding.resetOnboarding()
         NotificationCenter.default.post(name: NSNotification.Name("ResetOnboarding"), object: nil)
+    }
+    
+    // MARK: - Refresh Custom Claims (DEBUG)
+    private func refreshCustomClaims() {
+        print("🔄 [Settings] Manually refreshing custom claims...")
+        fetchUserRoleFromClaims()
+        checkScannerAccessFromClaims()
     }
 }
 

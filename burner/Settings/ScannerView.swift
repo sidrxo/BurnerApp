@@ -6,6 +6,8 @@ import FirebaseFunctions
 internal import AVFoundation
 
 struct ScannerView: View {
+    @EnvironmentObject var appState: AppState
+    
     @State private var scannedValue: String = ""
     @State private var isShowingScanner = false
     @State private var showingError = false
@@ -48,8 +50,8 @@ struct ScannerView: View {
         }
         .onAppear {
             print("🟢 [Scanner] View appeared")
-            fetchUserRole()
-            checkScannerAccess()
+            fetchUserRoleFromClaims()
+            checkScannerAccessFromClaims()
         }
         .sheet(isPresented: $isShowingScanner) {
             scannerSheet
@@ -314,63 +316,61 @@ struct ScannerView: View {
         .background(Color.black)
     }
     
-    // MARK: - Helper Functions
-    private func fetchUserRole() {
-        guard let userId = Auth.auth().currentUser?.uid else {
-            print("🔴 [Scanner] No userId found")
+    // MARK: - Helper Functions (Using Custom Claims)
+    
+    private func fetchUserRoleFromClaims() {
+        guard Auth.auth().currentUser != nil else {
+            print("🔴 [Scanner] No user signed in")
             return
         }
         
-        print("🔵 [Scanner] Fetching role for userId: \(userId)")
+        print("🔵 [Scanner] Fetching role from custom claims")
         
-        db.collection("users").document(userId).getDocument { snapshot, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    print("🔴 [Scanner] Error fetching user role: \(error.localizedDescription)")
-                    self.userRole = "user"
-                    return
-                }
-                
-                if let data = snapshot?.data() {
-                    print("🔵 [Scanner] User document data: \(data)")
-                    if let role = data["role"] as? String {
-                        print("✅ [Scanner] User role: \(role)")
+        Task {
+            do {
+                if let role = try await appState.authService.getUserRole() {
+                    await MainActor.run {
                         self.userRole = role
-                    } else {
-                        print("⚠️ [Scanner] No role field found in user document, defaulting to 'user'")
-                        self.userRole = "user"
+                        print("✅ [Scanner] User role from custom claims: \(role)")
                     }
                 } else {
-                    print("⚠️ [Scanner] No user document found, defaulting to 'user'")
+                    await MainActor.run {
+                        self.userRole = "user"
+                        print("⚠️ [Scanner] No role in custom claims, defaulting to 'user'")
+                    }
+                }
+            } catch {
+                print("🔴 [Scanner] Error fetching custom claims: \(error.localizedDescription)")
+                await MainActor.run {
                     self.userRole = "user"
                 }
             }
         }
     }
 
-    private func checkScannerAccess() {
-        guard let userId = Auth.auth().currentUser?.uid else {
-            print("🔴 [Scanner] No userId for scanner access check")
+    private func checkScannerAccessFromClaims() {
+        guard Auth.auth().currentUser != nil else {
+            print("🔴 [Scanner] No user for scanner access check")
             isCheckingScanner = false
             return
         }
 
-        print("🔵 [Scanner] Checking scanner access for userId: \(userId)")
+        print("🔵 [Scanner] Checking scanner access from custom claims")
         
-        db.collection("scanners").document(userId).getDocument { snapshot, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    print("🔴 [Scanner] Error checking scanner access: \(error.localizedDescription)")
-                    self.isScannerActive = false
-                } else if let data = snapshot?.data() {
-                    print("🔵 [Scanner] Scanner document data: \(data)")
-                    self.isScannerActive = data["active"] as? Bool ?? false
-                    print("✅ [Scanner] Scanner active status: \(self.isScannerActive)")
-                } else {
-                    print("⚠️ [Scanner] No scanner document found")
-                    self.isScannerActive = false
+        Task {
+            do {
+                let active = try await appState.authService.isScannerActive()
+                await MainActor.run {
+                    self.isScannerActive = active
+                    self.isCheckingScanner = false
+                    print("✅ [Scanner] Scanner active from custom claims: \(active)")
                 }
-                self.isCheckingScanner = false
+            } catch {
+                print("🔴 [Scanner] Error checking scanner access: \(error.localizedDescription)")
+                await MainActor.run {
+                    self.isScannerActive = false
+                    self.isCheckingScanner = false
+                }
             }
         }
     }
@@ -570,5 +570,6 @@ struct ScannerView: View {
 // MARK: - Preview
 #Preview {
     ScannerView()
+        .environmentObject(AppState())
         .preferredColorScheme(.dark)
 }
