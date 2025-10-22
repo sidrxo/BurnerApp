@@ -20,6 +20,9 @@ class AppState: ObservableObject {
     // ✅ Track if user manually signed out
     @Published var userDidSignOut = false
     
+    // ✅ NEW: Global lock screen state
+    @Published var showingBurnerLockScreen = false
+    
     // Add flag to track initial auth check
     private var hasCompletedInitialAuthCheck = false
     
@@ -72,6 +75,7 @@ class AppState: ObservableObject {
         self.burnerModeMonitor = BurnerModeMonitor(burnerManager: burnerManager)
         
         setupObservers()
+        setupBurnerModeObserver()
     }
     
     // MARK: - Setup Observers
@@ -124,6 +128,31 @@ class AppState: ObservableObject {
             .store(in: &cancellables)
     }
     
+    // MARK: - Burner Mode Observer
+    private func setupBurnerModeObserver() {
+        // Listen for Burner Mode auto-enabled notification
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("BurnerModeAutoEnabled"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self = self else { return }
+            Task { @MainActor in
+                print("🔥 [AppState] Burner Mode auto-enabled notification received")
+                self.showingBurnerLockScreen = true
+            }
+        }
+        
+        // Also check on app state initialization if burner mode is already enabled
+        Task { @MainActor in
+            let isEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
+            if isEnabled {
+                print("🔥 [AppState] Burner Mode already enabled on init, showing lock screen")
+                self.showingBurnerLockScreen = true
+            }
+        }
+    }
+    
     // MARK: - User Sign In/Out Handlers
     private func handleUserSignedIn() {
         // Fetch data when user signs in
@@ -133,6 +162,13 @@ class AppState: ObservableObject {
         // ✅ FIXED: Restart Burner Mode monitoring for new user
         burnerModeMonitor.stopMonitoring()
         burnerModeMonitor.startMonitoring()
+        
+        // Check if burner mode is enabled and show lock screen
+        let isEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
+        if isEnabled {
+            print("🔥 [AppState] Burner Mode enabled on sign in, showing lock screen")
+            showingBurnerLockScreen = true
+        }
     }
     
     private func handleUserSignedOut() {
@@ -143,6 +179,9 @@ class AppState: ObservableObject {
         
         // Stop Burner Mode monitoring
         burnerModeMonitor.stopMonitoring()
+        
+        // Hide lock screen if showing
+        showingBurnerLockScreen = false
     }
     
     // ✅ Method to handle manual sign out

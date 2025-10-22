@@ -12,11 +12,8 @@ struct SettingsView: View {
     @State private var showingSignIn = false
     @State private var currentUser: FirebaseAuth.User?
     @State private var userRole: String = ""
-    @State private var isBurnerModeEnabled = false
     @State private var showingAppPicker = false
     @State private var showingBurnerSetup = false
-    @State private var showingAutoEnabledAlert = false
-    @State private var showingLockScreen = false
     @State private var isScannerActive = false
 
     private let db = Firestore.firestore()
@@ -110,6 +107,17 @@ struct SettingsView: View {
                                         )
                                     }
                                     .buttonStyle(PlainButtonStyle())
+                                    
+                                    // ✅ NEW: Manual lock screen trigger for testing
+                                    Button(action: {
+                                        appState.showingBurnerLockScreen.toggle()
+                                    }) {
+                                        CustomMenuItemContent(
+                                            title: "Toggle Lock Screen",
+                                            subtitle: "Test Burner Mode lock screen"
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
                                 #endif
                             }
@@ -135,28 +143,6 @@ struct SettingsView: View {
             currentUser = Auth.auth().currentUser
             fetchUserRoleFromClaims()
             checkScannerAccessFromClaims()
-            isBurnerModeEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
-
-            // Check if burner mode is enabled and show lock screen
-            if isBurnerModeEnabled {
-                showingLockScreen = true
-            }
-
-            // Setup notification observer for auto-enabled burner mode
-            NotificationCenter.default.addObserver(
-                forName: NSNotification.Name("BurnerModeAutoEnabled"),
-                object: nil,
-                queue: .main
-            ) { _ in
-                showingAutoEnabledAlert = true
-                isBurnerModeEnabled = true
-                showingLockScreen = true
-            }
-        }
-        .alert("Burner Mode Enabled", isPresented: $showingAutoEnabledAlert) {
-            Button("OK") { }
-        } message: {
-            Text("Burner Mode has been automatically enabled because your ticket was scanned for today's event.")
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
             currentUser = Auth.auth().currentUser
@@ -174,14 +160,7 @@ struct SettingsView: View {
         .fullScreenCover(isPresented: $showingBurnerSetup) {
             BurnerModeSetupView(burnerManager: burnerManager)
         }
-        .fullScreenCover(isPresented: $showingLockScreen) {
-            BurnerModeLockScreen()
-                .environmentObject(appState)
-                .onDisappear {
-                    // Update the burner mode state when lock screen is dismissed
-                    isBurnerModeEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
-                }
-        }
+        // ✅ REMOVED: Lock screen is now handled globally in BurnerApp
     }
     
     // MARK: - Fetch Role from Custom Claims

@@ -20,29 +20,41 @@ struct BurnerApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(appState)
-                .environmentObject(appState.eventViewModel)
-                .environmentObject(appState.bookmarkManager)
-                .environmentObject(appState.ticketsViewModel)
-                .environmentObject(appState.authService)
-                .onOpenURL { url in
-                    GIDSignIn.sharedInstance.handle(url)
-                }
-                .onAppear {
-                    appState.loadInitialData()
-                    setupResetObserver()
-                }
-                .alert("Error", isPresented: $appState.showingError) {
-                    Button("OK") {
-                        appState.clearError()
+            ZStack {
+                // Main app content
+                ContentView()
+                    .environmentObject(appState)
+                    .environmentObject(appState.eventViewModel)
+                    .environmentObject(appState.bookmarkManager)
+                    .environmentObject(appState.ticketsViewModel)
+                    .environmentObject(appState.authService)
+                    .onOpenURL { url in
+                        GIDSignIn.sharedInstance.handle(url)
                     }
-                } message: {
-                    if let errorMessage = appState.errorMessage {
-                        Text(errorMessage)
+                    .onAppear {
+                        appState.loadInitialData()
+                        setupResetObserver()
                     }
+                    .alert("Error", isPresented: $appState.showingError) {
+                        Button("OK") {
+                            appState.clearError()
+                        }
+                    } message: {
+                        if let errorMessage = appState.errorMessage {
+                            Text(errorMessage)
+                        }
+                    }
+                    .id(shouldResetApp) // Forces view recreation when this changes
+                
+                // ✅ Global Burner Mode Lock Screen
+                if appState.showingBurnerLockScreen {
+                    BurnerModeLockScreen()
+                        .environmentObject(appState)
+                        .transition(.opacity)
+                        .zIndex(1000) // Ensure it's on top of everything
                 }
-                .id(shouldResetApp) // Forces view recreation when this changes
+            }
+            .animation(.easeInOut(duration: 0.3), value: appState.showingBurnerLockScreen)
         }
     }
     
