@@ -108,7 +108,7 @@ struct TicketsView: View {
     private var emptyStateView: some View {
         VStack(spacing: 20) {
             Spacer()
-            
+
             Image(systemName: "ticket")
                 .font(.appLargeIcon)
                 .foregroundColor(.gray)
@@ -120,6 +120,7 @@ struct TicketsView: View {
                     .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
             }
             Button {
                 // Navigate to Home tab (index 0)
@@ -134,7 +135,7 @@ struct TicketsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .buttonStyle(PlainButtonStyle())
-            
+
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -219,6 +220,7 @@ struct TicketsView: View {
                     .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -359,29 +359,34 @@ class OptimizedEventRepository {
 // MARK: - Empty Events View
 struct EmptyEventsView: View {
     let searchText: String
-    
+
     var body: some View {
         VStack(spacing: 20) {
+            Spacer()
+                .frame(height: 60)
+
             Image(systemName: searchText.isEmpty ? "calendar.badge.exclamationmark" : "magnifyingglass")
                 .font(.appLargeIcon)
                 .foregroundColor(.gray)
-            
+
             VStack(spacing: 8) {
                 Text(searchText.isEmpty ? "No Upcoming Events" : "No Search Results")
                     .font(.appBody)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
-                
+
                 Text(searchText.isEmpty ?
                      "There are no upcoming events available at the moment." :
                      "Try searching with different keywords.")
                     .font(.appBody)
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
             }
+
+            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: 200)
-        .padding(40)
+        .frame(maxWidth: .infinity, minHeight: 300)
     }
 }
 

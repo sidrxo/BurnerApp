@@ -18,7 +18,9 @@ struct ScannerView: View {
     @State private var userRole: String = ""
     @State private var manualTicketNumber: String = ""
     @State private var showManualEntry = false // ✅ NEW: Control manual entry visibility
-    
+    @State private var isScannerActive = false
+    @State private var isCheckingScanner = true
+
     @Environment(\.presentationMode) var presentationMode
     private let db = Firestore.firestore()
     private let functions = Functions.functions()
@@ -36,14 +38,19 @@ struct ScannerView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            
-            if !canScanTickets {
+
+            if isCheckingScanner {
+                loadingView
+            } else if !canScanTickets {
                 accessDeniedView
             } else {
                 mainScannerView
             }
         }
-        .onAppear { fetchUserRole() }
+        .onAppear {
+            fetchUserRole()
+            checkScannerAccess()
+        }
         .sheet(isPresented: $isShowingScanner) {
             scannerSheet
         }
@@ -130,16 +137,18 @@ struct ScannerView: View {
                         Image(systemName: "qrcode.viewfinder")
                             .font(.appLargeIcon)
                             .foregroundColor(.white)
-                        
+                            .padding(.top, 40)
+
                         VStack(spacing: 8) {
                             Text("QR Code Scanner")
-                                .appPageHeader()
-                                .foregroundColor(.white)
-                            
-                            Text("Scan a ticket QR code to verify entry")
                                 .appSectionHeader()
+                                .foregroundColor(.white)
+
+                            Text("Scan a ticket")
+                                .appBody()
                                 .foregroundColor(.gray)
                                 .multilineTextAlignment(.center)
+                                .padding(.horizontal, 40)
                         }
                     }
                     .padding(.top, 20)
@@ -268,9 +277,24 @@ struct ScannerView: View {
     private var canProcessTicket: Bool {
         !isProcessing && !manualTicketNumber.isEmpty
     }
-    
+
     private var canScanTickets: Bool {
-        ["scanner", "siteAdmin", "venueAdmin", "subAdmin"].contains(userRole)
+        let hasValidRole = ["scanner", "siteAdmin", "venueAdmin", "subAdmin"].contains(userRole)
+        return hasValidRole && (isScannerActive || userRole != "scanner")
+    }
+
+    // MARK: - Loading View
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.2)
+                .tint(.white)
+            Text("Loading scanner...")
+                .appBody()
+                .foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
     }
     
     // MARK: - Helper Functions
@@ -281,6 +305,28 @@ struct ScannerView: View {
                 userRole = role
             } else {
                 userRole = "user"
+            }
+        }
+    }
+
+    private func checkScannerAccess() {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            isCheckingScanner = false
+            return
+        }
+
+        db.collection("scanners").document(userId).getDocument { snapshot, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("Error checking scanner access: \(error.localizedDescription)")
+                    self.isScannerActive = false
+                } else if let data = snapshot?.data() {
+                    self.isScannerActive = data["active"] as? Bool ?? false
+                } else {
+                    // No scanner document found
+                    self.isScannerActive = false
+                }
+                self.isCheckingScanner = false
             }
         }
     }
@@ -354,9 +400,20 @@ struct ScannerView: View {
             DispatchQueue.main.async {
                 self.isProcessing = false
                 self.manualTicketNumber = ""
-                
+
                 if let error = error as NSError? {
-                    let errorMsg = error.localizedDescription
+                    // Parse error message for better user feedback
+                    var errorMsg = error.localizedDescription
+
+                    // Check for specific error messages
+                    if errorMsg.contains("not-found") || errorMsg.contains("Ticket not found") {
+                        errorMsg = "Ticket not found. Please check the ticket ID and try again."
+                    } else if errorMsg.contains("permission-denied") || errorMsg.contains("Scanner role required") {
+                        errorMsg = "You don't have permission to scan tickets at this venue."
+                    } else if errorMsg.contains("invalid-argument") {
+                        errorMsg = "Invalid ticket format. Please check and try again."
+                    }
+
                     self.errorMessage = errorMsg
                     self.showingError = true
                     return
