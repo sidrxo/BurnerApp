@@ -17,7 +17,7 @@ struct ScannerView: View {
     @State private var isProcessing = false
     @State private var userRole: String = ""
     @State private var manualTicketNumber: String = ""
-    @State private var showManualEntry = false // ✅ NEW: Control manual entry visibility
+    @State private var showManualEntry = false
     @State private var isScannerActive = false
     @State private var isCheckingScanner = true
 
@@ -25,7 +25,6 @@ struct ScannerView: View {
     private let db = Firestore.firestore()
     private let functions = Functions.functions()
     
-    // ✅ NEW: Struct to hold already-used ticket details
     struct AlreadyUsedTicket {
         let ticketNumber: String
         let eventName: String
@@ -48,6 +47,7 @@ struct ScannerView: View {
             }
         }
         .onAppear {
+            print("🟢 [Scanner] View appeared")
             fetchUserRole()
             checkScannerAccess()
         }
@@ -66,7 +66,6 @@ struct ScannerView: View {
         } message: {
             Text(successMessage)
         }
-        // ✅ NEW: Already used alert with details
         .alert("Ticket Already Used", isPresented: $showingAlreadyUsed) {
             Button("OK") { }
         } message: {
@@ -105,6 +104,16 @@ struct ScannerView: View {
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
+                
+                // Debug info
+                Text("Role: \(userRole.isEmpty ? "not loaded" : userRole)")
+                    .appSecondary()
+                    .foregroundColor(.gray.opacity(0.6))
+                    .padding(.top, 8)
+                
+                Text("Scanner Active: \(isScannerActive ? "Yes" : "No")")
+                    .appSecondary()
+                    .foregroundColor(.gray.opacity(0.6))
             }
 
             Button("Go Back") {
@@ -172,7 +181,7 @@ struct ScannerView: View {
                     }
                     .padding(.horizontal, 20)
                     
-                    // ✅ NEW: Toggle for manual entry
+                    // Toggle for manual entry
                     Button(action: {
                         withAnimation {
                             showManualEntry.toggle()
@@ -191,7 +200,7 @@ struct ScannerView: View {
                     }
                     .padding(.horizontal, 20)
                     
-                    // ✅ UPDATED: Manual entry section - collapsible
+                    // Manual entry section - collapsible
                     if showManualEntry {
                         VStack(spacing: 16) {
                             VStack(alignment: .leading, spacing: 8) {
@@ -280,7 +289,15 @@ struct ScannerView: View {
 
     private var canScanTickets: Bool {
         let hasValidRole = ["scanner", "siteAdmin", "venueAdmin", "subAdmin"].contains(userRole)
-        return hasValidRole && (isScannerActive || userRole != "scanner")
+        let canScan = hasValidRole && (isScannerActive || userRole != "scanner")
+        
+        print("🔍 [Scanner] Access Check:")
+        print("   • User Role: \(userRole)")
+        print("   • Has Valid Role: \(hasValidRole)")
+        print("   • Scanner Active: \(isScannerActive)")
+        print("   • Can Scan: \(canScan)")
+        
+        return canScan
     }
 
     // MARK: - Loading View
@@ -299,31 +316,58 @@ struct ScannerView: View {
     
     // MARK: - Helper Functions
     private func fetchUserRole() {
-        guard let userId = Auth.auth().currentUser?.uid else { return }
-        db.collection("users").document(userId).getDocument { snapshot, _ in
-            if let role = snapshot?.data()?["role"] as? String {
-                userRole = role
-            } else {
-                userRole = "user"
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("🔴 [Scanner] No userId found")
+            return
+        }
+        
+        print("🔵 [Scanner] Fetching role for userId: \(userId)")
+        
+        db.collection("users").document(userId).getDocument { snapshot, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("🔴 [Scanner] Error fetching user role: \(error.localizedDescription)")
+                    self.userRole = "user"
+                    return
+                }
+                
+                if let data = snapshot?.data() {
+                    print("🔵 [Scanner] User document data: \(data)")
+                    if let role = data["role"] as? String {
+                        print("✅ [Scanner] User role: \(role)")
+                        self.userRole = role
+                    } else {
+                        print("⚠️ [Scanner] No role field found in user document, defaulting to 'user'")
+                        self.userRole = "user"
+                    }
+                } else {
+                    print("⚠️ [Scanner] No user document found, defaulting to 'user'")
+                    self.userRole = "user"
+                }
             }
         }
     }
 
     private func checkScannerAccess() {
         guard let userId = Auth.auth().currentUser?.uid else {
+            print("🔴 [Scanner] No userId for scanner access check")
             isCheckingScanner = false
             return
         }
 
+        print("🔵 [Scanner] Checking scanner access for userId: \(userId)")
+        
         db.collection("scanners").document(userId).getDocument { snapshot, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    print("Error checking scanner access: \(error.localizedDescription)")
+                    print("🔴 [Scanner] Error checking scanner access: \(error.localizedDescription)")
                     self.isScannerActive = false
                 } else if let data = snapshot?.data() {
+                    print("🔵 [Scanner] Scanner document data: \(data)")
                     self.isScannerActive = data["active"] as? Bool ?? false
+                    print("✅ [Scanner] Scanner active status: \(self.isScannerActive)")
                 } else {
-                    // No scanner document found
+                    print("⚠️ [Scanner] No scanner document found")
                     self.isScannerActive = false
                 }
                 self.isCheckingScanner = false
@@ -335,9 +379,11 @@ struct ScannerView: View {
         isShowingScanner = false
         switch result {
         case .success(let result):
+            print("🔵 [Scanner] QR Code scanned: \(result.string)")
             scannedValue = result.string
             processTicket(qrCodeData: scannedValue)
         case .failure(let error):
+            print("🔴 [Scanner] Scan failed: \(error.localizedDescription)")
             errorMessage = "Scanning failed: \(error.localizedDescription)"
             showingError = true
         }
@@ -345,6 +391,7 @@ struct ScannerView: View {
     
     private func processManualTicket() {
         let ticketId = manualTicketNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        print("🔵 [Scanner] Processing manual ticket: \(ticketId)")
         processTicket(qrCodeData: nil, ticketId: ticketId)
     }
     
@@ -353,19 +400,25 @@ struct ScannerView: View {
         if let data = qrData.data(using: .utf8),
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let ticketId = json["ticketId"] as? String {
+            print("🔵 [Scanner] Extracted ticketId from JSON: \(ticketId)")
             return ticketId
         }
         // Legacy format
         let components = qrData.components(separatedBy: ":")
         if let ticketIdIndex = components.firstIndex(of: "TICKET"), ticketIdIndex + 1 < components.count {
-            return components[ticketIdIndex + 1]
+            let ticketId = components[ticketIdIndex + 1]
+            print("🔵 [Scanner] Extracted ticketId from legacy format: \(ticketId)")
+            return ticketId
         }
+        print("⚠️ [Scanner] Could not extract ticketId, using raw QR data")
         return nil
     }
     
-    // ✅ UPDATED: Process ticket using Cloud Function with better error handling
     private func processTicket(qrCodeData: String? = nil, ticketId: String? = nil) {
-        guard !isProcessing else { return }
+        guard !isProcessing else {
+            print("⚠️ [Scanner] Already processing a ticket")
+            return
+        }
         
         let finalTicketId: String
         
@@ -376,16 +429,22 @@ struct ScannerView: View {
         } else if let qrData = qrCodeData {
             finalTicketId = qrData
         } else {
+            print("🔴 [Scanner] Invalid ticket data")
             errorMessage = "Invalid ticket data"
             showingError = true
             return
         }
         
         guard !finalTicketId.isEmpty else {
+            print("🔴 [Scanner] Empty ticket ID")
             errorMessage = "Invalid ticket ID"
             showingError = true
             return
         }
+        
+        print("🔵 [Scanner] Processing ticket with ID: \(finalTicketId)")
+        print("🔵 [Scanner] Current user role: \(userRole)")
+        print("🔵 [Scanner] Scanner active: \(isScannerActive)")
         
         isProcessing = true
         
@@ -396,12 +455,20 @@ struct ScannerView: View {
             "qrCodeData": qrCodeData as Any
         ]
         
+        print("🔵 [Scanner] Calling Cloud Function with data: \(data)")
+        
         scanFunction.call(data) { result, error in
             DispatchQueue.main.async {
                 self.isProcessing = false
                 self.manualTicketNumber = ""
 
                 if let error = error as NSError? {
+                    print("🔴 [Scanner] Cloud Function error:")
+                    print("   • Error code: \(error.code)")
+                    print("   • Error domain: \(error.domain)")
+                    print("   • Error description: \(error.localizedDescription)")
+                    print("   • User info: \(error.userInfo)")
+                    
                     // Parse error message for better user feedback
                     var errorMsg = error.localizedDescription
 
@@ -420,10 +487,13 @@ struct ScannerView: View {
                 }
                 
                 guard let data = result?.data as? [String: Any] else {
+                    print("🔴 [Scanner] Invalid response from Cloud Function")
                     self.errorMessage = "Invalid response from server"
                     self.showingError = true
                     return
                 }
+                
+                print("✅ [Scanner] Cloud Function response: \(data)")
                 
                 let success = data["success"] as? Bool ?? false
                 let message = data["message"] as? String ?? ""
@@ -431,6 +501,7 @@ struct ScannerView: View {
                 
                 if success {
                     // Ticket successfully scanned
+                    print("✅ [Scanner] Ticket scanned successfully")
                     self.successMessage = message
                     self.showingSuccess = true
                     
@@ -438,7 +509,8 @@ struct ScannerView: View {
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.success)
                 } else if ticketStatus == "used" {
-                    // ✅ Ticket already used - show detailed alert
+                    // Ticket already used - show detailed alert
+                    print("⚠️ [Scanner] Ticket already used")
                     if let ticketData = data["ticket"] as? [String: Any],
                        let scannedAt = data["usedAt"] as? String,
                        let scannedByName = data["scannedByName"] as? String {
@@ -470,6 +542,7 @@ struct ScannerView: View {
                     }
                 } else {
                     // Other error
+                    print("🔴 [Scanner] Ticket scan failed: \(message)")
                     self.errorMessage = message
                     self.showingError = true
                     
@@ -481,7 +554,6 @@ struct ScannerView: View {
         }
     }
     
-    // ✅ NEW: Format scan time for display
     private func formatScanTime(_ isoString: String) -> String {
         let formatter = ISO8601DateFormatter()
         guard let date = formatter.date(from: isoString) else {
