@@ -4,9 +4,8 @@ import RequireAuth from "@/components/require-auth";
 import { useAdminManagement } from "@/hooks/useAdminManagement";
 import {
   AdminManagementHeader,
-  CreateAdminForm,
+  UnifiedCreateForm,
   AdminsTable,
-  CreateScannerForm,
   ScannersTable,
   LoadingSkeleton,
   AccessDenied
@@ -37,8 +36,8 @@ function AdminManagementPageContent() {
     );
   }
 
-  // Show access denied for users who are not siteAdmin
-  if (!user || user.role !== "siteAdmin") {
+  // Allow siteAdmin, venueAdmin, and subAdmin to access
+  if (!user || !['siteAdmin', 'venueAdmin', 'subAdmin'].includes(user.role)) {
     return <AccessDenied />;
   }
 
@@ -46,41 +45,49 @@ function AdminManagementPageContent() {
     return <LoadingSkeleton />;
   }
 
+  // Filter data based on user role
+  const filteredAdmins = user.role === 'siteAdmin'
+    ? admins
+    : admins.filter(admin => admin.venueId === user.venueId);
+
+  const filteredScanners = user.role === 'siteAdmin'
+    ? scanners
+    : scanners.filter(scanner => scanner.venueId === user.venueId);
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <AdminManagementHeader />
-      
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-1 space-y-6">
-          <CreateAdminForm
-            venues={venues}
-            onCreateAdmin={createAdmin}
-          />
-          <CreateScannerForm
-            venues={venues}
-            currentUserRole={user.role}
-            defaultVenueId={user.venueId}
-            onCreateScanner={createScanner}
-            actionLoading={loading}
-          />
-        </div>
 
-        <div className="xl:col-span-2 space-y-6">
+      {/* Vertical Stack Layout */}
+      <div className="space-y-6">
+        {/* Unified Create Form */}
+        <UnifiedCreateForm
+          venues={venues}
+          currentUserRole={user.role}
+          defaultVenueId={user.venueId}
+          onCreateAdmin={createAdmin}
+          onCreateScanner={createScanner}
+          actionLoading={loading}
+        />
+
+        {/* Administrators Table */}
+        {(user.role === 'siteAdmin' || user.role === 'venueAdmin') && (
           <AdminsTable
-            admins={admins}
+            admins={filteredAdmins}
             venues={venues}
             onDeleteAdmin={deleteAdmin}
             onUpdateAdmin={updateAdmin}
           />
+        )}
 
-          <ScannersTable
-            scanners={scanners}
-            venues={venues}
-            onUpdateScanner={updateScanner}
-            onDeleteScanner={deleteScanner}
-            loading={loading}
-          />
-        </div>
+        {/* Scanners Table */}
+        <ScannersTable
+          scanners={filteredScanners}
+          venues={venues}
+          onUpdateScanner={updateScanner}
+          onDeleteScanner={deleteScanner}
+          loading={loading}
+        />
       </div>
     </div>
   );

@@ -60,6 +60,209 @@ interface ScannersTableProps {
   loading: boolean;
 }
 
+// Unified form interface
+interface UnifiedCreateFormProps {
+  venues: Venue[];
+  currentUserRole: string;
+  defaultVenueId?: string | null;
+  onCreateAdmin: (data: CreateAdminData) => Promise<{ success: boolean; error?: string }>;
+  onCreateScanner: (data: CreateScannerData) => Promise<{ success: boolean; error?: string }>;
+  actionLoading: boolean;
+}
+
+export function UnifiedCreateForm({
+  venues,
+  currentUserRole,
+  defaultVenueId,
+  onCreateAdmin,
+  onCreateScanner,
+  actionLoading
+}: UnifiedCreateFormProps) {
+  const [userType, setUserType] = useState<'admin' | 'scanner'>('admin');
+  const [formData, setFormData] = useState({
+    email: '',
+    name: '',
+    role: 'venueAdmin' as 'venueAdmin' | 'subAdmin' | 'siteAdmin',
+    venueId: currentUserRole === 'siteAdmin' ? '' : defaultVenueId || '',
+    phoneNumber: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    let result;
+    if (userType === 'admin') {
+      const adminData: CreateAdminData = {
+        email: formData.email,
+        name: formData.name,
+        role: formData.role,
+        venueId: (formData.role === 'venueAdmin' || formData.role === 'subAdmin') ? formData.venueId : undefined
+      };
+      result = await onCreateAdmin(adminData);
+    } else {
+      const scannerData: CreateScannerData = {
+        email: formData.email,
+        name: formData.name,
+        venueId: currentUserRole === 'siteAdmin' ? (formData.venueId || null) : defaultVenueId || null,
+        phoneNumber: formData.phoneNumber || undefined
+      };
+      result = await onCreateScanner(scannerData);
+    }
+
+    if (result.success) {
+      setFormData({
+        email: '',
+        name: '',
+        role: 'venueAdmin',
+        venueId: currentUserRole === 'siteAdmin' ? '' : defaultVenueId || '',
+        phoneNumber: ''
+      });
+    }
+
+    setLoading(false);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <UserPlus className="h-5 w-5" />
+          <span>Create User</span>
+        </CardTitle>
+        <CardDescription>
+          Add a new administrator or scanner to the system
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* User Type Selector */}
+          <div>
+            <Label>User Type</Label>
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <Button
+                type="button"
+                variant={userType === 'admin' ? 'default' : 'outline'}
+                onClick={() => setUserType('admin')}
+                className="w-full"
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                Admin
+              </Button>
+              <Button
+                type="button"
+                variant={userType === 'scanner' ? 'default' : 'outline'}
+                onClick={() => setUserType('scanner')}
+                className="w-full"
+              >
+                <Scan className="h-4 w-4 mr-2" />
+                Scanner
+              </Button>
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              required
+            />
+          </div>
+
+          {/* Admin-specific fields */}
+          {userType === 'admin' && (
+            <div>
+              <Label htmlFor="role">Role</Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value: 'venueAdmin' | 'subAdmin' | 'siteAdmin') =>
+                  setFormData(prev => ({ ...prev, role: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {currentUserRole === 'siteAdmin' && (
+                    <SelectItem value="siteAdmin">Site Admin</SelectItem>
+                  )}
+                  <SelectItem value="venueAdmin">Venue Admin</SelectItem>
+                  <SelectItem value="subAdmin">Sub Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Scanner-specific fields */}
+          {userType === 'scanner' && (
+            <div>
+              <Label htmlFor="phoneNumber">Contact Number (optional)</Label>
+              <Input
+                id="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                placeholder="+44 1234 567890"
+              />
+            </div>
+          )}
+
+          {/* Venue selection */}
+          {((userType === 'admin' && (formData.role === 'venueAdmin' || formData.role === 'subAdmin')) ||
+            (userType === 'scanner' && currentUserRole === 'siteAdmin')) && (
+            <div>
+              <Label htmlFor="venue">
+                {userType === 'admin' ? 'Venue' : 'Assign Venue'}
+              </Label>
+              <Select
+                value={formData.venueId || ''}
+                onValueChange={(value) =>
+                  setFormData(prev => ({ ...prev, venueId: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a venue" />
+                </SelectTrigger>
+                <SelectContent>
+                  {venues.map((venue) => (
+                    <SelectItem key={venue.id} value={venue.id}>
+                      {venue.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Info message for non-site admins creating scanners */}
+          {userType === 'scanner' && currentUserRole !== 'siteAdmin' && (
+            <div className="p-3 bg-muted/50 rounded-md text-sm text-muted-foreground">
+              Scanners created from your account are automatically linked to your venue.
+            </div>
+          )}
+
+          <Button type="submit" disabled={loading || actionLoading} className="w-full">
+            {loading || actionLoading ? "Creating..." : `Create ${userType === 'admin' ? 'Admin' : 'Scanner'}`}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Keep old forms for backward compatibility but mark as deprecated
 export function CreateAdminForm({ venues, onCreateAdmin }: CreateAdminFormProps) {
   const [formData, setFormData] = useState<CreateAdminData>({
     email: '',
@@ -71,9 +274,9 @@ export function CreateAdminForm({ venues, onCreateAdmin }: CreateAdminFormProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     const result = await onCreateAdmin(formData);
-    
+
     if (result.success) {
       setFormData({
         email: '',
@@ -81,7 +284,7 @@ export function CreateAdminForm({ venues, onCreateAdmin }: CreateAdminFormProps)
         role: 'venueAdmin'
       });
     }
-    
+
     setLoading(false);
   };
 
@@ -108,7 +311,7 @@ export function CreateAdminForm({ venues, onCreateAdmin }: CreateAdminFormProps)
               required
             />
           </div>
-          
+
           <div>
             <Label htmlFor="name">Name</Label>
             <Input
@@ -118,12 +321,12 @@ export function CreateAdminForm({ venues, onCreateAdmin }: CreateAdminFormProps)
               required
             />
           </div>
-          
+
           <div>
             <Label htmlFor="role">Role</Label>
-            <Select 
-              value={formData.role} 
-              onValueChange={(value: 'venueAdmin' | 'subAdmin' | 'siteAdmin') => 
+            <Select
+              value={formData.role}
+              onValueChange={(value: 'venueAdmin' | 'subAdmin' | 'siteAdmin') =>
                 setFormData(prev => ({ ...prev, role: value }))
               }
             >
@@ -137,13 +340,13 @@ export function CreateAdminForm({ venues, onCreateAdmin }: CreateAdminFormProps)
               </SelectContent>
             </Select>
           </div>
-          
+
           {(formData.role === 'venueAdmin' || formData.role === 'subAdmin') && (
             <div>
               <Label htmlFor="venue">Venue</Label>
-              <Select 
-                value={formData.venueId || ''} 
-                onValueChange={(value) => 
+              <Select
+                value={formData.venueId || ''}
+                onValueChange={(value) =>
                   setFormData(prev => ({ ...prev, venueId: value }))
                 }
               >
@@ -160,7 +363,7 @@ export function CreateAdminForm({ venues, onCreateAdmin }: CreateAdminFormProps)
               </Select>
             </div>
           )}
-          
+
           <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Creating..." : "Create Admin"}
           </Button>
