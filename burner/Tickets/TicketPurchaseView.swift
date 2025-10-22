@@ -78,7 +78,7 @@ struct TicketPurchaseView: View {
             }
             
         }
-        .presentationDetents([.height(showCardInput || showSavedCards ? 420 : 320)])
+        .presentationDetents([.height(showCardInput ? 420 : showSavedCards ? 520 : 320)])
         .presentationDragIndicator(.visible)
         .onAppear {
             // Load saved payment methods
@@ -193,33 +193,9 @@ struct TicketPurchaseView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
-                    
-                    // Add new card option
-                    Button(action: {
-                        withAnimation {
-                            showSavedCards = false
-                            showCardInput = true
-                        }
-                    }) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "plus.circle")
-                                .font(.appIcon)
-                                .foregroundColor(.white)
-                            
-                            Text("Add New Card")
-                                .appBody()
-                                .foregroundColor(.white)
-                            
-                            Spacer()
-                        }
-                        .padding(12)
-                        .background(Color.gray.opacity(0.05))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    .buttonStyle(PlainButtonStyle())
                 }
             }
-            .frame(maxHeight: 200)
+            .frame(maxHeight: 250)
             .padding(.horizontal, 20)
             
             HStack(spacing: 12) {
@@ -289,18 +265,18 @@ struct TicketPurchaseView: View {
 
             // ✅ UPDATED: Show saved cards or new card option
             if !paymentService.paymentMethods.isEmpty {
-                // Use saved card button
+                // Use saved card button - with creditcard.fill icon and forced font size 23
                 Button(action: {
                     withAnimation {
                         showSavedCards = true
                     }
                 }) {
                     HStack(spacing: 4) {
-                        Image(systemName: "creditcard")
-                            .font(.appIcon)
-                        Text("Use Saved Card")
+                        Text("Buy with")
+                            .font(.system(size: 23))
+                        Image(systemName: "creditcard.fill")
+                            .font(.system(size: 23))
                     }
-                    .font(.appFont(size: 23))
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)
@@ -310,22 +286,6 @@ struct TicketPurchaseView: View {
                         RoundedRectangle(cornerRadius: 23)
                             .stroke(Color.white.opacity(0.8), lineWidth: 2)
                     )
-                }
-                .padding(.horizontal, 4)
-                
-                // Add new card button (secondary)
-                Button(action: {
-                    withAnimation {
-                        showCardInput = true
-                    }
-                }) {
-                    Text("Add New Card")
-                        .appBody()
-                        .foregroundColor(.gray)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 46)
-                        .background(Color.gray.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 23))
                 }
                 .padding(.horizontal, 4)
             } else {

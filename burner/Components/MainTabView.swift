@@ -77,7 +77,13 @@ struct CustomTabBar: View {
                 icon: "magnifyingglass",
                 isSelected: selectedTab == 1
             ) {
-                selectedTab = 1
+                if selectedTab == 1 {
+                    // Already on search tab - notify to focus search
+                    NotificationCenter.default.post(name: NSNotification.Name("FocusSearchBar"), object: nil)
+                } else {
+                    // Navigate to search tab
+                    selectedTab = 1
+                }
             }
             
             Spacer()

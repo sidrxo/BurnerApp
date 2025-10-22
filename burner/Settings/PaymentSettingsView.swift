@@ -104,6 +104,12 @@ struct PaymentSettingsView: View {
                                             deletePaymentMethod(method.id)
                                         }
                                     )
+                                    .disabled(true)
+                                    .opacity(0.5)
+                                    .overlay(
+                                        Color.black.opacity(0.3)
+                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    )
                                 }
                             }
                         }

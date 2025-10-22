@@ -1,18 +1,20 @@
 import SwiftUI
 import Kingfisher
 import FirebaseAuth
+import FirebaseFirestore
 import Combine
 
 struct TicketsView: View {
     // ✅ Use shared ViewModels from environment
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
     @EnvironmentObject var eventViewModel: EventViewModel
-    
+
     // Add binding for selected tab
     @Binding var selectedTab: Int
-    
+
     @State private var searchText = ""
     @State private var selectedFilter: TicketsFilter = .upcoming
+    @FocusState private var isSearchFocused: Bool
 
     private var ticketsWithEvents: [TicketWithEventData] {
         var result: [TicketWithEventData] = []
@@ -155,7 +157,8 @@ struct TicketsView: View {
                     .foregroundColor(.white)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
-                
+                    .focused($isSearchFocused)
+
                 // Clear button
                 if !searchText.isEmpty {
                     Button(action: {
@@ -172,6 +175,10 @@ struct TicketsView: View {
             .background(Color(.systemGray6))
             .clipShape(RoundedRectangle(cornerRadius: 25))
             .padding(.horizontal, 20)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isSearchFocused = true
+            }
         }
         .background(Color.black)
     }
@@ -263,11 +270,18 @@ struct TicketsView: View {
                                         ticketWithEvent: ticketWithEvent,
                                         isPast: true,
                                         onCancel: {
-                                            // Past tickets can't be cancelled
+                                            // No longer used
                                         }
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button(role: .destructive) {
+                                        softDeleteTicket(ticketWithEvent.ticket)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
                             }
                         }
                     }
@@ -275,7 +289,26 @@ struct TicketsView: View {
             }
             .padding(.bottom, 100)
         }
+        .scrollDismissesKeyboard(.interactively)
         .background(Color.black)
+    }
+
+    // MARK: - Soft Delete Ticket
+    private func softDeleteTicket(_ ticket: Ticket) {
+        guard let ticketId = ticket.id else { return }
+
+        let db = Firestore.firestore()
+        db.collection("tickets").document(ticketId).updateData([
+            "deleted": true,
+            "deletedAt": FieldValue.serverTimestamp()
+        ]) { error in
+            if let error = error {
+                print("Error soft deleting ticket: \(error.localizedDescription)")
+            } else {
+                // Refresh tickets to remove from view
+                ticketsViewModel.fetchUserTickets()
+            }
+        }
     }
 }
 

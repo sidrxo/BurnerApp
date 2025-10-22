@@ -5,6 +5,7 @@ struct BookmarksView: View {
     // Use @EnvironmentObject instead of @StateObject
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @State private var searchText = ""
+    @Environment(\.dismiss) var dismiss
     
     private var filteredBookmarks: [Event] {
         if searchText.isEmpty {
@@ -81,8 +82,8 @@ struct BookmarksView: View {
             }
             
             Button("Browse Events") {
-                // Navigate to home or explore tab
-                // You can implement navigation logic here
+                // Dismiss bookmarks view to return to settings
+                dismiss()
             }
             .appBody()
             .foregroundColor(.black)

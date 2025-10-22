@@ -17,15 +17,15 @@ struct SupportView: View {
                 Button(action: { openURL("mailto:support@burner.app") }) {
                     CustomMenuItemContent(title: "Contact Support", subtitle: "Get help with your account")
                 }
-                Button(action: {}) {
+                NavigationLink(destination: FAQView()) {
                     CustomMenuItemContent(title: "FAQ", subtitle: "Frequently asked questions")
                 }
             }
             CustomMenuSection(title: "LEGAL") {
-                Button(action: { openURL("https://burner.app/terms") }) {
+                NavigationLink(destination: TermsOfServiceView()) {
                     CustomMenuItemContent(title: "Terms of Service", subtitle: "Legal terms and conditions")
                 }
-                Button(action: { openURL("https://burner.app/privacy") }) {
+                NavigationLink(destination: PrivacyPolicyView()) {
                     CustomMenuItemContent(title: "Privacy Policy", subtitle: "How we protect your data")
                 }
             }

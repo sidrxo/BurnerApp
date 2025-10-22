@@ -75,6 +75,7 @@ struct SettingsView: View {
                                             title: "Setup Burner Mode",
                                             subtitle: "Configure app blocking"
                                         )
+                                        .contentShape(Rectangle())
                                     }
                                     .buttonStyle(PlainButtonStyle())
 

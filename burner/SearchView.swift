@@ -7,9 +7,10 @@ import FirebaseFirestore
 struct ExploreView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @StateObject private var viewModel = ExploreViewModel()
-    
+
     @State private var searchText = ""
     @State private var sortBy: SortOption = .date
+    @FocusState private var isSearchFocused: Bool
     
     enum SortOption: String {
         case date = "date"
@@ -40,6 +41,9 @@ struct ExploreView: View {
                     await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FocusSearchBar"))) { _ in
+                isSearchFocused = true
+            }
         }
     }
     
@@ -49,13 +53,14 @@ struct ExploreView: View {
                 Image(systemName: "magnifyingglass")
                     .font(.appIcon)
                     .foregroundColor(.gray)
-                
+
                 TextField("Search events", text: $searchText)
                     .appBody()
                     .foregroundColor(.white)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
-                
+                    .focused($isSearchFocused)
+
                 // Clear button
                 if !searchText.isEmpty {
                     Button(action: {
@@ -71,6 +76,10 @@ struct ExploreView: View {
             .padding(.vertical, 14)
             .background(Color(.systemGray6))
             .clipShape(RoundedRectangle(cornerRadius: 25))
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isSearchFocused = true
+            }
         }
         .padding(.horizontal, 20)
     }
@@ -147,6 +156,7 @@ struct ExploreView: View {
                 }
                 .padding(.bottom, 100)
             }
+            .scrollDismissesKeyboard(.interactively)
         }
     }
     

@@ -136,20 +136,12 @@ struct UnifiedEventRow: View {
                 )
             }
             
-            // QR code for active tickets or Past Event badge
+            // QR code for all tickets (including past/used)
             if let ticket = ticket {
-                if isPastEvent {
-                    Text("Past Event")
-                        .appCaption()
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.gray.opacity(0.2))
-                        .foregroundColor(.gray)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                } else if ticket.status == "confirmed" {
+                if ticket.status == "confirmed" || ticket.status == "used" {
                     Image(systemName: "qrcode")
                         .font(.appIcon)
-                        .foregroundColor(.white)
+                        .foregroundColor(isPastEvent ? .gray : .white)
                 }
             }
         }
@@ -158,13 +150,8 @@ struct UnifiedEventRow: View {
     // MARK: - Context Menu
     @ViewBuilder
     private var contextMenuContent: some View {
-        if let ticket = ticket,
-           !isPastEvent && ticket.status == "confirmed",
-           let onCancel = onCancel {
-            Button("Cancel Ticket", role: .destructive) {
-                onCancel()
-            }
-        }
+        // Context menu removed - using swipe actions instead
+        EmptyView()
     }
     
     // MARK: - Helper Properties
