@@ -64,7 +64,7 @@ struct TicketsView: View {
             }
         }
         return result.sorted {
-            ($0.event.startTime ?? Date.distantPast) > ($1.event.startTime ?? Date.distantPast)
+            ($0.event.startTime ?? Date.distantFuture) < ($1.event.startTime ?? Date.distantFuture)
         }
     }
 

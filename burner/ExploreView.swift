@@ -1,155 +1,142 @@
 import SwiftUI
 import Kingfisher
-import Combine
-import FirebaseFirestore
 
-// MARK: - Optimized ExploreView
-struct ExploreView: View {
+struct HomeView: View {
+    @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var bookmarkManager: BookmarkManager
-    @StateObject private var viewModel = ExploreViewModel()
     
     @State private var searchText = ""
-    @State private var sortBy: SortOption = .date
+    @State private var selectedEvent: Event? = nil
+    @State private var navigationPath = NavigationPath()
     
-    enum SortOption: String {
-        case date = "date"
-        case price = "price"
+    // MARK: - Define Your Genres (Configure these based on your events)
+    private let displayGenres = ["Techno", "House", "Drum & Bass", "Trance", "Hip Hop"]
+
+    // MARK: - Featured Events (Randomized by Day)
+    var featuredEvents: [Event] {
+        let featured = eventViewModel.events.filter { $0.isFeatured }
+        
+        let calendar = Calendar.current
+        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: Date()) ?? 0
+        
+        var rng = SeededRandomNumberGenerator(seed: UInt64(dayOfYear))
+        return featured.shuffled(using: &rng)
+    }
+    
+    // MARK: - This Week Events (Next 7 Days from Now)
+    var thisWeekEvents: [Event] {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        guard let startOfToday = calendar.startOfDay(for: now) as Date?,
+              let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfToday) else {
+            return []
+        }
+        
+        return eventViewModel.events
+            .filter { event in
+                guard let startTime = event.startTime else { return false }
+                return !event.isFeatured &&
+                       startTime >= now &&
+                       startTime < endOfWeek
+            }
+            .sorted { event1, event2 in
+                (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
+            }
+    }
+    
+    var thisWeekEventsPreview: [Event] {
+        Array(thisWeekEvents.prefix(5))
+    }
+    
+    // MARK: - Popular Events (Sorted by Ticket Sell-Through %, excluding This Week events)
+    var popularEvents: [Event] {
+        let thisWeekEventIds = Set(thisWeekEvents.compactMap { $0.id })
+        
+        return eventViewModel.events
+            .filter { event in
+                guard let startTime = event.startTime else { return false }
+                return !event.isFeatured &&
+                       startTime > Date() &&
+                       !thisWeekEventIds.contains(event.id ?? "")
+            }
+            .sorted { event1, event2 in
+                let sellThrough1 = Double(event1.ticketsSold) / Double(max(event1.maxTickets, 1))
+                let sellThrough2 = Double(event2.ticketsSold) / Double(max(event2.maxTickets, 1))
+                return sellThrough1 > sellThrough2
+            }
+    }
+    
+    var popularEventsPreview: [Event] {
+        Array(popularEvents.prefix(5))
+    }
+    
+    // MARK: - Genre-Based Events (can overlap with Popular/This Week)
+    func allEventsForGenre(_ genre: String) -> [Event] {
+        eventViewModel.events
+            .filter { event in
+                guard let startTime = event.startTime else { return false }
+                return !event.isFeatured &&
+                       startTime > Date() &&
+                       (event.tags?.contains { $0.localizedCaseInsensitiveCompare(genre) == .orderedSame } ?? false)
+            }
+            .sorted { event1, event2 in
+                (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
+            }
+    }
+    
+    func eventsForGenrePreview(_ genre: String) -> [Event] {
+        Array(allEventsForGenre(genre).prefix(5))
+    }
+    
+    // MARK: - All Events (Chronological, everything)
+    var allEvents: [Event] {
+        eventViewModel.events
+            .filter { event in
+                guard let startTime = event.startTime else { return false }
+                return startTime > Date()
+            }
+            .sorted { event1, event2 in
+                (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
+            }
+    }
+    
+    var allEventsPreview: [Event] {
+        Array(allEvents.prefix(6))
     }
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                HeaderSection(title: "Search")
-                searchSection
-                filtersSection
-                contentSection
-            }
-            .navigationBarHidden(true)
-            .background(Color.black)
-            .task {
-                await viewModel.loadInitialEvents(sortBy: sortBy.rawValue)
-            }
-            .refreshable {
-                await viewModel.refreshEvents(sortBy: sortBy.rawValue)
-            }
-            .onChange(of: searchText) { oldValue, newValue in
-                viewModel.updateSearchText(newValue, sortBy: sortBy.rawValue)
-            }
-            .onChange(of: sortBy) { oldValue, newValue in
-                Task {
-                    await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
-                }
-            }
-        }
-    }
-    
-    private var searchSection: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass")
-                    .font(.appIcon)
-                    .foregroundColor(.gray)
-                
-                TextField("Search events", text: $searchText)
-                    .appBody()
-                    .foregroundColor(.white)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                
-                // Clear button
-                if !searchText.isEmpty {
-                    Button(action: {
-                        searchText = ""
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.appIcon)
-                            .foregroundColor(.gray)
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 25))
-        }
-        .padding(.horizontal, 20)
-    }
-    
-    private var filtersSection: some View {
-        HStack(spacing: 12) {
-            FilterButton(
-                title: "DATE",
-                isSelected: sortBy == .date
-            ) {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    sortBy = .date
-                }
-            }
-            
-            FilterButton(
-                title: "PRICE",
-                isSelected: sortBy == .price
-            ) {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    sortBy = .price
-                }
-            }
-            
-            Spacer()
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
-        .padding(.bottom, 16)
-    }
-    
-    private var contentSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        NavigationStack(path: $navigationPath) {
             ScrollView {
-                LazyVStack(spacing: 0) {
-                    if viewModel.isLoading && viewModel.events.isEmpty {
+                VStack(spacing: 0) {
+                    HeaderSection(title: "Explore")
+                    
+                    if eventViewModel.isLoading && eventViewModel.events.isEmpty {
                         loadingView
-                    } else if viewModel.events.isEmpty {
-                        EmptyEventsView(searchText: searchText)
                     } else {
-                        ForEach(viewModel.events) { event in
-                            NavigationLink(destination: EventDetailView(event: event)) {
-                                UnifiedEventRow(
-                                    event: event,
-                                    bookmarkManager: bookmarkManager
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .onAppear {
-                                // Load more when reaching last item
-                                if event.id == viewModel.events.last?.id {
-                                    Task {
-                                        await viewModel.loadMoreEvents(
-                                            sortBy: sortBy.rawValue,
-                                            searchText: searchText
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Loading more indicator
-                        if viewModel.isLoadingMore {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                    .tint(.white)
-                                    .padding(.vertical, 20)
-                                Spacer()
-                            }
-                        }
+                        contentView
                     }
                 }
                 .padding(.bottom, 100)
             }
+            .navigationBarHidden(true)
+            .background(Color.black)
+            .refreshable {
+                eventViewModel.fetchEvents()
+            }
+            .navigationDestination(for: Event.self) { event in
+                EventDetailView(event: event)
+            }
+            .navigationDestination(for: EventSectionDestination.self) { destination in
+                FilteredEventsView(
+                    title: destination.title,
+                    events: destination.events
+                )
+            }
         }
     }
     
+    // MARK: - Loading View
     private var loadingView: some View {
         VStack(spacing: 16) {
             ProgressView()
@@ -157,238 +144,229 @@ struct ExploreView: View {
                 .tint(.white)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 200)
-    }
-}
-
-// MARK: - ExploreViewModel (Performance Optimized)
-@MainActor
-class ExploreViewModel: ObservableObject {
-    @Published var events: [Event] = []
-    @Published var isLoading = false
-    @Published var isLoadingMore = false
-    @Published var errorMessage: String?
-    
-    private var hasMoreEvents = true
-    private var lastDocument: Date?
-    private var currentSearchText = ""
-    private var searchCache: [String: [Event]] = [:]
-    
-    private let eventRepository = OptimizedEventRepository()
-    private var searchCancellable: AnyCancellable?
-    private let searchSubject = PassthroughSubject<(String, String), Never>()
-    
-    init() {
-        setupSearchDebouncing()
+        .frame(height: 300)
     }
     
-    // MARK: - Setup Search Debouncing
-    private func setupSearchDebouncing() {
-        searchCancellable = searchSubject
-            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
-            .sink { [weak self] (searchText, sortBy) in
-                Task {
-                    await self?.performSearch(searchText: searchText, sortBy: sortBy)
+    // MARK: - Content View
+    private var contentView: some View {
+        VStack(spacing: 0) {
+            // 1. First Featured Hero Card
+            if let featured = featuredEvents.first {
+                NavigationLink(value: featured) {
+                    FeaturedHeroCard(event: featured, bookmarkManager: bookmarkManager)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 40)
                 }
+                .buttonStyle(PlainButtonStyle())
             }
-    }
-    
-    // MARK: - Update Search Text (Debounced)
-    func updateSearchText(_ text: String, sortBy: String) {
-        searchSubject.send((text, sortBy))
-    }
-    
-    // MARK: - Load Initial Events
-    func loadInitialEvents(sortBy: String) async {
-        guard !isLoading else { return }
-        
-        isLoading = true
-        hasMoreEvents = true
-        lastDocument = nil
-        
-        do {
-            let fetchedEvents = try await eventRepository.fetchUpcomingEvents(
-                sortBy: sortBy,
-                limit: 20
-            )
             
-            events = fetchedEvents
-            lastDocument = fetchedEvents.last?.startTime
-            hasMoreEvents = fetchedEvents.count >= 20
+            // 2. Popular Section
+            if !popularEvents.isEmpty {
+                EventSection(
+                    title: "Popular",
+                    events: popularEventsPreview,
+                    bookmarkManager: bookmarkManager,
+                    showViewAllButton: false,
+                    onViewAllTapped: {
+                        navigationPath.append(EventSectionDestination(
+                            title: "Popular",
+                            events: popularEvents
+                        ))
+                    }
+                )
+            }
             
-        } catch {
-            errorMessage = "Failed to load events: \(error.localizedDescription)"
-        }
-        
-        isLoading = false
-    }
-    
-    // MARK: - Load More Events (Pagination)
-    func loadMoreEvents(sortBy: String, searchText: String) async {
-        guard !isLoadingMore && hasMoreEvents && searchText.isEmpty else { return }
-        
-        isLoadingMore = true
-        
-        do {
-            let fetchedEvents = try await eventRepository.fetchUpcomingEvents(
-                sortBy: sortBy,
-                limit: 20,
-                startAfter: lastDocument
-            )
+            // 3. This Week Section (if there are events)
+            if !thisWeekEvents.isEmpty {
+                EventSection(
+                    title: "This Week",
+                    events: thisWeekEventsPreview,
+                    bookmarkManager: bookmarkManager,
+                    showViewAllButton: false,
+                    onViewAllTapped: {
+                        navigationPath.append(EventSectionDestination(
+                            title: "This Week",
+                            events: thisWeekEvents
+                        ))
+                    }
+                )
+            }
             
-            events.append(contentsOf: fetchedEvents)
-            lastDocument = fetchedEvents.last?.startTime
-            hasMoreEvents = fetchedEvents.count >= 20
+            // 4. Genre Sections with Featured Cards
+            genreSectionsWithFeaturedCards
             
-        } catch {
-            errorMessage = "Failed to load more events: \(error.localizedDescription)"
-        }
-        
-        isLoadingMore = false
-    }
-    
-    // MARK: - Perform Search
-    private func performSearch(searchText: String, sortBy: String) async {
-        currentSearchText = searchText
-        
-        // Empty search - load regular events
-        if searchText.isEmpty {
-            await loadInitialEvents(sortBy: sortBy)
-            return
-        }
-        
-        // Check cache first
-        let cacheKey = "\(searchText)_\(sortBy)"
-        if let cached = searchCache[cacheKey] {
-            events = cached
-            return
-        }
-        
-        isLoading = true
-        
-        do {
-            let searchResults = try await eventRepository.searchEvents(
-                searchText: searchText,
-                sortBy: sortBy,
-                limit: 50
-            )
-            
-            events = searchResults
-            searchCache[cacheKey] = searchResults
-            hasMoreEvents = false // Disable pagination for search results
-            
-        } catch {
-            errorMessage = "Search failed: \(error.localizedDescription)"
-        }
-        
-        isLoading = false
-    }
-    
-    // MARK: - Change Sort
-    func changeSort(to sortBy: String, searchText: String) async {
-        if searchText.isEmpty {
-            await loadInitialEvents(sortBy: sortBy)
-        } else {
-            await performSearch(searchText: searchText, sortBy: sortBy)
+            // 5. All Events Section
+            if !allEvents.isEmpty {
+                EventSection(
+                    title: "All Events",
+                    events: allEventsPreview,
+                    bookmarkManager: bookmarkManager,
+                    showViewAllButton: allEvents.count > 6,
+                    onViewAllTapped: {
+                        navigationPath.append(EventSectionDestination(
+                            title: "All Events",
+                            events: allEvents
+                        ))
+                    }
+                )
+            }
         }
     }
     
-    // MARK: - Refresh Events
-    func refreshEvents(sortBy: String) async {
-        searchCache.removeAll()
-        await loadInitialEvents(sortBy: sortBy)
-    }
-}
-
-// MARK: - Optimized Event Repository
-@MainActor
-class OptimizedEventRepository {
-    private let db = Firestore.firestore()
-    
-    // MARK: - Fetch Upcoming Events (Paginated)
-    func fetchUpcomingEvents(
-        sortBy: String = "startTime",
-        limit: Int = 20,
-        startAfter: Date? = nil
-    ) async throws -> [Event] {
-        var query = db.collection("events")
-            .whereField("startTime", isGreaterThan: Date()) // Changed from "date"
-            .order(by: sortBy)
-            .limit(to: limit)
-        
-        if let startAfter = startAfter {
-            query = query.start(after: [startAfter])
+    private var genreSectionsWithFeaturedCards: some View {
+        // First, filter genres to only those with events
+        let genresWithEvents = displayGenres.filter { genre in
+            !allEventsForGenre(genre).isEmpty
         }
         
-        let snapshot = try await query.getDocuments()
-        
-        return snapshot.documents.compactMap { doc in
-            var event = try? doc.data(as: Event.self)
-            event?.id = doc.documentID
-            return event
-        }
-    }
-
-    func searchEvents(
-        searchText: String,
-        sortBy: String = "startTime",
-        limit: Int = 50
-    ) async throws -> [Event] {
-        let snapshot = try await db.collection("events")
-            .whereField("startTime", isGreaterThan: Date()) // Changed from "date"
-            .order(by: sortBy)
-            .limit(to: limit)
-            .getDocuments()
-        
-        let allEvents = snapshot.documents.compactMap { doc -> Event? in
-            var event = try? doc.data(as: Event.self)
-            event?.id = doc.documentID
-            return event
-        }
-        
-        // Filter client-side (consider Algolia for production)
-        let searchLower = searchText.lowercased()
-        return allEvents.filter { event in
-            event.name.lowercased().contains(searchLower) ||
-            event.venue.lowercased().contains(searchLower) ||
-            (event.description?.lowercased().contains(searchLower) ?? false)
+        return ForEach(Array(genresWithEvents.enumerated()), id: \.offset) { index, genre in
+            let genreEvents = allEventsForGenre(genre)
+            let genrePreview = eventsForGenrePreview(genre)
+            
+            Group {
+                // Insert featured card before every 2 genres (at index 0, 2, 4, etc.)
+                if index % 2 == 0 {
+                    // Calculate which featured card to show
+                    // After Popular/This Week is featured[1], then featured[2], etc.
+                    let featuredIndex = 1 + (index / 2)
+                    if featuredIndex < featuredEvents.count {
+                        NavigationLink(value: featuredEvents[featuredIndex]) {
+                            FeaturedHeroCard(event: featuredEvents[featuredIndex], bookmarkManager: bookmarkManager)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 40)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                
+                // Show genre section (we know it has events because we filtered above)
+                EventSection(
+                    title: genre,
+                    events: genrePreview,
+                    bookmarkManager: bookmarkManager,
+                    showViewAllButton: genreEvents.count > 5,
+                    onViewAllTapped: {
+                        navigationPath.append(EventSectionDestination(
+                            title: genre,
+                            events: genreEvents
+                        ))
+                    }
+                )
+            }
         }
     }
 }
 
-// MARK: - Empty Events View
-struct EmptyEventsView: View {
-    let searchText: String
+// MARK: - Event Section Destination (for Navigation)
+struct EventSectionDestination: Hashable {
+    let title: String
+    let events: [Event]
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(title)
+        hasher.combine(events.compactMap { $0.id })
+    }
+    
+    static func == (lhs: EventSectionDestination, rhs: EventSectionDestination) -> Bool {
+        lhs.title == rhs.title &&
+        lhs.events.compactMap { $0.id } == rhs.events.compactMap { $0.id }
+    }
+}
+
+// MARK: - Seeded Random Number Generator
+struct SeededRandomNumberGenerator: RandomNumberGenerator {
+    private var state: UInt64
+    
+    init(seed: UInt64) {
+        state = seed
+    }
+    
+    mutating func next() -> UInt64 {
+        state = state &* 6364136223846793005 &+ 1442695040888963407
+        return state
+    }
+}
+
+// MARK: - Reusable Event Section Component
+struct EventSection: View {
+    let title: String
+    let events: [Event]
+    let bookmarkManager: BookmarkManager
+    let showViewAllButton: Bool
+    let onViewAllTapped: (() -> Void)?
+    
+    init(
+        title: String,
+        events: [Event],
+        bookmarkManager: BookmarkManager,
+        showViewAllButton: Bool = true,
+        onViewAllTapped: (() -> Void)? = nil
+    ) {
+        self.title = title
+        self.events = events
+        self.bookmarkManager = bookmarkManager
+        self.showViewAllButton = showViewAllButton
+        self.onViewAllTapped = onViewAllTapped
+    }
     
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: searchText.isEmpty ? "calendar.badge.exclamationmark" : "magnifyingglass")
-                .font(.appLargeIcon)
-                .foregroundColor(.gray)
-            
-            VStack(spacing: 8) {
-                Text(searchText.isEmpty ? "No Upcoming Events" : "No Search Results")
-                    .font(.appBody)
-                    .fontWeight(.semibold)
+        VStack(alignment: .leading, spacing: 16) {
+            // Section Header
+            HStack {
+                Text(title)
+                    .appSectionHeader()
                     .foregroundColor(.white)
                 
-                Text(searchText.isEmpty ?
-                     "There are no upcoming events available at the moment." :
-                     "Try searching with different keywords.")
-                    .font(.appBody)
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
+                Spacer()
+                
+                if showViewAllButton {
+                    Button(action: {
+                        onViewAllTapped?()
+                    }) {
+                        Image(systemName: "chevron.right")
+                            .font(.appIcon)
+                            .foregroundColor(.gray)
+                            .frame(width: 32, height: 32)
+                            .background(Color.gray.opacity(0.2))
+                            .clipShape(Circle())
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            
+            // Event List
+            LazyVStack(spacing: 0) {
+                ForEach(events) { event in
+                    NavigationLink(value: event) {
+                        UnifiedEventRow(
+                            event: event,
+                            bookmarkManager: bookmarkManager
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: 200)
+        .padding(.bottom, 40)
     }
 }
 
 // MARK: - Preview
-struct ExploreView_Previews: PreviewProvider {
+struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
-        ExploreView()
+        HomeView()
+            .environmentObject(AppState().eventViewModel)
             .environmentObject(AppState().bookmarkManager)
             .preferredColorScheme(.dark)
+    }
+}
+
+// MARK: - Event Equatable & Hashable
+extension Event: Hashable {
+    public static func == (lhs: Event, rhs: Event) -> Bool {
+        lhs.id == rhs.id
+    }
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
