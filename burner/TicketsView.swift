@@ -241,7 +241,7 @@ struct TicketsView: View {
                 // Upcoming Events Section
                 if !upcomingTickets.isEmpty {
                     LazyVStack(spacing: 12) {
-                        ForEach(upcomingTickets, id: \.ticket.id) { ticketWithEvent in
+                        ForEach(upcomingTickets, id: \.id) { ticketWithEvent in
                             NavigationLink(
                                 destination: TicketDetailView(ticketWithEvent: ticketWithEvent)
                             ) {
@@ -262,7 +262,7 @@ struct TicketsView: View {
                 if !pastTickets.isEmpty {
                     VStack(alignment: .leading, spacing: 16) {
                         LazyVStack(spacing: 12) {
-                            ForEach(pastTickets, id: \.ticket.id) { ticketWithEvent in
+                            ForEach(pastTickets, id: \.id) { ticketWithEvent in
                                 NavigationLink(
                                     destination: TicketDetailView(ticketWithEvent: ticketWithEvent)
                                 ) {
@@ -302,10 +302,8 @@ struct TicketsView: View {
             "deleted": true,
             "deletedAt": FieldValue.serverTimestamp()
         ]) { error in
-            if let error = error {
-                print("Error soft deleting ticket: \(error.localizedDescription)")
-            } else {
-                // Refresh tickets to remove from view
+            // Refresh tickets to remove from view
+            if error == nil {
                 Task { @MainActor in
                     ticketsViewModel.fetchUserTickets()
                 }
