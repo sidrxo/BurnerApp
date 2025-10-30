@@ -55,7 +55,6 @@ export interface CreateScannerData {
   email: string;
   name: string;
   venueId?: string | null;
-  phoneNumber?: string;
 }
 
 export function useAdminManagement() {

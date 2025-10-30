@@ -26,6 +26,8 @@ function TicketsPageContent() {
     expandedEvents,
     toggleEventExpansion,
     markUsed,
+    cancelTicket,
+    deleteTicket,
     loadTickets,
     stats
   } = useTicketsData();
@@ -65,18 +67,22 @@ function TicketsPageContent() {
       {loading ? (
         <LoadingSkeleton />
       ) : viewMode === 'grouped' ? (
-        <GroupedTicketsView 
+        <GroupedTicketsView
           filteredEventGroups={filteredEventGroups}
           expandedEvents={expandedEvents}
           toggleEventExpansion={toggleEventExpansion}
           markUsed={markUsed}
+          cancelTicket={cancelTicket}
+          deleteTicket={deleteTicket}
           search={search}
           userRole={user.role}
         />
       ) : (
-        <ListTicketsView 
+        <ListTicketsView
           filteredTickets={filteredTickets}
           markUsed={markUsed}
+          cancelTicket={cancelTicket}
+          deleteTicket={deleteTicket}
           search={search}
           userRole={user.role}
         />

@@ -342,6 +342,39 @@ export function useTicketsData() {
     }
   };
 
+  const cancelTicket = async (ticket: Ticket) => {
+    try {
+      if (ticket.docRef) {
+        await updateDoc(ticket.docRef, {
+          status: 'cancelled',
+          cancelledAt: Timestamp.now(),
+          cancelledBy: user?.email || 'admin'
+        });
+      }
+      toast.success("Ticket cancelled successfully!");
+      loadTickets(true);
+    } catch (e: any) {
+      toast.error("Error cancelling ticket: " + e.message);
+    }
+  };
+
+  const deleteTicket = async (ticket: Ticket) => {
+    try {
+      if (ticket.docRef) {
+        // Mark as deleted instead of actually deleting
+        await updateDoc(ticket.docRef, {
+          status: 'deleted',
+          deletedAt: Timestamp.now(),
+          deletedBy: user?.email || 'admin'
+        });
+      }
+      toast.success("Ticket deleted successfully!");
+      loadTickets(true);
+    } catch (e: any) {
+      toast.error("Error deleting ticket: " + e.message);
+    }
+  };
+
   const toggleEventExpansion = (eventName: string) => {
     const newExpanded = new Set(expandedEvents);
     if (newExpanded.has(eventName)) {
@@ -378,6 +411,8 @@ export function useTicketsData() {
     filteredEventGroups,
     filteredTickets,
     markUsed,
+    cancelTicket,
+    deleteTicket,
     toggleEventExpansion,
     loadTickets: refreshData,
     loadMore,

@@ -53,11 +53,6 @@ export function VenuesHeader({
         <h1 className="text-3xl font-bold tracking-tight">
           {user?.role === "siteAdmin" ? "Venues" : "My Venue"}
         </h1>
-        <p className="text-muted-foreground mt-1">
-          {user?.role === "siteAdmin" 
-            ? "Manage all venues and their administrators"
-            : "Manage your venue details and team"}
-        </p>
       </div>
       {user?.role === "siteAdmin" && (
         <Button

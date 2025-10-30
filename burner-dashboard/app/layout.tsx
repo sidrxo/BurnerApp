@@ -18,8 +18,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <ErrorBoundary fallbackTitle="Page Error" fallbackMessage="This page encountered an error. Please try navigating to a different page or refresh.">
                   <div className="min-h-screen">
                     <AppNavbar />
-                    {/* Main content with left margin to account for fixed sidebar */}
-                    <main className="ml-64 p-6">
+                    {/* Main content with top margin to account for fixed navbar */}
+                    <main className="pt-20 p-6">
                       <div className="max-w-[1400px] mx-auto w-full">
                         {children}
                       </div>
