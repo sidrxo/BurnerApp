@@ -244,7 +244,7 @@ struct HomeView: View {
                     title: genre,
                     events: genrePreview,
                     bookmarkManager: bookmarkManager,
-                    showViewAllButton: genreEvents.count > 5,
+                    showViewAllButton: true,
                     onViewAllTapped: {
                         navigationPath.append(EventSectionDestination(
                             title: genre,

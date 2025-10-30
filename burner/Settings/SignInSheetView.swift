@@ -24,14 +24,17 @@ struct SignInSheetView: View {
     @State private var confirmPassword = ""
     @State private var isSignUpMode = false
 
+    // Random background image
+    @State private var selectedBackground: String = "Background1"
+
     var body: some View {
         ZStack {
             // Black background
             Color.black
                 .ignoresSafeArea(.all)
             
-            // Background Image - moved up
-            Image("Background3")
+            // Background Image - randomly selected
+            Image(selectedBackground)
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea(.all)
@@ -111,6 +114,16 @@ struct SignInSheetView: View {
         } message: {
             Text(errorMessage)
         }
+        .onAppear {
+            selectRandomBackground()
+        }
+    }
+
+    // MARK: - Random Background Selection
+    private func selectRandomBackground() {
+        // Select a random background image from Background1 to Background5
+        let backgroundNumber = Int.random(in: 1...5)
+        selectedBackground = "Background\(backgroundNumber)"
     }
 
     private var signInButtonsSection: some View {
