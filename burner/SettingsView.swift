@@ -53,6 +53,9 @@ struct SettingsView: View {
                                     NavigationLink(destination: PaymentSettingsView()) {
                                         CustomMenuItemContent(title: "Payment", subtitle: "Cards & billing")
                                     }
+                                    NavigationLink(destination: AppPreferencesView()) {
+                                        CustomMenuItemContent(title: "Settings", subtitle: "App preferences")
+                                    }
 
                                     // Only show scanner option if user has scanner role AND active status
                                     // Admin roles (siteAdmin, venueAdmin, subAdmin) can always access scanner
@@ -299,7 +302,7 @@ struct CustomMenuSection<Content: View>: View {
 struct CustomMenuItemContent: View {
     let title: String
     let subtitle: String
-    
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
@@ -317,5 +320,60 @@ struct CustomMenuItemContent: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+}
+
+// MARK: - App Preferences View
+struct AppPreferencesView: View {
+    @State private var notificationsEnabled = true
+    @State private var emailNotifications = true
+    @State private var pushNotifications = true
+
+    var body: some View {
+        VStack(spacing: 0) {
+            SettingsHeaderSection(title: "Settings")
+
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Notifications Section
+                    CustomMenuSection(title: "NOTIFICATIONS") {
+                        Toggle(isOn: $pushNotifications) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Push Notifications")
+                                    .appBody()
+                                    .foregroundColor(.white)
+                                Text("Get notified about ticket transfers")
+                                    .appSecondary()
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .tint(.white)
+
+                        Toggle(isOn: $emailNotifications) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Email Notifications")
+                                    .appBody()
+                                    .foregroundColor(.white)
+                                Text("Receive updates via email")
+                                    .appSecondary()
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .tint(.white)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 100)
+            }
+
+            Spacer()
+        }
+        .padding(.top, 20)
+        .background(Color.black)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

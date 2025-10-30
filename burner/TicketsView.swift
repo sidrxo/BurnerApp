@@ -306,7 +306,9 @@ struct TicketsView: View {
                 print("Error soft deleting ticket: \(error.localizedDescription)")
             } else {
                 // Refresh tickets to remove from view
-                ticketsViewModel.fetchUserTickets()
+                Task { @MainActor in
+                    ticketsViewModel.fetchUserTickets()
+                }
             }
         }
     }
