@@ -138,7 +138,6 @@ class AppState: ObservableObject {
         ) { [weak self] _ in
             guard let self = self else { return }
             Task { @MainActor in
-                print("🔥 [AppState] Burner Mode auto-enabled notification received")
                 self.showingBurnerLockScreen = true
             }
         }
@@ -147,7 +146,6 @@ class AppState: ObservableObject {
         Task { @MainActor in
             let isEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
             if isEnabled {
-                print("🔥 [AppState] Burner Mode already enabled on init, showing lock screen")
                 self.showingBurnerLockScreen = true
             }
         }
@@ -166,20 +164,22 @@ class AppState: ObservableObject {
         // Check if burner mode is enabled and show lock screen
         let isEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
         if isEnabled {
-            print("🔥 [AppState] Burner Mode enabled on sign in, showing lock screen")
             showingBurnerLockScreen = true
         }
     }
     
     private func handleUserSignedOut() {
-        // Clear all user-specific data
+        // Clear all user-specific data immediately to prevent errors
+        ticketsViewModel.clearTickets()
         bookmarkManager.clearBookmarks()
+
+        // Then cleanup listeners
         ticketsViewModel.cleanup()
         eventViewModel.cleanup()
-        
+
         // Stop Burner Mode monitoring
         burnerModeMonitor.stopMonitoring()
-        
+
         // Hide lock screen if showing
         showingBurnerLockScreen = false
     }

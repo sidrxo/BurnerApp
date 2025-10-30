@@ -124,7 +124,7 @@ struct AccountDetailsView: View {
             // Dismiss the view
             presentationMode.wrappedValue.dismiss()
         } catch {
-            print("Error signing out: \(error.localizedDescription)")
+            // Sign out failed, keep user in view
         }
         isSigningOut = false
     }
@@ -136,12 +136,10 @@ struct AccountDetailsView: View {
         appState.handleManualSignOut()
         
         user.delete { error in
-            if let error = error {
-                print("Error deleting account: \(error.localizedDescription)")
-            } else {
+            if error == nil {
                 // ✅ Post notification
                 NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
-                
+
                 presentationMode.wrappedValue.dismiss()
             }
         }

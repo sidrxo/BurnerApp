@@ -70,7 +70,7 @@ class EventViewModel: ObservableObject {
                 self.userTicketStatus = status
             }
         } catch {
-            print("Error fetching ticket status: \(error.localizedDescription)")
+            // Silently fail for ticket status check
         }
     }
     
@@ -93,7 +93,6 @@ class EventViewModel: ObservableObject {
                     completion(hasTicket)
                 }
             } catch {
-                print("Error checking ticket status: \(error.localizedDescription)")
                 await MainActor.run {
                     completion(false)
                 }
@@ -204,31 +203,42 @@ class TicketsViewModel: ObservableObject {
     // MARK: - Fetch User Tickets
     func fetchUserTickets() {
         guard let userId = Auth.auth().currentUser?.uid else {
-            print("❌ No authenticated user")
+            // Don't set error message when user is not authenticated
+            isLoading = false
             return
         }
-        
+
         isLoading = true
-        
+
         ticketRepository.observeUserTickets(userId: userId) { [weak self] result in
             guard let self = self else { return }
-            
+
             Task { @MainActor in
                 self.isLoading = false
-                
+
                 switch result {
                 case .success(let tickets):
                     self.tickets = tickets
-                    
+
                 case .failure(let error):
-                    self.errorMessage = "Failed to load tickets: \(error.localizedDescription)"
+                    // Only show error if user is still authenticated
+                    if Auth.auth().currentUser != nil {
+                        self.errorMessage = "Failed to load tickets: \(error.localizedDescription)"
+                    }
                 }
             }
         }
     }
-    
+
+    // MARK: - Clear Tickets
+    func clearTickets() {
+        tickets = []
+        errorMessage = nil
+    }
+
     // MARK: - Cleanup
     func cleanup() {
         ticketRepository.stopObserving()
+        clearTickets()
     }
 }

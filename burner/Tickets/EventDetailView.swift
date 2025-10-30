@@ -18,8 +18,10 @@ struct EventDetailView: View {
     @State private var isSuccess = false
     @State private var userHasTicket = false
     @State private var showShareSheet = false
+    @State private var showingAuthAlert = false
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var tabBarVisibility: TabBarVisibility
+    @EnvironmentObject var appState: AppState
     
     // Get screen height for responsive sizing
     private let screenHeight = UIScreen.main.bounds.height
@@ -93,40 +95,18 @@ struct EventDetailView: View {
                                 .frame(width: geometry.size.width, height: heroHeight)
                                 .clipped()
                             
-                            // Gradient overlay with blur at bottom
-                            ZStack {
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Color.black.opacity(0.3),
-                                        Color.clear,
-                                        Color.clear,
-                                        Color.black.opacity(0.8)
-                                    ]),
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                                
-                                // Fading blur effect at bottom
-                                VStack {
-                                    Spacer()
-                                    Rectangle()
-                                        .fill(Color.clear)
-                                        .background(.regularMaterial)
-                                        .mask(
-                                            LinearGradient(
-                                                gradient: Gradient(stops: [
-                                                    .init(color: .clear, location: 0.0),
-                                                    .init(color: .black.opacity(0.5), location: 0.5),
-                                                    .init(color: .black, location: 0.8),
-                                                    .init(color: .black, location: 1.0)
-                                                ]),
-                                                startPoint: .top,
-                                                endPoint: .bottom
-                                            )
-                                        )
-                                        .frame(height: heroHeight * 0.67)
-                                }
-                            }
+                            // Gradient overlay that darkens the bottom
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.black.opacity(0.2),
+                                    Color.clear,
+                                    Color.clear,
+                                    Color.black.opacity(0.6),
+                                    Color.black.opacity(0.9)
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
                             .frame(width: geometry.size.width, height: heroHeight)
                             
                             // Event info overlay - positioned at bottom
@@ -253,11 +233,17 @@ struct EventDetailView: View {
                         
                         Button(action: {
                             if !userHasTicket && availableTickets > 0 {
-                                showingPurchase = true
+                                // Check if user is authenticated
+                                if Auth.auth().currentUser == nil {
+                                    showingAuthAlert = true
+                                } else {
+                                    showingPurchase = true
+                                }
                             }
                         }) {
                             Text(buttonText)
-    .appBody()                                .foregroundColor(buttonTextColor)
+                                .appBody()
+                                .foregroundColor(buttonTextColor)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 44)
                                 .background(buttonColor)
@@ -330,6 +316,17 @@ struct EventDetailView: View {
                 checkUserTicketStatus()
             }
         }
+        .customAlert(
+            isPresented: $showingAuthAlert,
+            title: "Sign In Required",
+            message: "You need to be signed in to buy tickets.",
+            primaryButtonTitle: "Sign In",
+            primaryButtonAction: {
+                appState.isSignInSheetPresented = true
+            },
+            secondaryButtonTitle: "Cancel",
+            secondaryButtonAction: {}
+        )
     }
     
     private func checkUserTicketStatus() {
