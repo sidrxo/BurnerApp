@@ -802,7 +802,8 @@ exports.deletePaymentMethod = onCall(
   async (request) => {
     try {
       logger.info('deletePaymentMethod called', {
-        hasAuth: !!request.auth
+        hasAuth: !!request.auth,
+        paymentMethodId: request.data?.paymentMethodId
       });
 
       if (!request.auth) {
@@ -823,20 +824,46 @@ exports.deletePaymentMethod = onCall(
       const customerId = userDoc.data()?.stripeCustomerId;
 
       if (!customerId) {
+        logger.error('Customer ID not found', { userId });
         throw new HttpsError("not-found", "Customer not found");
       }
 
+      logger.info('Retrieved customer', { customerId, userId });
+
       // Retrieve payment method to verify it belongs to this customer
-      const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+      let paymentMethod;
+      try {
+        paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+        logger.info('Payment method retrieved', {
+          paymentMethodId,
+          customer: paymentMethod.customer,
+          expectedCustomer: customerId
+        });
+      } catch (retrieveError) {
+        logger.error('Failed to retrieve payment method', retrieveError, {
+          paymentMethodId,
+          userId
+        });
+        throw new HttpsError("not-found", "Payment method not found");
+      }
 
       if (paymentMethod.customer !== customerId) {
+        logger.error('Payment method does not belong to customer', {
+          paymentMethodCustomer: paymentMethod.customer,
+          userCustomer: customerId,
+          userId
+        });
         throw new HttpsError("permission-denied", "Unauthorized");
       }
 
       // Detach payment method from customer
-      await stripe.paymentMethods.detach(paymentMethodId);
-
-      logger.info('Payment method deleted', { paymentMethodId, userId });
+      logger.info('Attempting to detach payment method', { paymentMethodId });
+      const detached = await stripe.paymentMethods.detach(paymentMethodId);
+      logger.info('Payment method detached successfully', {
+        paymentMethodId,
+        detachedCustomer: detached.customer,
+        userId
+      });
 
       return {
         success: true,
@@ -845,7 +872,10 @@ exports.deletePaymentMethod = onCall(
 
     } catch (error) {
       logger.error('Error deleting payment method', error, {
-        userId: request.auth?.uid
+        userId: request.auth?.uid,
+        paymentMethodId: request.data?.paymentMethodId,
+        errorCode: error.code,
+        errorType: error.type
       });
 
       if (error.code && error.code.includes('/')) {

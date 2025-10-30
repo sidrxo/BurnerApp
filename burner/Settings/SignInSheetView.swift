@@ -33,12 +33,15 @@ struct SignInSheetView: View {
             Color.black
                 .ignoresSafeArea(.all)
             
-            // Background Image - randomly selected
-            Image(selectedBackground)
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea(.all)
-                .offset(y: -200)
+            // Background Image - randomly selected with fixed height
+            GeometryReader { geometry in
+                Image(selectedBackground)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
+            }
+            .ignoresSafeArea(.all)
             
             // Black gradient overlay - higher coverage
             LinearGradient(

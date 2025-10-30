@@ -26,7 +26,7 @@ struct FilterButton: View {
             .foregroundColor(.white)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(Color(.systemGray5))
+            .background(Color(red: 33/255, green: 33/255, blue: 35/255))
             .clipShape(Capsule())
         }
     }

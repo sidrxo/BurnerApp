@@ -8,6 +8,7 @@ struct TicketPurchaseView: View {
     let event: Event
     @ObservedObject var viewModel: EventViewModel
     @StateObject private var paymentService = StripePaymentService()
+    @Binding var selectedDetent: PresentationDetent
 
     @State private var showingAlert = false
     @State private var alertMessage = ""
@@ -78,7 +79,7 @@ struct TicketPurchaseView: View {
             }
             
         }
-        .presentationDetents([.height(showCardInput ? 420 : showSavedCards ? 520 : 320)])
+        .presentationDetents([.height(showCardInput || showSavedCards ? 400 : 240)])
         .presentationDragIndicator(.visible)
         .onAppear {
             // Load saved payment methods
@@ -112,6 +113,7 @@ struct TicketPurchaseView: View {
                         showCardInput = false
                         cardParams = nil
                         isCardValid = false
+                        selectedDetent = .height(240)
                     }
                 }) {
                     Text("Cancel")
@@ -193,6 +195,36 @@ struct TicketPurchaseView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
+                    
+                    // Add New Card button
+                    Button(action: {
+                        withAnimation {
+                            showSavedCards = false
+                            showCardInput = true
+                            selectedSavedCard = nil
+                            selectedDetent = .height(240)
+                        }
+                    }) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.appIcon)
+                                .foregroundColor(.white)
+                            
+                            Text("Add New Card")
+                                .appBody()
+                                .foregroundColor(.white)
+                            
+                            Spacer()
+                        }
+                        .padding(12)
+                        .background(Color.white.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [5]))
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
             .frame(maxHeight: 250)
@@ -204,6 +236,7 @@ struct TicketPurchaseView: View {
                     withAnimation {
                         showSavedCards = false
                         selectedSavedCard = nil
+                        selectedDetent = .height(240)
                     }
                 }) {
                     Text("Cancel")
@@ -263,12 +296,13 @@ struct TicketPurchaseView: View {
             }
             .padding(.horizontal, 40)
 
-            // ✅ UPDATED: Show saved cards or new card option
+            // ✅ FIXED: Use creditcard.fill for both cases
             if !paymentService.paymentMethods.isEmpty {
-                // Use saved card button - with creditcard.fill icon and forced font size 23
+                // Use saved card button - with creditcard.fill icon
                 Button(action: {
                     withAnimation {
                         showSavedCards = true
+                        selectedDetent = .height(400)
                     }
                 }) {
                     HStack(spacing: 4) {
@@ -289,17 +323,19 @@ struct TicketPurchaseView: View {
                 }
                 .padding(.horizontal, 4)
             } else {
-                // No saved cards - show add card button
+                // No saved cards - show add card button (FIXED: now using creditcard.fill)
                 Button(action: {
                     withAnimation {
                         showCardInput = true
+                        selectedDetent = .height(240)
                     }
                 }) {
                     HStack(spacing: 4) {
                         Text("Buy with")
-                        Image(systemName: "creditcard")
+                            .font(.system(size: 23))
+                        Image(systemName: "creditcard.fill")
+                            .font(.system(size: 23))
                     }
-                    .font(.appFont(size: 23))
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)
@@ -486,7 +522,8 @@ struct TicketPurchaseView: View {
             eventRepository: EventRepository(),
             ticketRepository: TicketRepository(),
             purchaseService: PurchaseService()
-        )
+        ),
+        selectedDetent: .constant(.height(240))
     )
     .preferredColorScheme(.dark)
 }

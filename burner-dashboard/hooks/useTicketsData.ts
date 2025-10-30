@@ -58,7 +58,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 // Simple in-memory cache
 const cache = new Map<string, { data: any; timestamp: number }>();
 
-function getCacheKey(userId: string, role: string, venueId?: string): string {
+function getCacheKey(userId: string, role: string, venueId?: string | null): string  {
   return `tickets_${userId}_${role}_${venueId || 'all'}`;
 }
 

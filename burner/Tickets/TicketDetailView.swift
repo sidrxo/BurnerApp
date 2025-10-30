@@ -94,17 +94,16 @@ struct TicketDetailView: View {
                 if ticketWithEvent.ticket.status == "confirmed" {
                     NavigationLink(destination: TransferTicketView(ticketWithEvent: ticketWithEvent)) {
                         VStack(spacing: 4) {
-                            Text("Transfer Ticket")
-                                .appSecondary()
+                            Text("TRANSFER")
+                                .appBody()
                                 .foregroundColor(.white)
 
                             Rectangle()
                                 .fill(Color.white)
                                 .frame(height: 1)
-                                .frame(maxWidth: 200)
+                                .frame(maxWidth: 100)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity, alignment: .trailing)                        .padding(.vertical, 8)
                     }
                     .padding(.top, 8)
                 }
@@ -253,7 +252,7 @@ struct TicketDetailView: View {
                                 .tracking(2)
 
                             Text(ticketWithEvent.ticket.status.uppercased())
-                                .appSectionHeader()
+                                .appBody()
                                 .foregroundColor(.black)
                                 .tracking(1)
                         }
@@ -291,7 +290,7 @@ struct TicketDetailView: View {
             }
         }
         .frame(height: UIScreen.main.bounds.height * 0.65)
-        .padding(.bottom, 50)
+        .padding(.bottom, 10)
     }
 
     private var perforationLine: some View {

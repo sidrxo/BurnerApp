@@ -56,9 +56,7 @@ struct SettingsView: View {
                                     NavigationLink(destination: TransferTicketsListView()) {
                                         CustomMenuItemContent(title: "Transfer Tickets", subtitle: "Transfer your ticket to another user")
                                     }
-                                    NavigationLink(destination: AppPreferencesView()) {
-                                        CustomMenuItemContent(title: "Settings", subtitle: "App preferences")
-                                    }
+                                
 
                                     // Only show scanner option if user has scanner role AND active status
                                     // Admin roles (siteAdmin, venueAdmin, subAdmin) can always access scanner
@@ -327,26 +325,6 @@ struct CustomMenuItemContent: View {
 }
 
 // MARK: - App Preferences View
-struct AppPreferencesView: View {
-    var body: some View {
-        VStack(spacing: 0) {
-            SettingsHeaderSection(title: "Settings")
-
-            ScrollView {
-                VStack(spacing: 0) {
-                    // Settings content can be added here in the future
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 100)
-            }
-
-            Spacer()
-        }
-        .padding(.top, 20)
-        .background(Color.black)
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
 
 // MARK: - Transfer Tickets List View
 struct TransferTicketsListView: View {

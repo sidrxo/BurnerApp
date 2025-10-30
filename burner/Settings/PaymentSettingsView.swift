@@ -81,18 +81,7 @@ struct PaymentSettingsView: View {
                     ScrollView {
                         VStack(spacing: 12) {
                             if paymentService.paymentMethods.isEmpty {
-                                VStack(spacing: 12) {
-                                    Text("No payment methods")
-                                        .appBody()
-                                        .foregroundColor(.gray)
-
-                                    Text("Add one to speed up checkout next time.")
-                                        .appSecondary()
-                                        .foregroundColor(.gray.opacity(0.8))
-                                        .multilineTextAlignment(.center)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 80)
+                                // ... empty state
                             } else {
                                 ForEach(paymentService.paymentMethods) { method in
                                     PaymentMethodRow(
@@ -104,37 +93,17 @@ struct PaymentSettingsView: View {
                                             deletePaymentMethod(method.id)
                                         }
                                     )
-                                    .disabled(true)
-                                    .opacity(0.5)
-                                    .overlay(
-                                        Color.black.opacity(0.3)
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    )
                                 }
                             }
+                            
+                            // Add button here
+                            addPaymentButton
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 16)
                         .padding(.bottom, 20)
                     }
-                    .safeAreaInset(edge: .bottom, spacing: 0) {
-                        ZStack {
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.black.opacity(0.85),
-                                    Color.black
-                                ]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                            .ignoresSafeArea()
-
-                            addPaymentButton
-                                .padding(.horizontal, 16)
-                                .padding(.top, 16)
-                                .padding(.bottom, 20)
-                        }
-                    }
+                  
                 }
             }
         }
@@ -174,6 +143,11 @@ struct PaymentSettingsView: View {
         guard Auth.auth().currentUser != nil else {
             return
         }
+        
+        // Prevent duplicate requests
+        guard !isLoading else {
+            return
+        }
 
         isLoading = true
         Task {
@@ -192,7 +166,6 @@ struct PaymentSettingsView: View {
             }
         }
     }
-
     private func saveCard() {
         guard let cardParams = cardParams else { return }
 
@@ -228,12 +201,8 @@ struct PaymentSettingsView: View {
         Task {
             do {
                 try await paymentService.deletePaymentMethod(paymentMethodId: paymentMethodId)
-                await MainActor.run {
-                    isLoading = false
-                    alertTitle = "Success"
-                    alertMessage = "Payment method deleted"
-                    showAlert = true
-                }
+                // Refresh the payment methods list after deletion
+                try await paymentService.fetchPaymentMethods()
             } catch {
                 await MainActor.run {
                     isLoading = false
@@ -337,15 +306,20 @@ struct PaymentMethodRow: View {
         .padding(12)
         .background(Color.gray.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 10))
-        .alert(isPresented: $showingDeleteConfirmation) {
-            Alert(
-                title: Text("Delete Payment Method"),
-                message: Text("Are you sure you want to delete this payment method?"),
-                primaryButton: .destructive(Text("Delete")) {
-                    onDelete()
-                },
-                secondaryButton: .cancel()
-            )
+        .confirmationDialog(
+            "Delete Payment Method",
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                print("🔴 Delete confirmed, calling onDelete()")
+                onDelete()
+            }
+            Button("Cancel", role: .cancel) {
+                print("⚪️ Delete cancelled")
+            }
+        } message: {
+            Text("Are you sure you want to delete this payment method?")
         }
     }
 

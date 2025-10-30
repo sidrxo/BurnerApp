@@ -14,6 +14,7 @@ struct EventDetailView: View {
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
 
     @State private var showingPurchase = false
+    @State private var purchaseSheetDetent: PresentationDetent = .height(320)
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var isSuccess = false
@@ -292,12 +293,14 @@ struct EventDetailView: View {
             tabBarVisibility.showTabBar()
         }
         .sheet(isPresented: $showingPurchase) {
-            TicketPurchaseView(event: event, viewModel: eventViewModel)
-                .presentationDetents([.height(240)])
+            TicketPurchaseView(event: event, viewModel: eventViewModel, selectedDetent: $purchaseSheetDetent)
+                .presentationDetents([.height(240), .height(320), .height(400)], selection: $purchaseSheetDetent)
                 .presentationDragIndicator(.visible)
                 .onDisappear {
                     // Refresh ticket status when purchase sheet is dismissed
                     checkUserTicketStatus()
+                    // Reset to default height for next time
+                    purchaseSheetDetent = .height(240)
                 }
         }
         .sheet(isPresented: $showShareSheet) {

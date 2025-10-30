@@ -172,7 +172,7 @@ struct TicketsView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-            .background(Color(.systemGray6))
+            .background(Color(red: 22/255, green: 22/255, blue: 23/255))
             .clipShape(RoundedRectangle(cornerRadius: 25))
             .padding(.horizontal, 20)
             .contentShape(Rectangle())
