@@ -156,11 +156,12 @@ class AppState: ObservableObject {
         // Fetch data when user signs in
         eventViewModel.fetchEvents()
         ticketsViewModel.fetchUserTickets()
-        
+        bookmarkManager.refreshBookmarks()
+
         // ✅ FIXED: Restart Burner Mode monitoring for new user
         burnerModeMonitor.stopMonitoring()
         burnerModeMonitor.startMonitoring()
-        
+
         // Check if burner mode is enabled and show lock screen
         let isEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
         if isEnabled {

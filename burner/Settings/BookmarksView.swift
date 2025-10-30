@@ -23,7 +23,7 @@ struct BookmarksView: View {
             VStack(spacing: 0) {
                 // Header Section
                 SettingsHeaderSection(title: "Bookmarks")
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 20)
                     .padding(.top, 20)
 
 
@@ -105,11 +105,10 @@ struct BookmarksView: View {
             LazyVStack(spacing: 12) {
                 ForEach(filteredBookmarks) { event in
                     NavigationLink(destination: EventDetailView(event: event)) {
-                        BookmarkListItem(
+                        UnifiedEventRow(
                             event: event,
                             bookmarkManager: bookmarkManager
                         )
-                        .padding(.horizontal, 20)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
