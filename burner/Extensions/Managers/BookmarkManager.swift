@@ -132,7 +132,11 @@ class BookmarkManager: ObservableObject {
     func isBookmarked(_ eventId: String) -> Bool {
         return bookmarkStatus[eventId] ?? false
     }
-    
+
+    func refreshBookmarks() {
+        setupBookmarkListener()
+    }
+
     func clearBookmarks() {
         bookmarkedEvents = []
         bookmarkStatus = [:]

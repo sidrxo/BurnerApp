@@ -95,7 +95,7 @@ struct TicketDetailView: View {
                     NavigationLink(destination: TransferTicketView(ticketWithEvent: ticketWithEvent)) {
                         VStack(spacing: 4) {
                             Text("Transfer Ticket")
-                                .appBody()
+                                .appSecondary()
                                 .foregroundColor(.white)
 
                             Rectangle()
@@ -106,7 +106,7 @@ struct TicketDetailView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                     }
-                    .padding(.top, 16)
+                    .padding(.top, 8)
                 }
 
                 Spacer()

@@ -53,6 +53,9 @@ struct SettingsView: View {
                                     NavigationLink(destination: PaymentSettingsView()) {
                                         CustomMenuItemContent(title: "Payment", subtitle: "Cards & billing")
                                     }
+                                    NavigationLink(destination: TransferTicketsListView()) {
+                                        CustomMenuItemContent(title: "Transfer Tickets", subtitle: "Transfer your ticket to another user")
+                                    }
                                     NavigationLink(destination: AppPreferencesView()) {
                                         CustomMenuItemContent(title: "Settings", subtitle: "App preferences")
                                     }
@@ -325,46 +328,13 @@ struct CustomMenuItemContent: View {
 
 // MARK: - App Preferences View
 struct AppPreferencesView: View {
-    @State private var notificationsEnabled = true
-    @State private var emailNotifications = true
-    @State private var pushNotifications = true
-
     var body: some View {
         VStack(spacing: 0) {
             SettingsHeaderSection(title: "Settings")
 
             ScrollView {
                 VStack(spacing: 0) {
-                    // Notifications Section
-                    CustomMenuSection(title: "NOTIFICATIONS") {
-                        Toggle(isOn: $pushNotifications) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Push Notifications")
-                                    .appBody()
-                                    .foregroundColor(.white)
-                                Text("Get notified about ticket transfers")
-                                    .appSecondary()
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .tint(.white)
-
-                        Toggle(isOn: $emailNotifications) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Email Notifications")
-                                    .appBody()
-                                    .foregroundColor(.white)
-                                Text("Receive updates via email")
-                                    .appSecondary()
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .tint(.white)
-                    }
+                    // Settings content can be added here in the future
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 100)
@@ -375,5 +345,123 @@ struct AppPreferencesView: View {
         .padding(.top, 20)
         .background(Color.black)
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Transfer Tickets List View
+struct TransferTicketsListView: View {
+    @EnvironmentObject var ticketsViewModel: TicketsViewModel
+    @EnvironmentObject var eventViewModel: EventViewModel
+    @State private var selectedTicket: TicketWithEventData?
+    @State private var showingTransferView = false
+
+    private var ticketsWithEvents: [TicketWithEventData] {
+        var result: [TicketWithEventData] = []
+        for ticket in ticketsViewModel.tickets {
+            // Only show confirmed tickets
+            guard ticket.status == "confirmed" else { continue }
+
+            if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
+                result.append(TicketWithEventData(ticket: ticket, event: event))
+            } else {
+                // Create a placeholder event if event data is missing
+                let placeholderEvent = Event(
+                    name: ticket.eventName,
+                    venue: ticket.venue,
+                    startTime: ticket.startTime,
+                    price: ticket.totalPrice,
+                    maxTickets: 100,
+                    ticketsSold: 0,
+                    imageUrl: "",
+                    isFeatured: false,
+                    description: nil
+                )
+                var eventWithId = placeholderEvent
+                eventWithId.id = ticket.eventId
+                result.append(TicketWithEventData(ticket: ticket, event: eventWithId))
+            }
+        }
+        return result.sorted {
+            ($0.event.startTime ?? Date.distantFuture) < ($1.event.startTime ?? Date.distantFuture)
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            SettingsHeaderSection(title: "Transfer Tickets")
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+
+            if ticketsViewModel.isLoading && ticketsViewModel.tickets.isEmpty {
+                loadingView
+            } else if ticketsWithEvents.isEmpty {
+                emptyStateView
+            } else {
+                ticketsList
+            }
+        }
+        .background(Color.black)
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showingTransferView) {
+            if let ticketWithEvent = selectedTicket {
+                TransferTicketView(ticketWithEvent: ticketWithEvent)
+            }
+        }
+    }
+
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.2)
+                .tint(.white)
+            Text("Loading tickets...")
+                .appBody()
+                .foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
+    }
+
+    private var emptyStateView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "ticket")
+                .appHero()
+                .foregroundColor(.gray)
+
+            VStack(spacing: 8) {
+                Text("No Tickets to Transfer")
+                    .appSectionHeader()
+                    .foregroundColor(.white)
+
+                Text("You don't have any tickets that can be transferred")
+                    .appBody()
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
+        .padding(.bottom, 100)
+    }
+
+    private var ticketsList: some View {
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(ticketsWithEvents, id: \.id) { ticketWithEvent in
+                    UnifiedEventRow(
+                        ticketWithEvent: ticketWithEvent,
+                        isPast: false,
+                        onCancel: {}
+                    )
+                    .onLongPressGesture {
+                        selectedTicket = ticketWithEvent
+                        showingTransferView = true
+                    }
+                }
+            }
+            .padding(.bottom, 100)
+        }
+        .background(Color.black)
     }
 }

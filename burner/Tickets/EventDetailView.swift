@@ -11,7 +11,8 @@ struct EventDetailView: View {
     // Use environment objects instead of creating new instances
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var eventViewModel: EventViewModel
-    
+    @EnvironmentObject var ticketsViewModel: TicketsViewModel
+
     @State private var showingPurchase = false
     @State private var showingAlert = false
     @State private var alertMessage = ""
@@ -19,6 +20,8 @@ struct EventDetailView: View {
     @State private var userHasTicket = false
     @State private var showShareSheet = false
     @State private var showingAuthAlert = false
+    @State private var showingTicketAlert = false
+    @State private var showingTicketDetail = false
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var tabBarVisibility: TabBarVisibility
     @EnvironmentObject var appState: AppState
@@ -36,10 +39,20 @@ struct EventDetailView: View {
     var availableTickets: Int {
         max(0, event.maxTickets - event.ticketsSold)
     }
-    
+
+    private var isBookmarked: Bool {
+        guard let eventId = event.id else { return false }
+        return bookmarkManager.isBookmarked(eventId)
+    }
+
+    private var userTicket: Ticket? {
+        guard let eventId = event.id else { return nil }
+        return ticketsViewModel.tickets.first { $0.eventId == eventId }
+    }
+
     var buttonText: String {
         if userHasTicket {
-            return "You already own a ticket."
+            return "Ticket Purchased"
         } else if availableTickets > 0 {
             return "Buy Ticket"
         } else {
@@ -49,14 +62,14 @@ struct EventDetailView: View {
     
     var buttonColor: Color {
         if userHasTicket {
-            return Color.gray.opacity(0.3)
+            return .blue
         } else if availableTickets > 0 {
             return .white
         } else {
             return Color.gray.opacity(0.3)
         }
     }
-    
+
     var buttonTextColor: Color {
         if userHasTicket {
             return .white
@@ -66,9 +79,9 @@ struct EventDetailView: View {
             return .white
         }
     }
-    
+
     var isButtonDisabled: Bool {
-        return userHasTicket || availableTickets == 0
+        return availableTickets == 0 && !userHasTicket
     }
     
     var body: some View {
@@ -232,7 +245,9 @@ struct EventDetailView: View {
                         }
                         
                         Button(action: {
-                            if !userHasTicket && availableTickets > 0 {
+                            if userHasTicket {
+                                showingTicketAlert = true
+                            } else if availableTickets > 0 {
                                 // Check if user is authenticated
                                 if Auth.auth().currentUser == nil {
                                     showingAuthAlert = true
@@ -316,17 +331,26 @@ struct EventDetailView: View {
                 checkUserTicketStatus()
             }
         }
-        .customAlert(
-            isPresented: $showingAuthAlert,
-            title: "Sign In Required",
-            message: "You need to be signed in to buy tickets.",
-            primaryButtonTitle: "Sign In",
-            primaryButtonAction: {
+        .alert("Sign In Required", isPresented: $showingAuthAlert) {
+            Button("Sign In") {
                 appState.isSignInSheetPresented = true
-            },
-            secondaryButtonTitle: "Cancel",
-            secondaryButtonAction: {}
-        )
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You need to be signed in to buy tickets.")
+        }
+        .alert("You Already Have a Ticket", isPresented: $showingTicketAlert) {
+            Button("View Ticket") {
+                showingTicketDetail = true
+            }
+            Button("Dismiss", role: .cancel) {}
+        }
+        .sheet(isPresented: $showingTicketDetail) {
+            if let ticket = userTicket {
+                let ticketWithEvent = TicketWithEventData(ticket: ticket, event: event)
+                TicketDetailView(ticketWithEvent: ticketWithEvent)
+            }
+        }
     }
     
     private func checkUserTicketStatus() {

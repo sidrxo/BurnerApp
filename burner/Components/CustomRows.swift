@@ -196,22 +196,22 @@ extension UnifiedEventRow {
             showVenue: true,
             showDetailedDate: true,
             bookmarkSize: 16,
-            horizontalPadding: 16,
+            horizontalPadding: 20,
             verticalPadding: 12,
-            backgroundColor: Color.gray.opacity(0.1),
-            cornerRadius: 12
+            backgroundColor: Color.clear,
+            cornerRadius: 0
         )
-        
+
         static let ticketRowWithBookmark = Configuration(
             showBookmark: true,
             showPrice: false,
             showVenue: true,
             showDetailedDate: true,
             bookmarkSize: 16,
-            horizontalPadding: 16,
+            horizontalPadding: 20,
             verticalPadding: 12,
-            backgroundColor: Color.gray.opacity(0.1),
-            cornerRadius: 12
+            backgroundColor: Color.clear,
+            cornerRadius: 0
         )
     }
 }
