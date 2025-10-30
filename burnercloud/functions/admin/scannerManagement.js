@@ -22,7 +22,7 @@ exports.createScanner = onCall(async (request) => {
     // Verify caller has admin permissions
     await verifyAdminPermission(request.auth.uid, 'siteAdmin');
 
-    const { email, name, venueId, phoneNumber } = request.data;
+    const { email, name, venueId } = request.data;
 
     if (!email || !name) {
       throw new HttpsError("invalid-argument", "Email and name are required");
@@ -73,7 +73,6 @@ exports.createScanner = onCall(async (request) => {
       email: email,
       name: name,
       venueId: venueId || null,
-      phoneNumber: phoneNumber || null,
       active: true,
       createdAt: FieldValue.serverTimestamp(),
       createdBy: request.auth.uid,
@@ -168,11 +167,6 @@ exports.updateScanner = onCall(async (request) => {
     if (typeof updates.active === 'boolean' && updates.active !== currentData.active) {
       firestoreUpdates.active = updates.active;
       customClaimsUpdates.active = updates.active;
-    }
-
-    // Update phone number
-    if (updates.phoneNumber !== undefined) {
-      firestoreUpdates.phoneNumber = updates.phoneNumber;
     }
 
     // Apply updates
@@ -279,7 +273,6 @@ exports.getScannerProfile = onCall(async (request) => {
         email: scannerData.email,
         name: scannerData.name,
         venueId: scannerData.venueId,
-        phoneNumber: scannerData.phoneNumber,
         active: scannerData.active,
         role: customClaims.role,
         customClaims: customClaims,

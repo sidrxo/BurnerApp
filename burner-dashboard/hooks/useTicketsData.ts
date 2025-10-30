@@ -53,6 +53,27 @@ export type TicketsStats = {
 
 const PAGE_SIZE = 50; // Load 50 tickets at a time
 const DEFAULT_DATE_RANGE_DAYS = 90; // Default to last 90 days
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+
+// Simple in-memory cache
+const cache = new Map<string, { data: any; timestamp: number }>();
+
+function getCacheKey(userId: string, role: string, venueId?: string): string {
+  return `tickets_${userId}_${role}_${venueId || 'all'}`;
+}
+
+function getFromCache<T>(key: string): T | null {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data as T;
+  }
+  cache.delete(key);
+  return null;
+}
+
+function setCache(key: string, data: any): void {
+  cache.set(key, { data, timestamp: Date.now() });
+}
 
 export function useTicketsData() {
   const { user, loading: authLoading } = useAuth();
@@ -98,9 +119,16 @@ export function useTicketsData() {
     } as Ticket;
   }, []);
 
-  // Load aggregated stats from eventStats collection instead of counting all tickets
+  // Load aggregated stats from eventStats collection with caching
   const loadStats = async () => {
     if (!user) return;
+
+    const statsCacheKey = `stats_${user.uid}_${user.role}_${user.venueId || 'all'}`;
+    const cachedStats = getFromCache<TicketsStats>(statsCacheKey);
+    if (cachedStats) {
+      setStats(cachedStats);
+      return;
+    }
 
     try {
       let totalTickets = 0;
@@ -136,19 +164,34 @@ export function useTicketsData() {
         });
       }
 
-      setStats({
+      const statsData = {
         totalTickets,
         usedTickets,
         totalRevenue,
         activeEvents
-      });
+      };
+
+      setStats(statsData);
+      setCache(statsCacheKey, statsData);
     } catch (e: any) {
       console.error("Failed to load stats:", e);
     }
   };
 
-  const loadTickets = async (reset: boolean = false) => {
+  const loadTickets = async (reset: boolean = false, skipCache: boolean = false) => {
     if (!user) return;
+
+    // Check cache first on initial load
+    if (reset && !skipCache) {
+      const cacheKey = getCacheKey(user.uid, user.role, user.venueId);
+      const cachedTickets = getFromCache<Ticket[]>(cacheKey);
+      if (cachedTickets && cachedTickets.length > 0) {
+        setTickets(cachedTickets);
+        groupTicketsByEvent(cachedTickets);
+        setLoading(false);
+        return;
+      }
+    }
 
     if (reset) {
       setLoading(true);
@@ -261,6 +304,12 @@ export function useTicketsData() {
 
       setTickets(allTickets);
       groupTicketsByEvent(allTickets);
+
+      // Cache the results
+      if (reset && allTickets.length > 0) {
+        const cacheKey = getCacheKey(user.uid, user.role, user.venueId);
+        setCache(cacheKey, allTickets);
+      }
     } catch (e: any) {
       toast.error("Failed to load tickets: " + e.message);
     } finally {
@@ -336,9 +385,57 @@ export function useTicketsData() {
         await updateDoc(ticket.docRef, { status: 'used', usedAt: Timestamp.now() });
       }
       toast.success("Ticket marked as used!");
-      loadTickets(true); // Reload to refresh data
+      // Clear cache and reload
+      if (user) {
+        const cacheKey = getCacheKey(user.uid, user.role, user.venueId);
+        cache.delete(cacheKey);
+      }
+      loadTickets(true, true);
     } catch (e: any) {
       toast.error("Error updating ticket: " + e.message);
+    }
+  };
+
+  const cancelTicket = async (ticket: Ticket) => {
+    try {
+      if (ticket.docRef) {
+        await updateDoc(ticket.docRef, {
+          status: 'cancelled',
+          cancelledAt: Timestamp.now(),
+          cancelledBy: user?.email || 'admin'
+        });
+      }
+      toast.success("Ticket cancelled successfully!");
+      // Clear cache and reload
+      if (user) {
+        const cacheKey = getCacheKey(user.uid, user.role, user.venueId);
+        cache.delete(cacheKey);
+      }
+      loadTickets(true, true);
+    } catch (e: any) {
+      toast.error("Error cancelling ticket: " + e.message);
+    }
+  };
+
+  const deleteTicket = async (ticket: Ticket) => {
+    try {
+      if (ticket.docRef) {
+        // Mark as deleted instead of actually deleting
+        await updateDoc(ticket.docRef, {
+          status: 'deleted',
+          deletedAt: Timestamp.now(),
+          deletedBy: user?.email || 'admin'
+        });
+      }
+      toast.success("Ticket deleted successfully!");
+      // Clear cache and reload
+      if (user) {
+        const cacheKey = getCacheKey(user.uid, user.role, user.venueId);
+        cache.delete(cacheKey);
+      }
+      loadTickets(true, true);
+    } catch (e: any) {
+      toast.error("Error deleting ticket: " + e.message);
     }
   };
 
@@ -353,7 +450,14 @@ export function useTicketsData() {
   };
 
   const refreshData = () => {
-    loadTickets(true);
+    // Clear cache on manual refresh
+    if (user) {
+      const cacheKey = getCacheKey(user.uid, user.role, user.venueId);
+      const statsCacheKey = `stats_${user.uid}_${user.role}_${user.venueId || 'all'}`;
+      cache.delete(cacheKey);
+      cache.delete(statsCacheKey);
+    }
+    loadTickets(true, true);
     loadStats();
   };
 
@@ -378,6 +482,8 @@ export function useTicketsData() {
     filteredEventGroups,
     filteredTickets,
     markUsed,
+    cancelTicket,
+    deleteTicket,
     toggleEventExpansion,
     loadTickets: refreshData,
     loadMore,

@@ -40,7 +40,9 @@ import {
   Users,
   Calendar,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  XCircle,
+  Trash2
 } from "lucide-react";
 import { Ticket, EventGroup, TicketsStats } from "@/hooks/useTicketsData";
 
@@ -231,18 +233,22 @@ export function EmptyTicketsState({
   );
 }
 
-export function GroupedTicketsView({ 
-  filteredEventGroups, 
-  expandedEvents, 
-  toggleEventExpansion, 
-  markUsed, 
-  search, 
-  userRole 
+export function GroupedTicketsView({
+  filteredEventGroups,
+  expandedEvents,
+  toggleEventExpansion,
+  markUsed,
+  cancelTicket,
+  deleteTicket,
+  search,
+  userRole
 }: {
   filteredEventGroups: EventGroup[];
   expandedEvents: Set<string>;
   toggleEventExpansion: (eventName: string) => void;
   markUsed: (ticket: Ticket) => void;
+  cancelTicket: (ticket: Ticket) => void;
+  deleteTicket: (ticket: Ticket) => void;
   search: string;
   userRole: string;
 }) {
@@ -340,33 +346,84 @@ export function GroupedTicketsView({
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          {disabled ? (
-                            <Button variant="ghost" size="sm" disabled>
-                              {statusMeta.label}
-                            </Button>
-                          ) : (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                  Mark Used
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Mark Ticket as Used</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to mark this ticket as used? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => markUsed(ticket)}>
-                                    Mark as Used
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
+                          <div className="flex gap-2 justify-end">
+                            {disabled ? (
+                              <Button variant="ghost" size="sm" disabled>
+                                {statusMeta.label}
+                              </Button>
+                            ) : (
+                              <>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      Mark Used
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Mark Ticket as Used</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to mark this ticket as used? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => markUsed(ticket)}>
+                                        Mark as Used
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Cancel
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Cancel Ticket</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to cancel this ticket? The ticket holder will need to be notified separately.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Go Back</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => cancelTicket(ticket)}>
+                                        Cancel Ticket
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="sm">
+                                      <Trash2 className="h-3 w-3 mr-1" />
+                                      Delete
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete this ticket? This will mark the ticket as deleted but it will still be visible in the deleted tickets view.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Go Back</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => deleteTicket(ticket)} className="bg-destructive text-destructive-foreground">
+                                        Delete Ticket
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );})}
@@ -381,14 +438,18 @@ export function GroupedTicketsView({
   );
 }
 
-export function ListTicketsView({ 
-  filteredTickets, 
-  markUsed, 
-  search, 
-  userRole 
+export function ListTicketsView({
+  filteredTickets,
+  markUsed,
+  cancelTicket,
+  deleteTicket,
+  search,
+  userRole
 }: {
   filteredTickets: Ticket[];
   markUsed: (ticket: Ticket) => void;
+  cancelTicket: (ticket: Ticket) => void;
+  deleteTicket: (ticket: Ticket) => void;
   search: string;
   userRole: string;
 }) {
@@ -451,33 +512,84 @@ export function ListTicketsView({
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {disabled ? (
-                      <Button variant="ghost" size="sm" disabled>
-                        {statusMeta.label}
-                      </Button>
-                    ) : (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            Mark Used
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Mark Ticket as Used</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to mark this ticket as used? This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => markUsed(ticket)}>
-                              Mark as Used
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
+                    <div className="flex gap-2 justify-end">
+                      {disabled ? (
+                        <Button variant="ghost" size="sm" disabled>
+                          {statusMeta.label}
+                        </Button>
+                      ) : (
+                        <>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Mark Used
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Mark Ticket as Used</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to mark this ticket as used? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => markUsed(ticket)}>
+                                  Mark as Used
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <XCircle className="h-3 w-3 mr-1" />
+                                Cancel
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Cancel Ticket</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to cancel this ticket? The ticket holder will need to be notified separately.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Go Back</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => cancelTicket(ticket)}>
+                                  Cancel Ticket
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this ticket? This will mark the ticket as deleted but it will still be visible in the deleted tickets view.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Go Back</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteTicket(ticket)} className="bg-destructive text-destructive-foreground">
+                                  Delete Ticket
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               );})}

@@ -1,6 +1,7 @@
 "use client";
 
 import RequireAuth from "@/components/require-auth";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { useVenuesData } from "@/hooks/useVenuesData";
 import {
   AccessDenied,

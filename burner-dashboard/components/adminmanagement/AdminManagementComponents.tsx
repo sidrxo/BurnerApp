@@ -83,8 +83,7 @@ export function UnifiedCreateForm({
     email: '',
     name: '',
     role: 'venueAdmin' as 'venueAdmin' | 'subAdmin' | 'siteAdmin',
-    venueId: currentUserRole === 'siteAdmin' ? '' : defaultVenueId || '',
-    phoneNumber: ''
+    venueId: currentUserRole === 'siteAdmin' ? '' : defaultVenueId || ''
   });
   const [loading, setLoading] = useState(false);
 
@@ -105,8 +104,7 @@ export function UnifiedCreateForm({
       const scannerData: CreateScannerData = {
         email: formData.email,
         name: formData.name,
-        venueId: currentUserRole === 'siteAdmin' ? (formData.venueId || null) : defaultVenueId || null,
-        phoneNumber: formData.phoneNumber || undefined
+        venueId: currentUserRole === 'siteAdmin' ? (formData.venueId || null) : defaultVenueId || null
       };
       result = await onCreateScanner(scannerData);
     }
@@ -116,8 +114,7 @@ export function UnifiedCreateForm({
         email: '',
         name: '',
         role: 'venueAdmin',
-        venueId: currentUserRole === 'siteAdmin' ? '' : defaultVenueId || '',
-        phoneNumber: ''
+        venueId: currentUserRole === 'siteAdmin' ? '' : defaultVenueId || ''
       });
     }
 
@@ -203,19 +200,6 @@ export function UnifiedCreateForm({
                   <SelectItem value="subAdmin">Sub Admin</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          )}
-
-          {/* Scanner-specific fields */}
-          {userType === 'scanner' && (
-            <div>
-              <Label htmlFor="phoneNumber">Contact Number (optional)</Label>
-              <Input
-                id="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                placeholder="+44 1234 567890"
-              />
             </div>
           )}
 
@@ -384,8 +368,7 @@ export function CreateScannerForm({
   const [formData, setFormData] = useState<CreateScannerData>({
     email: '',
     name: '',
-    venueId: initialVenue,
-    phoneNumber: '',
+    venueId: initialVenue
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -396,8 +379,7 @@ export function CreateScannerForm({
     const payload: CreateScannerData = {
       email: formData.email.trim(),
       name: formData.name.trim(),
-      venueId: currentUserRole === 'siteAdmin' ? (formData.venueId || null) : defaultVenueId || null,
-      phoneNumber: formData.phoneNumber?.trim() || undefined,
+      venueId: currentUserRole === 'siteAdmin' ? (formData.venueId || null) : defaultVenueId || null
     };
 
     const result = await onCreateScanner(payload);
@@ -405,8 +387,7 @@ export function CreateScannerForm({
       setFormData({
         email: '',
         name: '',
-        venueId: initialVenue,
-        phoneNumber: '',
+        venueId: initialVenue
       });
     }
 
@@ -446,16 +427,6 @@ export function CreateScannerForm({
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="scanner-phone">Contact Number (optional)</Label>
-            <Input
-              id="scanner-phone"
-              value={formData.phoneNumber || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-              placeholder="+44 1234 567890"
             />
           </div>
 

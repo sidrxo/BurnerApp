@@ -1,6 +1,7 @@
 "use client";
 
 import RequireAuth from "@/components/require-auth";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { useTicketsData } from "@/hooks/useTicketsData";
 import {
   AccessDenied,
@@ -26,6 +27,8 @@ function TicketsPageContent() {
     expandedEvents,
     toggleEventExpansion,
     markUsed,
+    cancelTicket,
+    deleteTicket,
     loadTickets,
     stats
   } = useTicketsData();
@@ -46,15 +49,17 @@ function TicketsPageContent() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <TicketsHeader 
+      <TicketsHeader
         user={user}
         loading={loading}
         loadTickets={loadTickets}
       />
 
-      <StatsCards stats={stats} />
+      <ErrorBoundary fallbackTitle="Stats Error" fallbackMessage="Failed to load ticket statistics. The rest of the page should still work.">
+        <StatsCards stats={stats} />
+      </ErrorBoundary>
 
-      <SearchAndViewControls 
+      <SearchAndViewControls
         search={search}
         setSearch={setSearch}
         viewMode={viewMode}
@@ -62,25 +67,31 @@ function TicketsPageContent() {
       />
 
       {/* Content */}
-      {loading ? (
-        <LoadingSkeleton />
-      ) : viewMode === 'grouped' ? (
-        <GroupedTicketsView 
-          filteredEventGroups={filteredEventGroups}
-          expandedEvents={expandedEvents}
-          toggleEventExpansion={toggleEventExpansion}
-          markUsed={markUsed}
-          search={search}
-          userRole={user.role}
-        />
-      ) : (
-        <ListTicketsView 
-          filteredTickets={filteredTickets}
-          markUsed={markUsed}
-          search={search}
-          userRole={user.role}
-        />
-      )}
+      <ErrorBoundary fallbackTitle="Tickets Error" fallbackMessage="Failed to load tickets. Try refreshing the page.">
+        {loading ? (
+          <LoadingSkeleton />
+        ) : viewMode === 'grouped' ? (
+          <GroupedTicketsView
+            filteredEventGroups={filteredEventGroups}
+            expandedEvents={expandedEvents}
+            toggleEventExpansion={toggleEventExpansion}
+            markUsed={markUsed}
+            cancelTicket={cancelTicket}
+            deleteTicket={deleteTicket}
+            search={search}
+            userRole={user.role}
+          />
+        ) : (
+          <ListTicketsView
+            filteredTickets={filteredTickets}
+            markUsed={markUsed}
+            cancelTicket={cancelTicket}
+            deleteTicket={deleteTicket}
+            search={search}
+            userRole={user.role}
+          />
+        )}
+      </ErrorBoundary>
     </div>
   );
 }
