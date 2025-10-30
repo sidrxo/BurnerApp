@@ -10,8 +10,6 @@ struct ExploreView: View {
 
     @State private var searchText = ""
     @State private var sortBy: SortOption = .date
-    @State private var showDatePicker = false
-    @State private var selectedDate: Date?
     @FocusState private var isSearchFocused: Bool
 
     enum SortOption: String {
@@ -40,19 +38,11 @@ struct ExploreView: View {
             }
             .onChange(of: sortBy) { oldValue, newValue in
                 Task {
-                    await viewModel.changeSort(to: newValue.rawValue, searchText: searchText, selectedDate: selectedDate)
-                }
-            }
-            .onChange(of: selectedDate) { oldValue, newValue in
-                Task {
-                    await viewModel.filterByDate(newValue, searchText: searchText, sortBy: sortBy.rawValue)
+                    await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FocusSearchBar"))) { _ in
                 isSearchFocused = true
-            }
-            .sheet(isPresented: $showDatePicker) {
-                DatePickerSheet(selectedDate: $selectedDate, showDatePicker: $showDatePicker)
             }
         }
     }
@@ -114,34 +104,6 @@ struct ExploreView: View {
                 }
             }
 
-            Button(action: {
-                showDatePicker = true
-            }) {
-                HStack(spacing: 6) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 12))
-                    if let date = selectedDate {
-                        Text(formatDateShort(date))
-                            .font(.system(size: 12, weight: .medium))
-                    } else {
-                        Text("FILTER")
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    if selectedDate != nil {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 12))
-                            .onTapGesture {
-                                selectedDate = nil
-                            }
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(selectedDate != nil ? Color.white : Color.white.opacity(0.1))
-                .foregroundColor(selectedDate != nil ? .black : .white)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-            }
-
             Spacer()
         }
         .padding(.horizontal, 20)
@@ -149,12 +111,6 @@ struct ExploreView: View {
         .padding(.bottom, 16)
     }
 
-    private func formatDateShort(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return formatter.string(from: date)
-    }
-    
     private var contentSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             ScrollView {
@@ -226,7 +182,6 @@ class ExploreViewModel: ObservableObject {
     private var hasMoreEvents = true
     private var lastDocument: Date?
     private var currentSearchText = ""
-    private var currentSelectedDate: Date?
     private var searchCache: [String: [Event]] = [:]
 
     private let eventRepository = OptimizedEventRepository()
@@ -262,22 +217,14 @@ class ExploreViewModel: ObservableObject {
         lastDocument = nil
 
         do {
-            var fetchedEvents = try await eventRepository.fetchUpcomingEvents(
+            let fetchedEvents = try await eventRepository.fetchUpcomingEvents(
                 sortBy: sortBy,
                 limit: 20
             )
 
-            // Filter by date if selected
-            if let selectedDate = currentSelectedDate {
-                fetchedEvents = filterEventsByDate(fetchedEvents, date: selectedDate)
-                hasMoreEvents = false // Disable pagination when filtering by date
-            }
-
             events = fetchedEvents
             lastDocument = fetchedEvents.last?.startTime
-            if currentSelectedDate == nil {
-                hasMoreEvents = fetchedEvents.count >= 20
-            }
+            hasMoreEvents = fetchedEvents.count >= 20
 
         } catch {
             errorMessage = "Failed to load events: \(error.localizedDescription)"
@@ -286,15 +233,6 @@ class ExploreViewModel: ObservableObject {
         isLoading = false
     }
 
-    // MARK: - Filter Events By Date
-    private func filterEventsByDate(_ events: [Event], date: Date) -> [Event] {
-        let calendar = Calendar.current
-        return events.filter { event in
-            guard let startTime = event.startTime else { return false }
-            return calendar.isDate(startTime, inSameDayAs: date)
-        }
-    }
-    
     // MARK: - Load More Events (Pagination)
     func loadMoreEvents(sortBy: String, searchText: String) async {
         guard !isLoadingMore && hasMoreEvents && searchText.isEmpty else { return }
@@ -329,9 +267,8 @@ class ExploreViewModel: ObservableObject {
             return
         }
 
-        // Check cache first (include date in cache key)
-        let dateKey = currentSelectedDate.map { "\(Int($0.timeIntervalSince1970))" } ?? "nodate"
-        let cacheKey = "\(searchText)_\(sortBy)_\(dateKey)"
+        // Check cache first
+        let cacheKey = "\(searchText)_\(sortBy)"
         if let cached = searchCache[cacheKey] {
             events = cached
             return
@@ -340,16 +277,11 @@ class ExploreViewModel: ObservableObject {
         isLoading = true
 
         do {
-            var searchResults = try await eventRepository.searchEvents(
+            let searchResults = try await eventRepository.searchEvents(
                 searchText: searchText,
                 sortBy: sortBy,
                 limit: 50
             )
-
-            // Filter by date if selected
-            if let selectedDate = currentSelectedDate {
-                searchResults = filterEventsByDate(searchResults, date: selectedDate)
-            }
 
             events = searchResults
             searchCache[cacheKey] = searchResults
@@ -363,18 +295,7 @@ class ExploreViewModel: ObservableObject {
     }
     
     // MARK: - Change Sort
-    func changeSort(to sortBy: String, searchText: String, selectedDate: Date?) async {
-        currentSelectedDate = selectedDate
-        if searchText.isEmpty {
-            await loadInitialEvents(sortBy: sortBy)
-        } else {
-            await performSearch(searchText: searchText, sortBy: sortBy)
-        }
-    }
-
-    // MARK: - Filter By Date
-    func filterByDate(_ date: Date?, searchText: String, sortBy: String) async {
-        currentSelectedDate = date
+    func changeSort(to sortBy: String, searchText: String) async {
         if searchText.isEmpty {
             await loadInitialEvents(sortBy: sortBy)
         } else {
@@ -476,89 +397,6 @@ struct EmptyEventsView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, minHeight: 300)
-    }
-}
-
-// MARK: - Date Picker Sheet
-struct DatePickerSheet: View {
-    @Binding var selectedDate: Date?
-    @Binding var showDatePicker: Bool
-    @State private var tempDate: Date = Date()
-
-    var body: some View {
-        NavigationView {
-            ZStack {
-                Color.black
-                    .ignoresSafeArea()
-
-                VStack(spacing: 24) {
-                    // Date Picker
-                    DatePicker(
-                        "Select Date",
-                        selection: $tempDate,
-                        in: Date()...,
-                        displayedComponents: [.date]
-                    )
-                    .datePickerStyle(.graphical)
-                    .colorScheme(.dark)
-                    .padding()
-
-                    // Apply Button
-                    Button(action: {
-                        selectedDate = tempDate
-                        showDatePicker = false
-                    }) {
-                        Text("Apply Filter")
-                            .appBody()
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 18)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                    }
-                    .padding(.horizontal, 24)
-
-                    // Clear Button
-                    if selectedDate != nil {
-                        Button(action: {
-                            selectedDate = nil
-                            showDatePicker = false
-                        }) {
-                            Text("Clear Filter")
-                                .appBody()
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 18)
-                                .background(Color.white.opacity(0.1))
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                        }
-                        .padding(.horizontal, 24)
-                    }
-
-                    Spacer()
-                }
-                .padding(.top, 20)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("Filter by Date")
-                        .appSectionHeader()
-                        .foregroundColor(.white)
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Cancel") {
-                        showDatePicker = false
-                    }
-                    .foregroundColor(.white)
-                }
-            }
-        }
-        .onAppear {
-            if let date = selectedDate {
-                tempDate = date
-            }
-        }
     }
 }
 

@@ -69,11 +69,6 @@ struct EventDetailView: View {
         return userHasTicket || availableTickets == 0
     }
     
-    private var isBookmarked: Bool {
-        guard let eventId = event.id else { return false }
-        return bookmarkManager.isBookmarked(eventId)
-    }
-    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -182,28 +177,56 @@ struct EventDetailView: View {
                                 Text("Event Details")
         .appBody()                                    .foregroundColor(.white)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                
+
                                 VStack(spacing: 8) {
                                     EventDetailRow(
                                         icon: "calendar",
                                         title: "Date & Time",
                                         value: (event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month().year().hour().minute())
                                     )
-                                    
+
                                     EventDetailRow(
                                         icon: "location",
                                         title: "Venue",
                                         value: event.venue
                                     )
-                                    
+
                                     EventDetailRow(
                                         icon: "creditcard",
                                         title: "Price",
                                         value: "£\(String(format: "%.2f", event.price))"
                                     )
+
+                                    // Genre/Tag row
+                                    if let tags = event.tags, !tags.isEmpty {
+                                        EventDetailRow(
+                                            icon: "tag",
+                                            title: "Genre",
+                                            value: tags.joined(separator: ", ")
+                                        )
+                                    }
                                 }
                             }
                             .padding(.horizontal, 20)
+
+                            // Share button centered below event metadata
+                            Button(action: {
+                                showShareSheet = true
+                            }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 16))
+                                    Text("Share Event")
+                                        .appBody()
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.white.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 8)
                             
                             // Bottom spacing for floating button
                             Spacer(minLength: 100)
@@ -260,27 +283,6 @@ struct EventDetailView: View {
             }
         }
         .navigationBarBackButtonHidden(false)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 16) {
-                    // Bookmark button
-                    Button(action: toggleBookmark) {
-                        Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                    }
-
-                    // Share button
-                    Button(action: {
-                        showShareSheet = true
-                    }) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                    }
-                }
-            }
-        }
         .onAppear {
             tabBarVisibility.hideTabBar()
             checkUserTicketStatus()
@@ -338,11 +340,6 @@ struct EventDetailView: View {
                 self.userHasTicket = hasTicket
             }
         }
-    }
-
-    private func toggleBookmark() {
-        guard let eventId = event.id else { return }
-        bookmarkManager.toggleBookmark(eventId)
     }
 
     private func generateShareText() -> String {

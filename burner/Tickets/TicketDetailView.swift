@@ -7,6 +7,7 @@
 import SwiftUI
 import Kingfisher
 import ActivityKit
+import FirebaseFunctions
 
 // MARK: - Custom Ticket Stub Shape with Perforation
 struct TicketStubShape: Shape {
@@ -75,10 +76,6 @@ struct TicketDetailView: View {
     @State private var hasStartedLiveActivity = false
     @State private var isLiveActivityActive = false
     @State private var showingFullScreen = false
-    @State private var showingTransferSheet = false
-    @State private var recipientEmail = ""
-    @State private var isTransferring = false
-    @State private var transferError: String?
     @State private var showTransferSuccess = false
     @EnvironmentObject var appState: AppState
 
@@ -95,20 +92,19 @@ struct TicketDetailView: View {
 
                 // Transfer Button
                 if ticketWithEvent.ticket.status == "confirmed" {
-                    Button(action: {
-                        showingTransferSheet = true
-                    }) {
-                        HStack {
-                            Image(systemName: "arrow.right.circle")
-                                .font(.system(size: 18))
+                    NavigationLink(destination: TransferTicketView(ticketWithEvent: ticketWithEvent)) {
+                        VStack(spacing: 4) {
                             Text("Transfer Ticket")
                                 .appBody()
+                                .foregroundColor(.white)
+
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(height: 1)
+                                .frame(maxWidth: 200)
                         }
-                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.white.opacity(0.15))
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .padding(.vertical, 8)
                     }
                     .padding(.top, 16)
                 }
@@ -123,9 +119,6 @@ struct TicketDetailView: View {
                 ticketWithEvent: ticketWithEvent,
                 qrCodeData: qrCodeData
             )
-        }
-        .sheet(isPresented: $showingTransferSheet) {
-            transferSheetView
         }
         .alert("Transfer Successful", isPresented: $showTransferSuccess) {
             Button("OK", role: .cancel) { }
@@ -260,8 +253,8 @@ struct TicketDetailView: View {
                                 .tracking(2)
 
                             Text(ticketWithEvent.ticket.status.uppercased())
-                                .appBody()
-                                .foregroundColor(statusColor(for: ticketWithEvent.ticket.status))
+                                .appSectionHeader()
+                                .foregroundColor(.black)
                                 .tracking(1)
                         }
                     }
@@ -311,134 +304,7 @@ struct TicketDetailView: View {
         }
     }
 
-    private var transferSheetView: some View {
-        NavigationView {
-            ZStack {
-                Color.black
-                    .ignoresSafeArea()
-
-                VStack(spacing: 24) {
-                    // Icon
-                    Image(systemName: "arrow.right.circle.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.white)
-                        .padding(.top, 20)
-
-                    // Title
-                    VStack(spacing: 8) {
-                        Text("Transfer Ticket")
-                            .appHero()
-                            .foregroundColor(.white)
-
-                        Text("Enter the recipient's email address")
-                            .appBody()
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                    }
-
-                    // Email Input
-                    VStack(alignment: .leading, spacing: 8) {
-                        TextField("Recipient Email", text: $recipientEmail)
-                            .textFieldStyle(.plain)
-                            .autocapitalization(.none)
-                            .keyboardType(.emailAddress)
-                            .padding()
-                            .background(Color.white.opacity(0.1))
-                            .cornerRadius(12)
-                            .foregroundColor(.white)
-
-                        if let error = transferError {
-                            Text(error)
-                                .appCaption()
-                                .foregroundColor(.red)
-                        }
-                    }
-                    .padding(.horizontal, 24)
-
-                    // Transfer Button
-                    Button(action: transferTicket) {
-                        ZStack {
-                            if isTransferring {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                            } else {
-                                Text("Transfer")
-                                    .appBody()
-                                    .foregroundColor(.black)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                    }
-                    .disabled(isTransferring || recipientEmail.isEmpty)
-                    .padding(.horizontal, 24)
-
-                    Spacer()
-                }
-                .padding(.top, 20)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Cancel") {
-                        showingTransferSheet = false
-                        recipientEmail = ""
-                        transferError = nil
-                    }
-                    .foregroundColor(.white)
-                }
-            }
-        }
-    }
-
     // MARK: - Helper Methods
-
-    private func statusColor(for status: String) -> Color {
-        switch status.lowercased() {
-        case "confirmed":
-            return .green
-        case "used":
-            return .orange
-        case "cancelled":
-            return .red
-        default:
-            return .gray
-        }
-    }
-
-    private func transferTicket() {
-        guard !recipientEmail.isEmpty else { return }
-
-        isTransferring = true
-        transferError = nil
-
-        let functions = Functions.functions()
-        let transferFunction = functions.httpsCallable("transferTicket")
-
-        transferFunction.call(["ticketId": ticketWithEvent.ticket.id ?? "", "recipientEmail": recipientEmail]) { result, error in
-            DispatchQueue.main.async {
-                isTransferring = false
-
-                if let error = error as NSError? {
-                    // Handle error
-                    if let errorMessage = error.userInfo["message"] as? String {
-                        transferError = errorMessage
-                    } else {
-                        transferError = "Transfer failed. Please try again."
-                    }
-                    return
-                }
-
-                // Success
-                showingTransferSheet = false
-                showTransferSuccess = true
-                recipientEmail = ""
-            }
-        }
-    }
 
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
@@ -616,6 +482,133 @@ struct TicketQRCodeView: View {
         }
     }
 }
+// MARK: - Transfer Ticket View
+struct TransferTicketView: View {
+    let ticketWithEvent: TicketWithEventData
+    @State private var recipientEmail = ""
+    @State private var isTransferring = false
+    @State private var transferError: String?
+    @State private var showTransferSuccess = false
+    @Environment(\.presentationMode) var presentationMode
+
+    var body: some View {
+        ZStack {
+            Color.black
+                .ignoresSafeArea()
+
+            VStack(spacing: 24) {
+                // Icon
+                Image(systemName: "arrow.right.circle.fill")
+                    .font(.system(size: 60))
+                    .foregroundColor(.white)
+                    .padding(.top, 20)
+
+                // Title
+                VStack(spacing: 8) {
+                    Text("Transfer Ticket")
+                        .appHero()
+                        .foregroundColor(.white)
+
+                    Text("Enter the recipient's email address")
+                        .appBody()
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+
+                // Email Input
+                VStack(alignment: .leading, spacing: 8) {
+                    TextField("Recipient Email", text: $recipientEmail)
+                        .textFieldStyle(.plain)
+                        .autocapitalization(.none)
+                        .keyboardType(.emailAddress)
+                        .padding()
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(12)
+                        .foregroundColor(.white)
+
+                    if let error = transferError {
+                        Text(error)
+                            .appCaption()
+                            .foregroundColor(.red)
+                    }
+                }
+                .padding(.horizontal, 24)
+
+                // Transfer Button
+                Button(action: transferTicket) {
+                    ZStack {
+                        if isTransferring {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                        } else {
+                            Text("Transfer")
+                                .appBody()
+                                .foregroundColor(.black)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .disabled(isTransferring || recipientEmail.isEmpty)
+                .padding(.horizontal, 24)
+
+                Spacer()
+            }
+            .padding(.top, 20)
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .alert("Transfer Successful", isPresented: $showTransferSuccess) {
+            Button("OK", role: .cancel) {
+                presentationMode.wrappedValue.dismiss()
+            }
+        } message: {
+            Text("Ticket has been transferred successfully!")
+        }
+    }
+
+    private func transferTicket() {
+        guard !recipientEmail.isEmpty else { return }
+
+        isTransferring = true
+        transferError = nil
+
+        let functions = Functions.functions()
+        let transferFunction = functions.httpsCallable("transferTicket")
+
+        // The backend function should:
+        // 1. Validate that the recipient doesn't already have a ticket for this event
+        // 2. Send a push notification to the recipient when transfer is successful
+        // 3. Update the ticket ownership
+
+        transferFunction.call([
+            "ticketId": ticketWithEvent.ticket.id ?? "",
+            "recipientEmail": recipientEmail,
+            "eventId": ticketWithEvent.event.id ?? ""
+        ]) { result, error in
+            DispatchQueue.main.async {
+                isTransferring = false
+
+                if let error = error as NSError? {
+                    // Handle error
+                    if let errorMessage = error.userInfo["message"] as? String {
+                        transferError = errorMessage
+                    } else {
+                        transferError = "Transfer failed. Please try again."
+                    }
+                    return
+                }
+
+                // Success - push notification is sent by the backend
+                showTransferSuccess = true
+                recipientEmail = ""
+            }
+        }
+    }
+}
+
 // MARK: - Preview
 
 #if DEBUG
