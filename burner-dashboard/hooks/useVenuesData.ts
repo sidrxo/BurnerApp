@@ -190,15 +190,15 @@ export function useVenuesData() {
     }
   };
 
-  const handleAddAdmin = async (venueId: string) => {
-    if (!newAdminEmail.trim()) {
+  const handleAddAdmin = async (venueId: string, email: string, role: 'venueAdmin' | 'subAdmin') => {
+    if (!email.trim()) {
       toast.error("Please enter an email address");
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(newAdminEmail)) {
+    if (!emailRegex.test(email)) {
       toast.error("Please enter a valid email address");
       return;
     }
@@ -210,25 +210,23 @@ export function useVenuesData() {
       // Lookup user by email using query instead of loading all users
       const usersQuery = query(
         collection(db, "users"),
-        where("email", "==", newAdminEmail.trim())
+        where("email", "==", email.trim())
       );
       const usersSnapshot = await getDocs(usersQuery);
-
-      const newRole = user.role === "siteAdmin" ? "venueAdmin" : "subAdmin";
 
       if (!usersSnapshot.empty) {
         // User exists, update their role
         const userDoc = usersSnapshot.docs[0];
         await updateDoc(userDoc.ref, {
-          role: newRole,
+          role: role,
           venueId: venueId
         });
       } else {
         // Create new user document
-        const newUserRef = doc(db, "users", newAdminEmail.trim());
+        const newUserRef = doc(db, "users", email.trim());
         await setDoc(newUserRef, {
-          email: newAdminEmail.trim(),
-          role: newRole,
+          email: email.trim(),
+          role: role,
           venueId: venueId
         });
       }
@@ -237,12 +235,12 @@ export function useVenuesData() {
       const venue = venues.find((v) => v.id === venueId);
       if (!venue) throw new Error("Venue not found");
 
-      const arrayField = user.role === "siteAdmin" ? "admins" : "subAdmins";
+      const arrayField = role === "venueAdmin" ? "admins" : "subAdmins";
       await updateDoc(venueRef, {
-        [arrayField]: arrayUnion(newAdminEmail.trim())
+        [arrayField]: arrayUnion(email.trim())
       });
 
-      const roleType = user.role === "siteAdmin" ? "venue admin" : "sub-admin";
+      const roleType = role === "venueAdmin" ? "venue admin" : "sub-admin";
       toast.success(`${roleType} added successfully`);
       setNewAdminEmail("");
       fetchVenues();
@@ -293,6 +291,39 @@ export function useVenuesData() {
     }
   };
 
+  const handleUpdateVenue = async (
+    venueId: string,
+    updates: Partial<Venue>
+  ) => {
+    setActionLoading(true);
+    try {
+      const venueRef = doc(db, "venues", venueId);
+      
+      // Filter out undefined values and prepare update object
+      const updateData: any = {};
+      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.address !== undefined) updateData.address = updates.address;
+      if (updates.city !== undefined) updateData.city = updates.city;
+      if (updates.capacity !== undefined) updateData.capacity = updates.capacity;
+      if (updates.contactEmail !== undefined) updateData.contactEmail = updates.contactEmail;
+      if (updates.website !== undefined) updateData.website = updates.website;
+      if (updates.active !== undefined) updateData.active = updates.active;
+
+      await updateDoc(venueRef, {
+        ...updateData,
+        updatedAt: new Date()
+      });
+
+      toast.success("Venue updated successfully");
+      fetchVenues();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update venue");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const resetCreateForm = () => {
     setNewVenueName("");
     setNewVenueAdminEmail("");
@@ -331,6 +362,7 @@ export function useVenuesData() {
     handleRemoveVenue,
     handleAddAdmin,
     handleRemoveAdmin,
+    handleUpdateVenue,
     resetCreateForm
   };
 }

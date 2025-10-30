@@ -7,7 +7,8 @@ import {
   VenuesHeader,
   CreateVenueForm,
   EmptyVenuesState,
-  VenueGridCard
+  VenueGridCard,
+  VenueDetailCard
 } from "@/components/venues/VenuesComponents";
 
 function VenuesPageContent() {
@@ -34,6 +35,9 @@ function VenuesPageContent() {
     setShowCreateVenueDialog,
     handleCreateVenueWithAdmin,
     handleRemoveVenue,
+    handleAddAdmin,
+    handleRemoveAdmin,
+    handleUpdateVenue,
     resetCreateForm
   } = useVenuesData();
 
@@ -49,14 +53,15 @@ function VenuesPageContent() {
     return <AccessDenied />;
   }
 
-  return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <VenuesHeader
-        user={user}
-        setShowCreateVenueDialog={setShowCreateVenueDialog}
-      />
+  // Site Admin View - Show all venues in a grid
+  if (user.role === "siteAdmin") {
+    return (
+      <div className="space-y-6 max-w-7xl mx-auto">
+        <VenuesHeader
+          user={user}
+          setShowCreateVenueDialog={setShowCreateVenueDialog}
+        />
 
-      {user.role === "siteAdmin" && (
         <CreateVenueForm
           showCreateVenueDialog={showCreateVenueDialog}
           setShowCreateVenueDialog={setShowCreateVenueDialog}
@@ -78,28 +83,65 @@ function VenuesPageContent() {
           handleCreateVenueWithAdmin={handleCreateVenueWithAdmin}
           resetCreateForm={resetCreateForm}
         />
-      )}
 
-      {venues.length === 0 ? (
+        {venues.length === 0 ? (
+          <EmptyVenuesState 
+            user={user}
+            setShowCreateVenueDialog={setShowCreateVenueDialog}
+          />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {venues.map((venue) => (
+              <VenueGridCard
+                key={venue.id}
+                venue={venue}
+                user={user}
+                actionLoading={actionLoading}
+                handleRemoveVenue={handleRemoveVenue}
+                handleUpdateVenue={handleUpdateVenue}
+                handleAddAdmin={handleAddAdmin}
+                handleRemoveAdmin={handleRemoveAdmin}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Venue Admin View - Show detailed view of their single venue
+  if (user.role === "venueAdmin") {
+    const userVenue = venues[0]; // Venue admins only see their venue
+
+    if (!userVenue) {
+      return (
         <EmptyVenuesState 
           user={user}
           setShowCreateVenueDialog={setShowCreateVenueDialog}
         />
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {venues.map((venue) => (
-            <VenueGridCard
-              key={venue.id}
-              venue={venue}
-              user={user}
-              actionLoading={actionLoading}
-              handleRemoveVenue={handleRemoveVenue}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+      );
+    }
+
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto">
+        <VenuesHeader
+          user={user}
+          setShowCreateVenueDialog={setShowCreateVenueDialog}
+        />
+
+        <VenueDetailCard
+          venue={userVenue}
+          actionLoading={actionLoading}
+          handleUpdateVenue={handleUpdateVenue}
+          handleAddAdmin={handleAddAdmin}
+          handleRemoveAdmin={handleRemoveAdmin}
+        />
+      </div>
+    );
+  }
+
+  // Other roles don't have access
+  return <AccessDenied />;
 }
 
 export default function VenuesPage() {
