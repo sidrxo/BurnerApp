@@ -17,6 +17,7 @@ struct EventDetailView: View {
     @State private var alertMessage = ""
     @State private var isSuccess = false
     @State private var userHasTicket = false
+    @State private var showShareSheet = false
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var tabBarVisibility: TabBarVisibility
     
@@ -258,6 +259,28 @@ struct EventDetailView: View {
                 }
             }
         }
+        .navigationBarBackButtonHidden(false)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack(spacing: 16) {
+                    // Bookmark button
+                    Button(action: toggleBookmark) {
+                        Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white)
+                    }
+
+                    // Share button
+                    Button(action: {
+                        showShareSheet = true
+                    }) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white)
+                    }
+                }
+            }
+        }
         .onAppear {
             tabBarVisibility.hideTabBar()
             checkUserTicketStatus()
@@ -273,6 +296,9 @@ struct EventDetailView: View {
                     // Refresh ticket status when purchase sheet is dismissed
                     checkUserTicketStatus()
                 }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheet(activityItems: [generateShareText(), generateShareURL()])
         }
         .alert(isPresented: $showingAlert) {
             Alert(
@@ -306,12 +332,43 @@ struct EventDetailView: View {
     
     private func checkUserTicketStatus() {
         guard let eventId = event.id else { return }
-        
+
         eventViewModel.checkUserTicketStatus(for: eventId) { hasTicket in
             DispatchQueue.main.async {
                 self.userHasTicket = hasTicket
             }
         }
+    }
+
+    private func toggleBookmark() {
+        guard let eventId = event.id else { return }
+        bookmarkManager.toggleBookmark(eventId)
+    }
+
+    private func generateShareText() -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        dateFormatter.timeStyle = .short
+        let dateString = event.startTime.map { dateFormatter.string(from: $0) } ?? "TBA"
+
+        return """
+        Check out this event on Burner!
+
+        \(event.name)
+        \(event.venue)
+        \(dateString)
+
+        £\(String(format: "%.2f", event.price))
+        """
+    }
+
+    private func generateShareURL() -> URL {
+        // Create a custom URL scheme for deep linking
+        // Format: burner://event/{eventId}
+        guard let eventId = event.id else {
+            return URL(string: "burner://events")!
+        }
+        return URL(string: "burner://event/\(eventId)")!
     }
 }
 
@@ -356,6 +413,18 @@ struct EventDetailRow: View {
         .background(Color.gray.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
+}
+
+// MARK: - Share Sheet
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {

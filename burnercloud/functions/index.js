@@ -11,6 +11,7 @@ const venueManagement = require('./venues/venueManagement');
 const purchaseTicket = require('./tickets/purchaseTicket');
 const ticketQueries = require('./tickets/ticketQueries');
 const scanTicket = require('./tickets/scanTicket');
+const transferTicket = require('./tickets/transferTicket');
 const stripePayment = require('./payments/stripePayment');
 const ticketTriggers = require('./triggers/ticketTriggers');
 const auditTriggers = require('./triggers/auditTriggers');
@@ -38,6 +39,7 @@ exports.checkUserTicket = ticketQueries.checkUserTicket;
 exports.getUserTickets = ticketQueries.getUserTickets;
 exports.scanTicket = scanTicket.scanTicket;
 exports.getScanHistory = scanTicket.getScanHistory;
+exports.transferTicket = transferTicket.transferTicket;
 
 // ============ PAYMENT PROCESSING ============
 exports.createPaymentIntent = stripePayment.createPaymentIntent;
