@@ -3,42 +3,47 @@ import FirebaseAuth
 import Combine
 
 struct MainTabView: View {
-    @State private var selectedTab = 0
-    @State private var isDetailViewPresented = false
-    
+    @EnvironmentObject var appState: AppState
+    @StateObject private var tabBarVisibility: TabBarVisibility
+
+    init() {
+        // Create a state object that will be initialized when appState becomes available
+        _tabBarVisibility = StateObject(wrappedValue: TabBarVisibility(isDetailViewPresented: .constant(false)))
+    }
+
     var body: some View {
         ZStack {
             // Content based on selected tab
             Group {
-                switch selectedTab {
+                switch appState.selectedTab {
                 case 0:
                     HomeView()
-                        .environmentObject(TabBarVisibility(isDetailViewPresented: $isDetailViewPresented))
+                        .environmentObject(TabBarVisibility(isDetailViewPresented: $appState.isDetailViewPresented))
                 case 1:
                     ExploreView()
-                        .environmentObject(TabBarVisibility(isDetailViewPresented: $isDetailViewPresented))
+                        .environmentObject(TabBarVisibility(isDetailViewPresented: $appState.isDetailViewPresented))
                 case 2:
-                    TicketsView(selectedTab: $selectedTab)
-                        .environmentObject(TabBarVisibility(isDetailViewPresented: $isDetailViewPresented))
+                    TicketsView(selectedTab: $appState.selectedTab)
+                        .environmentObject(TabBarVisibility(isDetailViewPresented: $appState.isDetailViewPresented))
                 case 3:
                     SettingsView()
-                        .environmentObject(TabBarVisibility(isDetailViewPresented: $isDetailViewPresented))
+                        .environmentObject(TabBarVisibility(isDetailViewPresented: $appState.isDetailViewPresented))
                 default:
                     HomeView()
-                        .environmentObject(TabBarVisibility(isDetailViewPresented: $isDetailViewPresented))
+                        .environmentObject(TabBarVisibility(isDetailViewPresented: $appState.isDetailViewPresented))
                 }
             }
-            
+
             // Custom Tab Bar - only show when detail view is not presented
-            if !isDetailViewPresented {
+            if !appState.isDetailViewPresented {
                 VStack {
                     Spacer()
-                    CustomTabBar(selectedTab: $selectedTab)
+                    CustomTabBar(selectedTab: $appState.selectedTab)
                 }
             }
         }
         .ignoresSafeArea(.keyboard)
-        
+
     }
 }
 
