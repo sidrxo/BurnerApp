@@ -74,6 +74,13 @@ struct BurnerApp: App {
         configureGlobalAppearance()
     }
 
+    private var tabBarVisibility: TabBarVisibility {
+        TabBarVisibility(isDetailViewPresented: Binding(
+            get: { appState.isDetailViewPresented },
+            set: { appState.isDetailViewPresented = $0 }
+        ))
+    }
+
     var body: some Scene {
         WindowGroup {
             ZStack {
@@ -83,6 +90,7 @@ struct BurnerApp: App {
                     .environmentObject(appState.bookmarkManager)
                     .environmentObject(appState.ticketsViewModel)
                     .environmentObject(appState.authService)
+                    .environmentObject(tabBarVisibility)
                     .onOpenURL { url in
                         handleIncomingURL(url)
                     }
@@ -112,7 +120,7 @@ struct BurnerApp: App {
             }
             .animation(.easeInOut(duration: 0.3), value: appState.showingBurnerLockScreen)
         }
-        .onChange(of: scenePhase) { _ in
+        .onChange(of: scenePhase) { oldPhase, newPhase in
             configureGlobalAppearance()
         }
     }
@@ -187,9 +195,17 @@ struct BurnerApp: App {
     }
     
  private func navigateToEvent(eventId: String) {
+        print("🚀 Navigating to event: \(eventId)")
+        print("📍 Current tab: \(appState.selectedTab)")
+        print("📚 Current navigation path count: \(appState.navigationPath.count)")
+
         appState.selectedTab = 1         // switch to Events tab
         appState.navigationPath = NavigationPath() // optional: reset stack
         appState.navigationPath.append(eventId)    // push detail
+
+        print("✅ Navigation setup complete")
+        print("📍 New tab: \(appState.selectedTab)")
+        print("📚 New navigation path count: \(appState.navigationPath.count)")
     }
 
 
