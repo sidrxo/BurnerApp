@@ -384,8 +384,6 @@ struct EventDetailView: View {
     }
 
     private func generateShareURL() -> URL {
-        // Create a custom URL scheme for deep linking
-        // Format: burner://event/{eventId}
         guard let eventId = event.id else {
             return URL(string: "burner://events")!
         }

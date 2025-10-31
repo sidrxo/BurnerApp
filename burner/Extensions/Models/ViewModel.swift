@@ -3,6 +3,7 @@ import FirebaseAuth
 import FirebaseFunctions
 import Combine
 import UIKit
+import FirebaseFirestore
 
 // MARK: - Refactored Event ViewModel
 @MainActor
@@ -49,6 +50,26 @@ class EventViewModel: ObservableObject {
             }
         }
     }
+    
+    func fetchEvent(byId eventId: String) async throws -> Event {
+            let db = Firestore.firestore()
+            let documentSnapshot = try await db.collection("events").document(eventId).getDocument()
+            
+            guard documentSnapshot.exists else {
+                throw NSError(domain: "EventViewModel", code: 404, userInfo: [
+                    NSLocalizedDescriptionKey: "Event not found"
+                ])
+            }
+            
+            guard var event = try? documentSnapshot.data(as: Event.self) else {
+                throw NSError(domain: "EventViewModel", code: 500, userInfo: [
+                    NSLocalizedDescriptionKey: "Failed to decode event"
+                ])
+            }
+            
+            event.id = documentSnapshot.documentID
+            return event
+        }
     
     // MARK: - Refresh User Ticket Status
     private func refreshUserTicketStatus() async {

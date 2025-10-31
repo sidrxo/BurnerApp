@@ -2,39 +2,32 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- Fonts - MOVED TO ROOT LEVEL -->
-    <!-- URL Types -->
-    <key>CFBundleURLTypes</key>
-    <array>
-        <dict>
-            <key>CFBundleURLName</key>
-            <string>google-signin</string>
-            <key>CFBundleURLSchemes</key>
-            <array>
-                <string>com.googleusercontent.apps.8577865405-u9313lunreqchsroqjeb9ktbafqjm67f</string>
-            </array>
-        </dict>
-    </array>
-    
-    <!-- Camera Usage Description for QR Scanner -->
-    <key>NSCameraUsageDescription</key>
-    <string>This app uses the camera to scan QR codes for ticket verification and event check-ins.</string>
-    
-    <!-- Family Controls Usage Description for Burner Mode -->
-    <key>NSFamilyControlsUsageDescription</key>
-    <string>This app uses Family Controls to help you stay focused during events by blocking distracting apps when Burner Mode is enabled.</string>
-    
-    <key>NSSupportsAutomaticTermination</key>
-    <true/>
-
-    <!-- Background modes for device activity monitoring -->
-    <key>UIBackgroundModes</key>
-    <array>
-    </array>
-
-    <!-- Required for Family Controls -->
-    <key>ITSAppUsesNonExemptEncryption</key>
-    <false/>
-
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>google-signin</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.8577865405-u9313lunreqchsroqjeb9ktbafqjm67f</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.gas.Burner</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>burner</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSFamilyControlsUsageDescription</key>
+	<string>This app uses Family Controls to help you stay focused during events by blocking distracting apps when Burner Mode is enabled.</string>
+	<key>NSSupportsAutomaticTermination</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array/>
 </dict>
 </plist>

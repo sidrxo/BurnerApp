@@ -330,8 +330,6 @@ struct CustomMenuItemContent: View {
 struct TransferTicketsListView: View {
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
     @EnvironmentObject var eventViewModel: EventViewModel
-    @State private var selectedTicket: TicketWithEventData?
-    @State private var showingTransferView = false
 
     private var ticketsWithEvents: [TicketWithEventData] {
         var result: [TicketWithEventData] = []
@@ -380,11 +378,6 @@ struct TransferTicketsListView: View {
         }
         .background(Color.black)
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showingTransferView) {
-            if let ticketWithEvent = selectedTicket {
-                TransferTicketView(ticketWithEvent: ticketWithEvent)
-            }
-        }
     }
 
     private var loadingView: some View {
@@ -427,15 +420,14 @@ struct TransferTicketsListView: View {
         ScrollView {
             LazyVStack(spacing: 12) {
                 ForEach(ticketsWithEvents, id: \.id) { ticketWithEvent in
-                    UnifiedEventRow(
-                        ticketWithEvent: ticketWithEvent,
-                        isPast: false,
-                        onCancel: {}
-                    )
-                    .onLongPressGesture {
-                        selectedTicket = ticketWithEvent
-                        showingTransferView = true
+                    NavigationLink(destination: TransferTicketView(ticketWithEvent: ticketWithEvent)) {
+                        UnifiedEventRow(
+                            ticketWithEvent: ticketWithEvent,
+                            isPast: false,
+                            onCancel: {}
+                        )
                     }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
             .padding(.bottom, 100)

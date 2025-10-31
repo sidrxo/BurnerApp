@@ -23,10 +23,20 @@ class AppState: ObservableObject {
     // ✅ NEW: Global lock screen state
     @Published var showingBurnerLockScreen = false
     
+    // ✅ Deep Link Navigation
+    @Published var selectedEventForDeepLink: Event?
+    @Published var shouldNavigateToEvent = false
+    @Published var selectedTab = 0
+    @Published var navigationPath = NavigationPath()
+    @Published var tabBarVisibility = TabBarVisibility()
+
+
+    
     // Add flag to track initial auth check
     private var hasCompletedInitialAuthCheck = false
     
     private var cancellables = Set<AnyCancellable>()
+    
     
     // Shared repository instances
     private let eventRepository: EventRepository

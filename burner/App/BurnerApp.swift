@@ -29,7 +29,7 @@ private func configureGlobalAppearance() {
     // 👇 Replace these with your preferred fonts
      nav.titleTextAttributes = [
          .foregroundColor: UIColor.white,
-         .font: UIFont(name: "Avenir", size: 18)!
+         .font: UIFont(name: "Avenir", size: 20)!
      ]
      nav.largeTitleTextAttributes = [
          .foregroundColor: UIColor.white,
@@ -83,8 +83,9 @@ struct BurnerApp: App {
                     .environmentObject(appState.bookmarkManager)
                     .environmentObject(appState.ticketsViewModel)
                     .environmentObject(appState.authService)
+                    .environmentObject($appState.tabBarVisibility) // 👈 add this
                     .onOpenURL { url in
-                        _ = GIDSignIn.sharedInstance.handle(url)
+                        handleIncomingURL(url)
                     }
                     .onAppear {
                         appState.loadInitialData()
@@ -116,6 +117,82 @@ struct BurnerApp: App {
             configureGlobalAppearance()
         }
     }
+
+    // MARK: - URL Handling
+    private func handleIncomingURL(_ url: URL) {
+        print("🔗 Received URL: \(url.absoluteString)")
+
+        // 1) Google Sign-In first
+        if GIDSignIn.sharedInstance.handle(url) {
+            print("✅ Handled by Google Sign-In")
+            return
+        }
+
+        // 2) Our custom scheme(s)
+        guard url.scheme?.lowercased() == "burner" else { return }
+
+        if let deeplink = parseBurnerDeepLink(url) {
+            switch deeplink {
+            case .event(let id):
+                print("✅ Deep link → event id: \(id)")
+                navigateToEvent(eventId: id)
+            }
+        } else {
+            print("❌ Invalid deep link format")
+        }
+    }
+
+    private enum BurnerDeepLink {
+        case event(String)
+    }
+
+    private func parseBurnerDeepLink(_ url: URL) -> BurnerDeepLink? {
+        // Prefer URLComponents for robustness
+        guard let comps = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
+
+        // Case A: scheme://event/{id}  (host-based)
+        if comps.host == "event" {
+            let id = url.lastPathComponent
+            return id.isEmpty ? nil : .event(id)
+        }
+
+        // Case B: scheme:///event/{id} (path-based)
+        let parts = url.pathComponents.filter { $0 != "/" }
+        if parts.count >= 2, parts[0] == "event" {
+            let id = parts[1]
+            return id.isEmpty ? nil : .event(id)
+        }
+
+        return nil
+    }
+
+    
+    private func handleDeepLink(_ url: URL) {
+        print("🔗 Handling Burner deep link: \(url.absoluteString)")
+        
+        // Parse the URL path
+        // Format: burner://event/{eventId}
+        let pathComponents = url.pathComponents.filter { $0 != "/" }
+        
+        guard pathComponents.count >= 2,
+              pathComponents[0] == "event" else {
+            print("❌ Invalid deep link format")
+            return
+        }
+        
+        let eventId = pathComponents[1]
+        print("✅ Opening event with ID: \(eventId)")
+        
+        // Navigate to the event
+        navigateToEvent(eventId: eventId)
+    }
+    
+ private func navigateToEvent(eventId: String) {
+        appState.selectedTab = 1         // switch to Events tab
+        appState.navigationPath = NavigationPath() // optional: reset stack
+        appState.navigationPath.append(eventId)    // push detail
+    }
+
 
     private func setupResetObserver() {
         NotificationCenter.default.addObserver(
