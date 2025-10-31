@@ -5,6 +5,7 @@ struct BurnerModeLockScreen: View {
     @EnvironmentObject var appState: AppState
     @State private var currentTime = Date()
     @State private var showExitConfirmation = false
+    @State private var opacity: Double = 0 // For fade-in animation
     
     private var burnerManager: BurnerModeManager {
         appState.burnerManager
@@ -110,6 +111,7 @@ struct BurnerModeLockScreen: View {
             }
             .frame(maxWidth: .infinity)
         }
+        .opacity(opacity) // Apply fade-in effect
         .statusBarHidden(true)
         .onReceive(timer) { input in
             currentTime = input
@@ -117,6 +119,11 @@ struct BurnerModeLockScreen: View {
         .onAppear {
             // Prevent screen from dimming
             UIApplication.shared.isIdleTimerDisabled = true
+            
+            // Fade in animation
+            withAnimation(.easeIn(duration: 0.5)) {
+                opacity = 1.0
+            }
         }
         .onDisappear {
             // Re-enable screen dimming
@@ -126,8 +133,16 @@ struct BurnerModeLockScreen: View {
     }
 
     private func exitBurnerMode() {
-        burnerManager.disable()
-        appState.showingBurnerLockScreen = false
+        // Fade out before dismissing
+        withAnimation(.easeOut(duration: 0.3)) {
+            opacity = 0
+        }
+        
+        // Wait for fade out to complete
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            burnerManager.disable()
+            appState.showingBurnerLockScreen = false
+        }
     }
 }
 

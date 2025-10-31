@@ -49,7 +49,7 @@ struct EventDetailDestination: View {
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                         Button("Retry") {
-                            loadError = nil
+                            self.loadError = nil
                             Task { await load() }
                         }
                         .buttonStyle(.borderedProminent)
@@ -80,7 +80,7 @@ struct EventDetailDestination: View {
 
         // First check if event is already loaded in memory
         if let e = eventViewModel.events.first(where: { $0.id == eventId }) {
-            print("✅ Found event in cache: \(e.title)")
+            print("✅ Found event in cache: \(e.name)")
             event = e
             return
         }
@@ -91,7 +91,7 @@ struct EventDetailDestination: View {
 
         do {
             let e = try await eventViewModel.fetchEvent(byId: eventId)
-            print("✅ Successfully fetched event: \(e.title)")
+            print("✅ Successfully fetched event: \(e.name)")
             event = e
         } catch {
             print("❌ Failed to fetch event: \(error.localizedDescription)")

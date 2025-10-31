@@ -112,13 +112,26 @@ struct SettingsView: View {
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                     
-                                    // ✅ NEW: Manual lock screen trigger for testing
+                                    // ✅ UPDATED: Actually enable/disable Burner Mode
                                     Button(action: {
-                                        appState.showingBurnerLockScreen.toggle()
+                                        if appState.showingBurnerLockScreen {
+                                            // Disable burner mode
+                                            burnerManager.disable()
+                                            appState.showingBurnerLockScreen = false
+                                        } else {
+                                            // Enable burner mode if setup is valid
+                                            if burnerManager.isSetupValid {
+                                                burnerManager.enable()
+                                                appState.showingBurnerLockScreen = true
+                                            } else {
+                                                // Show setup if not valid
+                                                showingBurnerSetup = true
+                                            }
+                                        }
                                     }) {
                                         CustomMenuItemContent(
-                                            title: "Toggle Lock Screen",
-                                            subtitle: "Test Burner Mode lock screen"
+                                            title: appState.showingBurnerLockScreen ? "Disable Burner Mode" : "Enable Burner Mode",
+                                            subtitle: appState.showingBurnerLockScreen ? "Currently active" : "Test Burner Mode"
                                         )
                                     }
                                     .buttonStyle(PlainButtonStyle())
