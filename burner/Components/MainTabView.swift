@@ -4,12 +4,6 @@ import Combine
 
 struct MainTabView: View {
     @EnvironmentObject var appState: AppState
-    @StateObject private var tabBarVisibility: TabBarVisibility
-
-    init() {
-        // Create a state object that will be initialized when appState becomes available
-        _tabBarVisibility = StateObject(wrappedValue: TabBarVisibility(isDetailViewPresented: .constant(false)))
-    }
 
     var body: some View {
         ZStack {
@@ -18,19 +12,14 @@ struct MainTabView: View {
                 switch appState.selectedTab {
                 case 0:
                     HomeView()
-                        .environmentObject(TabBarVisibility(isDetailViewPresented: $appState.isDetailViewPresented))
                 case 1:
                     ExploreView()
-                        .environmentObject(TabBarVisibility(isDetailViewPresented: $appState.isDetailViewPresented))
                 case 2:
                     TicketsView(selectedTab: $appState.selectedTab)
-                        .environmentObject(TabBarVisibility(isDetailViewPresented: $appState.isDetailViewPresented))
                 case 3:
                     SettingsView()
-                        .environmentObject(TabBarVisibility(isDetailViewPresented: $appState.isDetailViewPresented))
                 default:
                     HomeView()
-                        .environmentObject(TabBarVisibility(isDetailViewPresented: $appState.isDetailViewPresented))
                 }
             }
 
