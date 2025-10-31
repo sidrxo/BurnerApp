@@ -83,7 +83,6 @@ struct BurnerApp: App {
                     .environmentObject(appState.bookmarkManager)
                     .environmentObject(appState.ticketsViewModel)
                     .environmentObject(appState.authService)
-                    .environmentObject($appState.tabBarVisibility) // 👈 add this
                     .onOpenURL { url in
                         handleIncomingURL(url)
                     }

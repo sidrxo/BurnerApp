@@ -12,7 +12,6 @@ struct EventDetailDestination: View {
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
-    @EnvironmentObject var tabBarVisibility: TabBarVisibility
     @EnvironmentObject var appState: AppState
 
     let eventId: String
@@ -27,7 +26,7 @@ struct EventDetailDestination: View {
                     .environmentObject(bookmarkManager)
                     .environmentObject(eventViewModel)
                     .environmentObject(ticketsViewModel)
-                    .environmentObject(tabBarVisibility)
+                    .environmentObject(TabBarVisibility(isDetailViewPresented: $appState.isDetailViewPresented))
                     .environmentObject(appState)
             } else if isLoading {
                 ZStack {

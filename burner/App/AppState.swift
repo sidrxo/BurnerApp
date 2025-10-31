@@ -28,7 +28,9 @@ class AppState: ObservableObject {
     @Published var shouldNavigateToEvent = false
     @Published var selectedTab = 0
     @Published var navigationPath = NavigationPath()
-    @Published var tabBarVisibility = TabBarVisibility()
+
+    // ✅ Tab Bar Visibility
+    @Published var isDetailViewPresented = false
 
 
     
