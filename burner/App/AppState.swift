@@ -16,9 +16,13 @@ class AppState: ObservableObject {
     @Published var isSignInSheetPresented = false
     @Published var showingError = false
     @Published var errorMessage: String?
-    
+
     // ✅ Track if user manually signed out
     @Published var userDidSignOut = false
+
+    // ✅ User role and scanner status (fetched on sign in)
+    @Published var userRole: String = ""
+    @Published var isScannerActive: Bool = false
     
     // ✅ NEW: Global lock screen state
     @Published var showingBurnerLockScreen = false
@@ -179,6 +183,18 @@ class AppState: ObservableObject {
         if isEnabled {
             showingBurnerLockScreen = true
         }
+
+        // ✅ Fetch and store user role and scanner status
+        Task {
+            do {
+                userRole = try await authService.getUserRole() ?? ""
+                isScannerActive = try await authService.isScannerActive()
+            } catch {
+                print("Error fetching user role: \(error)")
+                userRole = ""
+                isScannerActive = false
+            }
+        }
     }
     
     private func handleUserSignedOut() {
@@ -195,6 +211,10 @@ class AppState: ObservableObject {
 
         // Hide lock screen if showing
         showingBurnerLockScreen = false
+
+        // ✅ Clear user role and scanner status
+        userRole = ""
+        isScannerActive = false
     }
     
     // ✅ Method to handle manual sign out

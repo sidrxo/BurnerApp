@@ -8,13 +8,11 @@ import Combine
 struct SettingsView: View {
     // ✅ Access AppState to control sign-in sheet
     @EnvironmentObject var appState: AppState
-    
+
     @State private var showingSignIn = false
     @State private var currentUser: FirebaseAuth.User?
-    @State private var userRole: String = ""
     @State private var showingAppPicker = false
     @State private var showingBurnerSetup = false
-    @State private var isScannerActive = false
 
     private let db = Firestore.firestore()
     
@@ -53,17 +51,13 @@ struct SettingsView: View {
                                     NavigationLink(destination: PaymentSettingsView()) {
                                         CustomMenuItemContent(title: "Payment", subtitle: "Cards & billing")
                                     }
-                                    NavigationLink(destination: TransferTicketsListView()) {
-                                        CustomMenuItemContent(title: "Transfer Tickets", subtitle: "Transfer your ticket to another user")
-                                    }
-                                
 
                                     // Only show scanner option if user has scanner role AND active status
                                     // Admin roles (siteAdmin, venueAdmin, subAdmin) can always access scanner
-                                    if (userRole == "scanner" && isScannerActive) ||
-                                       userRole == "siteAdmin" ||
-                                       userRole == "venueAdmin" ||
-                                       userRole == "subAdmin" {
+                                    if (appState.userRole == "scanner" && appState.isScannerActive) ||
+                                       appState.userRole == "siteAdmin" ||
+                                       appState.userRole == "venueAdmin" ||
+                                       appState.userRole == "subAdmin" {
                                         NavigationLink(destination: ScannerView()) {
                                             CustomMenuItemContent(title: "Scanner", subtitle: "Scan QR codes")
                                         }
@@ -158,18 +152,12 @@ struct SettingsView: View {
         }
         .onAppear {
             currentUser = Auth.auth().currentUser
-            fetchUserRoleFromClaims()
-            checkScannerAccessFromClaims()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
             currentUser = Auth.auth().currentUser
-            fetchUserRoleFromClaims()
-            checkScannerAccessFromClaims()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedOut"))) { _ in
             currentUser = nil
-            userRole = ""
-            isScannerActive = false
         }
         .fullScreenCover(isPresented: $showingSignIn) {
             SignInSheetView(showingSignIn: $showingSignIn)
@@ -178,61 +166,6 @@ struct SettingsView: View {
             BurnerModeSetupView(burnerManager: burnerManager)
         }
         // ✅ REMOVED: Lock screen is now handled globally in BurnerApp
-    }
-    
-    // MARK: - Fetch Role from Custom Claims
-    private func fetchUserRoleFromClaims() {
-        guard Auth.auth().currentUser != nil else {
-            userRole = ""
-            return
-        }
-
-        print("🔵 [Settings] Fetching role from custom claims")
-        
-        Task {
-            do {
-                if let role = try await appState.authService.getUserRole() {
-                    await MainActor.run {
-                        self.userRole = role
-                        print("✅ [Settings] User role from custom claims: \(role)")
-                    }
-                } else {
-                    await MainActor.run {
-                        self.userRole = "user"
-                        print("⚠️ [Settings] No role in custom claims, defaulting to 'user'")
-                    }
-                }
-            } catch {
-                print("🔴 [Settings] Error fetching custom claims: \(error.localizedDescription)")
-                await MainActor.run {
-                    self.userRole = "user"
-                }
-            }
-        }
-    }
-
-    private func checkScannerAccessFromClaims() {
-        guard Auth.auth().currentUser != nil else {
-            isScannerActive = false
-            return
-        }
-
-        print("🔵 [Settings] Checking scanner access from custom claims")
-        
-        Task {
-            do {
-                let active = try await appState.authService.isScannerActive()
-                await MainActor.run {
-                    self.isScannerActive = active
-                    print("✅ [Settings] Scanner active from custom claims: \(active)")
-                }
-            } catch {
-                print("🔴 [Settings] Error checking scanner access: \(error.localizedDescription)")
-                await MainActor.run {
-                    self.isScannerActive = false
-                }
-            }
-        }
     }
     
     // MARK: - Not signed in view
@@ -351,7 +284,10 @@ struct TransferTicketsListView: View {
             guard ticket.status == "confirmed" else { continue }
 
             if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
-                result.append(TicketWithEventData(ticket: ticket, event: event))
+                // Only show events that haven't started yet
+                if let startTime = event.startTime, startTime > Date() {
+                    result.append(TicketWithEventData(ticket: ticket, event: event))
+                }
             } else {
                 // Create a placeholder event if event data is missing
                 let placeholderEvent = Event(
@@ -365,9 +301,12 @@ struct TransferTicketsListView: View {
                     isFeatured: false,
                     description: nil
                 )
-                var eventWithId = placeholderEvent
-                eventWithId.id = ticket.eventId
-                result.append(TicketWithEventData(ticket: ticket, event: eventWithId))
+                // Only show if event hasn't started yet
+                if ticket.startTime > Date() {
+                    var eventWithId = placeholderEvent
+                    eventWithId.id = ticket.eventId
+                    result.append(TicketWithEventData(ticket: ticket, event: eventWithId))
+                }
             }
         }
         return result.sorted {
