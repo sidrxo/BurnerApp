@@ -22,7 +22,7 @@
         @State private var showShareSheet = false
         @State private var showingAuthAlert = false
         @State private var showingTicketAlert = false
-        @State private var showingTicketDetail = false
+        @State private var navigateToTicketDetail = false
         @Environment(\.presentationMode) var presentationMode
         @EnvironmentObject var tabBarVisibility: TabBarVisibility
         @EnvironmentObject var appState: AppState
@@ -63,7 +63,7 @@
         
         var buttonColor: Color {
             if userHasTicket {
-                return .blue
+                return Color.gray.opacity(0.5)
             } else if availableTickets > 0 {
                 return .white
             } else {
@@ -344,16 +344,23 @@
             }
             .alert("You Already Have a Ticket", isPresented: $showingTicketAlert) {
                 Button("View Ticket") {
-                    showingTicketDetail = true
+                    navigateToTicketDetail = true
                 }
                 Button("Dismiss", role: .cancel) {}
             }
-            .sheet(isPresented: $showingTicketDetail) {
-                if let ticket = userTicket {
-                    let ticketWithEvent = TicketWithEventData(ticket: ticket, event: event)
-                    TicketDetailView(ticketWithEvent: ticketWithEvent)
-                }
-            }
+            .background(
+                NavigationLink(
+                    destination: {
+                        if let ticket = userTicket {
+                            let ticketWithEvent = TicketWithEventData(ticket: ticket, event: event)
+                            TicketDetailView(ticketWithEvent: ticketWithEvent)
+                        }
+                    },
+                    isActive: $navigateToTicketDetail,
+                    label: { EmptyView() }
+                )
+                .hidden()
+            )
         }
         
         private func checkUserTicketStatus() {

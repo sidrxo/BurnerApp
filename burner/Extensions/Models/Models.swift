@@ -23,10 +23,8 @@ struct Event: Identifiable, Codable, Sendable {
     
     // Additional fields from Phase 4
     var status: String? // "active", "soldOut", "past"
-    var category: String? // "general", etc.
     var tags: [String]?
-    var organizerId: String?
-    
+
     var createdAt: Date?
     var updatedAt: Date?
 }
