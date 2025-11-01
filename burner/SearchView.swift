@@ -18,7 +18,7 @@ struct ExploreView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 HeaderSection(title: "Search")
                 searchSection
