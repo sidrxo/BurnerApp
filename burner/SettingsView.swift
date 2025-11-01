@@ -6,9 +6,8 @@ import ManagedSettings
 import Combine
 
 struct SettingsView: View {
-    // ✅ Access AppState to control sign-in sheet
-    @EnvironmentObject var appState: AppState
 
+    @EnvironmentObject var appState: AppState
     @State private var showingSignIn = false
     @State private var currentUser: FirebaseAuth.User?
     @State private var showingAppPicker = false
@@ -21,135 +20,110 @@ struct SettingsView: View {
         appState.burnerManager
     }
     
+    // Access role and scanner status from AppState
+    private var userRole: String {
+        appState.userRole
+    }
+    
+    private var isScannerActive: Bool {
+        appState.isScannerActive
+    }
+    
     var body: some View {
-        NavigationView {
-            ZStack {
-                Color.black
-                    .edgesIgnoringSafeArea(.all)
-                
-                // Main content
-                VStack(spacing: 0) {
-                    // Only show header when signed in
-                    if currentUser != nil {
-                        HeaderSection(title: "Settings")
-                    }
-                    
-                    if currentUser != nil {
-                        ScrollView {
-                            VStack(spacing: 0) {
-                                // ACCOUNT Section
-                                CustomMenuSection(title: "ACCOUNT") {
-                                    NavigationLink(destination: AccountDetailsView()) {
-                                        CustomMenuItemContent(
-                                            title: "Account Details",
-                                            subtitle: currentUser?.email ?? "View Account"
-                                        )
-                                    }
-                                    NavigationLink(destination: BookmarksView()) {
-                                        CustomMenuItemContent(title: "Bookmarks", subtitle: "Saved events")
-                                    }
-                                    NavigationLink(destination: PaymentSettingsView()) {
-                                        CustomMenuItemContent(title: "Payment", subtitle: "Cards & billing")
-                                    }
-
-                                    // Only show scanner option if user has scanner role AND active status
-                                    // Admin roles (siteAdmin, venueAdmin, subAdmin) can always access scanner
-                                    if (appState.userRole == "scanner" && appState.isScannerActive) ||
-                                       appState.userRole == "siteAdmin" ||
-                                       appState.userRole == "venueAdmin" ||
-                                       appState.userRole == "subAdmin" {
-                                        NavigationLink(destination: ScannerView()) {
-                                            CustomMenuItemContent(title: "Scanner", subtitle: "Scan QR codes")
-                                        }
-                                    }
-                                }
-                                
-                                // APP Section
-                                CustomMenuSection(title: "APP") {
-                                    // ⚙️ Setup Guide Button
-                                    Button(action: {
-                                        showingBurnerSetup = true
-                                    }) {
-                                        CustomMenuItemContent(
-                                            title: "Setup Burner Mode",
-                                            subtitle: "Configure app blocking"
-                                        )
-                                        .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-
-                                    NavigationLink(destination: SupportView()) {
-                                        CustomMenuItemContent(title: "Help & Support", subtitle: "Get help, terms, privacy")
-                                    }
-                                }
-
-                                // DEBUG Section
-                                #if DEBUG
-                                CustomMenuSection(title: "DEBUG") {
-                                    Button(action: {
-                                        resetOnboarding()
-                                    }) {
-                                        CustomMenuItemContent(
-                                            title: "Reset Onboarding",
-                                            subtitle: "Show first-time setup again"
-                                        )
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    
-                                    Button(action: {
-                                        refreshCustomClaims()
-                                    }) {
-                                        CustomMenuItemContent(
-                                            title: "Refresh Custom Claims",
-                                            subtitle: "Force reload user permissions"
-                                        )
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    
-                                    // ✅ UPDATED: Actually enable/disable Burner Mode
-                                    Button(action: {
-                                        if appState.showingBurnerLockScreen {
-                                            // Disable burner mode
-                                            burnerManager.disable()
-                                            appState.showingBurnerLockScreen = false
-                                        } else {
-                                            // Enable burner mode if setup is valid
-                                            if burnerManager.isSetupValid {
-                                                burnerManager.enable()
-                                                appState.showingBurnerLockScreen = true
-                                            } else {
-                                                // Show setup if not valid
-                                                showingBurnerSetup = true
-                                            }
-                                        }
-                                    }) {
-                                        CustomMenuItemContent(
-                                            title: appState.showingBurnerLockScreen ? "Disable Burner Mode" : "Enable Burner Mode",
-                                            subtitle: appState.showingBurnerLockScreen ? "Currently active" : "Test Burner Mode"
-                                        )
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                                #endif
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 100)
-                        }
-                        .familyActivityPicker(
-                            isPresented: $showingAppPicker,
-                            selection: Binding(
-                                get: { burnerManager.selectedApps },
-                                set: { burnerManager.selectedApps = $0 }
-                            )
-                        )
-                    } else {
-                        notSignedInSection
-                    }
+        // ❌ Removed NavigationView - now handled by MainTabView
+        ZStack {
+            Color.black
+                .edgesIgnoringSafeArea(.all)
+            
+            // Main content
+            VStack(spacing: 0) {
+                // Only show header when signed in
+                if currentUser != nil {
+                    HeaderSection(title: "Settings")
                 }
-                              
+                
+                if currentUser != nil {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            // ACCOUNT Section
+                            CustomMenuSection(title: "ACCOUNT") {
+                                NavigationLink(destination: AccountDetailsView()) {
+                                    CustomMenuItemContent(
+                                        title: "Account Details",
+                                        subtitle: currentUser?.email ?? "View Account"
+                                    )
+                                }
+                                NavigationLink(destination: BookmarksView()) {
+                                    CustomMenuItemContent(title: "Bookmarks", subtitle: "Saved events")
+                                }
+                                NavigationLink(destination: PaymentSettingsView()) {
+                                    CustomMenuItemContent(title: "Payment", subtitle: "Cards & billing")
+                                }
+                                NavigationLink(destination: TransferTicketsListView()) {
+                                    CustomMenuItemContent(title: "Transfer Tickets", subtitle: "Transfer your ticket to another user")
+                                }
+                            
+
+                                // Only show scanner option if user has scanner role AND active status
+                                // Admin roles (siteAdmin, venueAdmin, subAdmin) can always access scanner
+                                if (userRole == "scanner" && isScannerActive) ||
+                                   userRole == "siteAdmin" ||
+                                   userRole == "venueAdmin" ||
+                                   userRole == "subAdmin" {
+                                    NavigationLink(destination: ScannerView()) {
+                                        CustomMenuItemContent(title: "Scanner", subtitle: "Scan QR codes")
+                                    }
+                                }
+                            }
+                            
+                            // APP Section
+                            CustomMenuSection(title: "APP") {
+                                // ⚙️ Setup Guide Button
+                                Button(action: {
+                                    showingBurnerSetup = true
+                                }) {
+                                    CustomMenuItemContent(
+                                        title: "Setup Burner Mode",
+                                        subtitle: "Configure app blocking"
+                                    )
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(PlainButtonStyle())
+
+                                NavigationLink(destination: SupportView()) {
+                                    CustomMenuItemContent(title: "Help & Support", subtitle: "Get help, terms, privacy")
+                                }
+                            }
+
+                            // DEBUG Section
+                            #if DEBUG
+                            CustomMenuSection(title: "DEBUG") {
+                                NavigationLink(destination: DebugMenuView(appState: appState, burnerManager: burnerManager)) {
+                                    CustomMenuItemContent(
+                                        title: "Debug Menu",
+                                        subtitle: "Development tools"
+                                    )
+                                }
+                            }
+                            #endif
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 100)
+                    }
+                    .familyActivityPicker(
+                        isPresented: $showingAppPicker,
+                        selection: Binding(
+                            get: { burnerManager.selectedApps },
+                            set: { burnerManager.selectedApps = $0 }
+                        )
+                    )
+                } else {
+                    notSignedInSection
+                }
             }
-            .navigationBarHidden(true)
+                          
         }
+        .navigationBarHidden(true)
         .onAppear {
             currentUser = Auth.auth().currentUser
         }
@@ -165,7 +139,6 @@ struct SettingsView: View {
         .fullScreenCover(isPresented: $showingBurnerSetup) {
             BurnerModeSetupView(burnerManager: burnerManager)
         }
-        // ✅ REMOVED: Lock screen is now handled globally in BurnerApp
     }
     
     // MARK: - Not signed in view
@@ -204,20 +177,6 @@ struct SettingsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
-    }
-    
-    // MARK: - Reset Onboarding
-    private func resetOnboarding() {
-        let onboarding = OnboardingManager()
-        onboarding.resetOnboarding()
-        NotificationCenter.default.post(name: NSNotification.Name("ResetOnboarding"), object: nil)
-    }
-    
-    // MARK: - Refresh Custom Claims (DEBUG)
-    private func refreshCustomClaims() {
-        print("🔄 [Settings] Manually refreshing custom claims...")
-        fetchUserRoleFromClaims()
-        checkScannerAccessFromClaims()
     }
 }
 
@@ -270,8 +229,6 @@ struct CustomMenuItemContent: View {
     }
 }
 
-// MARK: - App Preferences View
-
 // MARK: - Transfer Tickets List View
 struct TransferTicketsListView: View {
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
@@ -284,10 +241,7 @@ struct TransferTicketsListView: View {
             guard ticket.status == "confirmed" else { continue }
 
             if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
-                // Only show events that haven't started yet
-                if let startTime = event.startTime, startTime > Date() {
-                    result.append(TicketWithEventData(ticket: ticket, event: event))
-                }
+                result.append(TicketWithEventData(ticket: ticket, event: event))
             } else {
                 // Create a placeholder event if event data is missing
                 let placeholderEvent = Event(
@@ -301,12 +255,9 @@ struct TransferTicketsListView: View {
                     isFeatured: false,
                     description: nil
                 )
-                // Only show if event hasn't started yet
-                if ticket.startTime > Date() {
-                    var eventWithId = placeholderEvent
-                    eventWithId.id = ticket.eventId
-                    result.append(TicketWithEventData(ticket: ticket, event: eventWithId))
-                }
+                var eventWithId = placeholderEvent
+                eventWithId.id = ticket.eventId
+                result.append(TicketWithEventData(ticket: ticket, event: eventWithId))
             }
         }
         return result.sorted {

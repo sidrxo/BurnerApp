@@ -4,26 +4,26 @@ import Kingfisher
 struct HomeView: View {
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var bookmarkManager: BookmarkManager
+    @EnvironmentObject var appState: AppState
     
     @State private var searchText = ""
     @State private var selectedEvent: Event? = nil
     @State private var navigationPath = NavigationPath()
+    @State private var deepLinkEventId: String?
     
-    // MARK: - Define Your Genres (Configure these based on your events)
+    // MARK: - Define Your Genres
     private let displayGenres = ["Techno", "House", "Drum & Bass", "Trance", "Hip Hop"]
 
-    // MARK: - Featured Events (Randomized by Day)
+    // MARK: - Featured Events
     var featuredEvents: [Event] {
         let featured = eventViewModel.events.filter { $0.isFeatured }
-        
         let calendar = Calendar.current
         let dayOfYear = calendar.ordinality(of: .day, in: .year, for: Date()) ?? 0
-        
         var rng = SeededRandomNumberGenerator(seed: UInt64(dayOfYear))
         return featured.shuffled(using: &rng)
     }
     
-    // MARK: - This Week Events (Next 7 Days from Now)
+    // MARK: - This Week Events
     var thisWeekEvents: [Event] {
         let calendar = Calendar.current
         let now = Date()
@@ -49,7 +49,7 @@ struct HomeView: View {
         Array(thisWeekEvents.prefix(5))
     }
     
-    // MARK: - Popular Events (Sorted by Ticket Sell-Through %, excluding This Week events)
+    // MARK: - Popular Events
     var popularEvents: [Event] {
         let thisWeekEventIds = Set(thisWeekEvents.compactMap { $0.id })
         
@@ -71,7 +71,7 @@ struct HomeView: View {
         Array(popularEvents.prefix(5))
     }
     
-    // MARK: - Genre-Based Events (can overlap with Popular/This Week)
+    // MARK: - Genre-Based Events
     func allEventsForGenre(_ genre: String) -> [Event] {
         eventViewModel.events
             .filter { event in
@@ -89,7 +89,7 @@ struct HomeView: View {
         Array(allEventsForGenre(genre).prefix(5))
     }
     
-    // MARK: - All Events (Chronological, everything)
+    // MARK: - All Events
     var allEvents: [Event] {
         eventViewModel.events
             .filter { event in
@@ -127,11 +127,38 @@ struct HomeView: View {
             .navigationDestination(for: Event.self) { event in
                 EventDetailView(event: event)
             }
+            .navigationDestination(for: String.self) { eventId in
+                EventDetailDestination(eventId: eventId)
+            }
             .navigationDestination(for: EventSectionDestination.self) { destination in
                 FilteredEventsView(
                     title: destination.title,
                     events: destination.events
                 )
+            }
+        }
+        .onAppear {
+            setupDeepLinkListener()
+        }
+        .onChange(of: deepLinkEventId) { oldValue, newValue in
+            if let eventId = newValue {
+                print("🎯 HomeView: Navigating to event \(eventId)")
+                navigationPath.append(eventId)
+                deepLinkEventId = nil
+            }
+        }
+    }
+    
+    // MARK: - Deep Link Listener
+    private func setupDeepLinkListener() {
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("NavigateToEvent"),
+            object: nil,
+            queue: .main
+        ) { notification in
+            if let eventId = notification.object as? String {
+                print("📱 HomeView: Received deep link notification for event \(eventId)")
+                self.deepLinkEventId = eventId
             }
         }
     }
@@ -150,7 +177,7 @@ struct HomeView: View {
     // MARK: - Content View
     private var contentView: some View {
         VStack(spacing: 0) {
-            // 1. First Featured Hero Card
+            // Featured Hero Card
             if let featured = featuredEvents.first {
                 NavigationLink(value: featured) {
                     FeaturedHeroCard(event: featured, bookmarkManager: bookmarkManager)
@@ -160,7 +187,7 @@ struct HomeView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             
-            // 2. Popular Section
+            // Popular Section
             if !popularEvents.isEmpty {
                 EventSection(
                     title: "Popular",
@@ -176,7 +203,7 @@ struct HomeView: View {
                 )
             }
             
-            // 3. This Week Section (if there are events)
+            // This Week Section
             if !thisWeekEvents.isEmpty {
                 EventSection(
                     title: "This Week",
@@ -192,10 +219,10 @@ struct HomeView: View {
                 )
             }
             
-            // 4. Genre Sections with Featured Cards
+            // Genre Sections
             genreSectionsWithFeaturedCards
             
-            // 5. All Events Section
+            // All Events Section
             if !allEvents.isEmpty {
                 EventSection(
                     title: "All Events",
@@ -214,7 +241,6 @@ struct HomeView: View {
     }
     
     private var genreSectionsWithFeaturedCards: some View {
-        // First, filter genres to only those with events
         let genresWithEvents = displayGenres.filter { genre in
             !allEventsForGenre(genre).isEmpty
         }
@@ -224,10 +250,7 @@ struct HomeView: View {
             let genrePreview = eventsForGenrePreview(genre)
             
             Group {
-                // Insert featured card before every 2 genres (at index 0, 2, 4, etc.)
                 if index % 2 == 0 {
-                    // Calculate which featured card to show
-                    // After Popular/This Week is featured[1], then featured[2], etc.
                     let featuredIndex = 1 + (index / 2)
                     if featuredIndex < featuredEvents.count {
                         NavigationLink(value: featuredEvents[featuredIndex]) {
@@ -239,7 +262,6 @@ struct HomeView: View {
                     }
                 }
                 
-                // Show genre section (we know it has events because we filtered above)
                 EventSection(
                     title: genre,
                     events: genrePreview,
@@ -257,7 +279,7 @@ struct HomeView: View {
     }
 }
 
-// MARK: - Event Section Destination (for Navigation)
+// MARK: - Event Section Destination
 struct EventSectionDestination: Hashable {
     let title: String
     let events: [Event]

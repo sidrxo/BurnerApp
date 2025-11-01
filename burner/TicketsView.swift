@@ -79,32 +79,30 @@ struct TicketsView: View {
     }
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                if !ticketsViewModel.tickets.isEmpty || ticketsViewModel.isLoading {
-                    HeaderSection(title: "My Tickets")
-                    searchSection
-                    filtersSection
-                }
-                
-                if ticketsViewModel.isLoading && ticketsViewModel.tickets.isEmpty {
-                    loadingView
-                } else if ticketsViewModel.tickets.isEmpty {
-                    emptyStateView
-                } else if filteredTickets.isEmpty {
-                    emptyFilteredView
-                } else {
-                    ticketsList
-                }
+        // ❌ Removed NavigationView - now handled by MainTabView
+        VStack(spacing: 0) {
+            if !ticketsViewModel.tickets.isEmpty || ticketsViewModel.isLoading {
+                HeaderSection(title: "My Tickets")
+                searchSection
+                filtersSection
             }
-            .background(Color.black)
-            .navigationBarHidden(true)
-            .refreshable {
-                ticketsViewModel.fetchUserTickets()
-                eventViewModel.fetchEvents()
+            
+            if ticketsViewModel.isLoading && ticketsViewModel.tickets.isEmpty {
+                loadingView
+            } else if ticketsViewModel.tickets.isEmpty {
+                emptyStateView
+            } else if filteredTickets.isEmpty {
+                emptyFilteredView
+            } else {
+                ticketsList
             }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
+        .background(Color.black)
+        .navigationBarHidden(true)
+        .refreshable {
+            ticketsViewModel.fetchUserTickets()
+            eventViewModel.fetchEvents()
+        }
     }
 
     private var emptyStateView: some View {

@@ -26,15 +26,14 @@ private func configureGlobalAppearance() {
     let nav = UINavigationBarAppearance()
     nav.configureWithOpaqueBackground()
     nav.backgroundColor = .black
-    // 👇 Replace these with your preferred fonts
-     nav.titleTextAttributes = [
-         .foregroundColor: UIColor.white,
-         .font: UIFont(name: "Avenir", size: 20)!
-     ]
-     nav.largeTitleTextAttributes = [
-         .foregroundColor: UIColor.white,
-         .font: UIFont(name: "Avenir", size: 32)!
-     ]
+    nav.titleTextAttributes = [
+        .foregroundColor: UIColor.white,
+        .font: UIFont(name: "Avenir", size: 20)!
+    ]
+    nav.largeTitleTextAttributes = [
+        .foregroundColor: UIColor.white,
+        .font: UIFont(name: "Avenir", size: 32)!
+    ]
     
     UINavigationBar.appearance().standardAppearance = nav
     UINavigationBar.appearance().scrollEdgeAppearance = nav
@@ -106,7 +105,6 @@ struct BurnerApp: App {
                         }
                     }
                     .id(shouldResetApp)
-                    // 🔥 Force all SwiftUI text to white globally
                     .tint(.white)
                     .foregroundColor(.white)
                     .preferredColorScheme(.dark)
@@ -127,25 +125,40 @@ struct BurnerApp: App {
 
     // MARK: - URL Handling
     private func handleIncomingURL(_ url: URL) {
-        print("🔗 Received URL: \(url.absoluteString)")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print("🔗 INCOMING URL")
+        print("   Full URL: \(url.absoluteString)")
+        print("   Scheme: \(url.scheme ?? "nil")")
+        print("   Host: \(url.host ?? "nil")")
+        print("   Path: \(url.path)")
+        print("   Path Components: \(url.pathComponents)")
+        print("   Last Component: \(url.lastPathComponent)")
 
         // 1) Google Sign-In first
         if GIDSignIn.sharedInstance.handle(url) {
             print("✅ Handled by Google Sign-In")
+            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             return
         }
 
         // 2) Our custom scheme(s)
-        guard url.scheme?.lowercased() == "burner" else { return }
+        guard url.scheme?.lowercased() == "burner" else {
+            print("⚠️ Not a burner:// URL, ignoring")
+            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            return
+        }
 
         if let deeplink = parseBurnerDeepLink(url) {
             switch deeplink {
             case .event(let id):
-                print("✅ Deep link → event id: \(id)")
+                print("✅ Parsed as event deep link")
+                print("   Event ID: \(id)")
+                print("   ID length: \(id.count)")
                 navigateToEvent(eventId: id)
             }
         } else {
-            print("❌ Invalid deep link format")
+            print("❌ Failed to parse deep link")
+            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         }
     }
 
@@ -154,60 +167,57 @@ struct BurnerApp: App {
     }
 
     private func parseBurnerDeepLink(_ url: URL) -> BurnerDeepLink? {
-        // Prefer URLComponents for robustness
-        guard let comps = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
+        print("🔍 Parsing deep link...")
+        
+        guard let comps = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            print("❌ Failed to create URLComponents")
+            return nil
+        }
 
-        // Case A: scheme://event/{id}  (host-based)
+        // Case A: burner://event/12345 (host-based)
         if comps.host == "event" {
+            print("   Detected host-based format: burner://event/ID")
             let id = url.lastPathComponent
+            print("   Extracted ID: '\(id)'")
             return id.isEmpty ? nil : .event(id)
         }
 
-        // Case B: scheme:///event/{id} (path-based)
+        // Case B: burner:///event/12345 (path-based)
         let parts = url.pathComponents.filter { $0 != "/" }
+        print("   Path components (filtered): \(parts)")
+        
         if parts.count >= 2, parts[0] == "event" {
+            print("   Detected path-based format: burner:///event/ID")
             let id = parts[1]
+            print("   Extracted ID: '\(id)'")
             return id.isEmpty ? nil : .event(id)
         }
 
+        print("   No valid format detected")
         return nil
     }
-
     
-    private func handleDeepLink(_ url: URL) {
-        print("🔗 Handling Burner deep link: \(url.absoluteString)")
+    private func navigateToEvent(eventId: String) {
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print("🚀 DEEP LINK NAVIGATION")
+        print("   Event ID: \(eventId)")
+        print("   Current tab: \(appState.selectedTab)")
         
-        // Parse the URL path
-        // Format: burner://event/{eventId}
-        let pathComponents = url.pathComponents.filter { $0 != "/" }
+        // Switch to Home tab
+        appState.selectedTab = 0
+        print("✅ Switched to Home tab")
         
-        guard pathComponents.count >= 2,
-              pathComponents[0] == "event" else {
-            print("❌ Invalid deep link format")
-            return
+        // Small delay to ensure tab has switched
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            // Post notification for HomeView to handle
+            NotificationCenter.default.post(
+                name: NSNotification.Name("NavigateToEvent"),
+                object: eventId
+            )
+            print("📢 Posted NavigateToEvent notification with ID: \(eventId)")
+            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         }
-        
-        let eventId = pathComponents[1]
-        print("✅ Opening event with ID: \(eventId)")
-        
-        // Navigate to the event
-        navigateToEvent(eventId: eventId)
     }
-    
- private func navigateToEvent(eventId: String) {
-        print("🚀 Navigating to event: \(eventId)")
-        print("📍 Current tab: \(appState.selectedTab)")
-        print("📚 Current navigation path count: \(appState.navigationPath.count)")
-
-        appState.selectedTab = 1         // switch to Events tab
-        appState.navigationPath = NavigationPath() // optional: reset stack
-        appState.navigationPath.append(eventId)    // push detail
-
-        print("✅ Navigation setup complete")
-        print("📍 New tab: \(appState.selectedTab)")
-        print("📚 New navigation path count: \(appState.navigationPath.count)")
-    }
-
 
     private func setupResetObserver() {
         NotificationCenter.default.addObserver(

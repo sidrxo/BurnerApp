@@ -4,6 +4,7 @@ import Combine
 
 struct MainTabView: View {
     @EnvironmentObject var appState: AppState
+    @AppStorage("useWalletView") private var useWalletView = true
 
     var body: some View {
         ZStack {
@@ -15,24 +16,25 @@ struct MainTabView: View {
                 case 1:
                     ExploreView()
                 case 2:
-                    TicketsView(selectedTab: $appState.selectedTab)
+                    if useWalletView {
+                        TicketsView(selectedTab: $appState.selectedTab)
+                    } else {
+                        TicketsWalletView(selectedTab: $appState.selectedTab)
+                    }
                 case 3:
                     SettingsView()
                 default:
                     HomeView()
                 }
             }
+            .ignoresSafeArea(.keyboard)
 
-            // Custom Tab Bar - only show when detail view is not presented
-            if !appState.isDetailViewPresented {
-                VStack {
-                    Spacer()
-                    CustomTabBar(selectedTab: $appState.selectedTab)
-                }
+            // ✅ ALWAYS show the tab bar - no conditional
+            VStack {
+                Spacer()
+                CustomTabBar(selectedTab: $appState.selectedTab)
             }
         }
-        .ignoresSafeArea(.keyboard)
-
     }
 }
 
@@ -45,10 +47,12 @@ class TabBarVisibility: ObservableObject {
     }
     
     func hideTabBar() {
+        // ✅ Don't actually hide it - just track state for other purposes if needed
         isDetailViewPresented = true
     }
     
     func showTabBar() {
+        // ✅ Don't actually show it - it's always visible
         isDetailViewPresented = false
     }
 }
@@ -72,10 +76,8 @@ struct CustomTabBar: View {
                 isSelected: selectedTab == 1
             ) {
                 if selectedTab == 1 {
-                    // Already on search tab - notify to focus search
                     NotificationCenter.default.post(name: NSNotification.Name("FocusSearchBar"), object: nil)
                 } else {
-                    // Navigate to search tab
                     selectedTab = 1
                 }
             }
