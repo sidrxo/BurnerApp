@@ -97,23 +97,28 @@ struct BurnerApp: App {
                         appState.loadInitialData()
                         setupResetObserver()
                     }
-                    .alert("Error", isPresented: $appState.showingError) {
-                        Button("OK") { appState.clearError() }
-                    } message: {
-                        if let errorMessage = appState.errorMessage {
-                            Text(errorMessage)
-                        }
-                    }
                     .id(shouldResetApp)
                     .tint(.white)
                     .foregroundColor(.white)
                     .preferredColorScheme(.dark)
-                
+
                 if appState.showingBurnerLockScreen {
                     BurnerModeLockScreen()
                         .environmentObject(appState)
                         .transition(.opacity)
                         .zIndex(1000)
+                }
+
+                if appState.showingError {
+                    CustomAlertView(
+                        title: "Error",
+                        description: appState.errorMessage ?? "An error occurred",
+                        primaryAction: { appState.clearError() },
+                        primaryActionTitle: "OK",
+                        customContent: EmptyView()
+                    )
+                    .transition(.opacity)
+                    .zIndex(1001)
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: appState.showingBurnerLockScreen)

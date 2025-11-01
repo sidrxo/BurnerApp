@@ -173,45 +173,52 @@ struct QRCodeScannerView: View {
     @State private var isShowingScanner = false
     @State private var scannedTicket: ScannedTicketData?
     @State private var showingResult = false
-    
+
     var body: some View {
-        VStack(spacing: 24) {
-            Text("Venue Scanner")
-                .appSectionHeader()
-                .foregroundColor(.white)
-            
-            Button(action: {
-                isShowingScanner = true
-            }) {
-                VStack(spacing: 16) {
-                    Image(systemName: "qrcode.viewfinder")
-                        .font(.appLargeIcon)
-                        .foregroundColor(.white)
-                    
-                    Text("Scan Ticket QR Code")
-                        .appBody()
-                        .foregroundColor(.white)
+        ZStack {
+            VStack(spacing: 24) {
+                Text("Venue Scanner")
+                    .appSectionHeader()
+                    .foregroundColor(.white)
+
+                Button(action: {
+                    isShowingScanner = true
+                }) {
+                    VStack(spacing: 16) {
+                        Image(systemName: "qrcode.viewfinder")
+                            .font(.appLargeIcon)
+                            .foregroundColor(.white)
+
+                        Text("Scan Ticket QR Code")
+                            .appBody()
+                            .foregroundColor(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 200)
+                    .background(Color.gray.opacity(0.2))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 200)
-                .background(Color.gray.opacity(0.2))
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+
+                Spacer()
             }
-            
-            Spacer()
-        }
-        .padding(20)
-        .background(Color.black)
-        .sheet(isPresented: $isShowingScanner) {
-            Text("QR Scanner Implementation")
-                .font(.title)
-                .foregroundColor(.white)
-        }
-        .alert("Scan Result", isPresented: $showingResult) {
-            Button("OK") { }
-        } message: {
-            if let ticket = scannedTicket {
-                Text("Ticket: \(ticket.ticketId)\nValid: \(ticket.isValid ? "✅" : "❌")")
+            .padding(20)
+            .background(Color.black)
+            .sheet(isPresented: $isShowingScanner) {
+                Text("QR Scanner Implementation")
+                    .font(.title)
+                    .foregroundColor(.white)
+            }
+
+            if showingResult, let ticket = scannedTicket {
+                CustomAlertView(
+                    title: "Scan Result",
+                    description: "Ticket: \(ticket.ticketId)\nValid: \(ticket.isValid ? "✅" : "❌")",
+                    primaryAction: { showingResult = false },
+                    primaryActionTitle: "OK",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1001)
             }
         }
     }

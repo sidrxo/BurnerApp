@@ -93,6 +93,18 @@ struct TicketDetailView: View {
                 Spacer()
             }
             .padding(.horizontal, 24)
+
+            if showTransferSuccess {
+                CustomAlertView(
+                    title: "Transfer Successful",
+                    description: "Ticket has been transferred successfully!",
+                    primaryAction: { showTransferSuccess = false },
+                    primaryActionTitle: "OK",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1001)
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .fullScreenCover(isPresented: $showingFullScreen) {
@@ -100,11 +112,6 @@ struct TicketDetailView: View {
                 ticketWithEvent: ticketWithEvent,
                 qrCodeData: qrCodeData
             )
-        }
-        .alert("Transfer Successful", isPresented: $showTransferSuccess) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Ticket has been transferred successfully!")
         }
         .onAppear {
             autoStartLiveActivityForEventDay()

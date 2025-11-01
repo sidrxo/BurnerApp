@@ -47,6 +47,53 @@ struct ScannerView: View {
             } else {
                 mainScannerView
             }
+
+            // Custom Alerts
+            if showingError {
+                CustomAlertView(
+                    title: "Error",
+                    description: errorMessage,
+                    primaryAction: { showingError = false },
+                    primaryActionTitle: "OK",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1001)
+            }
+
+            if showingSuccess {
+                CustomAlertView(
+                    title: "Success",
+                    description: successMessage,
+                    primaryAction: { showingSuccess = false },
+                    primaryActionTitle: "Done",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1001)
+            }
+
+            if showingAlreadyUsed, let details = alreadyUsedDetails {
+                CustomAlertView(
+                    title: "Ticket Already Used",
+                    description: """
+                    This ticket was already scanned.
+
+                    Event: \(details.eventName)
+                    Ticket: \(details.ticketNumber)
+                    Guest: \(details.userName)
+
+                    Scanned: \(details.scannedAt)
+                    By: \(details.scannedBy)
+                    \(details.scannedByEmail != nil ? "(\(details.scannedByEmail!))" : "")
+                    """,
+                    primaryAction: { showingAlreadyUsed = false },
+                    primaryActionTitle: "OK",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1001)
+            }
         }
         .onAppear {
             print("🟢 [Scanner] View appeared")
@@ -55,35 +102,6 @@ struct ScannerView: View {
         }
         .sheet(isPresented: $isShowingScanner) {
             scannerSheet
-        }
-        .alert("Error", isPresented: $showingError) {
-            Button("OK") { }
-        } message: {
-            Text(errorMessage)
-        }
-        .alert("Success", isPresented: $showingSuccess) {
-            Button("Done") {
-                // Don't dismiss, allow multiple scans
-            }
-        } message: {
-            Text(successMessage)
-        }
-        .alert("Ticket Already Used", isPresented: $showingAlreadyUsed) {
-            Button("OK") { }
-        } message: {
-            if let details = alreadyUsedDetails {
-                Text("""
-                This ticket was already scanned.
-                
-                Event: \(details.eventName)
-                Ticket: \(details.ticketNumber)
-                Guest: \(details.userName)
-                
-                Scanned: \(details.scannedAt)
-                By: \(details.scannedBy)
-                \(details.scannedByEmail != nil ? "(\(details.scannedByEmail!))" : "")
-                """)
-            }
         }
     }
     

@@ -284,6 +284,58 @@ struct EventDetailView: View {
                         .frame(height: 120)
                     )
                 }
+
+                // Custom Alerts
+                if showingAlert {
+                    CustomAlertView(
+                        title: isSuccess ? "Success" : "Error",
+                        description: alertMessage,
+                        primaryAction: {
+                            showingAlert = false
+                            if isSuccess {
+                                checkUserTicketStatus()
+                            }
+                        },
+                        primaryActionTitle: "OK",
+                        customContent: EmptyView()
+                    )
+                    .transition(.opacity)
+                    .zIndex(1001)
+                }
+
+                if showingAuthAlert {
+                    CustomAlertView(
+                        title: "Sign In Required",
+                        description: "You need to be signed in to buy tickets.",
+                        cancelAction: { showingAuthAlert = false },
+                        cancelActionTitle: "Cancel",
+                        primaryAction: {
+                            showingAuthAlert = false
+                            appState.isSignInSheetPresented = true
+                        },
+                        primaryActionTitle: "Sign In",
+                        customContent: EmptyView()
+                    )
+                    .transition(.opacity)
+                    .zIndex(1001)
+                }
+
+                if showingTicketAlert {
+                    CustomAlertView(
+                        title: "You Already Have a Ticket",
+                        description: "View your ticket or dismiss this alert.",
+                        cancelAction: { showingTicketAlert = false },
+                        cancelActionTitle: "Dismiss",
+                        primaryAction: {
+                            showingTicketAlert = false
+                            showingTicketDetail = true
+                        },
+                        primaryActionTitle: "View Ticket",
+                        customContent: EmptyView()
+                    )
+                    .transition(.opacity)
+                    .zIndex(1001)
+                }
             }
         }
         .ignoresSafeArea()
@@ -309,17 +361,6 @@ struct EventDetailView: View {
         .sheet(isPresented: $showShareSheet) {
             ShareSheet(activityItems: [generateShareText(), generateShareURL()])
         }
-        .alert(isPresented: $showingAlert) {
-            Alert(
-                title: Text(isSuccess ? "Success" : "Error"),
-                message: Text(alertMessage),
-                dismissButton: .default(Text("OK")) {
-                    if isSuccess {
-                        checkUserTicketStatus()
-                    }
-                }
-            )
-        }
         .onReceive(eventViewModel.$errorMessage) { errorMessage in
             if let errorMessage = errorMessage {
                 alertMessage = errorMessage
@@ -336,20 +377,6 @@ struct EventDetailView: View {
                 eventViewModel.clearMessages()
                 checkUserTicketStatus()
             }
-        }
-        .alert("Sign In Required", isPresented: $showingAuthAlert) {
-            Button("Sign In") {
-                appState.isSignInSheetPresented = true
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("You need to be signed in to buy tickets.")
-        }
-        .alert("You Already Have a Ticket", isPresented: $showingTicketAlert) {
-            Button("View Ticket") {
-                showingTicketDetail = true
-            }
-            Button("Dismiss", role: .cancel) {}
         }
         .sheet(isPresented: $showingTicketDetail) {
             if let ticket = userTicket {
