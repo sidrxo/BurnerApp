@@ -17,22 +17,30 @@ struct MainTabView: View {
                     ExploreView()
                 case 2:
                     if useWalletView {
-                        TicketsView(selectedTab: $appState.selectedTab)
+                        NavigationStack {
+                            TicketsView(selectedTab: $appState.selectedTab)
+                        }
                     } else {
-                        TicketsWalletView(selectedTab: $appState.selectedTab)
+                        NavigationStack {
+                            TicketsWalletView(selectedTab: $appState.selectedTab)
+                        }
                     }
                 case 3:
-                    SettingsView()
+                    NavigationStack {
+                        SettingsView()
+                    }
                 default:
                     HomeView()
                 }
             }
             .ignoresSafeArea(.keyboard)
 
-            // ✅ ALWAYS show the tab bar - no conditional
-            VStack {
-                Spacer()
-                CustomTabBar(selectedTab: $appState.selectedTab)
+            // Conditionally show tab bar based on detail view state
+            if !appState.isDetailViewPresented {
+                VStack {
+                    Spacer()
+                    CustomTabBar(selectedTab: $appState.selectedTab)
+                }
             }
         }
     }
@@ -41,18 +49,16 @@ struct MainTabView: View {
 // Environment object to manage tab bar visibility
 class TabBarVisibility: ObservableObject {
     @Binding var isDetailViewPresented: Bool
-    
+
     init(isDetailViewPresented: Binding<Bool>) {
         self._isDetailViewPresented = isDetailViewPresented
     }
-    
+
     func hideTabBar() {
-        // ✅ Don't actually hide it - just track state for other purposes if needed
         isDetailViewPresented = true
     }
-    
+
     func showTabBar() {
-        // ✅ Don't actually show it - it's always visible
         isDetailViewPresented = false
     }
 }
