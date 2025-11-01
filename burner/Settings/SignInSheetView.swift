@@ -103,19 +103,26 @@ struct SignInSheetView: View {
             if isLoading {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea(.all)
-                
+
                 ProgressView()
                     .scaleEffect(1.5)
                     .tint(.white)
             }
-        }
-        .alert("Sign In Error", isPresented: $showingError) {
-            Button("OK") {
-                errorMessage = ""
-                showingError = false
+
+            if showingError {
+                CustomAlertView(
+                    title: "Sign In Error",
+                    description: errorMessage,
+                    primaryAction: {
+                        errorMessage = ""
+                        showingError = false
+                    },
+                    primaryActionTitle: "OK",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1002)
             }
-        } message: {
-            Text(errorMessage)
         }
         .onAppear {
             selectRandomBackground()

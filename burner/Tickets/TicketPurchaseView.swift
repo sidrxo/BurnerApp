@@ -77,7 +77,23 @@ struct TicketPurchaseView: View {
 
                 Spacer(minLength: 12)
             }
-            
+
+            if showingAlert {
+                CustomAlertView(
+                    title: isSuccess ? "Success!" : "Error",
+                    description: alertMessage,
+                    primaryAction: {
+                        showingAlert = false
+                        if isSuccess {
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    },
+                    primaryActionTitle: "OK",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1001)
+            }
         }
         .presentationDetents([.height(showCardInput || showSavedCards ? 400 : 240)])
         .presentationDragIndicator(.visible)
@@ -86,17 +102,6 @@ struct TicketPurchaseView: View {
             Task {
                 try? await paymentService.fetchPaymentMethods()
             }
-        }
-        .alert(isPresented: $showingAlert) {
-            Alert(
-                title: Text(isSuccess ? "Success!" : "Error"),
-                message: Text(alertMessage),
-                dismissButton: .default(Text("OK")) {
-                    if isSuccess {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            )
         }
     }
     

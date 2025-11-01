@@ -95,7 +95,7 @@ struct PaymentSettingsView: View {
                                     )
                                 }
                             }
-                            
+
                             // Add button here
                             addPaymentButton
                         }
@@ -103,19 +103,24 @@ struct PaymentSettingsView: View {
                         .padding(.top, 16)
                         .padding(.bottom, 20)
                     }
-                  
+
                 }
+            }
+
+            if showAlert {
+                CustomAlertView(
+                    title: alertTitle,
+                    description: alertMessage,
+                    primaryAction: { showAlert = false },
+                    primaryActionTitle: "OK",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1001)
             }
         }
         .onAppear {
             loadPaymentMethods()
-        }
-        .alert(isPresented: $showAlert) {
-            Alert(
-                title: Text(alertTitle),
-                message: Text(alertMessage),
-                dismissButton: .default(Text("OK"))
-            )
         }
     }
 

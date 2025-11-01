@@ -15,84 +15,108 @@ struct AccountDetailsView: View {
     @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
-        VStack(spacing: 0) {
-            SettingsHeaderSection(title: "Account Details")
-            CustomMenuSection(title: "PROFILE") {
-                // Name first, then Email
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Name")
-                            .appBody()
-                            .foregroundColor(.white)
-                        Text(displayName.isEmpty ? "(No Name Set)" : displayName)
-                            .appSecondary()
-                            .foregroundColor(.gray)
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Email")
-                            .appBody()
-                            .foregroundColor(.white)
-                        Text(email.isEmpty ? "(No Email Set)" : email)
-                            .appSecondary()
-                            .foregroundColor(.gray)
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-            }
-            
-            CustomMenuSection(title: "ACCOUNT ACTIONS") {
-                Button(action: { showingSignOut = true }) {
+        ZStack {
+            VStack(spacing: 0) {
+                SettingsHeaderSection(title: "Account Details")
+                CustomMenuSection(title: "PROFILE") {
+                    // Name first, then Email
                     HStack {
-                        Text("Sign Out")
-                            .appBody()
-                            .foregroundColor(.red)
-                        Spacer()
-                        if isSigningOut {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .tint(.red)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Name")
+                                .appBody()
+                                .foregroundColor(.white)
+                            Text(displayName.isEmpty ? "(No Name Set)" : displayName)
+                                .appSecondary()
+                                .foregroundColor(.gray)
                         }
+                        Spacer()
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                }
-                .disabled(isSigningOut)
-                
-                Button(action: { showingDeleteAccount = true }) {
+
                     HStack {
-                        Text("Delete Account")
-                            .appBody()
-                            .foregroundColor(.red)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Email")
+                                .appBody()
+                                .foregroundColor(.white)
+                            Text(email.isEmpty ? "(No Email Set)" : email)
+                                .appSecondary()
+                                .foregroundColor(.gray)
+                        }
                         Spacer()
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                 }
+
+                CustomMenuSection(title: "ACCOUNT ACTIONS") {
+                    Button(action: { showingSignOut = true }) {
+                        HStack {
+                            Text("Sign Out")
+                                .appBody()
+                                .foregroundColor(.red)
+                            Spacer()
+                            if isSigningOut {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .tint(.red)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                    }
+                    .disabled(isSigningOut)
+
+                    Button(action: { showingDeleteAccount = true }) {
+                        HStack {
+                            Text("Delete Account")
+                                .appBody()
+                                .foregroundColor(.red)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                    }
+                }
+                Spacer()
             }
-            Spacer()
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
-        .background(Color.black)
-        .alert("Sign Out", isPresented: $showingSignOut) {
-            Button("Cancel", role: .cancel) {}
-            Button("Sign Out", role: .destructive) { signOut() }
-        } message: {
-            Text("Are you sure you want to sign out?")
-        }
-        .alert("Delete Account", isPresented: $showingDeleteAccount) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) { deleteAccount() }
-        } message: {
-            Text("This action cannot be undone.")
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .background(Color.black)
+
+            if showingSignOut {
+                CustomAlertView(
+                    title: "Sign Out",
+                    description: "Are you sure you want to sign out?",
+                    cancelAction: { showingSignOut = false },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        showingSignOut = false
+                        signOut()
+                    },
+                    primaryActionTitle: "Sign Out",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1001)
+            }
+
+            if showingDeleteAccount {
+                CustomAlertView(
+                    title: "Delete Account",
+                    description: "This action cannot be undone.",
+                    cancelAction: { showingDeleteAccount = false },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        showingDeleteAccount = false
+                        deleteAccount()
+                    },
+                    primaryActionTitle: "Delete",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1001)
+            }
         }
         .onAppear {
             fetchUserInfoFromFirestore()

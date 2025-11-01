@@ -124,77 +124,88 @@ struct BookmarkListItem: View {
     let event: Event
     @ObservedObject var bookmarkManager: BookmarkManager
     @State private var showingRemoveAlert = false
-    
+
     var body: some View {
-        HStack(spacing: 12) {
-            // Event Image
-            KFImage(URL(string: event.imageUrl))
-                .placeholder {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.3))
-                        .overlay(
-                            Image(systemName: "music.note")
-                                .appSectionHeader()
-                                .foregroundColor(.gray)
-                        )
-                }
-                .resizable()
-                .scaledToFill()
-                .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            
-            // Event Details
-            VStack(alignment: .leading, spacing: 4) {
-                Text(event.name)
-                    .appBody()
-                    .foregroundColor(.white)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                
-                Text(event.venue)
-                    .appSecondary()
-                    .foregroundColor(.gray)
-                    .lineLimit(1)
-                
-                HStack(spacing: 4) {
-                    Image(systemName: "calendar")
-                        .appCaption()
+        ZStack {
+            HStack(spacing: 12) {
+                // Event Image
+                KFImage(URL(string: event.imageUrl))
+                    .placeholder {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.gray.opacity(0.3))
+                            .overlay(
+                                Image(systemName: "music.note")
+                                    .appSectionHeader()
+                                    .foregroundColor(.gray)
+                            )
+                    }
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 60, height: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                // Event Details
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(event.name)
+                        .appBody()
+                        .foregroundColor(.white)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+
+                    Text(event.venue)
+                        .appSecondary()
                         .foregroundColor(.gray)
-                    
-                    Text((event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month()))
-                        .appCaption()
-                        .foregroundColor(.gray)
+                        .lineLimit(1)
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                            .appCaption()
+                            .foregroundColor(.gray)
+
+                        Text((event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month()))
+                            .appCaption()
+                            .foregroundColor(.gray)
+                    }
+
+                    Text("£\(String(format: "%.2f", event.price))")
+                        .appSecondary()
+                        .foregroundColor(.white)
                 }
-                
-                Text("£\(String(format: "%.2f", event.price))")
-                    .appSecondary()
-                    .foregroundColor(.white)
-            }
-            
-            Spacer()
-            
-            // Remove Bookmark Button
-            Button(action: {
-                showingRemoveAlert = true
-            }) {
-                Image(systemName: "bookmark.fill")
-                    .appBody()
-                    .foregroundColor(.white)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color.gray.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .alert("Remove Bookmark", isPresented: $showingRemoveAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Remove", role: .destructive) {
-                Task {
-                    await bookmarkManager.toggleBookmark(for: event)
+
+                Spacer()
+
+                // Remove Bookmark Button
+                Button(action: {
+                    showingRemoveAlert = true
+                }) {
+                    Image(systemName: "bookmark.fill")
+                        .appBody()
+                        .foregroundColor(.white)
                 }
             }
-        } message: {
-            Text("Are you sure you want to remove this event from your bookmarks?")
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.gray.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            if showingRemoveAlert {
+                CustomAlertView(
+                    title: "Remove Bookmark",
+                    description: "Are you sure you want to remove this event from your bookmarks?",
+                    cancelAction: { showingRemoveAlert = false },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        showingRemoveAlert = false
+                        Task {
+                            await bookmarkManager.toggleBookmark(for: event)
+                        }
+                    },
+                    primaryActionTitle: "Remove",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1001)
+            }
         }
     }
 }

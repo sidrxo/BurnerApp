@@ -96,23 +96,40 @@ struct TransferTicketView: View {
 
                 Spacer()
             }
+
+            if showConfirmation {
+                CustomAlertView(
+                    title: "Confirm Transfer",
+                    description: "Are you sure you want to transfer this ticket to \(recipientEmail)? This action cannot be undone.",
+                    cancelAction: { showConfirmation = false },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        showConfirmation = false
+                        transferTicket()
+                    },
+                    primaryActionTitle: "Transfer",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1001)
+            }
+
+            if showTransferSuccess {
+                CustomAlertView(
+                    title: "Transfer Successful",
+                    description: "Ticket has been transferred successfully!",
+                    primaryAction: {
+                        showTransferSuccess = false
+                        presentationMode.wrappedValue.dismiss()
+                    },
+                    primaryActionTitle: "OK",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1001)
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .alert("Confirm Transfer", isPresented: $showConfirmation) {
-            Button("Cancel", role: .cancel) { }
-            Button("Transfer") {
-                transferTicket()
-            }
-        } message: {
-            Text("Are you sure you want to transfer this ticket to \(recipientEmail)? This action cannot be undone.")
-        }
-        .alert("Transfer Successful", isPresented: $showTransferSuccess) {
-            Button("OK", role: .cancel) {
-                presentationMode.wrappedValue.dismiss()
-            }
-        } message: {
-            Text("Ticket has been transferred successfully!")
-        }
     }
 
     private func transferTicket() {
