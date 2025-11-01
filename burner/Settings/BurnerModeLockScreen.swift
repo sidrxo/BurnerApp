@@ -85,7 +85,9 @@ struct BurnerModeLockScreen: View {
                     
                     // Exit button
                     Button(action: {
-                        showExitConfirmation = true
+                        withAnimation {
+                            showExitConfirmation = true
+                        }
                     }) {
                         Text("Need your phone?\nTap here to go back.")
                             .appCaption()
@@ -100,72 +102,32 @@ struct BurnerModeLockScreen: View {
                 Spacer()
             }
             .frame(maxWidth: .infinity)
-
-            // Custom black and white alert
+            
+            // Custom alert overlay
             if showExitConfirmation {
-                Color.black.opacity(0.85)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        showExitConfirmation = false
-                    }
-
-                VStack(spacing: 20) {
-                    VStack(spacing: 12) {
-                        Text("Exit Burner Mode?")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white)
-
-                        Text("Are you sure you want to return to the app?")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(.white.opacity(0.8))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 20)
-                    }
-                    .padding(.top, 24)
-                    .padding(.horizontal, 24)
-
-                    Divider()
-                        .background(Color.white.opacity(0.2))
-
-                    HStack(spacing: 0) {
-                        Button(action: {
+                CustomAlertView(
+                    title: "Exit Burner Mode?",
+                    description: "Are you sure you want to return to the app?",
+                    cancelAction: {
+                        withAnimation {
                             showExitConfirmation = false
-                        }) {
-                            Text("Cancel")
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
                         }
-
-                        Divider()
-                            .background(Color.white.opacity(0.2))
-                            .frame(height: 44)
-
-                        Button(action: {
+                    },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        withAnimation {
                             showExitConfirmation = false
-                            exitBurnerMode()
-                        }) {
-                            Text("Yes")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
                         }
-                    }
-                }
-                .frame(width: 280)
-                .background(Color.black)
-                .cornerRadius(14)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        exitBurnerMode()
+                    },
+                    primaryActionTitle: "Exit",
+                    customContent: EmptyView()
                 )
-                .shadow(color: Color.black.opacity(0.3), radius: 20, y: 10)
             }
         }
         .opacity(opacity) // Apply fade-in effect
         .statusBarHidden(true)
+        .preferredColorScheme(.dark) // Force dark mode for the alert
         .onReceive(timer) { input in
             currentTime = input
         }
