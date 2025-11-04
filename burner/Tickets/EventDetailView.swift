@@ -53,11 +53,11 @@ struct EventDetailView: View {
 
     var buttonText: String {
         if userHasTicket {
-            return "Ticket Purchased"
+            return "TICKET PURCHASED"
         } else if availableTickets > 0 {
-            return "Buy Ticket"
+            return "BUY TICKET"
         } else {
-            return "Sold Out"
+            return "SOLD OUT"
         }
     }
     

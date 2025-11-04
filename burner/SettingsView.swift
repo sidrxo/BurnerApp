@@ -178,10 +178,10 @@ struct SettingsView: View {
                 .foregroundColor(.gray)
             
             VStack(spacing: 8) {
-                Text("Not Signed In")
+                Text("Join the movement")
                     .appSectionHeader()
                     .foregroundColor(.white)
-                Text("Sign in to access your settings")
+                Text("Sign in to see your settings")
                     .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
@@ -190,7 +190,7 @@ struct SettingsView: View {
             Button {
                 showingSignIn = true
             } label: {
-                Text("Sign In")
+                Text("SIGN IN")
                     .appBody()
                     .foregroundColor(.black)
                     .frame(maxWidth: 200)

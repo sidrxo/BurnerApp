@@ -30,6 +30,7 @@ extension View {
         self
             .padding(.vertical, 12)
             .background(backgroundColor)
+            .foregroundColor(foregroundColor) // ✅ Fix
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
 
@@ -55,6 +56,7 @@ extension View {
         cornerRadius: CGFloat = 25
     ) -> some View {
         self
+            .foregroundColor(foregroundColor) // ✅ Fix here
             .frame(maxWidth: .infinity)
             .frame(height: height)
             .background(backgroundColor)

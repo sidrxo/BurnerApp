@@ -325,7 +325,6 @@ export function useAdminManagement() {
         email: scannerData.email.trim(),
         name: scannerData.name.trim(),
         venueId: scannerData.venueId || null,
-        phoneNumber: scannerData.phoneNumber?.trim() || null,
       });
 
       const response = result.data as any;

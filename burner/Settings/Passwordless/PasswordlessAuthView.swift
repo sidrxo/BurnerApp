@@ -257,7 +257,7 @@ struct PasswordlessAuthView: View {
         
         // Configure action code settings
         let actionCodeSettings = ActionCodeSettings()
-        actionCodeSettings.url = URL(string: "https://yourapp.page.link/signin") // Replace with your dynamic link
+        actionCodeSettings.url = URL(string: "https://manageburner.online/signin") // Replace with your dynamic link
         actionCodeSettings.handleCodeInApp = true
         actionCodeSettings.setIOSBundleID(Bundle.main.bundleIdentifier ?? "")
         // If you want to support Android too:
