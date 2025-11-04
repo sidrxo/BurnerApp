@@ -55,7 +55,7 @@ struct EventDetailView: View {
         if userHasTicket {
             return "TICKET PURCHASED"
         } else if availableTickets > 0 {
-            return "BUY TICKET"
+            return "GET TICKET"
         } else {
             return "SOLD OUT"
         }

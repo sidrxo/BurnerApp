@@ -108,15 +108,16 @@ struct TicketsView: View {
     private var emptyStateView: some View {
         VStack(spacing: 20) {
             Spacer()
-
-            Image(systemName: "ticket")
-                .font(.appLargeIcon)
-                .foregroundColor(.gray)
+            Image("transparent")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 180)
+                .clipShape(Circle()) // 👈 makes it circular
             VStack(spacing: 8) {
-                Text("No Tickets Yet")
+                Text("MEET ME IN THE MOMENT")
                     .appSectionHeader()
                     .foregroundColor(.white)
-                Text("Your tickets will appear here")
+                Text("The best night of your life is one click away.")
                     .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
@@ -127,7 +128,7 @@ struct TicketsView: View {
                 selectedTab = 0
             } label: {
                 Text("BROWSE EVENTS")
-                    .appBody()
+                    .font(.appFont(size: 17))
                     .frame(maxWidth: 200)
                     .secondaryButtonStyle(
                         backgroundColor: .white,
@@ -215,9 +216,6 @@ struct TicketsView: View {
 
     private var emptyFilteredView: some View {
         VStack(spacing: 16) {
-            Image(systemName: "magnifyingglass")
-                .font(.appLargeIcon)
-                .foregroundColor(.gray)
             VStack(spacing: 8) {
                 Text("No Results Found")
                     .appSectionHeader()

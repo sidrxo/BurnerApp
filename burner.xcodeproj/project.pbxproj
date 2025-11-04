@@ -514,7 +514,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = burner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Burner;
+				INFOPLIST_KEY_CFBundleDisplayName = BURNER;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to scan QR codes for ticket verification and event check-ins.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -556,7 +556,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = burner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Burner;
+				INFOPLIST_KEY_CFBundleDisplayName = BURNER;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to scan QR codes for ticket verification and event check-ins.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;

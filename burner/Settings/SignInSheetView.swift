@@ -74,8 +74,11 @@ struct SignInSheetView: View {
                 Image("transparent")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 120)
+                    .frame(width: 180)
                     .padding(.bottom, 60)
+                    .clipShape(Circle())
+                    .padding(.bottom, 10)// 👈 makes it circular
+
 
                 
                 Spacer()

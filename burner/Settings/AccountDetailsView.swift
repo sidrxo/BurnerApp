@@ -122,14 +122,15 @@ struct AccountDetailsView: View {
             if showingDeleteAccountFinal {
                 CustomAlertView(
                     title: "Final Confirmation",
-                    description: "This action cannot be undone. Your account and all data will be permanently deleted.",
+                    description: "This action cannot be undone. Your account and all tickets will be permanently deleted.",
                     cancelAction: { showingDeleteAccountFinal = false },
                     cancelActionTitle: "Cancel",
                     primaryAction: {
                         showingDeleteAccountFinal = false
                         deleteAccount()
                     },
-                    primaryActionTitle: "Delete Permanently",
+                    primaryActionTitle: "Delete",
+                    primaryActionColor: .red,
                     customContent: EmptyView()
                 )
                 .transition(.opacity)

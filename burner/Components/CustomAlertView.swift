@@ -12,6 +12,9 @@ struct CustomAlertView<Content: View>: View {
 
     var primaryAction: (() -> Void)?
     var primaryActionTitle: String?
+    var primaryActionColor: Color = .white // 👈 new property
+
+    
 
     var customContent: Content?
 
@@ -21,6 +24,7 @@ struct CustomAlertView<Content: View>: View {
          cancelActionTitle: String? = nil,
          primaryAction: (() -> Void)? = nil,
          primaryActionTitle: String? = nil,
+         primaryActionColor: Color = .white, // 👈 added to init
          customContent: Content? = EmptyView()) {
         self.title = title
         self.description = description
@@ -28,6 +32,7 @@ struct CustomAlertView<Content: View>: View {
         self.cancelActionTitle = cancelActionTitle
         self.primaryAction = primaryAction
         self.primaryActionTitle = primaryActionTitle
+        self.primaryActionColor = primaryActionColor // ✅ ADD THIS LINE
         self.customContent = customContent
     }
 
@@ -71,7 +76,7 @@ struct CustomAlertView<Content: View>: View {
                         Button { primaryAction() } label: {
                             Text(primaryActionTitle)
                                 .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(.white)
+                                .foregroundColor(primaryActionColor) // 👈 now configurable
                                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
                         }
                     }

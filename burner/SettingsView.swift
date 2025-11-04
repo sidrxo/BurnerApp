@@ -172,16 +172,16 @@ struct SettingsView: View {
     private var notSignedInSection: some View {
         VStack(spacing: 20) {
             Spacer()
-            
-            Image(systemName: "person.crop.circle")
-                .font(.appLargeIcon)
-                .foregroundColor(.gray)
-            
+            Image("transparent")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 180)
+                .clipShape(Circle()) // 👈 makes it circular
             VStack(spacing: 8) {
-                Text("Join the movement")
+                Text("WHERE WILL YOU GO")
                     .appSectionHeader()
                     .foregroundColor(.white)
-                Text("Sign in to see your settings")
+                Text("Be part of what's next in music.")
                     .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
@@ -191,7 +191,7 @@ struct SettingsView: View {
                 showingSignIn = true
             } label: {
                 Text("SIGN IN")
-                    .appBody()
+                    .font(.appFont(size: 17))
                     .foregroundColor(.black)
                     .frame(maxWidth: 200)
                     .padding(.vertical, 12)
