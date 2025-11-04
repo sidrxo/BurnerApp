@@ -11,6 +11,7 @@ class AppState: ObservableObject {
     @Published var ticketsViewModel: TicketsViewModel
     @Published var authService: AuthenticationService
     @Published var burnerModeMonitor: BurnerModeMonitor
+    @Published var passwordlessAuthHandler: PasswordlessAuthHandler
     
     // MARK: - Global UI State
     @Published var isSignInSheetPresented = false
@@ -83,7 +84,10 @@ class AppState: ObservableObject {
         self.authService = AuthenticationService(
             userRepository: userRepository
         )
-        
+
+        // Initialize Passwordless Auth Handler
+        self.passwordlessAuthHandler = PasswordlessAuthHandler()
+
         // Initialize Burner Mode Monitor (will start monitoring immediately)
         self.burnerModeMonitor = BurnerModeMonitor(burnerManager: burnerManager)
         

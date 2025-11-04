@@ -85,7 +85,7 @@ struct BookmarksView: View {
                 // Dismiss bookmarks view to return to settings
                 dismiss()
             }
-            .appBody()
+            .font(.appFont(size: 17))
             .foregroundColor(.black)
             .frame(maxWidth: 200)
             .padding(.vertical, 12)

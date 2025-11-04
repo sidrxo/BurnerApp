@@ -141,7 +141,7 @@ struct SignInSheetView: View {
                         .frame(width: 22, height: 22)
                     
                     Text("Continue with Google")
-                        .appBody()
+                        .font(.appFont(size: 17))
                         .foregroundColor(.white)
                 }
                 .frame(maxWidth: .infinity)
@@ -165,7 +165,7 @@ struct SignInSheetView: View {
                         .foregroundColor(.black)
                     
                     Text("Continue with Apple")
-                        .appBody()
+                        .font(.appFont(size: 17))
                         .foregroundColor(.black)
                 }
                 .frame(maxWidth: .infinity)
@@ -189,7 +189,7 @@ struct SignInSheetView: View {
                         .foregroundColor(.white)
 
                     Text("Continue with Email")
-                        .appBody()
+                        .font(.appFont(size: 17))
                         .foregroundColor(.white)
                 }
                 .frame(maxWidth: .infinity)
@@ -206,13 +206,34 @@ struct SignInSheetView: View {
     }
 
     private var footerSection: some View {
-        Text("By continuing, you agree to our Terms of Service & Privacy Policy")
-            .appCaption()
-            .foregroundColor(.white.opacity(0.7))
-            .multilineTextAlignment(.center)
-            .lineLimit(2)
-            .padding(.horizontal, 40)
-            .padding(.top, 8)
+        VStack(spacing: 8) {
+            Text("By continuing, you agree to our")
+                .appCaption()
+                .foregroundColor(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+
+            HStack(spacing: 4) {
+                NavigationLink(destination: TermsOfServiceView()) {
+                    Text("Terms of Service")
+                        .appCaption()
+                        .foregroundColor(.white)
+                        .underline()
+                }
+
+                Text("&")
+                    .appCaption()
+                    .foregroundColor(.white.opacity(0.7))
+
+                NavigationLink(destination: PrivacyPolicyView()) {
+                    Text("Privacy Policy")
+                        .appCaption()
+                        .foregroundColor(.white)
+                        .underline()
+                }
+            }
+        }
+        .padding(.horizontal, 40)
+        .padding(.top, 8)
     }
     
     // MARK: - Google Sign In Handler

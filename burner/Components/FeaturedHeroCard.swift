@@ -1,10 +1,12 @@
 import SwiftUI
 import Kingfisher
+import FirebaseAuth
 
 struct FeaturedHeroCard: View {
     let event: Event
     @ObservedObject var bookmarkManager: BookmarkManager
-    
+    @EnvironmentObject var appState: AppState
+
     private var isBookmarked: Bool {
         guard let eventId = event.id else { return false }
         return bookmarkManager.isBookmarked(eventId)
@@ -76,8 +78,15 @@ struct FeaturedHeroCard: View {
                             Spacer()
                             
                             Button(action: {
-                                Task {
-                                    await bookmarkManager.toggleBookmark(for: event)
+                                // Check if user is authenticated
+                                if Auth.auth().currentUser == nil {
+                                    // Show sign-in sheet if not authenticated
+                                    appState.isSignInSheetPresented = true
+                                } else {
+                                    // Toggle bookmark if authenticated
+                                    Task {
+                                        await bookmarkManager.toggleBookmark(for: event)
+                                    }
                                 }
                             }) {
                                 Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
