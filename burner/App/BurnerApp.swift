@@ -168,6 +168,13 @@ struct BurnerApp: App {
                 print("   Event ID: \(id)")
                 print("   ID length: \(id.count)")
                 navigateToEvent(eventId: id)
+            case .auth(let link):
+                print("✅ Parsed as auth deep link")
+                print("   Link: \(link)")
+                // Handle the passwordless auth link
+                if let linkUrl = URL(string: link) {
+                    _ = appState.passwordlessAuthHandler.handleSignInLink(url: linkUrl)
+                }
             }
         } else {
             print("❌ Failed to parse deep link")
@@ -177,17 +184,29 @@ struct BurnerApp: App {
 
     private enum BurnerDeepLink {
         case event(String)
+        case auth(String)
     }
 
     private func parseBurnerDeepLink(_ url: URL) -> BurnerDeepLink? {
         print("🔍 Parsing deep link...")
-        
+
         guard let comps = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
             print("❌ Failed to create URLComponents")
             return nil
         }
 
-        // Case A: burner://event/12345 (host-based)
+        // Case A: burner://auth?link=<url> (passwordless auth)
+        if comps.host == "auth" {
+            print("   Detected auth format: burner://auth?link=<url>")
+            if let linkParam = comps.queryItems?.first(where: { $0.name == "link" })?.value {
+                print("   Extracted link: '\(linkParam)'")
+                return .auth(linkParam)
+            }
+            print("   No link parameter found")
+            return nil
+        }
+
+        // Case B: burner://event/12345 (host-based)
         if comps.host == "event" {
             print("   Detected host-based format: burner://event/ID")
             let id = url.lastPathComponent
@@ -195,10 +214,10 @@ struct BurnerApp: App {
             return id.isEmpty ? nil : .event(id)
         }
 
-        // Case B: burner:///event/12345 (path-based)
+        // Case C: burner:///event/12345 (path-based)
         let parts = url.pathComponents.filter { $0 != "/" }
         print("   Path components (filtered): \(parts)")
-        
+
         if parts.count >= 2, parts[0] == "event" {
             print("   Detected path-based format: burner:///event/ID")
             let id = parts[1]
