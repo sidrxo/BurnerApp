@@ -11,6 +11,7 @@ struct AccountDetailsView: View {
     @State private var email = ""
     @State private var showingSignOut = false
     @State private var showingDeleteAccount = false
+    @State private var showingDeleteAccountFinal = false
     @State private var isSigningOut = false
     @Environment(\.presentationMode) var presentationMode
 
@@ -104,18 +105,35 @@ struct AccountDetailsView: View {
             if showingDeleteAccount {
                 CustomAlertView(
                     title: "Delete Account",
-                    description: "This action cannot be undone.",
+                    description: "Are you sure you want to delete your account? This will remove all your data.",
                     cancelAction: { showingDeleteAccount = false },
                     cancelActionTitle: "Cancel",
                     primaryAction: {
                         showingDeleteAccount = false
-                        deleteAccount()
+                        showingDeleteAccountFinal = true
                     },
-                    primaryActionTitle: "Delete",
+                    primaryActionTitle: "Continue",
                     customContent: EmptyView()
                 )
                 .transition(.opacity)
                 .zIndex(1001)
+            }
+
+            if showingDeleteAccountFinal {
+                CustomAlertView(
+                    title: "Final Confirmation",
+                    description: "This action cannot be undone. Your account and all data will be permanently deleted.",
+                    cancelAction: { showingDeleteAccountFinal = false },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        showingDeleteAccountFinal = false
+                        deleteAccount()
+                    },
+                    primaryActionTitle: "Delete Permanently",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1002)
             }
         }
         .onAppear {

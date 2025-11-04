@@ -32,9 +32,9 @@ struct EventDetailView: View {
     
     // Calculate responsive hero height based on screen size
     private var heroHeight: CGFloat {
-        // Use 45% of screen height, with min/max bounds
-        let calculatedHeight = screenHeight * 0.40
-        return max(300, min(calculatedHeight, 500))
+        // Use 50% of screen height to show more of the image, with min/max bounds
+        let calculatedHeight = screenHeight * 0.50
+        return max(350, min(calculatedHeight, 550))
     }
     
     var availableTickets: Int {
@@ -204,21 +204,44 @@ struct EventDetailView: View {
                             }
                             .padding(.horizontal, 20)
 
-                            // Share button centered below event metadata
-                            Button(action: {
-                                showShareSheet = true
-                            }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "square.and.arrow.up")
-                                        .font(.system(size: 16))
-                                    Text("Share Event")
-                                        .font(.appFont(size: 17))
+                            // Save and Share buttons side by side (icons only)
+                            HStack(spacing: 12) {
+                                // Save/Bookmark button
+                                Button(action: {
+                                    // Check if user is authenticated
+                                    if Auth.auth().currentUser == nil {
+                                        // Show sign-in sheet if not authenticated
+                                        appState.isSignInSheetPresented = true
+                                    } else {
+                                        // Toggle bookmark if authenticated
+                                        Task {
+                                            await bookmarkManager.toggleBookmark(for: event)
+                                        }
+                                    }
+                                }) {
+                                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.white)
+                                        .iconButtonStyle(
+                                            size: 50,
+                                            backgroundColor: Color.white.opacity(0.1),
+                                            cornerRadius: 12
+                                        )
                                 }
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(Color.white.opacity(0.1))
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                                // Share button
+                                Button(action: {
+                                    showShareSheet = true
+                                }) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.white)
+                                        .iconButtonStyle(
+                                            size: 50,
+                                            backgroundColor: Color.white.opacity(0.1),
+                                            cornerRadius: 12
+                                        )
+                                }
                             }
                             .padding(.horizontal, 20)
                             .padding(.top, 8)
@@ -229,31 +252,11 @@ struct EventDetailView: View {
                     }
                 }
                 
-                // Floating bottom bar
+                // Floating bottom bar - Buy Ticket button only
                 VStack {
                     Spacer()
-                    
-                    HStack(spacing: 12) {
-                        Button(action: {
-                            // Check if user is authenticated
-                            if Auth.auth().currentUser == nil {
-                                // Show sign-in sheet if not authenticated
-                                appState.isSignInSheetPresented = true
-                            } else {
-                                // Toggle bookmark if authenticated
-                                Task {
-                                    await bookmarkManager.toggleBookmark(for: event)
-                                }
-                            }
-                        }) {
-                            Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                                .appBody()
-                                .foregroundColor(.white)
-                                .frame(width: 44, height: 44)
-                                .background(Color.gray.opacity(0.2))
-                                .clipShape(Circle())
-                        }
-                        
+
+                    VStack(spacing: 0) {
                         Button(action: {
                             if userHasTicket {
                                 showingTicketAlert = true
@@ -268,16 +271,17 @@ struct EventDetailView: View {
                         }) {
                             Text(buttonText)
                                 .font(.appFont(size: 17))
-                                .foregroundColor(buttonTextColor)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(buttonColor)
-                                .clipShape(RoundedRectangle(cornerRadius: 22))
+                                .largeActionButtonStyle(
+                                    backgroundColor: buttonColor,
+                                    foregroundColor: buttonTextColor,
+                                    height: 50,
+                                    cornerRadius: 25
+                                )
                         }
                         .disabled(isButtonDisabled)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? 0 : 16)
                     .background(
                         LinearGradient(
                             gradient: Gradient(colors: [

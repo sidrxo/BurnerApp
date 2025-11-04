@@ -43,6 +43,9 @@ struct MainTabView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $appState.isSignInSheetPresented) {
+            SignInSheetView(showingSignIn: $appState.isSignInSheetPresented)
+        }
     }
 }
 

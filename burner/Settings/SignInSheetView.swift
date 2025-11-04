@@ -24,10 +24,11 @@ struct SignInSheetView: View {
     @State private var selectedBackground: String = "Background1"
 
     var body: some View {
-        ZStack {
-            // Black background
-            Color.black
-                .ignoresSafeArea(.all)
+        NavigationStack {
+            ZStack {
+                // Black background
+                Color.black
+                    .ignoresSafeArea(.all)
             
             // Background Image - randomly selected with fixed height
             GeometryReader { geometry in
@@ -114,11 +115,12 @@ struct SignInSheetView: View {
                 .zIndex(1002)
             }
         }
-        .fullScreenCover(isPresented: $showingPasswordlessAuth) {
-            PasswordlessAuthView(showingSignIn: $showingSignIn)
-        }
-        .onAppear {
-            selectRandomBackground()
+            .fullScreenCover(isPresented: $showingPasswordlessAuth) {
+                PasswordlessAuthView(showingSignIn: $showingSignIn)
+            }
+            .onAppear {
+                selectRandomBackground()
+            }
         }
     }
 
@@ -139,18 +141,15 @@ struct SignInSheetView: View {
                     Image("google_logo")
                         .resizable()
                         .frame(width: 22, height: 22)
-                    
+
                     Text("Continue with Google")
                         .font(.appFont(size: 17))
-                        .foregroundColor(.white)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color.black.opacity(0.7))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                .foregroundColor(.white)
+                .primaryButtonStyle(
+                    backgroundColor: Color.black.opacity(0.7),
+                    foregroundColor: .white,
+                    borderColor: Color.white.opacity(0.2)
                 )
             }
             .disabled(isLoading)
@@ -162,19 +161,15 @@ struct SignInSheetView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "applelogo")
                         .font(.appIcon)
-                        .foregroundColor(.black)
-                    
+
                     Text("Continue with Apple")
                         .font(.appFont(size: 17))
-                        .foregroundColor(.black)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                .foregroundColor(.black)
+                .primaryButtonStyle(
+                    backgroundColor: .white,
+                    foregroundColor: .black,
+                    borderColor: Color.white.opacity(0.2)
                 )
             }
             .disabled(isLoading)
@@ -186,19 +181,15 @@ struct SignInSheetView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "envelope")
                         .font(.appIcon)
-                        .foregroundColor(.white)
 
                     Text("Continue with Email")
                         .font(.appFont(size: 17))
-                        .foregroundColor(.white)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color.black.opacity(0.7))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                .foregroundColor(.white)
+                .primaryButtonStyle(
+                    backgroundColor: Color.black.opacity(0.7),
+                    foregroundColor: .white,
+                    borderColor: Color.white.opacity(0.2)
                 )
             }
             .disabled(isLoading)
