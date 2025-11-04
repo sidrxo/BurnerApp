@@ -128,11 +128,12 @@ struct TicketsView: View {
             } label: {
                 Text("BROWSE EVENTS")
                     .appBody()
-                    .foregroundColor(.black)
                     .frame(maxWidth: 200)
-                    .padding(.vertical, 12)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .secondaryButtonStyle(
+                        backgroundColor: .white,
+                        foregroundColor: .black,
+                        cornerRadius: 8
+                    )
             }
             .buttonStyle(PlainButtonStyle())
 
