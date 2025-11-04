@@ -526,7 +526,6 @@ struct TicketPurchaseView: View {
         viewModel: EventViewModel(
             eventRepository: EventRepository(),
             ticketRepository: TicketRepository(),
-            purchaseService: PurchaseService()
         ),
         selectedDetent: .constant(.height(240))
     )

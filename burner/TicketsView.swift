@@ -116,7 +116,7 @@ struct TicketsView: View {
                 Text("No Tickets Yet")
                     .appSectionHeader()
                     .foregroundColor(.white)
-                Text("Your purchased tickets will appear here")
+                Text("Your tickets will appear here")
                     .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
@@ -126,7 +126,7 @@ struct TicketsView: View {
                 // Navigate to Home tab (index 0)
                 selectedTab = 0
             } label: {
-                Text("Browse Events")
+                Text("BROWSE EVENTS")
                     .appBody()
                     .foregroundColor(.black)
                     .frame(maxWidth: 200)

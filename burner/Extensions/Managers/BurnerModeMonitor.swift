@@ -139,20 +139,28 @@ class BurnerModeMonitor: ObservableObject {
         
         print("🚀 BurnerModeMonitor: Enabling Burner Mode...")
         
-        // Enable Burner Mode
-        burnerManager.enable()
-        shouldEnableBurnerMode = true
-        
-        print("🔥 BurnerModeMonitor: Burner Mode automatically enabled for scanned event")
-        print("   - UserDefaults key 'burnerModeEnabled' set to: \(UserDefaults.standard.bool(forKey: "burnerModeEnabled"))")
-        
-        // Show notification to user
-        NotificationCenter.default.post(
-            name: NSNotification.Name("BurnerModeAutoEnabled"),
-            object: nil
-        )
-        
-        print("📢 BurnerModeMonitor: Notification posted to user")
+        // Enable Burner Mode with proper error handling
+        do {
+            try await burnerManager.enable()
+            shouldEnableBurnerMode = true
+            
+            print("🔥 BurnerModeMonitor: Burner Mode automatically enabled for scanned event")
+            print("   - UserDefaults key 'burnerModeEnabled' set to: \(UserDefaults.standard.bool(forKey: "burnerModeEnabled"))")
+            
+            // Show notification to user
+            NotificationCenter.default.post(
+                name: NSNotification.Name("BurnerModeAutoEnabled"),
+                object: nil
+            )
+            
+            print("📢 BurnerModeMonitor: Notification posted to user")
+        } catch BurnerModeError.notAuthorized {
+            print("❌ BurnerModeMonitor: Screen Time authorization required")
+        } catch BurnerModeError.invalidSetup(let message) {
+            print("❌ BurnerModeMonitor: Invalid setup - \(message)")
+        } catch {
+            print("❌ BurnerModeMonitor: Unexpected error enabling Burner Mode: \(error)")
+        }
     }
     
     // MARK: - Stop Monitoring

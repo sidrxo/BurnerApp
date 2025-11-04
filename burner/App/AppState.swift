@@ -49,7 +49,6 @@ class AppState: ObservableObject {
     private let ticketRepository: TicketRepository
     private let bookmarkRepository: BookmarkRepository
     private let userRepository: UserRepository
-    private let purchaseService: PurchaseService
     
     // Burner Mode Manager (shared)
     let burnerManager: BurnerModeManager
@@ -62,7 +61,6 @@ class AppState: ObservableObject {
         self.userRepository = UserRepository()
         
         // Initialize services
-        self.purchaseService = PurchaseService()
         
         // Initialize Burner Mode Manager
         self.burnerManager = BurnerModeManager()
@@ -71,7 +69,6 @@ class AppState: ObservableObject {
         self.eventViewModel = EventViewModel(
             eventRepository: eventRepository,
             ticketRepository: ticketRepository,
-            purchaseService: purchaseService
         )
         
         self.bookmarkManager = BookmarkManager(

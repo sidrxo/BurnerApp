@@ -422,16 +422,6 @@ struct EventDetailView: View {
 }
 
 
-struct RepresentedApplePayButton: UIViewRepresentable {
-    func makeUIView(context: Context) -> PKPaymentButton {
-        let button = PKPaymentButton(paymentButtonType: .buy, paymentButtonStyle: .black)
-        // Button is UI only, no action
-        return button
-    }
-
-    func updateUIView(_ uiView: PKPaymentButton, context: Context) {}
-}
-
 // MARK: - Event Detail Row - More compact
 struct EventDetailRow: View {
     let icon: String

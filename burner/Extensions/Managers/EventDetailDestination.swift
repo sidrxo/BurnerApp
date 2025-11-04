@@ -1,10 +1,3 @@
-//
-//  EventDetailDestination.swift
-//  burner
-//
-//  Created by Sid Rao on 31/10/2025.
-//
-
 import SwiftUI
 
 struct EventDetailDestination: View {
@@ -96,12 +89,14 @@ struct EventDetailDestination: View {
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         print("🔍 EventDetailDestination.load() START")
         print("   Event ID: \(eventId)")
-        print("   Thread: \(Thread.isMainThread ? "Main" : "Background")")
+        // Removed Thread.isMainThread check as it's not safe in async context
         
         // Validate eventId
         guard !eventId.isEmpty else {
             print("❌ Event ID is empty!")
-            loadError = "Invalid event ID"
+            await MainActor.run {
+                loadError = "Invalid event ID"
+            }
             return
         }
 

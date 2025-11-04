@@ -39,8 +39,7 @@ const logger = {
 };
 
 // -------------------------
-// Process Apple Pay Payment (All-in-one function)
-// -------------------------
+
 exports.processApplePayPayment = onCall(
   { secrets: [stripeSecretKey] },
   async (request) => {
@@ -65,8 +64,27 @@ exports.processApplePayPayment = onCall(
 
       const stripe = getStripe();
 
-      // Step 1: Create a Stripe token from the Apple Pay token
-      logger.info('Creating Stripe token from Apple Pay');
+      // Get pending payment record
+      const pendingPaymentDoc = await db.collection("pendingPayments")
+        .doc(paymentIntentId)
+        .get();
+
+      if (!pendingPaymentDoc.exists) {
+        logger.error('Payment record not found', { paymentIntentId });
+        throw new HttpsError("not-found", "Payment record not found");
+      }
+
+      const pendingPayment = pendingPaymentDoc.data();
+      
+      // Check if already processed
+      if (pendingPayment.status === "completed") {
+        logger.info('Payment already processed', { paymentIntentId });
+        throw new HttpsError("already-exists", "Ticket already created for this payment");
+      }
+
+      // Step 1: Create Stripe token and PaymentMethod in parallel
+      logger.info('Creating Stripe token and payment method from Apple Pay');
+      
       const token = await stripe.tokens.create({
         'card': {
           'token_data': paymentToken
@@ -75,8 +93,6 @@ exports.processApplePayPayment = onCall(
 
       logger.info('Token created', { tokenId: token.id });
 
-      // Step 2: Create PaymentMethod from token
-      logger.info('Creating PaymentMethod');
       const paymentMethod = await stripe.paymentMethods.create({
         type: 'card',
         card: {
@@ -86,7 +102,7 @@ exports.processApplePayPayment = onCall(
 
       logger.info('PaymentMethod created', { paymentMethodId: paymentMethod.id });
 
-      // Step 3: Confirm the PaymentIntent
+      // Step 2: Confirm the PaymentIntent
       logger.info('Confirming PaymentIntent');
       const paymentIntent = await stripe.paymentIntents.confirm(paymentIntentId, {
         payment_method: paymentMethod.id,
@@ -98,7 +114,7 @@ exports.processApplePayPayment = onCall(
         paymentIntentId: paymentIntent.id
       });
 
-      // Step 4: Verify payment succeeded
+      // Step 3: Verify payment succeeded
       if (paymentIntent.status !== 'succeeded') {
         logger.error('Payment not succeeded', { status: paymentIntent.status });
         throw new HttpsError(
@@ -107,22 +123,10 @@ exports.processApplePayPayment = onCall(
         );
       }
 
-      // Step 5: Get pending payment record
-      const pendingPaymentDoc = await db.collection("pendingPayments")
-        .doc(paymentIntentId)
-        .get();
-
-      if (!pendingPaymentDoc.exists) {
-        logger.error('Payment record not found', { paymentIntentId });
-        throw new HttpsError("not-found", "Payment record not found");
-      }
-
-      const pendingPayment = pendingPaymentDoc.data();
       const eventId = pendingPayment.eventId;
-
       logger.info('Creating ticket for event', { eventId });
 
-      // Step 6: Create ticket in transaction
+      // Step 4: Create ticket in transaction
       const result = await db.runTransaction(async (transaction) => {
         // Validate ticket availability within transaction
         let event, eventRef;
@@ -185,11 +189,9 @@ exports.processApplePayPayment = onCall(
           throw validationError;
         }
 
-        // Prepare payment method details
+        // Simplified payment method details
         const paymentMethodDetails = {
           id: paymentMethod.id,
-          last4: paymentMethod.card?.last4 || null,
-          brand: paymentMethod.card?.brand || null,
           wallet: "apple_pay",
           type: "apple_pay"
         };
@@ -206,13 +208,8 @@ exports.processApplePayPayment = onCall(
           customerEmail: request.auth.token.email || null
         });
 
-        // Update pending payment status
-        transaction.update(pendingPaymentDoc.ref, {
-          status: "completed",
-          ticketId,
-          paymentMethodId: paymentMethod.id,
-          completedAt: FieldValue.serverTimestamp()
-        });
+        // Delete pending payment instead of updating
+        transaction.delete(pendingPaymentDoc.ref);
 
         logger.info('Ticket created successfully', {
           ticketId,
@@ -399,6 +396,9 @@ exports.createPaymentIntent = onCall(
 // -------------------------
 // Confirm Purchase (create ticket after payment succeeds)
 // -------------------------
+// -------------------------
+// Confirm Purchase (create ticket after payment succeeds)
+// -------------------------
 exports.confirmPurchase = onCall(
   { secrets: [stripeSecretKey] },
   async (request) => {
@@ -421,32 +421,7 @@ exports.confirmPurchase = onCall(
 
       logger.info('Starting purchase confirmation', { userId, paymentIntentId });
 
-      const stripe = getStripe();
-
-      // Retrieve payment intent to verify status
-      logger.info('Retrieving payment intent from Stripe');
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-      if (paymentIntent.status !== "succeeded") {
-        logger.error('Payment not completed', { status: paymentIntent.status });
-        throw new HttpsError(
-          "failed-precondition",
-          `Payment not completed. Status: ${paymentIntent.status}`
-        );
-      }
-
-      logger.info('Payment verified as succeeded');
-
-      // Verify this payment belongs to this user
-      if (paymentIntent.metadata.userId !== userId) {
-        logger.error('Payment does not belong to user', {
-          paymentUserId: paymentIntent.metadata.userId,
-          requestUserId: userId
-        });
-        throw new HttpsError("permission-denied", "Unauthorized");
-      }
-
-      // Get pending payment record
+      // Get pending payment record first (faster than Stripe API call)
       const pendingPaymentDoc = await db.collection("pendingPayments")
         .doc(paymentIntentId)
         .get();
@@ -463,6 +438,31 @@ exports.confirmPurchase = onCall(
         logger.info('Payment already processed', { paymentIntentId });
         throw new HttpsError("already-exists", "Ticket already created for this payment");
       }
+
+      const stripe = getStripe();
+
+      // Quick payment status check only
+      logger.info('Verifying payment status');
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+      if (paymentIntent.status !== "succeeded") {
+        logger.error('Payment not completed', { status: paymentIntent.status });
+        throw new HttpsError(
+          "failed-precondition",
+          `Payment not completed. Status: ${paymentIntent.status}`
+        );
+      }
+
+      // Verify this payment belongs to this user
+      if (paymentIntent.metadata.userId !== userId) {
+        logger.error('Payment does not belong to user', {
+          paymentUserId: paymentIntent.metadata.userId,
+          requestUserId: userId
+        });
+        throw new HttpsError("permission-denied", "Unauthorized");
+      }
+
+      logger.info('Payment verified as succeeded');
 
       const eventId = pendingPayment.eventId;
       logger.info('Processing ticket for event', { eventId });
@@ -529,24 +529,12 @@ exports.confirmPurchase = onCall(
           throw validationError;
         }
 
-        // Get payment method details
+        // Simplified payment method details - just store the ID
         const paymentMethodId = paymentIntent.payment_method;
-        let paymentMethodDetails = null;
-
-        if (paymentMethodId) {
-          try {
-            const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
-            paymentMethodDetails = {
-              id: paymentMethodId,
-              last4: paymentMethod.card?.last4 || null,
-              brand: paymentMethod.card?.brand || null,
-              wallet: paymentMethod.card?.wallet?.type || null,
-              type: "card"
-            };
-          } catch (pmError) {
-            logger.error('Error retrieving payment method', pmError);
-          }
-        }
+        const paymentMethodDetails = paymentMethodId ? {
+          id: paymentMethodId,
+          type: "card"
+        } : null;
 
         // Create ticket using consolidated helper
         const ticketRef = db.collection("tickets").doc();
@@ -560,18 +548,13 @@ exports.confirmPurchase = onCall(
           customerEmail: request.auth.token.email || null
         });
 
-        // Update pending payment status
-        transaction.update(pendingPaymentDoc.ref, {
-          status: "completed",
-          ticketId,
-          completedAt: FieldValue.serverTimestamp()
-        });
+        // Delete pending payment instead of updating (cleaner)
+        transaction.delete(pendingPaymentDoc.ref);
 
         logger.info('Purchase confirmed successfully', {
           ticketId,
           eventId,
-          userId,
-          paymentMethod: paymentMethodDetails?.wallet || paymentMethodDetails?.type || "card"
+          userId
         });
 
         return {

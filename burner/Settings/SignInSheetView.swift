@@ -17,12 +17,8 @@ struct SignInSheetView: View {
     @State private var appleSignInDelegate: AppleSignInDelegate?
     @State private var presentationContextProvider: ApplePresentationContextProvider?
 
-    // Email sign-in states
-    @State private var showingEmailSignIn = false
-    @State private var email = ""
-    @State private var password = ""
-    @State private var confirmPassword = ""
-    @State private var isSignUpMode = false
+    // Passwordless auth navigation
+    @State private var showingPasswordlessAuth = false
 
     // Random background image
     @State private var selectedBackground: String = "Background1"
@@ -84,19 +80,13 @@ struct SignInSheetView: View {
                 Spacer()
 
                 // Bottom section with buttons and terms
-                if showingEmailSignIn {
-                    emailSignInForm
-                        .padding(.bottom, 50)
-                        .frame(maxWidth: 400)
-                } else {
-                    VStack(spacing: 8) {
-                        signInButtonsSection
-                        footerSection
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 50)
-                    .frame(maxWidth: 400)
+                VStack(spacing: 8) {
+                    signInButtonsSection
+                    footerSection
                 }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 50)
+                .frame(maxWidth: 400)
             }
             
             // Loading overlay
@@ -123,6 +113,9 @@ struct SignInSheetView: View {
                 .transition(.opacity)
                 .zIndex(1002)
             }
+        }
+        .fullScreenCover(isPresented: $showingPasswordlessAuth) {
+            PasswordlessAuthView(showingSignIn: $showingSignIn)
         }
         .onAppear {
             selectRandomBackground()
@@ -186,11 +179,9 @@ struct SignInSheetView: View {
             }
             .disabled(isLoading)
 
-            // Email Sign In Button
+            // Email Sign In Button - Passwordless only
             Button {
-                withAnimation {
-                    showingEmailSignIn = true
-                }
+                showingPasswordlessAuth = true
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "envelope")
@@ -222,116 +213,6 @@ struct SignInSheetView: View {
             .lineLimit(2)
             .padding(.horizontal, 40)
             .padding(.top, 8)
-    }
-
-    // MARK: - Email Sign In Form
-    private var emailSignInForm: some View {
-        VStack(spacing: 20) {
-            // Title
-            Text(isSignUpMode ? "Create Account" : "Sign In")
-                .appSectionHeader()
-                .foregroundColor(.white)
-
-            // Email field
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Email")
-                    .appCaption()
-                    .foregroundColor(.white.opacity(0.7))
-
-                TextField("", text: $email)
-                    .appBody()
-                    .foregroundColor(.white)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.emailAddress)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(Color.white.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-            }
-
-            // Password field
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Password")
-                    .appCaption()
-                    .foregroundColor(.white.opacity(0.7))
-
-                SecureField("", text: $password)
-                    .appBody()
-                    .foregroundColor(.white)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(Color.white.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-            }
-
-            // Confirm password field (only for sign up)
-            if isSignUpMode {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Confirm Password")
-                        .appCaption()
-                        .foregroundColor(.white.opacity(0.7))
-
-                    SecureField("", text: $confirmPassword)
-                        .appBody()
-                        .foregroundColor(.white)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-            }
-
-            // Sign in/up button
-            Button {
-                handleEmailSignIn()
-            } label: {
-                Text(isSignUpMode ? "Create Account" : "Sign In")
-                    .appBody()
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.white.opacity(0.15))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .disabled(isLoading || email.isEmpty || password.isEmpty || (isSignUpMode && confirmPassword.isEmpty))
-
-            // Toggle between sign in and sign up
-            Button {
-                withAnimation {
-                    isSignUpMode.toggle()
-                    confirmPassword = ""
-                }
-            } label: {
-                Text(isSignUpMode ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
-                    .appCaption()
-                    .foregroundColor(.white.opacity(0.7))
-            }
-
-            // Back button
-            Button {
-                withAnimation {
-                    showingEmailSignIn = false
-                    email = ""
-                    password = ""
-                    confirmPassword = ""
-                    isSignUpMode = false
-                }
-            } label: {
-                Text("Back")
-                    .appBody()
-                    .foregroundColor(.gray)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.gray.opacity(0.2))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-        }
-        .padding(.horizontal, 24)
     }
     
     // MARK: - Google Sign In Handler
@@ -436,79 +317,6 @@ struct SignInSheetView: View {
             provider: "apple.com"
         ) {
             self.completeSignIn()
-        }
-    }
-
-    // MARK: - Email Sign In Handler
-    private func handleEmailSignIn() {
-        // Validate email and password
-        guard !email.isEmpty, !password.isEmpty else {
-            showErrorMessage("Please enter both email and password")
-            return
-        }
-
-        // Validate email format
-        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
-        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
-        guard emailPredicate.evaluate(with: email) else {
-            showErrorMessage("Please enter a valid email address")
-            return
-        }
-
-        // Validate password length
-        guard password.count >= 6 else {
-            showErrorMessage("Password must be at least 6 characters")
-            return
-        }
-
-        // If sign up mode, check passwords match
-        if isSignUpMode {
-            guard password == confirmPassword else {
-                showErrorMessage("Passwords do not match")
-                return
-            }
-        }
-
-        startLoading()
-
-        if isSignUpMode {
-            // Sign up
-            Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
-                DispatchQueue.main.async {
-                    if let error = error {
-                        self.showErrorMessage("Sign up failed: \(error.localizedDescription)")
-                        return
-                    }
-
-                    if let user = authResult?.user {
-                        self.createUserProfile(
-                            for: user,
-                            provider: "password"
-                        ) {
-                            self.completeSignIn()
-                        }
-                    }
-                }
-            }
-        } else {
-            // Sign in
-            Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
-                DispatchQueue.main.async {
-                    if let error = error {
-                        self.showErrorMessage("Sign in failed: \(error.localizedDescription)")
-                        return
-                    }
-
-                    if let user = authResult?.user {
-                        self.createUserProfile(
-                            for: user,
-                            provider: "password"
-                        ) {
-                            self.completeSignIn()
-                        }
-                    }
-                }
-            }
         }
     }
 

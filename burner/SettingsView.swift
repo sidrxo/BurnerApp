@@ -5,14 +5,14 @@ import FamilyControls
 import ManagedSettings
 import Combine
 
-struct SettingsView: View {
 
+struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @State private var showingSignIn = false
     @State private var currentUser: FirebaseAuth.User?
     @State private var showingAppPicker = false
     @State private var showingBurnerSetup = false
-
+    
     private let db = Firestore.firestore()
     
     // Use shared burner manager from AppState
@@ -29,13 +29,16 @@ struct SettingsView: View {
         appState.isScannerActive
     }
     
+    // Check if burner mode needs setup
+    private var needsBurnerSetup: Bool {
+        !burnerManager.isSetup || !burnerManager.isAuthorized
+    }
+    
     var body: some View {
-        // ❌ Removed NavigationView - now handled by MainTabView
         ZStack {
             Color.black
                 .edgesIgnoringSafeArea(.all)
             
-            // Main content
             VStack(spacing: 0) {
                 // Only show header when signed in
                 if currentUser != nil {
@@ -53,52 +56,77 @@ struct SettingsView: View {
                                         subtitle: currentUser?.email ?? "View Account"
                                     )
                                 }
+                                
                                 NavigationLink(destination: BookmarksView()) {
-                                    CustomMenuItemContent(title: "Bookmarks", subtitle: "Saved events")
+                                    CustomMenuItemContent(
+                                        title: "Bookmarks",
+                                        subtitle: "Saved events"
+                                    )
                                 }
+                                
                                 NavigationLink(destination: PaymentSettingsView()) {
-                                    CustomMenuItemContent(title: "Payment", subtitle: "Cards & billing")
+                                    CustomMenuItemContent(
+                                        title: "Payment",
+                                        subtitle: "Cards & billing"
+                                    )
                                 }
+                                
                                 NavigationLink(destination: TransferTicketsListView()) {
-                                    CustomMenuItemContent(title: "Transfer Tickets", subtitle: "Transfer your ticket to another user")
+                                    CustomMenuItemContent(
+                                        title: "Transfer Tickets",
+                                        subtitle: "Transfer your ticket to another user"
+                                    )
                                 }
-                            
-
-                                // Only show scanner option if user has scanner role AND active status
-                                // Admin roles (siteAdmin, venueAdmin, subAdmin) can always access scanner
+                                
+                                // Scanner access for authorized roles
                                 if (userRole == "scanner" && isScannerActive) ||
-                                   userRole == "siteAdmin" ||
-                                   userRole == "venueAdmin" ||
-                                   userRole == "subAdmin" {
+                                    userRole == "siteAdmin" ||
+                                    userRole == "venueAdmin" ||
+                                    userRole == "subAdmin" {
                                     NavigationLink(destination: ScannerView()) {
-                                        CustomMenuItemContent(title: "Scanner", subtitle: "Scan QR codes")
+                                        CustomMenuItemContent(
+                                            title: "Scanner",
+                                            subtitle: "Scan QR codes"
+                                        )
                                     }
                                 }
                             }
                             
                             // APP Section
                             CustomMenuSection(title: "APP") {
-                                // ⚙️ Setup Guide Button
-                                Button(action: {
-                                    showingBurnerSetup = true
-                                }) {
-                                    CustomMenuItemContent(
-                                        title: "Setup Burner Mode",
-                                        subtitle: "Configure app blocking"
-                                    )
-                                    .contentShape(Rectangle())
+                                // Show Setup Guide Button only when needed
+                                if needsBurnerSetup {
+                                    Button(action: {
+                                        showingBurnerSetup = true
+                                    }) {
+                                        CustomMenuItemContent(
+                                            title: "Setup Burner Mode",
+                                            subtitle: burnerManager.isAuthorized
+                                                ? "Configure app blocking"
+                                                : "Screen Time permissions needed"
+                                        )
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
-                                .buttonStyle(PlainButtonStyle())
-
+                                
                                 NavigationLink(destination: SupportView()) {
-                                    CustomMenuItemContent(title: "Help & Support", subtitle: "Get help, terms, privacy")
+                                    CustomMenuItemContent(
+                                        title: "Help & Support",
+                                        subtitle: "Get help, terms, privacy"
+                                    )
                                 }
                             }
-
+                            
                             // DEBUG Section
                             #if DEBUG
                             CustomMenuSection(title: "DEBUG") {
-                                NavigationLink(destination: DebugMenuView(appState: appState, burnerManager: burnerManager)) {
+                                NavigationLink(
+                                    destination: DebugMenuView(
+                                        appState: appState,
+                                        burnerManager: burnerManager
+                                    )
+                                ) {
                                     CustomMenuItemContent(
                                         title: "Debug Menu",
                                         subtitle: "Development tools"
@@ -121,7 +149,6 @@ struct SettingsView: View {
                     notSignedInSection
                 }
             }
-                          
         }
         .navigationBarHidden(true)
         .onAppear {
@@ -180,6 +207,7 @@ struct SettingsView: View {
     }
 }
 
+// MARK: - Custom Menu Section
 struct CustomMenuSection<Content: View>: View {
     let title: String
     let content: Content
@@ -205,10 +233,11 @@ struct CustomMenuSection<Content: View>: View {
     }
 }
 
+// MARK: - Custom Menu Item Content
 struct CustomMenuItemContent: View {
     let title: String
     let subtitle: String
-
+    
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {

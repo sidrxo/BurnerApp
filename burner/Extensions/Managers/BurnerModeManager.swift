@@ -14,8 +14,10 @@ class BurnerModeManager: ObservableObject {
     }
     @Published var isSetupValid = false
     @Published var setupError: String?
+    @Published var isAuthorized = false
     
     private let store = ManagedSettingsStore()
+    private var authorizationCancellable: AnyCancellable?
     
     // All possible categories that exist in iOS
     // This is a comprehensive list - adjust based on what you want to require
@@ -27,12 +29,25 @@ class BurnerModeManager: ObservableObject {
         "Weather", "Reference", "Navigation", "Medical", "Books"
     ]
     
-    // Minimum categories required (you can set this to all categories)
     let minimumCategoriesRequired = 8 // Must select 8+ categories
     
     init() {
         loadSelectedApps()
+        setupAuthorizationMonitoring()
         checkSetupCompliance()
+    }
+    
+    private func setupAuthorizationMonitoring() {
+        // Monitor authorization status changes
+        authorizationCancellable = AuthorizationCenter.shared.$authorizationStatus
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                self?.isAuthorized = (status == .approved)
+                self?.checkSetupCompliance()
+            }
+        
+        // Initial check
+        isAuthorized = AuthorizationCenter.shared.authorizationStatus == .approved
     }
     
     func hasAllCategoriesSelected() -> Bool {
@@ -42,6 +57,13 @@ class BurnerModeManager: ObservableObject {
    
     @discardableResult
     func checkSetupCompliance() -> Bool {
+        // First check authorization
+        guard isAuthorized else {
+            setupError = "Screen Time permission required"
+            isSetupValid = false
+            return false
+        }
+        
         let categoryCount = selectedApps.categoryTokens.count
         
         // Require all categories to be selected
@@ -57,6 +79,10 @@ class BurnerModeManager: ObservableObject {
     }
     
     func getSetupValidationMessage() -> String {
+        if !isAuthorized {
+            return "⚠️ Screen Time permission required"
+        }
+        
         if isSetupValid {
             return "✓ Ready for Block-All Mode"
         } else {
@@ -65,6 +91,10 @@ class BurnerModeManager: ObservableObject {
     }
     
     func getSelectedAppsDescription() -> String {
+        if !isAuthorized {
+            return "Enable Screen Time permissions to continue"
+        }
+        
         let appCount = selectedApps.applicationTokens.count
         let categoryCount = selectedApps.categoryTokens.count
         
@@ -90,15 +120,17 @@ class BurnerModeManager: ObservableObject {
         }
     }
     
-    func enable() {
+    func enable() async throws {
+        guard isAuthorized else {
+            throw BurnerModeError.notAuthorized
+        }
+        
         guard isSetupValid else {
-            print("Cannot enable: Must select at least \(minimumCategoriesRequired) categories first")
-            return
+            throw BurnerModeError.invalidSetup("Must select at least \(minimumCategoriesRequired) categories first")
         }
         
         guard hasAllCategoriesSelected() else {
-            print("Cannot enable: Not enough categories selected")
-            return
+            throw BurnerModeError.invalidSetup("Not enough categories selected")
         }
         
         print("Enabling Block-All Burner Mode...")
@@ -106,13 +138,7 @@ class BurnerModeManager: ObservableObject {
         print("Apps to keep available: \(selectedApps.applicationTokens.count)")
         
         // Request authorization
-        Task {
-            do {
-                try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
-            } catch {
-                print("Authorization error: \(error)")
-            }
-        }
+        try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
         
         // Block ALL categories except the selected apps (if any)
         if selectedApps.applicationTokens.isEmpty {
@@ -128,6 +154,11 @@ class BurnerModeManager: ObservableObject {
     }
     
     func disable() {
+        guard isAuthorized else {
+            print("Cannot disable: Screen Time permission required")
+            return
+        }
+        
         print("Disabling burner mode...")
         store.clearAllSettings()
         UserDefaults.standard.set(false, forKey: "burnerModeEnabled")
@@ -138,4 +169,21 @@ class BurnerModeManager: ObservableObject {
         selectedApps = FamilyActivitySelection()
         UserDefaults.standard.removeObject(forKey: "selectedApps")
     }
+    
+    var isSetup: Bool {
+        // Consider burner mode set up if:
+        // 1. Screen Time is authorized
+        // 2. There are enough categories selected
+        // 3. The setup is valid
+        // 4. The selection has been saved
+        return isAuthorized &&
+               isSetupValid &&
+               hasAllCategoriesSelected() &&
+               UserDefaults.standard.data(forKey: "selectedApps") != nil
+    }
+}
+
+enum BurnerModeError: Error {
+    case notAuthorized
+    case invalidSetup(String)
 }

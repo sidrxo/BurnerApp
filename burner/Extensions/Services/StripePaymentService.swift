@@ -738,7 +738,7 @@ class StripePaymentService: NSObject, ObservableObject {
     func getAuthenticationContext() -> STPAuthenticationContext {
         return AuthenticationContext()
     }
-    // ✅ NEW: Process Payment with Saved Card
+    // ✅ OPTIMIZED: Process Payment with Saved Card
     func processSavedCardPayment(
         paymentMethodId: String,
         eventName: String,
@@ -800,25 +800,13 @@ class StripePaymentService: NSObject, ObservableObject {
                     print("✅ Payment confirmed successfully")
 
                     // Step 3: Create ticket on backend
-                    do {
-                        let ticketResult = try await self.confirmPurchase(paymentIntentId: intentId)
-                        await MainActor.run {
-                            self.isProcessing = false
-                            completion(ticketResult)
-                        }
-                    } catch {
-                        print("❌ Error creating ticket: \(error)")
-                        await MainActor.run {
-                            self.isProcessing = false
-                            completion(PaymentResult(
-                                success: false,
-                                message: "Payment succeeded but ticket creation failed: \(error.localizedDescription)",
-                                ticketId: nil
-                            ))
-                        }
+                    let ticketResult = try await self.confirmPurchase(paymentIntentId: intentId)
+                    await MainActor.run {
+                        self.isProcessing = false
+                        completion(ticketResult)
                     }
                 } else {
-                    print("❌ Payment not succeeded, status: \(String(confirmResult?.status.rawValue ?? -1))")
+                    print("❌ Payment not succeeded, status: \(String(describing: confirmResult?.status.rawValue))")
                     await MainActor.run {
                         self.isProcessing = false
                         completion(PaymentResult(

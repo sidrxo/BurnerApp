@@ -2,11 +2,17 @@ import SwiftUI
 import FamilyControls
 import ManagedSettings
 
+struct PointOffset: Equatable {
+    let x: Float
+    let y: Float
+}
+
 struct BurnerModeSetupView: View {
     @Environment(\.dismiss) var dismiss
     @State private var currentStep = 0
     @State private var authorizationGranted = false
     @State private var showingAppPicker = false
+    @State private var randomOffsets: [PointOffset] = Array(repeating: PointOffset(x: 0, y: 0), count: 16)
     @ObservedObject var burnerManager: BurnerModeManager
     var onSkip: (() -> Void)? = nil
     
@@ -31,21 +37,28 @@ struct BurnerModeSetupView: View {
                     .padding(.top, 16)
                 }
                 
-                // Content area
+                // Fixed animated gradient circle at the top
+                Spacer()
+                    .frame(height: 80)
+                
+                AnimatedGradientCircle(randomOffsets: $randomOffsets)
+                    .padding(.bottom, 32)
+                
+                // Sliding content area
                 TabView(selection: $currentStep) {
                     // Step 1: Welcome
-                    WelcomeSlide()
+                    WelcomeSlideContent()
                         .tag(0)
                     
                     // Step 2: Grant Permission
-                    PermissionSlide(
+                    PermissionSlideContent(
                         authorizationGranted: $authorizationGranted,
                         onGrantPermission: requestAuthorization
                     )
                     .tag(1)
                     
                     // Step 3: Select Categories
-                    CategorySelectionSlide(
+                    CategorySelectionSlideContent(
                         burnerManager: burnerManager,
                         showingAppPicker: $showingAppPicker
                     )
@@ -102,6 +115,21 @@ struct BurnerModeSetupView: View {
             isPresented: $showingAppPicker,
             selection: $burnerManager.selectedApps
         )
+        .onChange(of: currentStep) { _, _ in
+            animateGradient()
+        }
+    }
+    
+    private func animateGradient() {
+        randomOffsets = (0..<16).map { index in
+            if index == 5 || index == 6 || index == 9 || index == 10 {
+                return PointOffset(
+                    x: Float.random(in: -0.2...0.2),
+                    y: Float.random(in: -0.2...0.2)
+                )
+            }
+            return PointOffset(x: 0, y: 0)
+        }
     }
     
     private func getNextButtonText() -> String {
@@ -159,26 +187,54 @@ struct BurnerModeSetupView: View {
     }
 }
 
-// MARK: - Welcome Slide
-struct WelcomeSlide: View {
+// MARK: - Animated Gradient Circle Component
+struct AnimatedGradientCircle: View {
+    @Binding var randomOffsets: [PointOffset]
+    var size: CGFloat = 120
+    
+    var body: some View {
+        MeshGradient(
+            width: 4,
+            height: 4,
+            points: [
+                [0.0, 0.0],
+                [0.3, 0.0],
+                [0.7, 0.0],
+                [1.0, 0.0],
+
+                [0.0, 0.3],
+                [0.2 + randomOffsets[5].x, 0.4 + randomOffsets[5].y],
+                [0.7 + randomOffsets[6].x, 0.2 + randomOffsets[6].y],
+                [1.0, 0.3],
+
+                [0.0, 0.7],
+                [0.3 + randomOffsets[9].x, 0.8 + randomOffsets[9].y],
+                [0.7 + randomOffsets[10].x, 0.6 + randomOffsets[10].y],
+                [1.0, 0.7],
+
+                [0.0, 1.0],
+                [0.3, 1.0],
+                [0.7, 1.0],
+                [1.0, 1.0]
+            ],
+            colors: [
+                .purple, .indigo, .purple, .yellow,
+                .pink, .purple, .pink, .yellow,
+                .orange, .pink, .yellow, .orange,
+                .yellow, .orange, .pink, .purple
+            ]
+        )
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .shadow(radius: 20)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: randomOffsets)
+    }
+}
+
+// MARK: - Welcome Slide Content (no circle)
+struct WelcomeSlideContent: View {
     var body: some View {
         VStack(spacing: 0) {
-            // Fixed top spacing - consistent with other views
-            Spacer()
-                .frame(height: 80)
-            
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(Color.orange.opacity(0.1))
-                    .frame(width: 120, height: 120)
-                
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.orange)
-            }
-            .padding(.bottom, 32)
-            
             // Header text
             VStack(spacing: 12) {
                 Text("Welcome to Burner.")
@@ -241,29 +297,13 @@ struct FeatureRow: View {
     }
 }
 
-// MARK: - Permission Slide
-struct PermissionSlide: View {
+// MARK: - Permission Slide Content (no circle)
+struct PermissionSlideContent: View {
     @Binding var authorizationGranted: Bool
     let onGrantPermission: () -> Void
     
     var body: some View {
         VStack(spacing: 0) {
-            // Fixed top spacing - consistent with other views
-            Spacer()
-                .frame(height: 80)
-            
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(authorizationGranted ? Color.green.opacity(0.1) : Color.blue.opacity(0.1))
-                    .frame(width: 120, height: 120)
-                
-                Image(systemName: authorizationGranted ? "checkmark.shield.fill" : "shield.lefthalf.filled")
-                    .font(.system(size: 60))
-                    .foregroundColor(authorizationGranted ? .green : .blue)
-            }
-            .padding(.bottom, 32)
-            
             // Header text
             VStack(spacing: 12) {
                 Text(authorizationGranted ? "Permission Granted" : "Grant Permission")
@@ -337,29 +377,13 @@ struct InfoBox: View {
     }
 }
 
-// MARK: - Category Selection Slide
-struct CategorySelectionSlide: View {
+// MARK: - Category Selection Slide Content (no circle)
+struct CategorySelectionSlideContent: View {
     @ObservedObject var burnerManager: BurnerModeManager
     @Binding var showingAppPicker: Bool
     
     var body: some View {
         VStack(spacing: 0) {
-            // Fixed top spacing - consistent with other views
-            Spacer()
-                .frame(height: 80)
-            
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(burnerManager.isSetupValid ? Color.green.opacity(0.1) : Color.orange.opacity(0.1))
-                    .frame(width: 120, height: 120)
-                
-                Image(systemName: burnerManager.isSetupValid ? "checkmark.circle.fill" : "square.grid.3x3.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(burnerManager.isSetupValid ? .green : .orange)
-            }
-            .padding(.bottom, 32)
-            
             // Header text
             VStack(spacing: 12) {
                 Text(burnerManager.isSetupValid ? "Categories Selected" : "Select App Categories")

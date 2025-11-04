@@ -8,7 +8,6 @@ const adminManagement = require('./admin/adminManagement');
 const scannerManagement = require('./admin/scannerManagement');
 const userValidation = require('./admin/userValidation');
 const venueManagement = require('./venues/venueManagement');
-const purchaseTicket = require('./tickets/purchaseTicket');
 const ticketQueries = require('./tickets/ticketQueries');
 const scanTicket = require('./tickets/scanTicket');
 const transferTicket = require('./tickets/transferTicket');
@@ -34,7 +33,6 @@ exports.validateUser = userValidation.validateUser;
 exports.createVenue = venueManagement.createVenue;
 
 // ============ TICKET OPERATIONS ============
-exports.purchaseTicket = purchaseTicket.purchaseTicket;
 exports.checkUserTicket = ticketQueries.checkUserTicket;
 exports.getUserTickets = ticketQueries.getUserTickets;
 exports.scanTicket = scanTicket.scanTicket;

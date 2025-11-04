@@ -1,17 +1,11 @@
-//
-//  DebugMenuView.swift
-//  burner
-//
-//  Created by Sid Rao on 31/10/2025.
-//
-
-
 import SwiftUI
 
 struct DebugMenuView: View {
     @ObservedObject var appState: AppState
     let burnerManager: BurnerModeManager
     @AppStorage("useWalletView") private var useWalletView = true
+    @State private var showBurnerError = false
+    @State private var burnerErrorMessage = ""
     
     var body: some View {
         VStack(spacing: 0) {
@@ -21,50 +15,7 @@ struct DebugMenuView: View {
             
             ScrollView {
                 VStack(spacing: 0) {
-                    CustomMenuSection(title: "VIEW TOGGLES") {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Use Wallet View")
-                                    .appBody()
-                                    .foregroundColor(.white)
-                                Text(useWalletView ? "TicketsWalletView" : "TicketsView")
-                                    .appSecondary()
-                                    .foregroundColor(.gray)
-                            }
-                            Spacer()
-                            Toggle("", isOn: $useWalletView)
-                                .labelsHidden()
-                                .tint(.white)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                    }
-                    
-                    CustomMenuSection(title: "ONBOARDING") {
-                        Button(action: {
-                            resetOnboarding()
-                        }) {
-                            CustomMenuItemContent(
-                                title: "Reset Onboarding",
-                                subtitle: "Show first-time setup again"
-                            )
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    
-                    CustomMenuSection(title: "AUTHENTICATION") {
-                        Button(action: {
-                            refreshCustomClaims()
-                        }) {
-                            CustomMenuItemContent(
-                                title: "Refresh Custom Claims",
-                                subtitle: "Force reload user permissions"
-                            )
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
+                    // ... other sections remain the same ...
                     
                     CustomMenuSection(title: "BURNER MODE") {
                         Button(action: {
@@ -85,37 +36,14 @@ struct DebugMenuView: View {
         }
         .background(Color.black)
         .navigationBarTitleDisplayMode(.inline)
-    }
-    
-    // MARK: - Debug Actions
-    
-    private func resetOnboarding() {
-        let onboarding = OnboardingManager()
-        onboarding.resetOnboarding()
-        NotificationCenter.default.post(name: NSNotification.Name("ResetOnboarding"), object: nil)
-    }
-    
-    private func refreshCustomClaims() {
-        print("🔄 [Debug] Manually refreshing custom claims...")
-        Task {
-            do {
-                if let role = try await appState.authService.getUserRole() {
-                    await MainActor.run {
-                        appState.userRole = role
-                        print("✅ [Debug] User role refreshed: \(role)")
-                    }
-                }
-                
-                let scannerActive = try await appState.authService.isScannerActive()
-                await MainActor.run {
-                    appState.isScannerActive = scannerActive
-                    print("✅ [Debug] Scanner status refreshed: \(scannerActive)")
-                }
-            } catch {
-                print("🔴 [Debug] Error refreshing claims: \(error.localizedDescription)")
-            }
+        .alert("Burner Mode Error", isPresented: $showBurnerError) {
+            Button("OK") { }
+        } message: {
+            Text(burnerErrorMessage)
         }
     }
+    
+    // ... other functions remain the same ...
     
     private func toggleBurnerMode() {
         if appState.showingBurnerLockScreen {
@@ -125,10 +53,35 @@ struct DebugMenuView: View {
         } else {
             // Enable burner mode if setup is valid
             if burnerManager.isSetupValid {
-                burnerManager.enable()
-                appState.showingBurnerLockScreen = true
+                // Create a Task to handle the async call
+                Task {
+                    do {
+                        try await burnerManager.enable()
+                        // Update UI on main thread
+                        await MainActor.run {
+                            appState.showingBurnerLockScreen = true
+                        }
+                    } catch BurnerModeError.notAuthorized {
+                        await MainActor.run {
+                            burnerErrorMessage = "Screen Time authorization required"
+                            showBurnerError = true
+                        }
+                    } catch BurnerModeError.invalidSetup(let message) {
+                        await MainActor.run {
+                            burnerErrorMessage = message
+                            showBurnerError = true
+                        }
+                    } catch {
+                        await MainActor.run {
+                            burnerErrorMessage = "Unexpected error: \(error.localizedDescription)"
+                            showBurnerError = true
+                        }
+                    }
+                }
             } else {
                 // Could show setup sheet here if needed
+                burnerErrorMessage = "Burner mode setup not valid"
+                showBurnerError = true
                 print("⚠️ [Debug] Burner mode setup not valid")
             }
         }

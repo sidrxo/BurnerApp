@@ -16,17 +16,14 @@ class EventViewModel: ObservableObject {
     
     private let eventRepository: EventRepository
     private let ticketRepository: TicketRepository
-    private let purchaseService: PurchaseService
     private var cancellables = Set<AnyCancellable>()
     
     init(
         eventRepository: EventRepository,
-        ticketRepository: TicketRepository,
-        purchaseService: PurchaseService
+        ticketRepository: TicketRepository
     ) {
         self.eventRepository = eventRepository
         self.ticketRepository = ticketRepository
-        self.purchaseService = purchaseService
     }
     
     // MARK: - Fetch Events
@@ -52,24 +49,24 @@ class EventViewModel: ObservableObject {
     }
     
     func fetchEvent(byId eventId: String) async throws -> Event {
-            let db = Firestore.firestore()
-            let documentSnapshot = try await db.collection("events").document(eventId).getDocument()
-            
-            guard documentSnapshot.exists else {
-                throw NSError(domain: "EventViewModel", code: 404, userInfo: [
-                    NSLocalizedDescriptionKey: "Event not found"
-                ])
-            }
-            
-            guard var event = try? documentSnapshot.data(as: Event.self) else {
-                throw NSError(domain: "EventViewModel", code: 500, userInfo: [
-                    NSLocalizedDescriptionKey: "Failed to decode event"
-                ])
-            }
-            
-            event.id = documentSnapshot.documentID
-            return event
+        let db = Firestore.firestore()
+        let documentSnapshot = try await db.collection("events").document(eventId).getDocument()
+        
+        guard documentSnapshot.exists else {
+            throw NSError(domain: "EventViewModel", code: 404, userInfo: [
+                NSLocalizedDescriptionKey: "Event not found"
+            ])
         }
+        
+        guard var event = try? documentSnapshot.data(as: Event.self) else {
+            throw NSError(domain: "EventViewModel", code: 500, userInfo: [
+                NSLocalizedDescriptionKey: "Failed to decode event"
+            ])
+        }
+        
+        event.id = documentSnapshot.documentID
+        return event
+    }
     
     // MARK: - Refresh User Ticket Status
     private func refreshUserTicketStatus() async {
@@ -126,72 +123,6 @@ class EventViewModel: ObservableObject {
         return userTicketStatus[eventId] ?? false
     }
     
-    // MARK: - Purchase Ticket
-    func purchaseTicket(eventId: String, completion: @escaping (Bool, String?) -> Void) {
-        if userHasTicket(for: eventId) {
-            completion(false, "Ticket Purchased")
-            return
-        }
-        
-        guard Auth.auth().currentUser != nil else {
-            completion(false, "Please log in to purchase a ticket")
-            return
-        }
-        
-        Task {
-            do {
-                let result = try await purchaseService.purchaseTicket(eventId: eventId)
-                
-                await MainActor.run {
-                    if result.success {
-                        self.successMessage = result.message
-                        self.userTicketStatus[eventId] = true
-                        self.fetchEvents() // Refresh to update sold count
-                        completion(true, result.message)
-                    } else {
-                        self.errorMessage = result.message
-                        completion(false, result.message)
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    let errorMsg = self.handleError(error)
-                    self.errorMessage = errorMsg
-                    completion(false, errorMsg)
-                }
-            }
-        }
-    }
-    
-    // MARK: - Error Handling
-    private func handleError(_ error: Error) -> String {
-        if let nsError = error as NSError? {
-            switch nsError.code {
-            case FunctionsErrorCode.unauthenticated.rawValue:
-                return "Authentication failed. Please log out and log back in."
-            case FunctionsErrorCode.permissionDenied.rawValue:
-                return "Permission denied. Please check your account."
-            case FunctionsErrorCode.notFound.rawValue:
-                return "Event not found."
-            case FunctionsErrorCode.invalidArgument.rawValue:
-                return "Invalid purchase details."
-            case FunctionsErrorCode.failedPrecondition.rawValue:
-                return error.localizedDescription.contains("already have") ?
-                    "You already have a ticket for this event" :
-                    "Event sold out or unavailable."
-            case FunctionsErrorCode.internal.rawValue:
-                return "Server error. Please try again."
-            case FunctionsErrorCode.unavailable.rawValue:
-                return "Service temporarily unavailable. Please try again."
-            case FunctionsErrorCode.deadlineExceeded.rawValue:
-                return "Request timed out. Please try again."
-            default:
-                return error.localizedDescription
-            }
-        }
-        return error.localizedDescription
-    }
-    
     // MARK: - Clear Messages
     func clearMessages() {
         errorMessage = nil
@@ -204,9 +135,6 @@ class EventViewModel: ObservableObject {
         cancellables.removeAll()
     }
 }
-
-// MARK: - Refactored Bookmark Manager
-
 
 // MARK: - Tickets ViewModel
 @MainActor
