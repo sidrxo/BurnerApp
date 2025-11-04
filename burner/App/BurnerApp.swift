@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseCore
+import FirebaseAuth
 import GoogleSignIn
 
 // MARK: - AppDelegate
@@ -146,7 +147,14 @@ struct BurnerApp: App {
             return
         }
 
-        // 2) Our custom scheme(s)
+        // 2) Check for Firebase passwordless sign-in link
+        if appState.passwordlessAuthHandler.handleSignInLink(url: url) {
+            print("✅ Handled by Passwordless Auth")
+            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            return
+        }
+
+        // 3) Our custom scheme(s)
         guard url.scheme?.lowercased() == "burner" else {
             print("⚠️ Not a burner:// URL, ignoring")
             print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")

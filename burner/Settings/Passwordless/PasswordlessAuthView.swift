@@ -119,7 +119,7 @@ struct PasswordlessAuthView: View {
                                                 handleSendLink()
                                             } label: {
                                                 Text("Resend Link")
-                                                    .appBody()
+                                                    .font(.appFont(size: 17))
                                                     .foregroundColor(.blue)
                                             }
                                         } else {
@@ -156,7 +156,7 @@ struct PasswordlessAuthView: View {
                                 handleSendLink()
                             } label: {
                                 Text("Send Sign-In Link")
-                                    .appBody()
+                                    .font(.appFont(size: 17))
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 16)

@@ -122,7 +122,7 @@ struct TicketPurchaseView: View {
                     }
                 }) {
                     Text("Cancel")
-                        .appBody()
+                        .font(.appFont(size: 17))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 46)
@@ -133,7 +133,7 @@ struct TicketPurchaseView: View {
                 // Pay button
                 Button(action: handleCardPayment) {
                     Text("Pay £\(String(format: "%.2f", event.price))")
-                        .appBody()
+                        .font(.appFont(size: 17))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 46)
@@ -216,7 +216,7 @@ struct TicketPurchaseView: View {
                                 .foregroundColor(.white)
                             
                             Text("Add New Card")
-                                .appBody()
+                                .font(.appFont(size: 17))
                                 .foregroundColor(.white)
                             
                             Spacer()
@@ -245,7 +245,7 @@ struct TicketPurchaseView: View {
                     }
                 }) {
                     Text("Cancel")
-                        .appBody()
+                        .font(.appFont(size: 17))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 46)
@@ -256,7 +256,7 @@ struct TicketPurchaseView: View {
                 // Pay with selected card button
                 Button(action: handleSavedCardPayment) {
                     Text("Pay £\(String(format: "%.2f", event.price))")
-                        .appBody()
+                        .font(.appFont(size: 17))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 46)

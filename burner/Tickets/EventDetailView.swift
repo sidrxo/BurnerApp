@@ -212,7 +212,7 @@ struct EventDetailView: View {
                                     Image(systemName: "square.and.arrow.up")
                                         .font(.system(size: 16))
                                     Text("Share Event")
-                                        .appBody()
+                                        .font(.appFont(size: 17))
                                 }
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -235,8 +235,15 @@ struct EventDetailView: View {
                     
                     HStack(spacing: 12) {
                         Button(action: {
-                            Task {
-                                await bookmarkManager.toggleBookmark(for: event)
+                            // Check if user is authenticated
+                            if Auth.auth().currentUser == nil {
+                                // Show sign-in sheet if not authenticated
+                                appState.isSignInSheetPresented = true
+                            } else {
+                                // Toggle bookmark if authenticated
+                                Task {
+                                    await bookmarkManager.toggleBookmark(for: event)
+                                }
                             }
                         }) {
                             Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
@@ -260,7 +267,7 @@ struct EventDetailView: View {
                             }
                         }) {
                             Text(buttonText)
-                                .appBody()
+                                .font(.appFont(size: 17))
                                 .foregroundColor(buttonTextColor)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 44)
