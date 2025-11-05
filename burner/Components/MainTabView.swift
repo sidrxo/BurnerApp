@@ -7,45 +7,60 @@ struct MainTabView: View {
     @AppStorage("useWalletView") private var useWalletView = true
 
     var body: some View {
-        ZStack {
-            // Content based on selected tab
-            Group {
-                switch appState.selectedTab {
-                case 0:
-                    HomeView()
-                case 1:
-                    ExploreView()
-                case 2:
-                    if useWalletView {
-                        NavigationStack {
-                            TicketsView(selectedTab: $appState.selectedTab)
+        NavigationCoordinatorView {
+            ZStack {
+                // Content based on selected tab
+                Group {
+                    switch appState.navigationCoordinator.selectedTab {
+                    case .home:
+                        NavigationStack(path: $appState.navigationCoordinator.homePath) {
+                            HomeView()
+                                .navigationDestination(for: NavigationDestination.self) { destination in
+                                    NavigationDestinationBuilder(destination: destination)
+                                }
                         }
-                    } else {
-                        NavigationStack {
-                            TicketsWalletView(selectedTab: $appState.selectedTab)
-                        }
-                    }
-                case 3:
-                    NavigationStack {
-                        SettingsView()
-                    }
-                default:
-                    HomeView()
-                }
-            }
-            .ignoresSafeArea(.keyboard)
 
-            // Conditionally show tab bar based on detail view state
-            if !appState.isDetailViewPresented {
-                VStack {
-                    Spacer()
-                    CustomTabBar(selectedTab: $appState.selectedTab)
+                    case .explore:
+                        NavigationStack(path: $appState.navigationCoordinator.explorePath) {
+                            ExploreView()
+                                .navigationDestination(for: NavigationDestination.self) { destination in
+                                    NavigationDestinationBuilder(destination: destination)
+                                }
+                        }
+
+                    case .tickets:
+                        NavigationStack(path: $appState.navigationCoordinator.ticketsPath) {
+                            if useWalletView {
+                                TicketsView(selectedTab: $appState.selectedTab)
+                            } else {
+                                TicketsWalletView(selectedTab: $appState.selectedTab)
+                            }
+                        }
+                        .navigationDestination(for: NavigationDestination.self) { destination in
+                            NavigationDestinationBuilder(destination: destination)
+                        }
+
+                    case .settings:
+                        NavigationStack(path: $appState.navigationCoordinator.settingsPath) {
+                            SettingsView()
+                                .navigationDestination(for: NavigationDestination.self) { destination in
+                                    NavigationDestinationBuilder(destination: destination)
+                                }
+                        }
+                    }
+                }
+                .ignoresSafeArea(.keyboard)
+
+                // Conditionally show tab bar based on detail view state
+                if !appState.navigationCoordinator.shouldHideTabBar {
+                    VStack {
+                        Spacer()
+                        CustomTabBar()
+                    }
                 }
             }
         }
-        .fullScreenCover(isPresented: $appState.isSignInSheetPresented) {
-            SignInSheetView(showingSignIn: $appState.isSignInSheetPresented)
-        }
+        .environmentObject(appState.navigationCoordinator)
     }
 }
 
@@ -67,46 +82,46 @@ class TabBarVisibility: ObservableObject {
 }
 
 struct CustomTabBar: View {
-    @Binding var selectedTab: Int
-    
+    @EnvironmentObject var coordinator: NavigationCoordinator
+
     var body: some View {
         HStack {
             TabBarButton(
                 icon: "house",
-                isSelected: selectedTab == 0
+                isSelected: coordinator.selectedTab == .home
             ) {
-                selectedTab = 0
+                coordinator.selectTab(.home)
             }
-            
+
             Spacer()
-            
+
             TabBarButton(
                 icon: "magnifyingglass",
-                isSelected: selectedTab == 1
+                isSelected: coordinator.selectedTab == .explore
             ) {
-                if selectedTab == 1 {
-                    NotificationCenter.default.post(name: NSNotification.Name("FocusSearchBar"), object: nil)
+                if coordinator.selectedTab == .explore {
+                    coordinator.focusSearchBar()
                 } else {
-                    selectedTab = 1
+                    coordinator.selectTab(.explore)
                 }
             }
-            
+
             Spacer()
-            
+
             TabBarButton(
                 icon: "ticket",
-                isSelected: selectedTab == 2
+                isSelected: coordinator.selectedTab == .tickets
             ) {
-                selectedTab = 2
+                coordinator.selectTab(.tickets)
             }
-            
+
             Spacer()
-            
+
             TabBarButton(
                 icon: "person",
-                isSelected: selectedTab == 3
+                isSelected: coordinator.selectedTab == .settings
             ) {
-                selectedTab = 3
+                coordinator.selectTab(.settings)
             }
         }
         .padding(.horizontal, 20)
