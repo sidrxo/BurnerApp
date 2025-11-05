@@ -242,7 +242,7 @@ struct TicketsView: View {
                             NavigationLink(
                                 destination: TicketDetailView(ticketWithEvent: ticketWithEvent)
                             ) {
-                                UnifiedEventRow(
+                                EventRow(
                                     ticketWithEvent: ticketWithEvent,
                                     isPast: false,
                                     onCancel: {
@@ -263,7 +263,7 @@ struct TicketsView: View {
                                 NavigationLink(
                                     destination: TicketDetailView(ticketWithEvent: ticketWithEvent)
                                 ) {
-                                    UnifiedEventRow(
+                                    EventRow(
                                         ticketWithEvent: ticketWithEvent,
                                         isPast: true,
                                         onCancel: {

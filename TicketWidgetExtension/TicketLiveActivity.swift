@@ -6,41 +6,65 @@ struct TicketLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: TicketActivityAttributes.self) { context in
             // Compact lock screen view
-            HStack(spacing: 0) {
-                // Left side - Event info
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(context.attributes.eventName)
-                        .appBody()
+            if context.state.hasEventStarted {
+                // Centered countdown when event has started
+                VStack(spacing: 4) {
+                    Text(context.state.timeUntilEvent)
+                        .font(.custom("HelveticaNeue", size: 28).weight(.bold))
                         .foregroundColor(.white)
-                        .lineLimit(2)
-                    
-                    Text(context.attributes.venue)
-                        .appSecondary()
-                        .foregroundColor(.gray)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+
+                    Text("until event ends")
+                        .font(.custom("HelveticaNeue", size: 12).weight(.regular))
+                        .foregroundColor(.gray)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.trailing, 12)
-                
-                // Divider
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 1)
-                    .padding(.vertical, 8)
-                
-                // Right side - Timer
-                Text(context.state.timeUntilEvent)
-                    .appPageHeader()
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.leading, 12)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(Color.black)
+                .activityBackgroundTint(Color.black)
+                .activitySystemActionForegroundColor(Color.white)
+            } else {
+                // Standard layout before event starts
+                HStack(spacing: 12) {
+                    // Left side - Event info
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(context.attributes.eventName)
+                            .font(.custom("HelveticaNeue", size: 13).weight(.semibold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+
+                        Text(context.attributes.venue)
+                            .font(.custom("HelveticaNeue", size: 11).weight(.regular))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    // Divider
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 1)
+                        .padding(.vertical, 4)
+
+                    // Right side - Timer
+                    Text(context.state.timeUntilEvent)
+                        .font(.custom("HelveticaNeue", size: 16).weight(.bold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .frame(minWidth: 60)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity)
+                .background(Color.black)
+                .activityBackgroundTint(Color.black)
+                .activitySystemActionForegroundColor(Color.white)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity)
-            .background(Color.black)
-            .activityBackgroundTint(Color.black)
-            .activitySystemActionForegroundColor(Color.white)
             
         } dynamicIsland: { context in
             DynamicIsland {
@@ -66,8 +90,9 @@ struct TicketLiveActivity: Widget {
                             .font(.custom("HelveticaNeue", size: 22).weight(.bold))
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
-                        
-                        Text("remaining")
+                            .minimumScaleFactor(0.8)
+
+                        Text(context.state.hasEventStarted ? "until end" : "remaining")
                             .font(.custom("HelveticaNeue", size: 12).weight(.regular))
                             .foregroundColor(.secondary)
                     }
@@ -94,33 +119,47 @@ struct TicketLiveActivity: Widget {
 // MARK: - Preview Support
 @available(iOS 16.1, *)
 struct TicketLiveActivity_Previews: PreviewProvider {
-    static let attributes = TicketActivityAttributes(
+    static let attributesBeforeStart = TicketActivityAttributes(
         eventName: "RESISTANCE LONDON SATURDAY",
         venue: "DRUMSHEDS",
-        startTime: Calendar.current.date(byAdding: .hour, value: 2, to: Date()) ?? Date()
+        startTime: Calendar.current.date(byAdding: .hour, value: 2, to: Date()) ?? Date(),
+        endTime: Calendar.current.date(byAdding: .hour, value: 8, to: Date()) ?? Date()
     )
-    
-    static let contentState = TicketActivityAttributes.ContentState(
-        timeUntilEvent: "02:15:00"
+
+    static let attributesAfterStart = TicketActivityAttributes(
+        eventName: "RESISTANCE LONDON SATURDAY",
+        venue: "DRUMSHEDS",
+        startTime: Calendar.current.date(byAdding: .hour, value: -1, to: Date()) ?? Date(),
+        endTime: Calendar.current.date(byAdding: .hour, value: 3, to: Date()) ?? Date()
     )
-    
+
+    static let contentStateBeforeStart = TicketActivityAttributes.ContentState(
+        timeUntilEvent: "2h 15m",
+        hasEventStarted: false
+    )
+
+    static let contentStateAfterStart = TicketActivityAttributes.ContentState(
+        timeUntilEvent: "3h 45m",
+        hasEventStarted: true
+    )
+
     static var previews: some View {
         Group {
-            attributes
-                .previewContext(contentState, viewKind: .content)
-                .previewDisplayName("Lock Screen")
-            
-            attributes
-                .previewContext(contentState, viewKind: .dynamicIsland(.expanded))
+            attributesBeforeStart
+                .previewContext(contentStateBeforeStart, viewKind: .content)
+                .previewDisplayName("Lock Screen - Before Start")
+
+            attributesAfterStart
+                .previewContext(contentStateAfterStart, viewKind: .content)
+                .previewDisplayName("Lock Screen - Event Started")
+
+            attributesBeforeStart
+                .previewContext(contentStateBeforeStart, viewKind: .dynamicIsland(.expanded))
                 .previewDisplayName("Dynamic Island - Expanded")
-            
-            attributes
-                .previewContext(contentState, viewKind: .dynamicIsland(.compact))
+
+            attributesBeforeStart
+                .previewContext(contentStateBeforeStart, viewKind: .dynamicIsland(.compact))
                 .previewDisplayName("Dynamic Island - Compact")
-            
-            attributes
-                .previewContext(contentState, viewKind: .dynamicIsland(.minimal))
-                .previewDisplayName("Dynamic Island - Minimal")
         }
     }
 }

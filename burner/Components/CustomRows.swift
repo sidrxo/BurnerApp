@@ -3,7 +3,7 @@ import Kingfisher
 import FirebaseAuth
 
 // MARK: - Unified Event Row Component
-struct UnifiedEventRow: View {
+struct EventRow: View {
     let event: Event
     let ticket: Ticket?
     let bookmarkManager: BookmarkManager?
@@ -167,7 +167,7 @@ struct UnifiedEventRow: View {
 }
 
 // MARK: - Configuration
-extension UnifiedEventRow {
+extension EventRow {
     struct Configuration {
         let showBookmark: Bool
         let showPrice: Bool
@@ -218,7 +218,7 @@ extension UnifiedEventRow {
 }
 
 // MARK: - Convenience Initializers
-extension UnifiedEventRow {
+extension EventRow {
     init(event: Event, bookmarkManager: BookmarkManager) {
         self.init(
             event: event,

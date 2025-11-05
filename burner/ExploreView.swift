@@ -360,7 +360,7 @@ struct EventSection: View {
             LazyVStack(spacing: 0) {
                 ForEach(events) { event in
                     NavigationLink(value: event) {
-                        UnifiedEventRow(
+                        EventRow(
                             event: event,
                             bookmarkManager: bookmarkManager
                         )

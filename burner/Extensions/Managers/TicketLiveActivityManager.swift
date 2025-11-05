@@ -9,14 +9,20 @@ class TicketLiveActivityManager {
         let attributes = TicketActivityAttributes(
             eventName: ticketWithEvent.event.name,
             venue: ticketWithEvent.event.venue,
-            startTime: ticketWithEvent.event.startTime ?? Date()
+            startTime: ticketWithEvent.event.startTime ?? Date(),
+            endTime: ticketWithEvent.event.endTime
         )
-        
+
         // Create content state
-        let contentState = TicketActivityAttributes.ContentState(
-            timeUntilEvent: calculateTimeUntilEvent(ticketWithEvent.event.startTime ?? Date(),)
+        let (timeString, hasStarted) = calculateTimeUntilEvent(
+            startTime: ticketWithEvent.event.startTime ?? Date(),
+            endTime: ticketWithEvent.event.endTime
         )
-        
+        let contentState = TicketActivityAttributes.ContentState(
+            timeUntilEvent: timeString,
+            hasEventStarted: hasStarted
+        )
+
         do {
             if #available(iOS 16.2, *) {
                 _ = try Activity<TicketActivityAttributes>.request(
@@ -38,12 +44,17 @@ class TicketLiveActivityManager {
     
     static func updateLiveActivity() {
         let activities = Activity<TicketActivityAttributes>.activities
-        
+
         for activity in activities {
-            let newContentState = TicketActivityAttributes.ContentState(
-                timeUntilEvent: calculateTimeUntilEvent(activity.attributes.startTime)
+            let (timeString, hasStarted) = calculateTimeUntilEvent(
+                startTime: activity.attributes.startTime,
+                endTime: activity.attributes.endTime
             )
-            
+            let newContentState = TicketActivityAttributes.ContentState(
+                timeUntilEvent: timeString,
+                hasEventStarted: hasStarted
+            )
+
             Task {
                 if #available(iOS 16.2, *) {
                     await activity.update(.init(state: newContentState, staleDate: nil))
@@ -68,35 +79,50 @@ class TicketLiveActivityManager {
         }
     }
     
-    private static func calculateTimeUntilEvent(_ startTime: Date) -> String {
+    private static func calculateTimeUntilEvent(startTime: Date, endTime: Date?) -> (String, Bool) {
         let now = Date()
         let calendar = Calendar.current
-        
+
+        // Check if event has started
+        if startTime <= now {
+            // Event has started - show countdown to end
+            if let endTime = endTime, endTime > now {
+                let components = calendar.dateComponents([.hour, .minute], from: now, to: endTime)
+                if let hours = components.hour, let minutes = components.minute {
+                    if hours > 0 {
+                        return ("\(hours)h \(minutes)m", true)
+                    } else {
+                        return ("\(minutes)m", true)
+                    }
+                }
+            }
+            // Event has ended or no end time available
+            return ("Event Ended", true)
+        }
+
+        // Event hasn't started yet - show countdown to start
         if calendar.isDate(startTime, inSameDayAs: now) {
             let components = calendar.dateComponents([.hour, .minute], from: now, to: startTime)
-            
-            if startTime <= now {
-                return "Event Started"
-            } else if let hours = components.hour, let minutes = components.minute {
+            if let hours = components.hour, let minutes = components.minute {
                 if hours > 0 {
-                    return "\(hours)h \(minutes)m"
+                    return ("\(hours)h \(minutes)m", false)
                 } else {
-                    return "\(minutes)m"
+                    return ("\(minutes)m", false)
                 }
             }
         }
-        
+
         let components = calendar.dateComponents([.day], from: now, to: startTime)
         if let days = components.day {
             if days == 0 {
-                return "Today"
+                return ("Today", false)
             } else if days == 1 {
-                return "Tomorrow"
+                return ("Tomorrow", false)
             } else {
-                return "\(days) days"
+                return ("\(days) days", false)
             }
         }
-        
-        return "Soon"
+
+        return ("Soon", false)
     }
 }

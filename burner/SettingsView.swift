@@ -49,30 +49,30 @@ struct SettingsView: View {
                     ScrollView {
                         VStack(spacing: 0) {
                             // ACCOUNT Section
-                            CustomMenuSection(title: "ACCOUNT") {
+                            MenuSection(title: "ACCOUNT") {
                                 NavigationLink(destination: AccountDetailsView()) {
-                                    CustomMenuItemContent(
+                                    MenuItemContent(
                                         title: "Account Details",
                                         subtitle: currentUser?.email ?? "View Account"
                                     )
                                 }
                                 
                                 NavigationLink(destination: BookmarksView()) {
-                                    CustomMenuItemContent(
+                                    MenuItemContent(
                                         title: "Bookmarks",
                                         subtitle: "Saved events"
                                     )
                                 }
                                 
                                 NavigationLink(destination: PaymentSettingsView()) {
-                                    CustomMenuItemContent(
+                                    MenuItemContent(
                                         title: "Payment",
                                         subtitle: "Cards & billing"
                                     )
                                 }
                                 
                                 NavigationLink(destination: TransferTicketsListView()) {
-                                    CustomMenuItemContent(
+                                    MenuItemContent(
                                         title: "Transfer Tickets",
                                         subtitle: "Transfer your ticket to another user"
                                     )
@@ -84,7 +84,7 @@ struct SettingsView: View {
                                     userRole == "venueAdmin" ||
                                     userRole == "subAdmin" {
                                     NavigationLink(destination: ScannerView()) {
-                                        CustomMenuItemContent(
+                                        MenuItemContent(
                                             title: "Scanner",
                                             subtitle: "Scan QR codes"
                                         )
@@ -93,13 +93,13 @@ struct SettingsView: View {
                             }
                             
                             // APP Section
-                            CustomMenuSection(title: "APP") {
+                            MenuSection(title: "APP") {
                                 // Show Setup Guide Button only when needed
                                 if needsBurnerSetup {
                                     Button(action: {
                                         showingBurnerSetup = true
                                     }) {
-                                        CustomMenuItemContent(
+                                        MenuItemContent(
                                             title: "Setup Burner Mode",
                                             subtitle: burnerManager.isAuthorized
                                                 ? "Configure app blocking"
@@ -111,7 +111,7 @@ struct SettingsView: View {
                                 }
                                 
                                 NavigationLink(destination: SupportView()) {
-                                    CustomMenuItemContent(
+                                    MenuItemContent(
                                         title: "Help & Support",
                                         subtitle: "Get help, terms, privacy"
                                     )
@@ -120,14 +120,14 @@ struct SettingsView: View {
                             
                             // DEBUG Section
                             #if DEBUG
-                            CustomMenuSection(title: "DEBUG") {
+                            MenuSection(title: "DEBUG") {
                                 NavigationLink(
                                     destination: DebugMenuView(
                                         appState: appState,
                                         burnerManager: burnerManager
                                     )
                                 ) {
-                                    CustomMenuItemContent(
+                                    MenuItemContent(
                                         title: "Debug Menu",
                                         subtitle: "Development tools"
                                     )
@@ -203,167 +203,6 @@ struct SettingsView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
-    }
-}
-
-// MARK: - Custom Menu Section
-struct CustomMenuSection<Content: View>: View {
-    let title: String
-    let content: Content
-    
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(title)
-                .appCaption()
-                .foregroundColor(.gray)
-                .padding(.horizontal, 4)
-            VStack(spacing: 0) {
-                content
-            }
-            .background(Color.gray.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-        .padding(.bottom, 24)
-    }
-}
-
-// MARK: - Custom Menu Item Content
-struct CustomMenuItemContent: View {
-    let title: String
-    let subtitle: String
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .appBody()
-                    .foregroundColor(.white)
-                Text(subtitle)
-                    .appSecondary()
-                    .foregroundColor(.gray)
-            }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .appCaption()
-                .foregroundColor(.gray)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-    }
-}
-
-// MARK: - Transfer Tickets List View
-struct TransferTicketsListView: View {
-    @EnvironmentObject var ticketsViewModel: TicketsViewModel
-    @EnvironmentObject var eventViewModel: EventViewModel
-
-    private var ticketsWithEvents: [TicketWithEventData] {
-        var result: [TicketWithEventData] = []
-        for ticket in ticketsViewModel.tickets {
-            // Only show confirmed tickets
-            guard ticket.status == "confirmed" else { continue }
-
-            if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
-                result.append(TicketWithEventData(ticket: ticket, event: event))
-            } else {
-                // Create a placeholder event if event data is missing
-                let placeholderEvent = Event(
-                    name: ticket.eventName,
-                    venue: ticket.venue,
-                    startTime: ticket.startTime,
-                    price: ticket.totalPrice,
-                    maxTickets: 100,
-                    ticketsSold: 0,
-                    imageUrl: "",
-                    isFeatured: false,
-                    description: nil
-                )
-                var eventWithId = placeholderEvent
-                eventWithId.id = ticket.eventId
-                result.append(TicketWithEventData(ticket: ticket, event: eventWithId))
-            }
-        }
-        return result.sorted {
-            ($0.event.startTime ?? Date.distantFuture) < ($1.event.startTime ?? Date.distantFuture)
-        }
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            SettingsHeaderSection(title: "Transfer Tickets")
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-
-            if ticketsViewModel.isLoading && ticketsViewModel.tickets.isEmpty {
-                loadingView
-            } else if ticketsWithEvents.isEmpty {
-                emptyStateView
-            } else {
-                ticketsList
-            }
-        }
-        .background(Color.black)
-        .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.2)
-                .tint(.white)
-            Text("Loading tickets...")
-                .appBody()
-                .foregroundColor(.gray)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
-    }
-
-    private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "ticket")
-                .appHero()
-                .foregroundColor(.gray)
-
-            VStack(spacing: 8) {
-                Text("No Tickets to Transfer")
-                    .appSectionHeader()
-                    .foregroundColor(.white)
-
-                Text("You don't have any tickets that can be transferred")
-                    .appBody()
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
-        .padding(.bottom, 100)
-    }
-
-    private var ticketsList: some View {
-        ScrollView {
-            LazyVStack(spacing: 12) {
-                ForEach(ticketsWithEvents, id: \.id) { ticketWithEvent in
-                    NavigationLink(destination: TransferTicketView(ticketWithEvent: ticketWithEvent)) {
-                        UnifiedEventRow(
-                            ticketWithEvent: ticketWithEvent,
-                            isPast: false,
-                            onCancel: {}
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-            .padding(.bottom, 100)
-        }
         .background(Color.black)
     }
 }
