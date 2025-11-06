@@ -105,7 +105,7 @@ struct BookmarksView: View {
             LazyVStack(spacing: 12) {
                 ForEach(filteredBookmarks) { event in
                     NavigationLink(destination: EventDetailView(event: event)) {
-                        UnifiedEventRow(
+                        EventRow(
                             event: event,
                             bookmarkManager: bookmarkManager
                         )

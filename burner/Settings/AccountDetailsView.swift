@@ -6,13 +6,16 @@ import FirebaseFirestore
 struct AccountDetailsView: View {
     // ✅ NEW: Access AppState
     @EnvironmentObject var appState: AppState
-    
+
     @State private var displayName = ""
     @State private var email = ""
     @State private var showingSignOut = false
     @State private var showingDeleteAccount = false
     @State private var showingDeleteAccountFinal = false
     @State private var isSigningOut = false
+    @State private var showingReauthenticationSheet = false
+    @State private var deleteErrorMessage: String?
+    @State private var showingDeleteError = false
     @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
@@ -136,6 +139,32 @@ struct AccountDetailsView: View {
                 .transition(.opacity)
                 .zIndex(1002)
             }
+
+            if showingDeleteError {
+                CustomAlertView(
+                    title: "Delete Account Failed",
+                    description: deleteErrorMessage ?? "An error occurred while deleting your account.",
+                    cancelAction: { showingDeleteError = false },
+                    cancelActionTitle: "OK",
+                    primaryAction: nil,
+                    primaryActionTitle: nil,
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1003)
+            }
+        }
+        .sheet(isPresented: $showingReauthenticationSheet) {
+            ReauthenticationView(
+                onSuccess: {
+                    showingReauthenticationSheet = false
+                    // Try deletion again after re-authentication
+                    deleteAccountAfterReauth()
+                },
+                onCancel: {
+                    showingReauthenticationSheet = false
+                }
+            )
         }
         .onAppear {
             fetchUserInfoFromFirestore()
@@ -174,15 +203,39 @@ struct AccountDetailsView: View {
     
     private func deleteAccount() {
         guard let user = Auth.auth().currentUser else { return }
-        
-        // ✅ FIXED: Notify AppState before deleting account
-        appState.handleManualSignOut()
-        
-        user.delete { error in
-            if error == nil {
-                // ✅ Post notification
-                NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
 
+        user.delete { error in
+            if let error = error {
+                let nsError = error as NSError
+                // Check if re-authentication is required
+                if nsError.code == AuthErrorCode.requiresRecentLogin.rawValue {
+                    // Show re-authentication sheet
+                    showingReauthenticationSheet = true
+                } else {
+                    // Show other errors
+                    deleteErrorMessage = error.localizedDescription
+                    showingDeleteError = true
+                }
+            } else {
+                // Success - notify AppState and sign out
+                appState.handleManualSignOut()
+                NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
+                presentationMode.wrappedValue.dismiss()
+            }
+        }
+    }
+
+    private func deleteAccountAfterReauth() {
+        guard let user = Auth.auth().currentUser else { return }
+
+        user.delete { error in
+            if let error = error {
+                deleteErrorMessage = error.localizedDescription
+                showingDeleteError = true
+            } else {
+                // Success - notify AppState and sign out
+                appState.handleManualSignOut()
+                NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
                 presentationMode.wrappedValue.dismiss()
             }
         }

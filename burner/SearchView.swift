@@ -6,12 +6,16 @@ import FirebaseFirestore
 // MARK: - Optimized ExploreView
 struct ExploreView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
-    @EnvironmentObject var coordinator: NavigationCoordinator
-    @StateObject private var viewModel = ExploreViewModel()
+    @StateObject private var viewModel: ExploreViewModel
 
     @State private var searchText = ""
     @State private var sortBy: SortOption = .date
     @FocusState private var isSearchFocused: Bool
+
+    init() {
+        let repository = OptimizedEventRepository()
+        _viewModel = StateObject(wrappedValue: ExploreViewModel(eventRepository: repository))
+    }
 
     enum SortOption: String {
         case date = "date"
@@ -125,7 +129,7 @@ struct ExploreView: View {
                     } else {
                         ForEach(viewModel.events) { event in
                             NavigationLink(destination: EventDetailView(event: event)) {
-                                UnifiedEventRow(
+                                EventRow(
                                     event: event,
                                     bookmarkManager: bookmarkManager
                                 )
@@ -181,17 +185,18 @@ class ExploreViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isLoadingMore = false
     @Published var errorMessage: String?
-    
+
     private var hasMoreEvents = true
     private var lastDocument: Date?
     private var currentSearchText = ""
     private var searchCache: [String: [Event]] = [:]
 
-    private let eventRepository = OptimizedEventRepository()
+    private let eventRepository: OptimizedEventRepository
     private var searchCancellable: AnyCancellable?
     private let searchSubject = PassthroughSubject<(String, String), Never>()
-    
-    init() {
+
+    init(eventRepository: OptimizedEventRepository) {
+        self.eventRepository = eventRepository
         setupSearchDebouncing()
     }
     

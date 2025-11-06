@@ -5,7 +5,8 @@ import ActivityKit
 struct TicketActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var timeUntilEvent: String
-        
+        var hasEventStarted: Bool
+
         // Helper to format seconds as HH:MM:SS
         static func formatTime(seconds: Int) -> String {
             let hours = seconds / 3600
@@ -14,8 +15,9 @@ struct TicketActivityAttributes: ActivityAttributes {
             return String(format: "%02d:%02d:%02d", hours, minutes, secs)
         }
     }
-    
+
     var eventName: String
     var venue: String
     var startTime: Date
+    var endTime: Date?
 }
