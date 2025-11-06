@@ -191,8 +191,8 @@ class SearchViewModel: ObservableObject {
     private let searchSubject = PassthroughSubject<(String, String), Never>()
     
     // ADD THIS: Constant for initial load limit
-    private let initialLoadLimit = 5
-    private let paginationLimit = 20
+    private let initialLoadLimit = 6
+    private let paginationLimit = 10
 
     init(eventRepository: OptimizedEventRepository) {
         self.eventRepository = eventRepository

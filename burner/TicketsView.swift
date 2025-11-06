@@ -274,13 +274,6 @@ struct TicketsView: View {
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button(role: .destructive) {
-                                        softDeleteTicket(ticketWithEvent.ticket)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
                             }
                         }
                     }
@@ -290,24 +283,6 @@ struct TicketsView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .background(Color.black)
-    }
-
-    // MARK: - Soft Delete Ticket
-    private func softDeleteTicket(_ ticket: Ticket) {
-        guard let ticketId = ticket.id else { return }
-
-        let db = Firestore.firestore()
-        db.collection("tickets").document(ticketId).updateData([
-            "deleted": true,
-            "deletedAt": FieldValue.serverTimestamp()
-        ]) { error in
-            // Refresh tickets to remove from view
-            if error == nil {
-                Task { @MainActor in
-                    ticketsViewModel.fetchUserTickets()
-                }
-            }
-        }
     }
 }
 

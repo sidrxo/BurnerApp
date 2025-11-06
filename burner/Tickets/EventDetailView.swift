@@ -181,33 +181,13 @@ struct EventDetailView: View {
                                         value: "£\(String(format: "%.2f", event.price))"
                                     )
 
-                                    // Genre/Tag row - clickable
-                                    if let tags = event.tags, !tags.isEmpty, let firstTag = tags.first {
-                                        Button(action: {
-                                            // Navigate to filtered events view for this genre
-                                            let genreEvents = eventViewModel.events
-                                                .filter { event in
-                                                    guard let startTime = event.startTime else { return false }
-                                                    return !event.isFeatured &&
-                                                           startTime > Date() &&
-                                                           (event.tags?.contains { $0.localizedCaseInsensitiveCompare(firstTag) == .orderedSame } ?? false)
-                                                }
-                                                .sorted { event1, event2 in
-                                                    (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
-                                                }
-
-                                            coordinator.navigate(to: .filteredEvents(EventSectionDestination(
-                                                title: firstTag,
-                                                events: genreEvents
-                                            )))
-                                        }) {
-                                            EventDetailRow(
-                                                icon: "tag",
-                                                title: "Genre",
-                                                value: tags.joined(separator: ", ")
-                                            )
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
+                                    // Genre/Tag row - non-clickable
+                                    if let tags = event.tags, !tags.isEmpty {
+                                        EventDetailRow(
+                                            icon: "tag",
+                                            title: "Genre",
+                                            value: tags.joined(separator: ", ")
+                                        )
                                     }
                                 }
                             }
