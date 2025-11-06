@@ -6,6 +6,7 @@ import FirebaseFirestore
 // MARK: - Optimized ExploreView
 struct ExploreView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
+    @EnvironmentObject var coordinator: NavigationCoordinator
     @StateObject private var viewModel = ExploreViewModel()
 
     @State private var searchText = ""
@@ -41,8 +42,10 @@ struct ExploreView: View {
                     await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FocusSearchBar"))) { _ in
-                isSearchFocused = true
+            .onChange(of: coordinator.shouldFocusSearchBar) { _, shouldFocus in
+                if shouldFocus {
+                    isSearchFocused = true
+                }
             }
         }
     }

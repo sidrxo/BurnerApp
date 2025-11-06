@@ -12,20 +12,10 @@ struct EventDetailView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
-
-    @State private var showingPurchase = false
-    @State private var purchaseSheetDetent: PresentationDetent = .height(240) // ✅ FIXED: Changed from 320 to 240
-    @State private var showingAlert = false
-    @State private var alertMessage = ""
-    @State private var isSuccess = false
-    @State private var userHasTicket = false
-    @State private var showShareSheet = false
-    @State private var showingAuthAlert = false
-    @State private var showingTicketAlert = false
-    @State private var showingTicketDetail = false
-    @Environment(\.presentationMode) var presentationMode
-    @EnvironmentObject var tabBarVisibility: TabBarVisibility
+    @EnvironmentObject var coordinator: NavigationCoordinator
     @EnvironmentObject var appState: AppState
+
+    @State private var userHasTicket = false
     
     // Get screen height for responsive sizing
     private let screenHeight = UIScreen.main.bounds.height
@@ -231,7 +221,7 @@ struct EventDetailView: View {
 
                                 // Share button
                                 Button(action: {
-                                    showShareSheet = true
+                                    coordinator.shareEvent(event)
                                 }) {
                                     Image(systemName: "square.and.arrow.up")
                                         .font(.system(size: 20))
@@ -259,13 +249,15 @@ struct EventDetailView: View {
                     VStack(spacing: 0) {
                         Button(action: {
                             if userHasTicket {
-                                showingTicketAlert = true
+                                if let ticket = userTicket {
+                                    coordinator.viewTicketDetail(ticket)
+                                }
                             } else if availableTickets > 0 {
                                 // Check if user is authenticated
                                 if Auth.auth().currentUser == nil {
-                                    showingAuthAlert = true
+                                    coordinator.showInfo(title: "Sign In Required", message: "Please sign in to purchase tickets")
                                 } else {
-                                    showingPurchase = true
+                                    coordinator.purchaseTicket(for: event)
                                 }
                             }
                         }) {
@@ -296,103 +288,24 @@ struct EventDetailView: View {
                     )
                 }
 
-                // Custom Alerts
-                if showingAlert {
-                    CustomAlertView(
-                        title: isSuccess ? "Success" : "Error",
-                        description: alertMessage,
-                        primaryAction: {
-                            showingAlert = false
-                            if isSuccess {
-                                checkUserTicketStatus()
-                            }
-                        },
-                        primaryActionTitle: "OK",
-                        customContent: EmptyView()
-                    )
-                    .transition(.opacity)
-                    .zIndex(1001)
-                }
-
-                if showingAuthAlert {
-                    CustomAlertView(
-                        title: "Sign In Required",
-                        description: "You need to be signed in to buy tickets.",
-                        cancelAction: { showingAuthAlert = false },
-                        cancelActionTitle: "Cancel",
-                        primaryAction: {
-                            showingAuthAlert = false
-                            appState.isSignInSheetPresented = true
-                        },
-                        primaryActionTitle: "Sign In",
-                        customContent: EmptyView()
-                    )
-                    .transition(.opacity)
-                    .zIndex(1001)
-                }
-
-                if showingTicketAlert {
-                    CustomAlertView(
-                        title: "You Already Have a Ticket",
-                        description: "View your ticket or dismiss this alert.",
-                        cancelAction: { showingTicketAlert = false },
-                        cancelActionTitle: "Dismiss",
-                        primaryAction: {
-                            showingTicketAlert = false
-                            showingTicketDetail = true
-                        },
-                        primaryActionTitle: "View Ticket",
-                        customContent: EmptyView()
-                    )
-                    .transition(.opacity)
-                    .zIndex(1001)
-                }
             }
         }
         .ignoresSafeArea()
         .navigationBarBackButtonHidden(false)
         .onAppear {
-            tabBarVisibility.hideTabBar()
             checkUserTicketStatus()
-        }
-        .onDisappear {
-            tabBarVisibility.showTabBar()
-        }
-        .sheet(isPresented: $showingPurchase) {
-            TicketPurchaseView(event: event, viewModel: eventViewModel, selectedDetent: $purchaseSheetDetent)
-                .presentationDetents([.height(240), .height(320), .height(400)], selection: $purchaseSheetDetent)
-                .presentationDragIndicator(.visible)
-                .onDisappear {
-                    // Refresh ticket status when purchase sheet is dismissed
-                    checkUserTicketStatus()
-                    // Reset to default height for next time
-                    purchaseSheetDetent = .height(240)
-                }
-        }
-        .sheet(isPresented: $showShareSheet) {
-            ShareSheet(activityItems: [generateShareText(), generateShareURL()])
         }
         .onReceive(eventViewModel.$errorMessage) { errorMessage in
             if let errorMessage = errorMessage {
-                alertMessage = errorMessage
-                isSuccess = false
-                showingAlert = true
+                coordinator.showError(title: "Error", message: errorMessage)
                 eventViewModel.clearMessages()
             }
         }
         .onReceive(eventViewModel.$successMessage) { successMessage in
             if let successMessage = successMessage {
-                alertMessage = successMessage
-                isSuccess = true
-                showingAlert = true
+                coordinator.showSuccess(title: "Success", message: successMessage)
                 eventViewModel.clearMessages()
                 checkUserTicketStatus()
-            }
-        }
-        .sheet(isPresented: $showingTicketDetail) {
-            if let ticket = userTicket {
-                let ticketWithEvent = TicketWithEventData(ticket: ticket, event: event)
-                TicketDetailView(ticketWithEvent: ticketWithEvent)
             }
         }
     }
