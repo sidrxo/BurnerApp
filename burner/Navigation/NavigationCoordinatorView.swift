@@ -180,7 +180,7 @@ struct NavigationDestinationBuilder: View {
                 TicketPurchaseDestination(event: event, initialDetent: .height(240))
 
             case .transferTicket(let ticket):
-                TransferTicketView(ticket: ticket)
+                TransferTicketDestination(ticket: ticket)
 
             case .transferTicketsList:
                 TransferTicketsListView()
@@ -256,6 +256,39 @@ struct TicketDetailDestination: View {
             } else {
                 // Create placeholder event if event data is missing
                 TicketDetailView(ticketWithEvent: TicketWithEventData(
+                    ticket: ticket,
+                    event: Event(
+                        id: ticket.eventId,
+                        name: ticket.eventName,
+                        venue: ticket.venue,
+                        startTime: ticket.startTime,
+                        price: ticket.totalPrice,
+                        maxTickets: 100,
+                        ticketsSold: 0,
+                        imageUrl: "",
+                        isFeatured: false,
+                        description: nil
+                    )
+                ))
+            }
+        }
+    }
+}
+
+// MARK: - Transfer Ticket Destination Wrapper
+
+struct TransferTicketDestination: View {
+    let ticket: Ticket
+
+    @EnvironmentObject var eventViewModel: EventViewModel
+
+    var body: some View {
+        Group {
+            if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
+                TransferTicketView(ticketWithEvent: TicketWithEventData(ticket: ticket, event: event))
+            } else {
+                // Create placeholder event if event data is missing
+                TransferTicketView(ticketWithEvent: TicketWithEventData(
                     ticket: ticket,
                     event: Event(
                         id: ticket.eventId,
