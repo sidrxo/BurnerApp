@@ -118,15 +118,15 @@ enum ModalPresentation: Identifiable {
         switch self {
         case .signIn: return "signIn"
         case .burnerSetup: return "burnerSetup"
-        case .ticketPurchase(let event, _): return "ticketPurchase-\(event.id)"
-        case .ticketDetail(let ticket): return "ticketDetail-\(ticket.id)"
+        case .ticketPurchase(let event, _): return "ticketPurchase-\(event.id ?? "")"
+        case .ticketDetail(let ticket): return "ticketDetail-\(ticket.id ?? "")"
         case .shareSheet: return "shareSheet"
         case .cardInput: return "cardInput"
         case .savedCards: return "savedCards"
         case .passwordlessAuth: return "passwordlessAuth"
         case .addPaymentMethod: return "addPaymentMethod"
         case .manualTicketEntry: return "manualTicketEntry"
-        case .fullScreenQRCode(let ticket): return "fullScreenQRCode-\(ticket.id)"
+        case .fullScreenQRCode(let ticket): return "fullScreenQRCode-\(ticket.id ?? "")"
         }
     }
 
@@ -362,7 +362,7 @@ class NavigationCoordinator: ObservableObject {
     func shareEvent(_ event: Event) {
         let items: [Any] = [
             "Check out this event: \(event.name)",
-            URL(string: "burner://event/\(event.id)") as Any
+            URL(string: "burner://event/\(event.id ?? "")") as Any
         ].compactMap { $0 }
         present(.shareSheet(items: items))
     }
