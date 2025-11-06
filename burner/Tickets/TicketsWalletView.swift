@@ -8,6 +8,7 @@ struct TicketsWalletView: View {
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var coordinator: NavigationCoordinator
     @Binding var selectedTab: Int
     
     @State private var selectedTicketId: String?
@@ -175,7 +176,7 @@ struct TicketsWalletView: View {
                     .padding(.horizontal, 40)
             }
             Button {
-                selectedTab = 0
+                coordinator.selectTab(.home)
             } label: {
                 Text("Browse Events")
                     .appBody()
