@@ -203,7 +203,7 @@ struct NavigationDestinationBuilder: View {
 
             case .debugMenu:
                 #if DEBUG
-                DebugMenuView()
+                DebugMenuView(appState: appState, burnerManager: appState.burnerManager)
                 #else
                 EmptyView()
                 #endif
