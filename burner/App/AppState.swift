@@ -12,7 +12,10 @@ class AppState: ObservableObject {
     @Published var authService: AuthenticationService
     @Published var burnerModeMonitor: BurnerModeMonitor
     @Published var passwordlessAuthHandler: PasswordlessAuthHandler
-    
+
+    // MARK: - Navigation Coordinator
+    @Published var navigationCoordinator: NavigationCoordinator
+
     // MARK: - Global UI State
     @Published var isSignInSheetPresented = false
     @Published var showingError = false
@@ -90,9 +93,13 @@ class AppState: ObservableObject {
 
         // Initialize Burner Mode Monitor (will start monitoring immediately)
         self.burnerModeMonitor = BurnerModeMonitor(burnerManager: burnerManager)
-        
+
+        // Initialize Navigation Coordinator
+        self.navigationCoordinator = NavigationCoordinator()
+
         setupObservers()
         setupBurnerModeObserver()
+        setupNavigationCoordinatorSync()
     }
     
     // MARK: - Setup Observers
@@ -145,6 +152,30 @@ class AppState: ObservableObject {
             .store(in: &cancellables)
     }
     
+    // MARK: - Navigation Coordinator Sync
+    private func setupNavigationCoordinatorSync() {
+        // Keep old selectedTab in sync with new coordinator during migration
+        navigationCoordinator.$selectedTab
+            .map { $0.rawValue }
+            .sink { [weak self] tabIndex in
+                self?.selectedTab = tabIndex
+            }
+            .store(in: &cancellables)
+
+        // Sync sign-in sheet presentation
+        navigationCoordinator.$activeModal
+            .map { modal in
+                if case .signIn = modal {
+                    return true
+                }
+                return false
+            }
+            .sink { [weak self] isPresented in
+                self?.isSignInSheetPresented = isPresented
+            }
+            .store(in: &cancellables)
+    }
+
     // MARK: - Burner Mode Observer
     private func setupBurnerModeObserver() {
         // Listen for Burner Mode auto-enabled notification

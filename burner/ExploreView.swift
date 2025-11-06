@@ -5,11 +5,10 @@ struct HomeView: View {
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var appState: AppState
-    
+    @EnvironmentObject var coordinator: NavigationCoordinator
+
     @State private var searchText = ""
     @State private var selectedEvent: Event? = nil
-    @State private var navigationPath = NavigationPath()
-    @State private var deepLinkEventId: String?
     
     // MARK: - Define Your Genres
     private let displayGenres = ["Techno", "House", "Drum & Bass", "Trance", "Hip Hop"]
@@ -106,59 +105,27 @@ struct HomeView: View {
     }
     
     var body: some View {
-        NavigationStack(path: $navigationPath) {
-            ScrollView {
-                VStack(spacing: 0) {
-                    HeaderSection(title: "Explore")
-                    
-                    if eventViewModel.isLoading && eventViewModel.events.isEmpty {
-                        loadingView
-                    } else {
-                        contentView
-                    }
+        ScrollView {
+            VStack(spacing: 0) {
+                HeaderSection(title: "Explore")
+
+                if eventViewModel.isLoading && eventViewModel.events.isEmpty {
+                    loadingView
+                } else {
+                    contentView
                 }
-                .padding(.bottom, 100)
             }
-            .navigationBarHidden(true)
-            .background(Color.black)
-            .refreshable {
-                eventViewModel.fetchEvents()
-            }
-            .navigationDestination(for: Event.self) { event in
-                EventDetailView(event: event)
-            }
-            .navigationDestination(for: String.self) { eventId in
-                EventDetailDestination(eventId: eventId)
-            }
-            .navigationDestination(for: EventSectionDestination.self) { destination in
-                FilteredEventsView(
-                    title: destination.title,
-                    events: destination.events
-                )
-            }
+            .padding(.bottom, 100)
         }
-        .onAppear {
-            setupDeepLinkListener()
+        .navigationBarHidden(true)
+        .background(Color.black)
+        .refreshable {
+            eventViewModel.fetchEvents()
         }
-        .onChange(of: deepLinkEventId) { oldValue, newValue in
-            if let eventId = newValue {
+        .onChange(of: coordinator.pendingDeepLink) { _, eventId in
+            if let eventId = eventId {
                 print("🎯 HomeView: Navigating to event \(eventId)")
-                navigationPath.append(eventId)
-                deepLinkEventId = nil
-            }
-        }
-    }
-    
-    // MARK: - Deep Link Listener
-    private func setupDeepLinkListener() {
-        NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("NavigateToEvent"),
-            object: nil,
-            queue: .main
-        ) { notification in
-            if let eventId = notification.object as? String {
-                print("📱 HomeView: Received deep link notification for event \(eventId)")
-                self.deepLinkEventId = eventId
+                coordinator.navigate(to: .eventById(eventId))
             }
         }
     }
@@ -195,10 +162,10 @@ struct HomeView: View {
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: false,
                     onViewAllTapped: {
-                        navigationPath.append(EventSectionDestination(
+                        coordinator.navigate(to: .filteredEvents(EventSectionDestination(
                             title: "Popular",
                             events: popularEvents
-                        ))
+                        )))
                     }
                 )
             }
@@ -211,10 +178,10 @@ struct HomeView: View {
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: false,
                     onViewAllTapped: {
-                        navigationPath.append(EventSectionDestination(
+                        coordinator.navigate(to: .filteredEvents(EventSectionDestination(
                             title: "This Week",
                             events: thisWeekEvents
-                        ))
+                        )))
                     }
                 )
             }
@@ -230,10 +197,10 @@ struct HomeView: View {
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: allEvents.count > 6,
                     onViewAllTapped: {
-                        navigationPath.append(EventSectionDestination(
+                        coordinator.navigate(to: .filteredEvents(EventSectionDestination(
                             title: "All Events",
                             events: allEvents
-                        ))
+                        )))
                     }
                 )
             }
@@ -268,10 +235,10 @@ struct HomeView: View {
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: true,
                     onViewAllTapped: {
-                        navigationPath.append(EventSectionDestination(
+                        coordinator.navigate(to: .filteredEvents(EventSectionDestination(
                             title: genre,
                             events: genreEvents
-                        ))
+                        )))
                     }
                 )
             }

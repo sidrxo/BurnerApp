@@ -233,22 +233,12 @@ struct BurnerApp: App {
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         print("🚀 DEEP LINK NAVIGATION")
         print("   Event ID: \(eventId)")
-        print("   Current tab: \(appState.selectedTab)")
-        
-        // Switch to Home tab
-        appState.selectedTab = 0
-        print("✅ Switched to Home tab")
-        
-        // Small delay to ensure tab has switched
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            // Post notification for HomeView to handle
-            NotificationCenter.default.post(
-                name: NSNotification.Name("NavigateToEvent"),
-                object: eventId
-            )
-            print("📢 Posted NavigateToEvent notification with ID: \(eventId)")
-            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        }
+        print("   Current tab: \(appState.navigationCoordinator.selectedTab)")
+
+        // Use NavigationCoordinator for deep linking
+        appState.navigationCoordinator.handleDeepLink(eventId: eventId)
+        print("✅ Handled deep link via NavigationCoordinator")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
     private func setupResetObserver() {

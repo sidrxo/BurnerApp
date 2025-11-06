@@ -46,8 +46,10 @@ struct ExploreView: View {
                     await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FocusSearchBar"))) { _ in
-                isSearchFocused = true
+            .onChange(of: coordinator.shouldFocusSearchBar) { _, shouldFocus in
+                if shouldFocus {
+                    isSearchFocused = true
+                }
             }
         }
     }
