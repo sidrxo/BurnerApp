@@ -38,12 +38,15 @@ struct MainTabView: View {
                         NavigationStack(path: $appState.navigationCoordinator.ticketsPath) {
                             if useWalletView {
                                 TicketsView(selectedTab: $appState.selectedTab)
+                                    .navigationDestination(for: NavigationDestination.self) { destination in
+                                        NavigationDestinationBuilder(destination: destination)
+                                    }
                             } else {
                                 TicketsWalletView(selectedTab: $appState.selectedTab)
+                                    .navigationDestination(for: NavigationDestination.self) { destination in
+                                        NavigationDestinationBuilder(destination: destination)
+                                    }
                             }
-                        }
-                        .navigationDestination(for: NavigationDestination.self) { destination in
-                            NavigationDestinationBuilder(destination: destination)
                         }
 
                     case .settings:
