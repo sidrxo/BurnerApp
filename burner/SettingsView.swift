@@ -170,37 +170,38 @@ struct SettingsView: View {
     
     // MARK: - Not signed in view
     private var notSignedInSection: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            Image("transparent")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 180)
-                .clipShape(Circle()) // 👈 makes it circular
-            VStack(spacing: 8) {
-                Text("WHERE WILL YOU GO")
-                    .appSectionHeader()
-                    .foregroundColor(.white)
-                Text("Be part of what's next in music.")
-                    .appBody()
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
+        GeometryReader { geometry in
+            VStack(spacing: 20) {
+                Image("transparent")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 180)
+                    .clipShape(Circle())
+                VStack(spacing: 8) {
+                    Text("WHERE WILL YOU GO")
+                        .appSectionHeader()
+                        .foregroundColor(.white)
+                    Text("Be part of what's next in music.")
+                        .appBody()
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                }
+
+                Button {
+                    showingSignIn = true
+                } label: {
+                    Text("SIGN IN")
+                        .font(.appFont(size: 17))
+                        .foregroundColor(.black)
+                        .frame(maxWidth: 200)
+                        .padding(.vertical, 12)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            
-            Button {
-                showingSignIn = true
-            } label: {
-                Text("SIGN IN")
-                    .font(.appFont(size: 17))
-                    .foregroundColor(.black)
-                    .frame(maxWidth: 200)
-                    .padding(.vertical, 12)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            Spacer()
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .position(x: geometry.size.width / 2, y: geometry.size.height / 2 - 50)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)

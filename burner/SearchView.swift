@@ -22,35 +22,33 @@ struct ExploreView: View {
         case date = "date"
         case price = "price"
     }
-    
+
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                HeaderSection(title: "Search")
-                searchSection
-                filtersSection
-                contentSection
+        VStack(spacing: 0) {
+            HeaderSection(title: "Search")
+            searchSection
+            filtersSection
+            contentSection
+        }
+        .navigationBarHidden(true)
+        .background(Color.black)
+        .task {
+            await viewModel.loadInitialEvents(sortBy: sortBy.rawValue)
+        }
+        .refreshable {
+            await viewModel.refreshEvents(sortBy: sortBy.rawValue)
+        }
+        .onChange(of: searchText) { oldValue, newValue in
+            viewModel.updateSearchText(newValue, sortBy: sortBy.rawValue)
+        }
+        .onChange(of: sortBy) { oldValue, newValue in
+            Task {
+                await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
             }
-            .navigationBarHidden(true)
-            .background(Color.black)
-            .task {
-                await viewModel.loadInitialEvents(sortBy: sortBy.rawValue)
-            }
-            .refreshable {
-                await viewModel.refreshEvents(sortBy: sortBy.rawValue)
-            }
-            .onChange(of: searchText) { oldValue, newValue in
-                viewModel.updateSearchText(newValue, sortBy: sortBy.rawValue)
-            }
-            .onChange(of: sortBy) { oldValue, newValue in
-                Task {
-                    await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
-                }
-            }
-            .onChange(of: coordinator.shouldFocusSearchBar) { _, shouldFocus in
-                if shouldFocus {
-                    isSearchFocused = true
-                }
+        }
+        .onChange(of: coordinator.shouldFocusSearchBar) { _, shouldFocus in
+            if shouldFocus {
+                isSearchFocused = true
             }
         }
     }
@@ -326,22 +324,38 @@ class OptimizedEventRepository {
         limit: Int = 20,
         startAfter: Date? = nil
     ) async throws -> [Event] {
+        // Fetch all events without filtering by date field first
         var query = db.collection("events")
-            .whereField("startTime", isGreaterThan: Date()) // Changed from "date"
-            .order(by: sortBy)
-            .limit(to: limit)
-        
+            .limit(to: limit * 2) // Fetch more to account for client-side filtering
+
         if let startAfter = startAfter {
             query = query.start(after: [startAfter])
         }
-        
+
         let snapshot = try await query.getDocuments()
-        
-        return snapshot.documents.compactMap { doc in
+
+        let allEvents = snapshot.documents.compactMap { doc -> Event? in
             var event = try? doc.data(as: Event.self)
             event?.id = doc.documentID
             return event
         }
+
+        // Filter client-side for events with startTime > now
+        let filteredEvents = allEvents.filter { event in
+            guard let startTime = event.startTime else { return false }
+            return startTime > Date()
+        }
+
+        // Sort client-side
+        let sortedEvents = filteredEvents.sorted { event1, event2 in
+            if sortBy == "price" {
+                return event1.price < event2.price
+            } else {
+                return (event1.startTime ?? Date.distantFuture) < (event2.startTime ?? Date.distantFuture)
+            }
+        }
+
+        return Array(sortedEvents.prefix(limit))
     }
 
     func searchEvents(
@@ -349,25 +363,42 @@ class OptimizedEventRepository {
         sortBy: String = "startTime",
         limit: Int = 50
     ) async throws -> [Event] {
+        // Fetch all events without date filtering
         let snapshot = try await db.collection("events")
-            .whereField("startTime", isGreaterThan: Date()) // Changed from "date"
-            .order(by: sortBy)
-            .limit(to: limit)
+            .limit(to: limit * 2)
             .getDocuments()
-        
+
         let allEvents = snapshot.documents.compactMap { doc -> Event? in
             var event = try? doc.data(as: Event.self)
             event?.id = doc.documentID
             return event
         }
-        
-        // Filter client-side (consider Algolia for production)
+
+        // Filter for upcoming events with startTime
+        let upcomingEvents = allEvents.filter { event in
+            guard let startTime = event.startTime else { return false }
+            return startTime > Date()
+        }
+
+        // Filter by search text (consider Algolia for production)
         let searchLower = searchText.lowercased()
-        return allEvents.filter { event in
+        let searchResults = upcomingEvents.filter { event in
             event.name.lowercased().contains(searchLower) ||
             event.venue.lowercased().contains(searchLower) ||
-            (event.description?.lowercased().contains(searchLower) ?? false)
+            (event.description?.lowercased().contains(searchLower) ?? false) ||
+            (event.tags?.contains(where: { $0.lowercased().contains(searchLower) }) ?? false)
         }
+
+        // Sort client-side
+        let sortedResults = searchResults.sorted { event1, event2 in
+            if sortBy == "price" {
+                return event1.price < event2.price
+            } else {
+                return (event1.startTime ?? Date.distantFuture) < (event2.startTime ?? Date.distantFuture)
+            }
+        }
+
+        return Array(sortedResults.prefix(limit))
     }
 }
 

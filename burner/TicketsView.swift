@@ -107,39 +107,40 @@ struct TicketsView: View {
     }
 
     private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            Image("transparent")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 180)
-                .clipShape(Circle()) // 👈 makes it circular
-            VStack(spacing: 8) {
-                Text("MEET ME IN THE MOMENT")
-                    .appSectionHeader()
-                    .foregroundColor(.white)
-                Text("The best night of your life is one click away.")
-                    .appBody()
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+        GeometryReader { geometry in
+            VStack(spacing: 20) {
+                Image("transparent")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 180)
+                    .clipShape(Circle())
+                VStack(spacing: 8) {
+                    Text("MEET ME IN THE MOMENT")
+                        .appSectionHeader()
+                        .foregroundColor(.white)
+                    Text("The best night of your life is one click away.")
+                        .appBody()
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+                Button {
+                    // Navigate to Home tab using coordinator
+                    coordinator.selectTab(.home)
+                } label: {
+                    Text("BROWSE EVENTS")
+                        .font(.appFont(size: 17))
+                        .frame(maxWidth: 200)
+                        .secondaryButtonStyle(
+                            backgroundColor: .white,
+                            foregroundColor: .black,
+                            cornerRadius: 8
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            Button {
-                // Navigate to Home tab using coordinator
-                coordinator.selectTab(.home)
-            } label: {
-                Text("BROWSE EVENTS")
-                    .font(.appFont(size: 17))
-                    .frame(maxWidth: 200)
-                    .secondaryButtonStyle(
-                        backgroundColor: .white,
-                        foregroundColor: .black,
-                        cornerRadius: 8
-                    )
-            }
-            .buttonStyle(PlainButtonStyle())
-
-            Spacer()
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .position(x: geometry.size.width / 2, y: geometry.size.height / 2 - 50)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
