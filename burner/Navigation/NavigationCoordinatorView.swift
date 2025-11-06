@@ -11,6 +11,7 @@ import SwiftUI
 
 struct NavigationCoordinatorView<Content: View>: View {
     @EnvironmentObject var coordinator: NavigationCoordinator
+    @EnvironmentObject var appState: AppState
     @ViewBuilder let content: Content
 
     var body: some View {
@@ -82,7 +83,7 @@ struct NavigationCoordinatorView<Content: View>: View {
             SignInSheetView(showingSignIn: .constant(true))
 
         case .burnerSetup:
-            BurnerModeSetupView()
+            BurnerModeSetupView(burnerManager: appState.burnerManager)
 
         case .ticketPurchase(let event, let detent):
             TicketPurchaseDestination(event: event, initialDetent: detent)
@@ -101,7 +102,7 @@ struct NavigationCoordinatorView<Content: View>: View {
             Text("Saved Cards View") // Placeholder
 
         case .passwordlessAuth:
-            PasswordlessAuthView()
+            PasswordlessAuthView(showingSignIn: .constant(true))
 
         case .addPaymentMethod:
             Text("Add Payment Method") // Placeholder
@@ -155,6 +156,7 @@ struct ActivityViewController: UIViewControllerRepresentable {
 struct NavigationDestinationBuilder: View {
     let destination: NavigationDestination
     @EnvironmentObject var coordinator: NavigationCoordinator
+    @EnvironmentObject var appState: AppState
 
     var body: some View {
         Group {

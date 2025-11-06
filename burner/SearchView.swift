@@ -6,6 +6,7 @@ import FirebaseFirestore
 // MARK: - Optimized ExploreView
 struct ExploreView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
+    @EnvironmentObject var coordinator: NavigationCoordinator
     @StateObject private var viewModel: ExploreViewModel
 
     @State private var searchText = ""
