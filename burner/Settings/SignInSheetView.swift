@@ -5,6 +5,7 @@ import FirebaseCore
 import FirebaseFirestore
 import AuthenticationServices
 import CryptoKit
+import Combine
 
 struct SignInSheetView: View {
     @Binding var showingSignIn: Bool
