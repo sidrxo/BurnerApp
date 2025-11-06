@@ -22,7 +22,7 @@ struct AccountDetailsView: View {
         ZStack {
             VStack(spacing: 0) {
                 SettingsHeaderSection(title: "Account Details")
-                CustomMenuSection(title: "PROFILE") {
+                MenuSection(title: "PROFILE") {
                     // Name first, then Email
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
@@ -53,7 +53,7 @@ struct AccountDetailsView: View {
                     .padding(.vertical, 12)
                 }
 
-                CustomMenuSection(title: "ACCOUNT ACTIONS") {
+                MenuSection(title: "ACCOUNT ACTIONS") {
                     Button(action: { showingSignOut = true }) {
                         HStack {
                             Text("Sign Out")

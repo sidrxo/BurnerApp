@@ -17,11 +17,11 @@ struct DebugMenuView: View {
                 VStack(spacing: 0) {
                     // ... other sections remain the same ...
                     
-                    CustomMenuSection(title: "BURNER MODE") {
+                    MenuSection(title: "BURNER MODE") {
                         Button(action: {
                             toggleBurnerMode()
                         }) {
-                            CustomMenuItemContent(
+                            MenuItemContent(
                                 title: appState.showingBurnerLockScreen ? "Disable Burner Mode" : "Enable Burner Mode",
                                 subtitle: appState.showingBurnerLockScreen ? "Currently active" : "Test Burner Mode"
                             )

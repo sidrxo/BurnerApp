@@ -209,11 +209,15 @@ struct NavigationDestinationBuilder: View {
                 #endif
             }
         }
-        .onAppear {
+        .task {
+            // Use task instead of onAppear for better lifecycle management
             coordinator.hideTabBar()
         }
         .onDisappear {
-            coordinator.showTabBar()
+            // Ensure tab bar is shown when leaving any detail view
+            Task { @MainActor in
+                coordinator.showTabBar()
+            }
         }
     }
 }

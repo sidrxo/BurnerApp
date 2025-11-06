@@ -133,9 +133,7 @@ struct HomeView: View {
     // MARK: - Loading View
     private var loadingView: some View {
         VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.2)
-                .tint(.white)
+            CustomLoadingIndicator(size: 50)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 300)

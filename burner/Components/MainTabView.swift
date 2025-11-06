@@ -6,6 +6,21 @@ struct MainTabView: View {
     @EnvironmentObject var appState: AppState
     @AppStorage("useWalletView") private var useWalletView = true
 
+    // Computed property to determine if tab bar should be shown
+    private var shouldShowTabBar: Bool {
+        let coordinator = appState.navigationCoordinator
+        switch coordinator.selectedTab {
+        case .home:
+            return coordinator.homePath.count == 0
+        case .explore:
+            return coordinator.explorePath.count == 0
+        case .tickets:
+            return coordinator.ticketsPath.count == 0
+        case .settings:
+            return coordinator.settingsPath.count == 0
+        }
+    }
+
     var body: some View {
         NavigationCoordinatorView {
             ZStack {
@@ -60,8 +75,9 @@ struct MainTabView: View {
                 }
                 .ignoresSafeArea(.keyboard)
 
-                // Conditionally show tab bar based on detail view state
-                if !appState.navigationCoordinator.shouldHideTabBar {
+                // Conditionally show tab bar based on navigation state
+                // Hide tab bar when there are items in the navigation path
+                if !appState.navigationCoordinator.shouldHideTabBar && shouldShowTabBar {
                     VStack {
                         Spacer()
                         CustomTabBar()
