@@ -23,18 +23,18 @@ struct NavigationCoordinatorView<Content: View>: View {
             }
             .overlay(alignment: .top) {
                 if let alert = coordinator.activeAlert {
-                    CustomAlertView(
+                    ToastAlertView(
                         title: alert.title,
                         message: alert.message,
                         icon: alert.icon,
-                        iconColor: alert.iconColor,
-                        isPresented: Binding(
-                            get: { coordinator.activeAlert != nil },
-                            set: { if !$0 { coordinator.dismissAlert() } }
-                        )
+                        iconColor: alert.iconColor
                     )
-                    .transition(.opacity)
+                    .transition(.move(edge: .top).combined(with: .opacity))
                     .zIndex(1001)
+                    .padding(.top, 50)
+                    .onTapGesture {
+                        coordinator.dismissAlert()
+                    }
                 }
             }
     }
@@ -85,11 +85,11 @@ struct NavigationCoordinatorView<Content: View>: View {
             BurnerModeSetupView()
 
         case .ticketPurchase(let event, let detent):
-            TicketPurchaseView(event: event)
+            TicketPurchaseDestination(event: event, initialDetent: detent)
                 .presentationDetents([detent, .height(320), .height(400)])
 
         case .ticketDetail(let ticket):
-            TicketDetailView(ticket: ticket)
+            TicketDetailDestination(ticket: ticket)
 
         case .shareSheet(let items):
             ActivityViewController(activityItems: items)
@@ -205,14 +205,14 @@ struct NavigationDestinationBuilder: View {
                 EventDetailDestination(eventId: eventId)
 
             case .filteredEvents(let sectionDestination):
-                FilteredEventsView(destination: sectionDestination)
+                FilteredEventsView(title: sectionDestination.title, events: sectionDestination.events)
 
             // Ticket Navigation
             case .ticketDetail(let ticket):
-                TicketDetailView(ticket: ticket)
+                TicketDetailDestination(ticket: ticket)
 
             case .ticketPurchase(let event):
-                TicketPurchaseView(event: event)
+                TicketPurchaseDestination(event: event, initialDetent: .height(240))
 
             case .transferTicket(let ticket):
                 TransferTicketView(ticket: ticket)
@@ -250,5 +250,96 @@ struct NavigationDestinationBuilder: View {
         .onDisappear {
             coordinator.showTabBar()
         }
+    }
+}
+
+// MARK: - Ticket Purchase Destination Wrapper
+
+struct TicketPurchaseDestination: View {
+    let event: Event
+    let initialDetent: PresentationDetent
+
+    @EnvironmentObject var eventViewModel: EventViewModel
+    @State private var selectedDetent: PresentationDetent
+
+    init(event: Event, initialDetent: PresentationDetent) {
+        self.event = event
+        self.initialDetent = initialDetent
+        _selectedDetent = State(initialValue: initialDetent)
+    }
+
+    var body: some View {
+        TicketPurchaseView(
+            event: event,
+            viewModel: eventViewModel,
+            selectedDetent: $selectedDetent
+        )
+    }
+}
+
+// MARK: - Ticket Detail Destination Wrapper
+
+struct TicketDetailDestination: View {
+    let ticket: Ticket
+
+    @EnvironmentObject var eventViewModel: EventViewModel
+
+    var body: some View {
+        Group {
+            if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
+                TicketDetailView(ticketWithEvent: TicketWithEventData(ticket: ticket, event: event))
+            } else {
+                // Create placeholder event if event data is missing
+                TicketDetailView(ticketWithEvent: TicketWithEventData(
+                    ticket: ticket,
+                    event: Event(
+                        id: ticket.eventId,
+                        name: ticket.eventName,
+                        venue: ticket.venue,
+                        startTime: ticket.startTime,
+                        price: ticket.totalPrice,
+                        maxTickets: 100,
+                        ticketsSold: 0,
+                        imageUrl: "",
+                        isFeatured: false,
+                        description: nil
+                    )
+                ))
+            }
+        }
+    }
+}
+
+// MARK: - Toast Alert View
+
+struct ToastAlertView: View {
+    let title: String
+    let message: String
+    let icon: String
+    let iconColor: Color
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 24))
+                .foregroundColor(iconColor)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+
+                Text(message)
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.9))
+            }
+
+            Spacer()
+        }
+        .padding(16)
+        .background(Color(white: 0.15))
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.3), radius: 10, y: 5)
+        .padding(.horizontal, 20)
     }
 }

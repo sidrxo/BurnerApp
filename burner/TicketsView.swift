@@ -8,8 +8,9 @@ struct TicketsView: View {
     // ✅ Use shared ViewModels from environment
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
     @EnvironmentObject var eventViewModel: EventViewModel
+    @EnvironmentObject var coordinator: NavigationCoordinator
 
-    // Add binding for selected tab
+    // Add binding for selected tab (deprecated, kept for compatibility)
     @Binding var selectedTab: Int
 
     @State private var searchText = ""
@@ -124,8 +125,8 @@ struct TicketsView: View {
                     .padding(.horizontal, 40)
             }
             Button {
-                // Navigate to Home tab (index 0)
-                selectedTab = 0
+                // Navigate to Home tab using coordinator
+                coordinator.selectTab(.home)
             } label: {
                 Text("BROWSE EVENTS")
                     .font(.appFont(size: 17))

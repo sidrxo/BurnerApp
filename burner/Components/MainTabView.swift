@@ -18,6 +18,9 @@ struct MainTabView: View {
                                 .navigationDestination(for: NavigationDestination.self) { destination in
                                     NavigationDestinationBuilder(destination: destination)
                                 }
+                                .navigationDestination(for: Event.self) { event in
+                                    EventDetailView(event: event)
+                                }
                         }
 
                     case .explore:
@@ -25,6 +28,9 @@ struct MainTabView: View {
                             ExploreView()
                                 .navigationDestination(for: NavigationDestination.self) { destination in
                                     NavigationDestinationBuilder(destination: destination)
+                                }
+                                .navigationDestination(for: Event.self) { event in
+                                    EventDetailView(event: event)
                                 }
                         }
 
