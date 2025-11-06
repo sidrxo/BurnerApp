@@ -13,23 +13,23 @@ struct SupportView: View {
         VStack(spacing: 0) {
             SettingsHeaderSection(title: "Support")
                 .padding(.top, 20)
-            CustomMenuSection(title: "HELP") {
+            MenuSection(title: "HELP") {
                 Button(action: { openURL("mailto:support@burner.app") }) {
-                    CustomMenuItemContent(title: "Contact Support", subtitle: "Get help with your account")
+                    MenuItemContent(title: "Contact Support", subtitle: "Get help with your account")
                 }
                 NavigationLink(destination: FAQView()) {
-                    CustomMenuItemContent(title: "FAQ", subtitle: "Frequently asked questions")
+                    MenuItemContent(title: "FAQ", subtitle: "Frequently asked questions")
                 }
             }
-            CustomMenuSection(title: "LEGAL") {
+            MenuSection(title: "LEGAL") {
                 NavigationLink(destination: TermsOfServiceView()) {
-                    CustomMenuItemContent(title: "Terms of Service", subtitle: "Legal terms and conditions")
+                    MenuItemContent(title: "Terms of Service", subtitle: "Legal terms and conditions")
                 }
                 NavigationLink(destination: PrivacyPolicyView()) {
-                    CustomMenuItemContent(title: "Privacy Policy", subtitle: "How we protect your data")
+                    MenuItemContent(title: "Privacy Policy", subtitle: "How we protect your data")
                 }
             }
-            CustomMenuSection(title: "APP") {
+            MenuSection(title: "APP") {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Version")
@@ -43,7 +43,7 @@ struct SupportView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
                 Button(action: { rateApp() }) {
-                    CustomMenuItemContent(title: "Rate the App", subtitle: "Share your feedback")
+                    MenuItemContent(title: "Rate the App", subtitle: "Share your feedback")
                 }
             }
             Spacer()

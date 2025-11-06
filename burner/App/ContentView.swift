@@ -22,6 +22,10 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: onboardingManager.shouldShowOnboarding)
+        .onAppear {
+            // Load initial data when the app starts
+            appState.loadInitialData()
+        }
     }
 }
 

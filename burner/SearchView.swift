@@ -153,9 +153,7 @@ struct ExploreView: View {
                         if viewModel.isLoadingMore {
                             HStack {
                                 Spacer()
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                    .tint(.white)
+                                CustomLoadingIndicator(size: 35)
                                     .padding(.vertical, 20)
                                 Spacer()
                             }
@@ -170,9 +168,7 @@ struct ExploreView: View {
     
     private var loadingView: some View {
         VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.2)
-                .tint(.white)
+            CustomLoadingIndicator(size: 50)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 200)
