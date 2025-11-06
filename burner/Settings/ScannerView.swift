@@ -3,7 +3,7 @@ import CodeScanner
 import FirebaseFirestore
 import FirebaseAuth
 import FirebaseFunctions
-internal import AVFoundation
+import AVFoundation
 
 struct ScannerView: View {
     @EnvironmentObject var appState: AppState

@@ -133,7 +133,6 @@ struct EventDetailView: View {
                             }
                         }
                         .frame(height: heroHeight)
-                        .ignoresSafeArea(edges: .top)
                         .padding(.bottom, 30)
                         
                         // Content Section - More compact spacing
@@ -310,7 +309,6 @@ struct EventDetailView: View {
 
             }
         }
-        .ignoresSafeArea()
         .navigationBarBackButtonHidden(false)
         .onAppear {
             checkUserTicketStatus()

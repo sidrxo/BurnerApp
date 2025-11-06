@@ -3,11 +3,11 @@ import Kingfisher
 import Combine
 import FirebaseFirestore
 
-// MARK: - Optimized ExploreView
-struct ExploreView: View {
+// MARK: - Optimized SearchView
+struct SearchView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var coordinator: NavigationCoordinator
-    @StateObject private var viewModel: ExploreViewModel
+    @StateObject private var viewModel: SearchViewModel
 
     @State private var searchText = ""
     @State private var sortBy: SortOption = .date
@@ -15,7 +15,7 @@ struct ExploreView: View {
 
     init() {
         let repository = OptimizedEventRepository()
-        _viewModel = StateObject(wrappedValue: ExploreViewModel(eventRepository: repository))
+        _viewModel = StateObject(wrappedValue: SearchViewModel(eventRepository: repository))
     }
 
     enum SortOption: String {
@@ -173,9 +173,9 @@ struct ExploreView: View {
     }
 }
 
-// MARK: - ExploreViewModel (Performance Optimized)
+
 @MainActor
-class ExploreViewModel: ObservableObject {
+class SearchViewModel: ObservableObject {
     @Published var events: [Event] = []
     @Published var isLoading = false
     @Published var isLoadingMore = false
@@ -189,6 +189,10 @@ class ExploreViewModel: ObservableObject {
     private let eventRepository: OptimizedEventRepository
     private var searchCancellable: AnyCancellable?
     private let searchSubject = PassthroughSubject<(String, String), Never>()
+    
+    // ADD THIS: Constant for initial load limit
+    private let initialLoadLimit = 5
+    private let paginationLimit = 20
 
     init(eventRepository: OptimizedEventRepository) {
         self.eventRepository = eventRepository
@@ -220,14 +224,16 @@ class ExploreViewModel: ObservableObject {
         lastDocument = nil
 
         do {
+            // CHANGED: Use initialLoadLimit (5) instead of 20
             let fetchedEvents = try await eventRepository.fetchUpcomingEvents(
                 sortBy: sortBy,
-                limit: 20
+                limit: initialLoadLimit
             )
 
             events = fetchedEvents
             lastDocument = fetchedEvents.last?.startTime
-            hasMoreEvents = fetchedEvents.count >= 20
+            // CHANGED: Check against initialLoadLimit
+            hasMoreEvents = fetchedEvents.count >= initialLoadLimit
 
         } catch {
             errorMessage = "Failed to load events: \(error.localizedDescription)"
@@ -243,15 +249,16 @@ class ExploreViewModel: ObservableObject {
         isLoadingMore = true
         
         do {
+            // Use paginationLimit (20) for subsequent loads
             let fetchedEvents = try await eventRepository.fetchUpcomingEvents(
                 sortBy: sortBy,
-                limit: 20,
+                limit: paginationLimit,
                 startAfter: lastDocument
             )
             
             events.append(contentsOf: fetchedEvents)
             lastDocument = fetchedEvents.last?.startTime
-            hasMoreEvents = fetchedEvents.count >= 20
+            hasMoreEvents = fetchedEvents.count >= paginationLimit
             
         } catch {
             errorMessage = "Failed to load more events: \(error.localizedDescription)"
@@ -324,9 +331,10 @@ class OptimizedEventRepository {
         limit: Int = 20,
         startAfter: Date? = nil
     ) async throws -> [Event] {
-        // Fetch all events without filtering by date field first
+        // Build base query with ordering
         var query = db.collection("events")
-            .limit(to: limit * 2) // Fetch more to account for client-side filtering
+            .order(by: "startTime") // ADD THIS LINE - Required for cursor-based pagination
+            .limit(to: limit * 2)
 
         if let startAfter = startAfter {
             query = query.start(after: [startAfter])
@@ -346,13 +354,13 @@ class OptimizedEventRepository {
             return startTime > Date()
         }
 
-        // Sort client-side
-        let sortedEvents = filteredEvents.sorted { event1, event2 in
-            if sortBy == "price" {
-                return event1.price < event2.price
-            } else {
-                return (event1.startTime ?? Date.distantFuture) < (event2.startTime ?? Date.distantFuture)
-            }
+        // Sort client-side if needed (when sortBy is price)
+        let sortedEvents: [Event]
+        if sortBy == "price" {
+            sortedEvents = filteredEvents.sorted { $0.price < $1.price }
+        } else {
+            // Already sorted by startTime from Firestore query
+            sortedEvents = filteredEvents
         }
 
         return Array(sortedEvents.prefix(limit))
@@ -380,7 +388,7 @@ class OptimizedEventRepository {
             return startTime > Date()
         }
 
-        // Filter by search text (consider Algolia for production)
+        // Filter by search text
         let searchLower = searchText.lowercased()
         let searchResults = upcomingEvents.filter { event in
             event.name.lowercased().contains(searchLower) ||
@@ -401,7 +409,6 @@ class OptimizedEventRepository {
         return Array(sortedResults.prefix(limit))
     }
 }
-
 // MARK: - Empty Events View
 struct EmptyEventsView: View {
     let searchText: String
@@ -437,9 +444,9 @@ struct EmptyEventsView: View {
 }
 
 // MARK: - Preview
-struct ExploreView_Previews: PreviewProvider {
+struct SearchView_Previews: PreviewProvider {
     static var previews: some View {
-        ExploreView()
+        SearchView()
             .environmentObject(AppState().bookmarkManager)
             .preferredColorScheme(.dark)
     }

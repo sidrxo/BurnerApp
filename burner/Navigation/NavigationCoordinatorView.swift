@@ -209,16 +209,8 @@ struct NavigationDestinationBuilder: View {
                 #endif
             }
         }
-        .task {
-            // Use task instead of onAppear for better lifecycle management
-            coordinator.hideTabBar()
-        }
-        .onDisappear {
-            // Ensure tab bar is shown when leaving any detail view
-            Task { @MainActor in
-                coordinator.showTabBar()
-            }
-        }
+        // REMOVED: Manual tab bar management - let MainTabView handle it
+        // The tab bar visibility is now controlled by the path count in MainTabView
     }
 }
 

@@ -323,7 +323,7 @@ class NavigationCoordinator: ObservableObject {
         // Clear any existing navigation
         explorePath.removeLast(explorePath.count)
 
-        // Set pending deep link (will be picked up by ExploreView)
+        // Set pending deep link (will be picked up by SearchView)
         pendingDeepLink = eventId
 
         // Small delay to ensure state is stable

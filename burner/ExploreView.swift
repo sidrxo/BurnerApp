@@ -144,7 +144,7 @@ struct HomeView: View {
         VStack(spacing: 0) {
             // Featured Hero Card
             if let featured = featuredEvents.first {
-                NavigationLink(value: featured) {
+                NavigationLink(value: NavigationDestination.eventDetail(featured)) {
                     FeaturedHeroCard(event: featured, bookmarkManager: bookmarkManager)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 40)
@@ -152,54 +152,39 @@ struct HomeView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             
-            // Popular Section
+            // Popular Section - FIXED: Pass full events list
             if !popularEvents.isEmpty {
                 EventSection(
                     title: "Popular",
                     events: popularEventsPreview,
+                    allEvents: popularEvents,  // NEW: Pass all events
                     bookmarkManager: bookmarkManager,
-                    showViewAllButton: false,
-                    onViewAllTapped: {
-                        coordinator.navigate(to: .filteredEvents(EventSectionDestination(
-                            title: "Popular",
-                            events: popularEvents
-                        )))
-                    }
+                    showViewAllButton: false
                 )
             }
             
-            // This Week Section
+            // This Week Section - FIXED: Pass full events list
             if !thisWeekEvents.isEmpty {
                 EventSection(
                     title: "This Week",
                     events: thisWeekEventsPreview,
+                    allEvents: thisWeekEvents,  // NEW: Pass all events
                     bookmarkManager: bookmarkManager,
-                    showViewAllButton: false,
-                    onViewAllTapped: {
-                        coordinator.navigate(to: .filteredEvents(EventSectionDestination(
-                            title: "This Week",
-                            events: thisWeekEvents
-                        )))
-                    }
+                    showViewAllButton: false
                 )
             }
             
             // Genre Sections
             genreSectionsWithFeaturedCards
             
-            // All Events Section
+            // All Events Section - FIXED: Pass full events list
             if !allEvents.isEmpty {
                 EventSection(
                     title: "All Events",
                     events: allEventsPreview,
+                    allEvents: allEvents,  // NEW: Pass all events
                     bookmarkManager: bookmarkManager,
-                    showViewAllButton: allEvents.count > 6,
-                    onViewAllTapped: {
-                        coordinator.navigate(to: .filteredEvents(EventSectionDestination(
-                            title: "All Events",
-                            events: allEvents
-                        )))
-                    }
+                    showViewAllButton: allEvents.count > 6
                 )
             }
         }
@@ -218,7 +203,7 @@ struct HomeView: View {
                 if index % 2 == 0 {
                     let featuredIndex = 1 + (index / 2)
                     if featuredIndex < featuredEvents.count {
-                        NavigationLink(value: featuredEvents[featuredIndex]) {
+                        NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[featuredIndex])) {
                             FeaturedHeroCard(event: featuredEvents[featuredIndex], bookmarkManager: bookmarkManager)
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 40)
@@ -227,17 +212,13 @@ struct HomeView: View {
                     }
                 }
                 
+                // FIXED: Pass both preview and full events list
                 EventSection(
                     title: genre,
                     events: genrePreview,
+                    allEvents: genreEvents,  // NEW: Pass all events
                     bookmarkManager: bookmarkManager,
-                    showViewAllButton: true,
-                    onViewAllTapped: {
-                        coordinator.navigate(to: .filteredEvents(EventSectionDestination(
-                            title: genre,
-                            events: genreEvents
-                        )))
-                    }
+                    showViewAllButton: true
                 )
             }
         }
@@ -275,25 +256,26 @@ struct SeededRandomNumberGenerator: RandomNumberGenerator {
 }
 
 // MARK: - Reusable Event Section Component
+// FIXED: Use NavigationLink instead of Button for chevron
 struct EventSection: View {
     let title: String
-    let events: [Event]
+    let events: [Event]          // Preview events to display
+    let allEvents: [Event]        // NEW: All events for navigation
     let bookmarkManager: BookmarkManager
     let showViewAllButton: Bool
-    let onViewAllTapped: (() -> Void)?
     
     init(
         title: String,
         events: [Event],
+        allEvents: [Event]? = nil,  // NEW: Optional, defaults to events
         bookmarkManager: BookmarkManager,
-        showViewAllButton: Bool = true,
-        onViewAllTapped: (() -> Void)? = nil
+        showViewAllButton: Bool = true
     ) {
         self.title = title
         self.events = events
+        self.allEvents = allEvents ?? events  // Use allEvents if provided, otherwise use events
         self.bookmarkManager = bookmarkManager
         self.showViewAllButton = showViewAllButton
-        self.onViewAllTapped = onViewAllTapped
     }
     
     var body: some View {
@@ -306,10 +288,11 @@ struct EventSection: View {
                 
                 Spacer()
                 
+                // FIXED: Use NavigationLink instead of Button
                 if showViewAllButton {
-                    Button(action: {
-                        onViewAllTapped?()
-                    }) {
+                    NavigationLink(value: NavigationDestination.filteredEvents(
+                        EventSectionDestination(title: title, events: allEvents)
+                    )) {
                         Image(systemName: "chevron.right")
                             .font(.appIcon)
                             .foregroundColor(.gray)
@@ -317,6 +300,7 @@ struct EventSection: View {
                             .background(Color.gray.opacity(0.2))
                             .clipShape(Circle())
                     }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
             .padding(.horizontal, 20)
@@ -324,7 +308,7 @@ struct EventSection: View {
             // Event List
             LazyVStack(spacing: 0) {
                 ForEach(events) { event in
-                    NavigationLink(value: event) {
+                    NavigationLink(value: NavigationDestination.eventDetail(event)) {
                         EventRow(
                             event: event,
                             bookmarkManager: bookmarkManager

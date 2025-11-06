@@ -6,24 +6,9 @@ struct MainTabView: View {
     @EnvironmentObject var appState: AppState
     @AppStorage("useWalletView") private var useWalletView = true
 
-    // Computed property to determine if tab bar should be shown
-    private var shouldShowTabBar: Bool {
-        let coordinator = appState.navigationCoordinator
-        switch coordinator.selectedTab {
-        case .home:
-            return coordinator.homePath.count == 0
-        case .explore:
-            return coordinator.explorePath.count == 0
-        case .tickets:
-            return coordinator.ticketsPath.count == 0
-        case .settings:
-            return coordinator.settingsPath.count == 0
-        }
-    }
-
     var body: some View {
         NavigationCoordinatorView {
-            ZStack {
+            ZStack(alignment: .bottom) {
                 // Content based on selected tab
                 Group {
                     switch appState.navigationCoordinator.selectedTab {
@@ -33,19 +18,13 @@ struct MainTabView: View {
                                 .navigationDestination(for: NavigationDestination.self) { destination in
                                     NavigationDestinationBuilder(destination: destination)
                                 }
-                                .navigationDestination(for: Event.self) { event in
-                                    EventDetailView(event: event)
-                                }
                         }
 
                     case .explore:
                         NavigationStack(path: $appState.navigationCoordinator.explorePath) {
-                            ExploreView()
+                            SearchView()
                                 .navigationDestination(for: NavigationDestination.self) { destination in
                                     NavigationDestinationBuilder(destination: destination)
-                                }
-                                .navigationDestination(for: Event.self) { event in
-                                    EventDetailView(event: event)
                                 }
                         }
 
@@ -73,23 +52,37 @@ struct MainTabView: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                // Conditionally show tab bar based on navigation state
-                // Hide tab bar when there are items in the navigation path
-                if !appState.navigationCoordinator.shouldHideTabBar && shouldShowTabBar {
-                    GeometryReader { geometry in
-                        VStack {
-                            Spacer()
-                            CustomTabBar()
-                                .frame(maxWidth: .infinity)
-                        }
-                        .frame(maxHeight: .infinity, alignment: .bottom)
-                        .ignoresSafeArea(.keyboard, edges: .bottom)
-                    }
+                // FIXED: Tab bar visibility - only show when at root of any tab
+                if shouldShowTabBar {
+                    CustomTabBar()
+                        .transition(.move(edge: .bottom))
                 }
             }
         }
         .environmentObject(appState.navigationCoordinator)
+    }
+    
+    // FIXED: Simplified tab bar visibility logic
+    private var shouldShowTabBar: Bool {
+        // Don't show if explicitly hidden
+        guard !appState.navigationCoordinator.shouldHideTabBar else {
+            return false
+        }
+        
+        // Show only at root of each tab
+        let coordinator = appState.navigationCoordinator
+        switch coordinator.selectedTab {
+        case .home:
+            return coordinator.homePath.count == 0
+        case .explore:
+            return coordinator.explorePath.count == 0
+        case .tickets:
+            return coordinator.ticketsPath.count == 0
+        case .settings:
+            return coordinator.settingsPath.count == 0
+        }
     }
 }
 

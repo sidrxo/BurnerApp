@@ -68,6 +68,7 @@ struct BurnerApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var appState = AppState()
     @State private var shouldResetApp = false
+    @State private var showingVideoSplash = true
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -120,6 +121,16 @@ struct BurnerApp: App {
                     )
                     .transition(.opacity)
                     .zIndex(1001)
+                }
+                
+                // Video splash - separate from error block
+                if showingVideoSplash {
+                    VideoSplashView(videoName: "splash", loop: false) {
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            showingVideoSplash = false
+                        }
+                    }
+                    .zIndex(2000)
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: appState.showingBurnerLockScreen)
