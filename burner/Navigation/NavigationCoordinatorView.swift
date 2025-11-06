@@ -79,7 +79,7 @@ struct NavigationCoordinatorView<Content: View>: View {
     private func modalView(for modal: ModalPresentation) -> some View {
         switch modal {
         case .signIn:
-            SignInSheetView()
+            SignInSheetView(showingSignIn: .constant(true))
 
         case .burnerSetup:
             BurnerModeSetupView()
@@ -110,64 +110,26 @@ struct NavigationCoordinatorView<Content: View>: View {
             Text("Manual Ticket Entry") // Placeholder
 
         case .fullScreenQRCode(let ticket):
-            FullScreenQRCodeView(ticket: ticket)
-        }
-    }
-}
-
-// MARK: - Full Screen QR Code View
-
-struct FullScreenQRCodeView: View {
-    @EnvironmentObject var coordinator: NavigationCoordinator
-    let ticket: Ticket
-
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-
-            VStack(spacing: 20) {
-                // Close button
-                HStack {
-                    Spacer()
-                    Button {
-                        coordinator.dismissModal()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(.white)
-                    }
-                    .padding()
-                }
-
-                Spacer()
-
-                // QR Code
-                if let qrImage = QRCodeGenerator.generateQRCode(from: ticket.qrCodeData ?? "") {
-                    Image(uiImage: qrImage)
-                        .interpolation(.none)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 300, height: 300)
-                        .background(Color.white)
-                        .cornerRadius(20)
-                }
-
-                // Ticket info
-                VStack(spacing: 8) {
-                    Text(ticket.eventName)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-
-                    if let ticketNumber = ticket.ticketNumber {
-                        Text("Ticket #\(ticketNumber)")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                    }
-                }
-
-                Spacer()
-            }
+            // Use the FullScreenQRCodeView from TicketDetailView.swift
+            // Create a TicketWithEventData wrapper with a placeholder event
+            FullScreenQRCodeView(
+                ticketWithEvent: TicketWithEventData(
+                    ticket: ticket,
+                    event: Event(
+                        id: ticket.eventId,
+                        name: ticket.eventName,
+                        venue: ticket.venue,
+                        startTime: ticket.startTime,
+                        price: ticket.totalPrice,
+                        maxTickets: 100,
+                        ticketsSold: 0,
+                        imageUrl: "",
+                        isFeatured: false,
+                        description: nil
+                    )
+                ),
+                qrCodeData: ticket.qrCode ?? ""
+            )
         }
     }
 }
