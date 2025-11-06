@@ -73,14 +73,18 @@ struct MainTabView: View {
                         }
                     }
                 }
-                .ignoresSafeArea(.keyboard)
 
                 // Conditionally show tab bar based on navigation state
                 // Hide tab bar when there are items in the navigation path
                 if !appState.navigationCoordinator.shouldHideTabBar && shouldShowTabBar {
-                    VStack {
-                        Spacer()
-                        CustomTabBar()
+                    GeometryReader { geometry in
+                        VStack {
+                            Spacer()
+                            CustomTabBar()
+                                .frame(maxWidth: .infinity)
+                        }
+                        .frame(maxHeight: .infinity, alignment: .bottom)
+                        .ignoresSafeArea(.keyboard, edges: .bottom)
                     }
                 }
             }
@@ -135,7 +139,8 @@ struct CustomTabBar: View {
 
             TabBarButton(
                 icon: "ticket",
-                isSelected: coordinator.selectedTab == .tickets
+                isSelected: coordinator.selectedTab == .tickets,
+                rotationDegrees: 90
             ) {
                 coordinator.selectTab(.tickets)
             }
@@ -150,7 +155,7 @@ struct CustomTabBar: View {
             }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .padding(.vertical, 20)
         .background(Color.black)
         .ignoresSafeArea(.all, edges: .bottom)
     }
@@ -159,15 +164,17 @@ struct CustomTabBar: View {
 struct TabBarButton: View {
     let icon: String
     let isSelected: Bool
+    var rotationDegrees: Double = 0
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.appSectionHeader)
+                .font(.system(size: 24, weight: .regular))
                 .foregroundColor(isSelected ? .white : .gray)
-                .padding(.horizontal, 20)
-
+                .rotationEffect(.degrees(rotationDegrees))
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
     }
