@@ -88,7 +88,6 @@ class AppState: ObservableObject {
 
         setupObservers()
         setupBurnerModeObserver()
-        setupNavigationCoordinatorSync()
     }
     
     // MARK: - Setup Observers
@@ -137,30 +136,6 @@ class AppState: ObservableObject {
             .compactMap { $0 }
             .sink { [weak self] error in
                 self?.showError(error)
-            }
-            .store(in: &cancellables)
-    }
-    
-    // MARK: - Navigation Coordinator Sync
-    private func setupNavigationCoordinatorSync() {
-        // Keep old selectedTab in sync with new coordinator during migration
-        navigationCoordinator.$selectedTab
-            .map { $0.rawValue }
-            .sink { [weak self] tabIndex in
-                self?.selectedTab = tabIndex
-            }
-            .store(in: &cancellables)
-
-        // Sync sign-in sheet presentation
-        navigationCoordinator.$activeModal
-            .map { modal in
-                if case .signIn = modal {
-                    return true
-                }
-                return false
-            }
-            .sink { [weak self] isPresented in
-                self?.isSignInSheetPresented = isPresented
             }
             .store(in: &cancellables)
     }
