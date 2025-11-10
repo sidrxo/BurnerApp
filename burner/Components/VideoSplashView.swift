@@ -25,6 +25,7 @@ struct VideoSplashView: View {
             loop: loop,
             onFinish: onFinished
         )
+        .scaleEffect(x: 1.0, y: 0.9)
         .background(Color.black)
         .ignoresSafeArea()
     }

@@ -66,6 +66,7 @@ struct MainTabView: View {
                     }
                 }
                 .zIndex(100)
+                .ignoresSafeArea(.keyboard)
             }
         }
     }
