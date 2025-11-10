@@ -21,7 +21,6 @@ import { db, storage } from "@/lib/firebase";
 import {
   EVENT_CATEGORY_OPTIONS,
   EVENT_STATUS_OPTIONS,
-  EVENT_TAG_OPTIONS,
   EventStatus,
 } from "@/lib/constants";
 
@@ -41,6 +40,7 @@ export interface Event {
   status?: EventStatus | string | null;
   category?: string | null;
   tags?: string[];
+  coordinates?: { latitude: number; longitude: number } | null;
   organizerId?: string | null;
   date?: Timestamp; // legacy support
   createdAt?: Timestamp;
@@ -50,6 +50,7 @@ export interface Event {
 export interface Venue {
   id: string;
   name: string;
+  coordinates?: { latitude: number; longitude: number } | null;
 }
 
 export interface EventFormData {
@@ -65,6 +66,8 @@ export interface EventFormData {
   status: EventStatus;
   category: string;
   tag: string;
+  latitude: string;
+  longitude: string;
 }
 
 function timestampToInputValue(timestamp?: Timestamp | null) {
@@ -115,10 +118,21 @@ export function useEventsData() {
   const loadVenues = async () => {
     try {
       const snapshot = await getDocs(collection(db, "venues"));
-      const loadedVenues: Venue[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        name: doc.data().name ?? doc.id,
-      }));
+      const loadedVenues: Venue[] = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        let coordinates = null;
+        if (data.coordinates) {
+          coordinates = {
+            latitude: data.coordinates.latitude,
+            longitude: data.coordinates.longitude,
+          };
+        }
+        return {
+          id: doc.id,
+          name: data.name ?? doc.id,
+          coordinates,
+        };
+      });
       setVenues(loadedVenues);
     } catch (error) {
       console.error("Error loading venues:", error);
@@ -351,7 +365,7 @@ export function useEventForm(
 ) {
   const isEdit = !!existing;
   const suggestedTags = useMemo(
-    () => Array.from(new Set([...availableTags.map(normaliseTag), ...EVENT_TAG_OPTIONS])).filter(Boolean),
+    () => Array.from(new Set([...availableTags.map(normaliseTag)])).filter(Boolean),
     [availableTags]
   );
   const [form, setForm] = useState<EventFormData>({
@@ -367,6 +381,8 @@ export function useEventForm(
     status: (existing?.status as EventStatus) || deriveStatus(existing || ({} as Event)),
     category: existing?.category || EVENT_CATEGORY_OPTIONS[0].value,
     tag: normaliseTag(existing?.tags?.[0]) || "",
+    latitude: existing?.coordinates?.latitude?.toString() ?? "",
+    longitude: existing?.coordinates?.longitude?.toString() ?? "",
   });
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
@@ -448,6 +464,12 @@ export function useEventForm(
       const url = await uploadImageIfAny(isEdit ? existing!.id : form.id);
       const tags = form.tag ? [normaliseTag(form.tag)] : [];
 
+      // Parse coordinates
+      const coordinates =
+        form.latitude && form.longitude
+          ? { latitude: parseFloat(form.latitude), longitude: parseFloat(form.longitude) }
+          : null;
+
       if (isEdit) {
         const updatePayload: Partial<Event> & { updatedAt: Timestamp } = {
           name: form.name,
@@ -462,6 +484,7 @@ export function useEventForm(
           status: form.status,
           category: form.category,
           tags,
+          coordinates,
           updatedAt: Timestamp.now(),
         };
 
@@ -503,6 +526,7 @@ export function useEventForm(
           status: form.status,
           category: form.category,
           tags,
+          coordinates,
           organizerId: user.uid,
           createdAt: Timestamp.now(),
         };
@@ -523,6 +547,7 @@ export function useEventForm(
           status: payload.status,
           category: payload.category,
           tags: payload.tags,
+          coordinates: payload.coordinates ?? null,
           organizerId: payload.organizerId,
           createdAt: payload.createdAt,
           createdBy: user.uid,
@@ -555,6 +580,8 @@ export function useEventForm(
       status: (existing?.status as EventStatus) || deriveStatus(existing || ({} as Event)),
       category: existing?.category || EVENT_CATEGORY_OPTIONS[0].value,
       tag: normaliseTag(existing?.tags?.[0]) || "",
+      latitude: existing?.coordinates?.latitude?.toString() ?? "",
+      longitude: existing?.coordinates?.longitude?.toString() ?? "",
     });
     setFile(null);
     setProgress(0);

@@ -25,6 +25,9 @@ struct Event: Identifiable, Codable, Sendable {
     var status: String? // "active", "soldOut", "past"
     var tags: [String]?
 
+    // Location field (typically inherited from venue)
+    var coordinates: GeoPoint?
+
     var createdAt: Date?
     var updatedAt: Date?
 }

@@ -31,27 +31,31 @@ struct PasswordlessAuthView: View {
                     .ignoresSafeArea(.all)
                 
                 VStack(spacing: 0) {
-                    // Content
-                    ScrollView {
-                        VStack(spacing: 32) {
-                            // Header
-                            VStack(spacing: 12) {
-                                Image(systemName: emailSent ? "envelope.badge.fill" : "envelope")
-                                    .font(.system(size: 48))
-                                    .foregroundColor(.white)
-                                    .padding(.bottom, 8)
-                                
-                                Text(emailSent ? "Check your email" : "Sign in with email")
-                                    .font(.system(size: 28, weight: .semibold))
-                                    .foregroundColor(.white)
-                                
-                                Text(emailSent ? "We sent a sign-in link to \(email)" : "We'll send you a magic link to sign in")
-                                    .appBody()
-                                    .foregroundColor(.white.opacity(0.7))
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 24)
-                            }
-                            .padding(.top, 60)
+                    // Content - Vertically centered
+                    GeometryReader { geometry in
+                        ScrollView {
+                            VStack(spacing: 32) {
+                                Spacer()
+                                    .frame(minHeight: 0)
+
+                                // Header
+                                VStack(spacing: 12) {
+                                    Image(systemName: emailSent ? "envelope.badge.fill" : "envelope")
+                                        .font(.system(size: 48))
+                                        .foregroundColor(.white)
+                                        .padding(.bottom, 8)
+
+                                    Text(emailSent ? "Check your email" : "Sign in with email")
+                                        .font(.system(size: 28, weight: .semibold))
+                                        .foregroundColor(.white)
+
+                                    Text(emailSent ? "We sent a sign-in link to \(email)" : "We'll send you a magic link to sign in")
+                                        .appBody()
+                                        .foregroundColor(.white.opacity(0.7))
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 24)
+                                }
+                                .padding(.top, 20)
                             
                             if !emailSent {
                                 // Email input form
@@ -143,9 +147,14 @@ struct PasswordlessAuthView: View {
                                 }
                                 .padding(.horizontal, 24)
                             }
+
+                                Spacer()
+                                    .frame(minHeight: 0)
+                            }
+                            .frame(minHeight: geometry.size.height)
                         }
                     }
-                    
+
                     // Bottom button
                     if !emailSent {
                         VStack(spacing: 0) {

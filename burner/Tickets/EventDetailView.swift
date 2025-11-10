@@ -256,9 +256,7 @@ struct EventDetailView: View {
                         
                         Button(action: {
                             if userHasTicket {
-                                if let ticket = userTicket {
-                                    coordinator.viewTicketDetail(ticket)
-                                }
+                                // Do nothing when user has a ticket
                             } else if availableTickets > 0 {
                                 // Check if user is authenticated
                                 if Auth.auth().currentUser == nil {
