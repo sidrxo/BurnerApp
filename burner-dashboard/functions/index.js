@@ -10,6 +10,7 @@ const handle = app.getRequestHandler();
 
 exports.nextjsFunc = onRequest(
   {
+    region: "europe-west2",
     memory: "1GiB",
     timeoutSeconds: 60,
     maxInstances: 10

@@ -24,7 +24,10 @@ async function createAuditLog(action, resource, resourceId, userId, details = {}
 /**
  * Log admin creation
  */
-exports.onAdminCreated = onDocumentCreated("admins/{adminId}", async (event) => {
+exports.onAdminCreated = onDocumentCreated({
+  document: "admins/{adminId}",
+  region: "europe-west2"
+}, async (event) => {
   const admin = event.data.data();
   const adminId = event.params.adminId;
 
@@ -47,7 +50,10 @@ exports.onAdminCreated = onDocumentCreated("admins/{adminId}", async (event) => 
 /**
  * Log admin updates
  */
-exports.onAdminUpdated = onDocumentUpdated("admins/{adminId}", async (event) => {
+exports.onAdminUpdated = onDocumentUpdated({
+  document: "admins/{adminId}",
+  region: "europe-west2"
+}, async (event) => {
   const before = event.data.before.data();
   const after = event.data.after.data();
   const adminId = event.params.adminId;
@@ -75,7 +81,10 @@ exports.onAdminUpdated = onDocumentUpdated("admins/{adminId}", async (event) => 
 /**
  * Log admin deletion
  */
-exports.onAdminDeleted = onDocumentDeleted("admins/{adminId}", async (event) => {
+exports.onAdminDeleted = onDocumentDeleted({
+  document: "admins/{adminId}",
+  region: "europe-west2"
+}, async (event) => {
   const admin = event.data.data();
   const adminId = event.params.adminId;
 
@@ -97,7 +106,10 @@ exports.onAdminDeleted = onDocumentDeleted("admins/{adminId}", async (event) => 
 /**
  * Log scanner creation
  */
-exports.onScannerCreated = onDocumentCreated("scanners/{scannerId}", async (event) => {
+exports.onScannerCreated = onDocumentCreated({
+  document: "scanners/{scannerId}",
+  region: "europe-west2"
+}, async (event) => {
   const scanner = event.data.data();
   const scannerId = event.params.scannerId;
 
@@ -119,7 +131,10 @@ exports.onScannerCreated = onDocumentCreated("scanners/{scannerId}", async (even
 /**
  * Log scanner updates
  */
-exports.onScannerUpdated = onDocumentUpdated("scanners/{scannerId}", async (event) => {
+exports.onScannerUpdated = onDocumentUpdated({
+  document: "scanners/{scannerId}",
+  region: "europe-west2"
+}, async (event) => {
   const before = event.data.before.data();
   const after = event.data.after.data();
   const scannerId = event.params.scannerId;
@@ -145,7 +160,10 @@ exports.onScannerUpdated = onDocumentUpdated("scanners/{scannerId}", async (even
 /**
  * Log scanner deletion
  */
-exports.onScannerDeleted = onDocumentDeleted("scanners/{scannerId}", async (event) => {
+exports.onScannerDeleted = onDocumentDeleted({
+  document: "scanners/{scannerId}",
+  region: "europe-west2"
+}, async (event) => {
   const scanner = event.data.data();
   const scannerId = event.params.scannerId;
 
@@ -166,7 +184,10 @@ exports.onScannerDeleted = onDocumentDeleted("scanners/{scannerId}", async (even
 /**
  * Log event deletion
  */
-exports.onEventDeleted = onDocumentDeleted("events/{eventId}", async (event) => {
+exports.onEventDeleted = onDocumentDeleted({
+  document: "events/{eventId}",
+  region: "europe-west2"
+}, async (event) => {
   const eventData = event.data.data();
   const eventId = event.params.eventId;
 
@@ -188,7 +209,10 @@ exports.onEventDeleted = onDocumentDeleted("events/{eventId}", async (event) => 
 /**
  * Log ticket refunds
  */
-exports.onTicketRefunded = onDocumentUpdated("tickets/{ticketId}", async (event) => {
+exports.onTicketRefunded = onDocumentUpdated({
+  document: "tickets/{ticketId}",
+  region: "europe-west2"
+}, async (event) => {
   const before = event.data.before.data();
   const after = event.data.after.data();
 

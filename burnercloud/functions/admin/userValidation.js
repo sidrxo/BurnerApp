@@ -5,9 +5,9 @@ const { getAuth } = require("firebase-admin/auth");
 const db = getFirestore();
 const auth = getAuth();
 
-exports.validateUser = onCall(async (request) => {
+exports.validateUser = onCall({ region: "europe-west2" }, async (request) => {
   console.log("=== VALIDATE USER FUNCTION START ===");
-  
+
   try {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required");

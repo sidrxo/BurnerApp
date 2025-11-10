@@ -6,7 +6,10 @@ const db = getFirestore();
 /**
  * Update eventStats when a ticket is created
  */
-exports.onTicketCreated = onDocumentCreated("tickets/{ticketId}", async (event) => {
+exports.onTicketCreated = onDocumentCreated({
+  document: "tickets/{ticketId}",
+  region: "europe-west2"
+}, async (event) => {
   try {
     const ticket = event.data.data();
     const eventId = ticket.eventId;
@@ -62,7 +65,10 @@ exports.onTicketCreated = onDocumentCreated("tickets/{ticketId}", async (event) 
 /**
  * Update eventStats when a ticket is updated (e.g., marked as used)
  */
-exports.onTicketUpdated = onDocumentUpdated("tickets/{ticketId}", async (event) => {
+exports.onTicketUpdated = onDocumentUpdated({
+  document: "tickets/{ticketId}",
+  region: "europe-west2"
+}, async (event) => {
   try {
     const before = event.data.before.data();
     const after = event.data.after.data();
@@ -126,7 +132,10 @@ exports.onTicketUpdated = onDocumentUpdated("tickets/{ticketId}", async (event) 
 /**
  * Update eventStats when a ticket is deleted
  */
-exports.onTicketDeleted = onDocumentDeleted("tickets/{ticketId}", async (event) => {
+exports.onTicketDeleted = onDocumentDeleted({
+  document: "tickets/{ticketId}",
+  region: "europe-west2"
+}, async (event) => {
   try {
     const ticket = event.data.data();
     const eventId = ticket.eventId;

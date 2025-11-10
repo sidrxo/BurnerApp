@@ -8,7 +8,7 @@ const db = getFirestore();
  * Get all tags
  * Available to all authenticated users
  */
-exports.getTags = onCall(async (request) => {
+exports.getTags = onCall({ region: "europe-west2" }, async (request) => {
   try {
     // Require authentication
     requireAuth(request);
@@ -47,7 +47,7 @@ exports.getTags = onCall(async (request) => {
  * Create a new tag
  * Restricted to site admins only
  */
-exports.createTag = onCall(async (request) => {
+exports.createTag = onCall({ region: "europe-west2" }, async (request) => {
   try {
     // Require site admin
     requireSiteAdmin(request);
@@ -126,7 +126,7 @@ exports.createTag = onCall(async (request) => {
  * Update an existing tag
  * Restricted to site admins only
  */
-exports.updateTag = onCall(async (request) => {
+exports.updateTag = onCall({ region: "europe-west2" }, async (request) => {
   try {
     // Require site admin
     requireSiteAdmin(request);
@@ -239,7 +239,7 @@ exports.updateTag = onCall(async (request) => {
  * Delete a tag
  * Restricted to site admins only
  */
-exports.deleteTag = onCall(async (request) => {
+exports.deleteTag = onCall({ region: "europe-west2" }, async (request) => {
   try {
     // Require site admin
     requireSiteAdmin(request);
@@ -302,7 +302,7 @@ exports.deleteTag = onCall(async (request) => {
  * Reorder tags
  * Restricted to site admins only
  */
-exports.reorderTags = onCall(async (request) => {
+exports.reorderTags = onCall({ region: "europe-west2" }, async (request) => {
   try {
     // Require site admin
     requireSiteAdmin(request);
