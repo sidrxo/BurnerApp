@@ -8,53 +8,57 @@ struct MainTabView: View {
 
     var body: some View {
         NavigationCoordinatorView {
-            ZStack(alignment: .bottom) {
-                // Content based on selected tab
-                Group {
-                    switch appState.navigationCoordinator.selectedTab {
-                    case .home:
-                        NavigationStack(path: $appState.navigationCoordinator.homePath) {
-                            ExploreView()
-                                .navigationDestination(for: NavigationDestination.self) { destination in
-                                    NavigationDestinationBuilder(destination: destination)
-                                }
+            TabView(selection: $appState.navigationCoordinator.selectedTab) {
+                // Home Tab
+                NavigationStack(path: $appState.navigationCoordinator.homePath) {
+                    ExploreView()
+                        .navigationDestination(for: NavigationDestination.self) { destination in
+                            NavigationDestinationBuilder(destination: destination)
                         }
+                }
+                .tag(AppTab.home)
+                .tabItem { EmptyView() }
 
-                    case .explore:
-                        NavigationStack(path: $appState.navigationCoordinator.explorePath) {
-                            SearchView()
-                                .navigationDestination(for: NavigationDestination.self) { destination in
-                                    NavigationDestinationBuilder(destination: destination)
-                                }
+                // Explore Tab
+                NavigationStack(path: $appState.navigationCoordinator.explorePath) {
+                    SearchView()
+                        .navigationDestination(for: NavigationDestination.self) { destination in
+                            NavigationDestinationBuilder(destination: destination)
                         }
+                }
+                .tag(AppTab.explore)
+                .tabItem { EmptyView() }
 
-                    case .tickets:
-                        NavigationStack(path: $appState.navigationCoordinator.ticketsPath) {
-                            if useWalletView {
-                                TicketsView()
-                                    .navigationDestination(for: NavigationDestination.self) { destination in
-                                        NavigationDestinationBuilder(destination: destination)
-                                    }
-                            } else {
-                                TicketsWalletView()
-                                    .navigationDestination(for: NavigationDestination.self) { destination in
-                                        NavigationDestinationBuilder(destination: destination)
-                                    }
+                // Tickets Tab
+                NavigationStack(path: $appState.navigationCoordinator.ticketsPath) {
+                    if useWalletView {
+                        TicketsView()
+                            .navigationDestination(for: NavigationDestination.self) { destination in
+                                NavigationDestinationBuilder(destination: destination)
                             }
-                        }
-
-                    case .settings:
-                        NavigationStack(path: $appState.navigationCoordinator.settingsPath) {
-                            SettingsView()
-                                .navigationDestination(for: NavigationDestination.self) { destination in
-                                    NavigationDestinationBuilder(destination: destination)
-                                }
-                        }
+                    } else {
+                        TicketsWalletView()
+                            .navigationDestination(for: NavigationDestination.self) { destination in
+                                NavigationDestinationBuilder(destination: destination)
+                            }
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .tag(AppTab.tickets)
+                .tabItem { EmptyView() }
 
-                // FIXED: Tab bar visibility - only show when at root of any tab
+                // Settings Tab
+                NavigationStack(path: $appState.navigationCoordinator.settingsPath) {
+                    SettingsView()
+                        .navigationDestination(for: NavigationDestination.self) { destination in
+                            NavigationDestinationBuilder(destination: destination)
+                        }
+                }
+                .tag(AppTab.settings)
+                .tabItem { EmptyView() }
+            }
+            .tabViewStyle(.automatic)
+            .overlay(alignment: .bottom) {
+                // Custom tab bar overlay - only show when at root of any tab
                 if shouldShowTabBar {
                     CustomTabBar()
                         .transition(.move(edge: .bottom))
