@@ -50,7 +50,7 @@ exports.getTags = onCall({ region: "europe-west2" }, async (request) => {
 exports.createTag = onCall({ region: "europe-west2" }, async (request) => {
   try {
     // Require site admin
-    requireSiteAdmin(request);
+    await requireSiteAdmin(request);
 
     const { name, description, color } = request.data;
 
@@ -129,7 +129,7 @@ exports.createTag = onCall({ region: "europe-west2" }, async (request) => {
 exports.updateTag = onCall({ region: "europe-west2" }, async (request) => {
   try {
     // Require site admin
-    requireSiteAdmin(request);
+    await requireSiteAdmin(request);
 
     const { tagId, updates } = request.data;
 
@@ -242,7 +242,7 @@ exports.updateTag = onCall({ region: "europe-west2" }, async (request) => {
 exports.deleteTag = onCall({ region: "europe-west2" }, async (request) => {
   try {
     // Require site admin
-    requireSiteAdmin(request);
+    await requireSiteAdmin(request);
 
     const { tagId } = request.data;
 
@@ -305,7 +305,7 @@ exports.deleteTag = onCall({ region: "europe-west2" }, async (request) => {
 exports.reorderTags = onCall({ region: "europe-west2" }, async (request) => {
   try {
     // Require site admin
-    requireSiteAdmin(request);
+    await requireSiteAdmin(request);
 
     const { tagOrders } = request.data;
 

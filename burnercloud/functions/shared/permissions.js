@@ -99,8 +99,34 @@ async function verifyScannerPermission(uid, venueId = null) {
   }
 }
 
+/**
+ * Require user to be authenticated
+ * @param {Object} request - Cloud Functions request object
+ * @throws {HttpsError} If user is not authenticated
+ */
+function requireAuth(request) {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+}
+
+/**
+ * Require user to be a site admin
+ * @param {Object} request - Cloud Functions request object
+ * @throws {HttpsError} If user is not authenticated or not a site admin
+ */
+async function requireSiteAdmin(request) {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  await verifyAdminPermission(request.auth.uid, 'siteAdmin');
+}
+
 module.exports = {
   verifyAdminPermission,
   validateVenueAccess,
-  verifyScannerPermission
+  verifyScannerPermission,
+  requireAuth,
+  requireSiteAdmin
 };
