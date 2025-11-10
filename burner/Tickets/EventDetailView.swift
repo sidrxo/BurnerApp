@@ -166,8 +166,14 @@ struct EventDetailView: View {
                                 VStack(spacing: 8) {
                                     EventDetailRow(
                                         icon: "calendar",
-                                        title: "Date & Time",
-                                        value: (event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month().year().hour().minute())
+                                        title: "Date",
+                                        value: (event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month().year())
+                                    )
+                                    
+                                    EventDetailRow(
+                                        icon: "clock",
+                                        title: "Time",
+                                        value: formatTimeRange()
                                     )
 
                                     EventDetailRow(
@@ -342,6 +348,24 @@ struct EventDetailView: View {
             }
         }
     }
+    
+    private func formatTimeRange() -> String {
+        guard let startTime = event.startTime else {
+            return "TBA"
+        }
+        
+        let timeFormatter = DateFormatter()
+        timeFormatter.timeStyle = .short
+        
+        let startTimeString = timeFormatter.string(from: startTime)
+        
+        if let endTime = event.endTime {
+            let endTimeString = timeFormatter.string(from: endTime)
+            return "\(startTimeString) - \(endTimeString)"
+        } else {
+            return startTimeString
+        }
+    }
 
     private func generateShareText() -> String {
         let dateFormatter = DateFormatter()
@@ -430,4 +454,4 @@ struct ShareSheet: UIViewControllerRepresentable {
         .environmentObject(NavigationCoordinator())
     }
     .preferredColorScheme(.dark)
-}   
+}
