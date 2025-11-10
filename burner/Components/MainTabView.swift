@@ -61,7 +61,6 @@ struct MainTabView: View {
                 }
             }
         }
-        .environmentObject(appState.navigationCoordinator)
     }
     
     // FIXED: Simplified tab bar visibility logic

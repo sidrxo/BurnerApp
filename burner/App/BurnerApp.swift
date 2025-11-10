@@ -80,6 +80,7 @@ struct BurnerApp: App {
             ZStack {
                 ContentView()
                     .environmentObject(appState)
+                    .environmentObject(appState.navigationCoordinator)
                     .environmentObject(appState.eventViewModel)
                     .environmentObject(appState.bookmarkManager)
                     .environmentObject(appState.ticketsViewModel)
