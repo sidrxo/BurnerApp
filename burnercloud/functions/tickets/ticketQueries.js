@@ -4,9 +4,9 @@ const { generateQRCodeData } = require("./ticketHelpers");
 
 const db = getFirestore();
 
-exports.checkUserTicket = onCall(async (request) => {
+exports.checkUserTicket = onCall({ region: "europe-west2" }, async (request) => {
   console.log("=== CHECK USER TICKET FUNCTION START ===");
-  
+
   try {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "You must be signed in to check tickets");
@@ -37,9 +37,9 @@ exports.checkUserTicket = onCall(async (request) => {
   }
 });
 
-exports.getUserTickets = onCall(async (request) => {
+exports.getUserTickets = onCall({ region: "europe-west2" }, async (request) => {
   console.log("=== GET USER TICKETS FUNCTION START ===");
-  
+
   try {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "You must be signed in to view tickets");

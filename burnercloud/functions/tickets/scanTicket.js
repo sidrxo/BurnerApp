@@ -9,9 +9,9 @@ const db = getFirestore();
  * Scan and validate a ticket QR code
  * Only callable by scanners with proper venue access
  */
-exports.scanTicket = onCall(async (request) => {
+exports.scanTicket = onCall({ region: "europe-west2" }, async (request) => {
   console.log("=== SCAN TICKET FUNCTION START ===");
-  
+
   try {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required");
@@ -167,9 +167,9 @@ exports.scanTicket = onCall(async (request) => {
  * Get scan history for a scanner
  * Returns list of tickets scanned by this scanner
  */
-exports.getScanHistory = onCall(async (request) => {
+exports.getScanHistory = onCall({ region: "europe-west2" }, async (request) => {
   console.log("=== GET SCAN HISTORY FUNCTION START ===");
-  
+
   try {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required");

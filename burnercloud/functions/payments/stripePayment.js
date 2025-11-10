@@ -41,7 +41,7 @@ const logger = {
 // -------------------------
 
 exports.processApplePayPayment = onCall(
-  { secrets: [stripeSecretKey] },
+  { region: "europe-west2", secrets: [stripeSecretKey] },
   async (request) => {
     try {
       logger.info('processApplePayPayment called', {
@@ -250,7 +250,7 @@ exports.processApplePayPayment = onCall(
 // Create Payment Intent
 // -------------------------
 exports.createPaymentIntent = onCall(
-  { secrets: [stripeSecretKey] },
+  { region: "europe-west2", secrets: [stripeSecretKey] },
   async (request) => {
     try {
       logger.info('createPaymentIntent called', { 
@@ -400,7 +400,7 @@ exports.createPaymentIntent = onCall(
 // Confirm Purchase (create ticket after payment succeeds)
 // -------------------------
 exports.confirmPurchase = onCall(
-  { secrets: [stripeSecretKey] },
+  { region: "europe-west2", secrets: [stripeSecretKey] },
   async (request) => {
     try {
       logger.info('confirmPurchase called', {
@@ -616,7 +616,7 @@ exports.confirmPurchase = onCall(
 // Get Payment Methods
 // -------------------------
 exports.getPaymentMethods = onCall(
-  { secrets: [stripeSecretKey] },
+  { region: "europe-west2", secrets: [stripeSecretKey] },
   async (request) => {
     try {
       logger.info('getPaymentMethods called', {
@@ -691,7 +691,7 @@ exports.getPaymentMethods = onCall(
 // Save Payment Method
 // -------------------------
 exports.savePaymentMethod = onCall(
-  { secrets: [stripeSecretKey] },
+  { region: "europe-west2", secrets: [stripeSecretKey] },
   async (request) => {
     try {
       logger.info('savePaymentMethod called', {
@@ -781,7 +781,7 @@ exports.savePaymentMethod = onCall(
 // Delete Payment Method
 // -------------------------
 exports.deletePaymentMethod = onCall(
-  { secrets: [stripeSecretKey] },
+  { region: "europe-west2", secrets: [stripeSecretKey] },
   async (request) => {
     try {
       logger.info('deletePaymentMethod called', {
@@ -877,7 +877,7 @@ exports.deletePaymentMethod = onCall(
 // Set Default Payment Method
 // -------------------------
 exports.setDefaultPaymentMethod = onCall(
-  { secrets: [stripeSecretKey] },
+  { region: "europe-west2", secrets: [stripeSecretKey] },
   async (request) => {
     try {
       logger.info('setDefaultPaymentMethod called', {

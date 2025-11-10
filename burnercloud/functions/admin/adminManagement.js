@@ -7,9 +7,9 @@ const { verifyAdminPermission } = require("../shared/permissions");
 const db = getFirestore();
 const auth = getAuth();
 
-exports.createAdmin = onCall(async (request) => {
+exports.createAdmin = onCall({ region: "europe-west2" }, async (request) => {
   console.log("=== CREATE ADMIN FUNCTION START ===");
-  
+
   try {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required");
@@ -125,9 +125,9 @@ exports.createAdmin = onCall(async (request) => {
   }
 });
 
-exports.updateAdmin = onCall(async (request) => {
+exports.updateAdmin = onCall({ region: "europe-west2" }, async (request) => {
   console.log("=== UPDATE ADMIN FUNCTION START ===");
-  
+
   try {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required");
@@ -257,9 +257,9 @@ exports.updateAdmin = onCall(async (request) => {
   }
 });
 
-exports.deleteAdmin = onCall(async (request) => {
+exports.deleteAdmin = onCall({ region: "europe-west2" }, async (request) => {
   console.log("=== DELETE ADMIN FUNCTION START ===");
-  
+
   try {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required");

@@ -11,9 +11,9 @@ const auth = getAuth();
  * Create a new scanner account
  * Sets custom claims for role-based access control
  */
-exports.createScanner = onCall(async (request) => {
+exports.createScanner = onCall({ region: "europe-west2" }, async (request) => {
   console.log("=== CREATE SCANNER FUNCTION START ===");
-  
+
   try {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required");
@@ -99,9 +99,9 @@ exports.createScanner = onCall(async (request) => {
  * Update an existing scanner
  * Updates both Firestore document and custom claims
  */
-exports.updateScanner = onCall(async (request) => {
+exports.updateScanner = onCall({ region: "europe-west2" }, async (request) => {
   console.log("=== UPDATE SCANNER FUNCTION START ===");
-  
+
   try {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required");
@@ -193,9 +193,9 @@ exports.updateScanner = onCall(async (request) => {
  * Delete a scanner account
  * Removes both Firestore document and Auth user
  */
-exports.deleteScanner = onCall(async (request) => {
+exports.deleteScanner = onCall({ region: "europe-west2" }, async (request) => {
   console.log("=== DELETE SCANNER FUNCTION START ===");
-  
+
   try {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required");
@@ -239,9 +239,9 @@ exports.deleteScanner = onCall(async (request) => {
  * Get scanner profile with custom claims
  * Useful for verifying scanner permissions
  */
-exports.getScannerProfile = onCall(async (request) => {
+exports.getScannerProfile = onCall({ region: "europe-west2" }, async (request) => {
   console.log("=== GET SCANNER PROFILE FUNCTION START ===");
-  
+
   try {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required");

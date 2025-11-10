@@ -4,7 +4,7 @@ const { getAuth } = require("firebase-admin/auth");
 
 const db = getFirestore();
 
-exports.transferTicket = onCall(async (request) => {
+exports.transferTicket = onCall({ region: "europe-west2" }, async (request) => {
   console.log("=== TRANSFER TICKET FUNCTION START ===");
 
   try {
