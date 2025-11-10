@@ -173,7 +173,13 @@ struct ExploreView: View {
                     showViewAllButton: false
                 )
             }
-            
+
+            // Genre Cards - Horizontal Scrolling
+            GenreCardsSection(
+                genres: displayGenres,
+                allEventsForGenre: { genre in allEventsForGenre(genre) }
+            )
+
             // Genre Sections
             genreSectionsWithFeaturedCards
             
@@ -319,6 +325,52 @@ struct EventSection: View {
             }
         }
         .padding(.bottom, 40)
+    }
+}
+
+// MARK: - Genre Cards Section
+struct GenreCardsSection: View {
+    let genres: [String]
+    let allEventsForGenre: (String) -> [Event]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(genres, id: \.self) { genre in
+                        NavigationLink(value: NavigationDestination.filteredEvents(
+                            EventSectionDestination(title: genre, events: allEventsForGenre(genre))
+                        )) {
+                            GenreCard(genreName: genre)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+        .padding(.bottom, 40)
+    }
+}
+
+// MARK: - Genre Card
+struct GenreCard: View {
+    let genreName: String
+
+    var body: some View {
+        Text(genreName)
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(.white)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white.opacity(0.1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+            )
     }
 }
 
