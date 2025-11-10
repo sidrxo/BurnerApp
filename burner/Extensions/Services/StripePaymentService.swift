@@ -17,7 +17,7 @@ class StripePaymentService: NSObject, ObservableObject {
     @Published var isPaymentSheetReady = false
     @Published var paymentMethods: [PaymentMethodInfo] = []
 
-    private let functions = Functions.functions(region: "us-central1")
+    private let functions = Functions.functions(region: "europe-west2")
 
     struct PaymentMethodInfo: Identifiable {
         let id: String

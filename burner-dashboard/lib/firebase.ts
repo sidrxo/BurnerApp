@@ -49,7 +49,7 @@ const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const functions = getFunctions(app); // ADD THIS EXPORT
+export const functions = getFunctions(app, 'europe-west2'); // Specify region for Cloud Functions
 
 // Export config for debugging (only in development)
 if (process.env.NODE_ENV === 'development') {
