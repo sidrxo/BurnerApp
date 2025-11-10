@@ -375,7 +375,7 @@ struct GenreCard: View {
             
             // Text in bottom left
             Text(genreName)
-                .font(.system(size: 18, weight: .semibold))
+                .appSectionHeader()
                 .foregroundColor(.white)
                 .padding(16)
         }

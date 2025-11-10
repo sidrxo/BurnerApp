@@ -2,10 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>UIAppFonts</key>
-    <array>
-        <string>SpaceGrotesk.ttf</string>
-    </array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -30,7 +26,7 @@
 	<key>NSFamilyControlsUsageDescription</key>
 	<string>This app uses Family Controls to help you stay focused during events by blocking distracting apps when Burner Mode is enabled.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We need your location to show you nearby events and help you discover what's happening around you.</string>
+	<string>We need your location to show you nearby events and help you discover what&apos;s happening around you.</string>
 	<key>NSSupportsAutomaticTermination</key>
 	<true/>
 	<key>UIBackgroundModes</key>

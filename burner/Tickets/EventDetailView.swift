@@ -484,7 +484,7 @@ struct MapsOptionsSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             Text("Open in Maps")
-                .font(.appBody())
+                .appBody()
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
                 .padding(.top, 20)
@@ -499,7 +499,7 @@ struct MapsOptionsSheet: View {
                         Image(systemName: "map")
                             .font(.system(size: 20))
                         Text("Apple Maps")
-                            .font(.appBody())
+                            .appBody()
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.system(size: 14))
@@ -519,7 +519,7 @@ struct MapsOptionsSheet: View {
                         Image(systemName: "globe")
                             .font(.system(size: 20))
                         Text("Google Maps")
-                            .font(.appBody())
+                            .appBody()
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.system(size: 14))
