@@ -99,8 +99,44 @@ async function verifyScannerPermission(uid, venueId = null) {
   }
 }
 
+/**
+ * Require user to be authenticated
+ * Simple helper that throws if request.auth is missing
+ * @param {Object} request - Firebase function request object
+ */
+function requireAuth(request) {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+}
+
+/**
+ * Require user to be a site admin
+ * Throws if user is not authenticated or not a site admin
+ * @param {Object} request - Firebase function request object
+ * @returns {Object} User's custom claims
+ */
+async function requireSiteAdmin(request) {
+  requireAuth(request);
+  return await verifyAdminPermission(request.auth.uid, 'siteAdmin');
+}
+
+/**
+ * Require user to be at least a venue admin
+ * Throws if user is not authenticated or doesn't have admin privileges
+ * @param {Object} request - Firebase function request object
+ * @returns {Object} User's custom claims
+ */
+async function requireVenueAdmin(request) {
+  requireAuth(request);
+  return await verifyAdminPermission(request.auth.uid, 'venueAdmin');
+}
+
 module.exports = {
   verifyAdminPermission,
   validateVenueAccess,
-  verifyScannerPermission
+  verifyScannerPermission,
+  requireAuth,
+  requireSiteAdmin,
+  requireVenueAdmin
 };
