@@ -357,23 +357,35 @@ struct GenreCardsSection: View {
 }
 
 // MARK: - Genre Card
+// MARK: - Genre Card
 struct GenreCard: View {
     let genreName: String
 
     var body: some View {
-        Text(genreName)
-            .font(.system(size: 16, weight: .semibold))
-            .foregroundColor(.white)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.white.opacity(0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    )
+        ZStack(alignment: .bottomLeading) {
+            // Gradient background
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.white.opacity(0.15),
+                    Color.white.opacity(0.05)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
             )
+            
+            // Text in bottom left
+            Text(genreName)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(16)
+        }
+        .frame(width: 140, height: 120)
+        .background(Color.white.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+        )
     }
 }
 
