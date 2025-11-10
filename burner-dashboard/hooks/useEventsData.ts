@@ -66,8 +66,6 @@ export interface EventFormData {
   status: EventStatus;
   category: string;
   tag: string;
-  latitude: string;
-  longitude: string;
 }
 
 function timestampToInputValue(timestamp?: Timestamp | null) {
@@ -381,8 +379,6 @@ export function useEventForm(
     status: (existing?.status as EventStatus) || deriveStatus(existing || ({} as Event)),
     category: existing?.category || EVENT_CATEGORY_OPTIONS[0].value,
     tag: normaliseTag(existing?.tags?.[0]) || "",
-    latitude: existing?.coordinates?.latitude?.toString() ?? "",
-    longitude: existing?.coordinates?.longitude?.toString() ?? "",
   });
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
@@ -464,11 +460,22 @@ export function useEventForm(
       const url = await uploadImageIfAny(isEdit ? existing!.id : form.id);
       const tags = form.tag ? [normaliseTag(form.tag)] : [];
 
-      // Parse coordinates
-      const coordinates =
-        form.latitude && form.longitude
-          ? { latitude: parseFloat(form.latitude), longitude: parseFloat(form.longitude) }
-          : null;
+      // Get coordinates from venue
+      let coordinates: { latitude: number; longitude: number } | null = null;
+      try {
+        const venueDoc = await getDoc(doc(db, "venues", selectedVenueId));
+        if (venueDoc.exists()) {
+          const venueData = venueDoc.data();
+          if (venueData.coordinates) {
+            coordinates = {
+              latitude: venueData.coordinates.latitude,
+              longitude: venueData.coordinates.longitude,
+            };
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to fetch venue coordinates:", error);
+      }
 
       if (isEdit) {
         const updatePayload: Partial<Event> & { updatedAt: Timestamp } = {
@@ -580,8 +587,6 @@ export function useEventForm(
       status: (existing?.status as EventStatus) || deriveStatus(existing || ({} as Event)),
       category: existing?.category || EVENT_CATEGORY_OPTIONS[0].value,
       tag: normaliseTag(existing?.tags?.[0]) || "",
-      latitude: existing?.coordinates?.latitude?.toString() ?? "",
-      longitude: existing?.coordinates?.longitude?.toString() ?? "",
     });
     setFile(null);
     setProgress(0);

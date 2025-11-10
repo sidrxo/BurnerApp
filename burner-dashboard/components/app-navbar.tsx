@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Calendar, Home, Settings, Ticket, MapPin, Shield, User, Tag } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Calendar, Home, Settings, Ticket, MapPin, Shield, User, Tag, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/useAuth";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +22,7 @@ import { Button } from "@/components/ui/button";
 
 export function AppNavbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuth();
   const [venueName, setVenueName] = useState<string>("");
 
@@ -45,6 +48,16 @@ export function AppNavbar() {
 
     fetchVenueName();
   }, [user]);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      toast.success("Signed out successfully");
+      router.replace("/login");
+    } catch (e: any) {
+      toast.error("Failed to sign out");
+    }
+  };
 
   let navigationItems = [
     { title: "Overview", url: "/overview", icon: Home },
@@ -132,6 +145,11 @@ export function AppNavbar() {
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/account">Account Settings</Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-600 focus:text-red-600">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -398,9 +398,9 @@ class OptimizedEventRepository {
         limit: Int = 20,
         startAfter: Date? = nil
     ) async throws -> [Event] {
-        // Build base query with ordering
+        // Build base query with ordering by createdAt for date sort
         var query = db.collection("events")
-            .order(by: "startTime") // ADD THIS LINE - Required for cursor-based pagination
+            .order(by: sortBy == "date" ? "createdAt" : "startTime")
             .limit(to: limit * 2)
 
         if let startAfter = startAfter {
@@ -421,10 +421,15 @@ class OptimizedEventRepository {
             return startTime > Date()
         }
 
-        // Sort client-side if needed (when sortBy is price)
+        // Sort client-side if needed
         let sortedEvents: [Event]
         if sortBy == "price" {
             sortedEvents = filteredEvents.sorted { $0.price < $1.price }
+        } else if sortBy == "date" {
+            // Sort by createdAt ascending (oldest first)
+            sortedEvents = filteredEvents.sorted {
+                ($0.createdAt ?? Date.distantPast) < ($1.createdAt ?? Date.distantPast)
+            }
         } else {
             // Already sorted by startTime from Firestore query
             sortedEvents = filteredEvents
@@ -468,6 +473,9 @@ class OptimizedEventRepository {
         let sortedResults = searchResults.sorted { event1, event2 in
             if sortBy == "price" {
                 return event1.price < event2.price
+            } else if sortBy == "date" {
+                // Sort by createdAt ascending (oldest first)
+                return (event1.createdAt ?? Date.distantPast) < (event2.createdAt ?? Date.distantPast)
             } else {
                 return (event1.startTime ?? Date.distantFuture) < (event2.startTime ?? Date.distantFuture)
             }
