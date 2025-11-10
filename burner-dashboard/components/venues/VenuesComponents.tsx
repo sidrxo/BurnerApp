@@ -79,6 +79,10 @@ export function CreateVenueForm({
   setNewVenueAddress,
   newVenueCity,
   setNewVenueCity,
+  newVenueLatitude,
+  setNewVenueLatitude,
+  newVenueLongitude,
+  setNewVenueLongitude,
   newVenueCapacity,
   setNewVenueCapacity,
   newVenueContactEmail,
@@ -99,6 +103,10 @@ export function CreateVenueForm({
   setNewVenueAddress: (address: string) => void;
   newVenueCity: string;
   setNewVenueCity: (city: string) => void;
+  newVenueLatitude: string;
+  setNewVenueLatitude: (latitude: string) => void;
+  newVenueLongitude: string;
+  setNewVenueLongitude: (longitude: string) => void;
   newVenueCapacity: string;
   setNewVenueCapacity: (capacity: string) => void;
   newVenueContactEmail: string;
@@ -154,7 +162,7 @@ export function CreateVenueForm({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address">Address (Optional)</Label>
                 <Input
                   id="address"
                   placeholder="123 Main Street"
@@ -164,13 +172,47 @@ export function CreateVenueForm({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
+                <Label htmlFor="city">City (Optional)</Label>
                 <Input
                   id="city"
                   placeholder="London"
                   value={newVenueCity}
                   onChange={(e) => setNewVenueCity(e.target.value)}
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="latitude">Latitude *</Label>
+                <Input
+                  id="latitude"
+                  type="number"
+                  step="any"
+                  placeholder="51.5074"
+                  value={newVenueLatitude}
+                  onChange={(e) => setNewVenueLatitude(e.target.value)}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Required for map display in the app
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="longitude">Longitude *</Label>
+                <Input
+                  id="longitude"
+                  type="number"
+                  step="any"
+                  placeholder="-0.1278"
+                  value={newVenueLongitude}
+                  onChange={(e) => setNewVenueLongitude(e.target.value)}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Required for map display in the app
+                </p>
               </div>
             </div>
 
@@ -283,6 +325,8 @@ export function VenueGridCard({
     name: venue.name,
     address: venue.address || "",
     city: venue.city || "",
+    latitude: venue.latitude?.toString() || "",
+    longitude: venue.longitude?.toString() || "",
     capacity: venue.capacity?.toString() || "",
     contactEmail: venue.contactEmail || "",
     website: venue.website || "",
@@ -296,6 +340,8 @@ export function VenueGridCard({
       name: editForm.name,
       address: editForm.address || undefined,
       city: editForm.city || undefined,
+      latitude: editForm.latitude ? Number(editForm.latitude) : undefined,
+      longitude: editForm.longitude ? Number(editForm.longitude) : undefined,
       capacity: editForm.capacity ? Number(editForm.capacity) : undefined,
       contactEmail: editForm.contactEmail || undefined,
       website: editForm.website || undefined,
@@ -434,7 +480,7 @@ export function VenueGridCard({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-address">Address</Label>
+                  <Label htmlFor="edit-address">Address (Optional)</Label>
                   <Input
                     id="edit-address"
                     value={editForm.address}
@@ -443,11 +489,37 @@ export function VenueGridCard({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="edit-city">City</Label>
+                  <Label htmlFor="edit-city">City (Optional)</Label>
                   <Input
                     id="edit-city"
                     value={editForm.city}
                     onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-latitude">Latitude *</Label>
+                  <Input
+                    id="edit-latitude"
+                    type="number"
+                    step="any"
+                    value={editForm.latitude}
+                    onChange={(e) => setEditForm({ ...editForm, latitude: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-longitude">Longitude *</Label>
+                  <Input
+                    id="edit-longitude"
+                    type="number"
+                    step="any"
+                    value={editForm.longitude}
+                    onChange={(e) => setEditForm({ ...editForm, longitude: e.target.value })}
+                    required
                   />
                 </div>
               </div>
@@ -648,6 +720,8 @@ export function VenueDetailCard({
     name: venue.name,
     address: venue.address || "",
     city: venue.city || "",
+    latitude: venue.latitude?.toString() || "",
+    longitude: venue.longitude?.toString() || "",
     capacity: venue.capacity?.toString() || "",
     contactEmail: venue.contactEmail || "",
     website: venue.website || "",
@@ -660,6 +734,8 @@ export function VenueDetailCard({
       name: editForm.name,
       address: editForm.address || undefined,
       city: editForm.city || undefined,
+      latitude: editForm.latitude ? Number(editForm.latitude) : undefined,
+      longitude: editForm.longitude ? Number(editForm.longitude) : undefined,
       capacity: editForm.capacity ? Number(editForm.capacity) : undefined,
       contactEmail: editForm.contactEmail || undefined,
       website: editForm.website || undefined,
@@ -714,7 +790,7 @@ export function VenueDetailCard({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">Address (Optional)</Label>
                   <Input
                     id="address"
                     value={editForm.address}
@@ -723,11 +799,37 @@ export function VenueDetailCard({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
+                  <Label htmlFor="city">City (Optional)</Label>
                   <Input
                     id="city"
                     value={editForm.city}
                     onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="latitude">Latitude *</Label>
+                  <Input
+                    id="latitude"
+                    type="number"
+                    step="any"
+                    value={editForm.latitude}
+                    onChange={(e) => setEditForm({ ...editForm, latitude: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="longitude">Longitude *</Label>
+                  <Input
+                    id="longitude"
+                    type="number"
+                    step="any"
+                    value={editForm.longitude}
+                    onChange={(e) => setEditForm({ ...editForm, longitude: e.target.value })}
+                    required
                   />
                 </div>
               </div>
@@ -775,6 +877,8 @@ export function VenueDetailCard({
                       name: venue.name,
                       address: venue.address || "",
                       city: venue.city || "",
+                      latitude: venue.latitude?.toString() || "",
+                      longitude: venue.longitude?.toString() || "",
                       capacity: venue.capacity?.toString() || "",
                       contactEmail: venue.contactEmail || "",
                       website: venue.website || "",
