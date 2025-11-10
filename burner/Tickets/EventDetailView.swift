@@ -242,11 +242,12 @@ struct EventDetailView: View {
                     }
                 }
                 
-                // Floating bottom bar - Buy Ticket button only
                 VStack {
                     Spacer()
 
                     VStack(spacing: 0) {
+                        // Remove the gradient from here
+                        
                         Button(action: {
                             if userHasTicket {
                                 if let ticket = userTicket {
@@ -274,8 +275,21 @@ struct EventDetailView: View {
                         .disabled(isButtonDisabled)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 20)
+                        .padding(.top, 40)  // ✅ Add top padding to create space for gradient
+
                     }
-                    .background(Color.black)
+                    .background(
+                        // Apply gradient as the background instead
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.black.opacity(0),
+                                Color.black.opacity(0.7),
+                                Color.black
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
                 }
                 
                 // ✅ NEW: Sign In Alert
