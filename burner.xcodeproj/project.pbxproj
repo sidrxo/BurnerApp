@@ -14,6 +14,9 @@
 		8B36D8F52E7DBE2E00EDDF0F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B7FF5E22E7CEC3C007072DD /* SwiftUI.framework */; };
 		8B36D9042E7DBE3100EDDF0F /* TicketWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8B36D8F32E7DBE2E00EDDF0F /* TicketWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8B36D9182E7E31AE00EDDF0F /* CodeScanner in Frameworks */ = {isa = PBXBuildFile; productRef = 8B36D9172E7E31AE00EDDF0F /* CodeScanner */; };
+		8B493ED42EC2480F000AB2E4 /* Stripe in Frameworks */ = {isa = PBXBuildFile; productRef = 8B493ED32EC2480F000AB2E4 /* Stripe */; };
+		8B493ED62EC2480F000AB2E4 /* StripePayments in Frameworks */ = {isa = PBXBuildFile; productRef = 8B493ED52EC2480F000AB2E4 /* StripePayments */; };
+		8B493EDA2EC2483A000AB2E4 /* StripePaymentSheet in Frameworks */ = {isa = PBXBuildFile; productRef = 8B493ED92EC2483A000AB2E4 /* StripePaymentSheet */; };
 		8B66F8C02E6762AB00760E4E /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 8B66F8BF2E6762AB00760E4E /* GoogleSignIn */; };
 		8B66F8C32E67633D00760E4E /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 8B66F8C22E67633D00760E4E /* FirebaseAuth */; };
 		8B66F8C52E67633D00760E4E /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8B66F8C42E67633D00760E4E /* FirebaseCore */; };
@@ -22,9 +25,6 @@
 		8B66F9422E6864FB00760E4E /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 8B66F9412E6864FB00760E4E /* Kingfisher */; };
 		8B7FF5B62E7C6E6B007072DD /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 8B7FF5B52E7C6E6B007072DD /* FirebaseFunctions */; };
 		8B7FF6482E7CF1DC007072DD /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B7FF6462E7CF1CB007072DD /* ActivityKit.framework */; };
-		8BB619ED2EA6FAB300CFABD4 /* StripePaymentSheet in Frameworks */ = {isa = PBXBuildFile; productRef = 8BB619EC2EA6FAB300CFABD4 /* StripePaymentSheet */; };
-		8BB619EF2EA70A6800CFABD4 /* Stripe in Frameworks */ = {isa = PBXBuildFile; productRef = 8BB619EE2EA70A6800CFABD4 /* Stripe */; };
-		8BB619FD2EA7BD7D00CFABD4 /* StripePaymentsUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8BB619FC2EA7BD7D00CFABD4 /* StripePaymentsUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -122,20 +122,20 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8B493EDA2EC2483A000AB2E4 /* StripePaymentSheet in Frameworks */,
+				8B493ED42EC2480F000AB2E4 /* Stripe in Frameworks */,
 				8B1F297F2E7F9A5800B13ED2 /* FamilyControls.framework in Frameworks */,
-				8BB619ED2EA6FAB300CFABD4 /* StripePaymentSheet in Frameworks */,
 				8B1F297D2E7F946E00B13ED2 /* ManagedSettings.framework in Frameworks */,
-				8BB619FD2EA7BD7D00CFABD4 /* StripePaymentsUI in Frameworks */,
 				8B1F297B2E7F946500B13ED2 /* DeviceActivity.framework in Frameworks */,
 				8B66F9422E6864FB00760E4E /* Kingfisher in Frameworks */,
 				8B7FF5B62E7C6E6B007072DD /* FirebaseFunctions in Frameworks */,
 				8B7FF6482E7CF1DC007072DD /* ActivityKit.framework in Frameworks */,
-				8BB619EF2EA70A6800CFABD4 /* Stripe in Frameworks */,
 				8B66F8C02E6762AB00760E4E /* GoogleSignIn in Frameworks */,
 				8B66F8C52E67633D00760E4E /* FirebaseCore in Frameworks */,
 				8B66F8C32E67633D00760E4E /* FirebaseAuth in Frameworks */,
 				8B66F9232E677D3300760E4E /* FirebaseFirestore in Frameworks */,
 				8B66F90B2E676ACF00760E4E /* GoogleSignInSwift in Frameworks */,
+				8B493ED62EC2480F000AB2E4 /* StripePayments in Frameworks */,
 				8B36D9182E7E31AE00EDDF0F /* CodeScanner in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -220,9 +220,9 @@
 				8B66F9412E6864FB00760E4E /* Kingfisher */,
 				8B7FF5B52E7C6E6B007072DD /* FirebaseFunctions */,
 				8B36D9172E7E31AE00EDDF0F /* CodeScanner */,
-				8BB619EC2EA6FAB300CFABD4 /* StripePaymentSheet */,
-				8BB619EE2EA70A6800CFABD4 /* Stripe */,
-				8BB619FC2EA7BD7D00CFABD4 /* StripePaymentsUI */,
+				8B493ED32EC2480F000AB2E4 /* Stripe */,
+				8B493ED52EC2480F000AB2E4 /* StripePayments */,
+				8B493ED92EC2483A000AB2E4 /* StripePaymentSheet */,
 			);
 			productName = burner;
 			productReference = 8B36D8C72E7DAB7F00EDDF0F /* burner.app */;
@@ -261,7 +261,7 @@
 				8B66F8C12E67633D00760E4E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				8B66F9402E6864FB00760E4E /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				8B36D9162E7E31AE00EDDF0F /* XCRemoteSwiftPackageReference "CodeScanner" */,
-				8BB619EB2EA6FAB300CFABD4 /* XCLocalSwiftPackageReference "../Downloads/stripe-ios-master" */,
+				8B493ED22EC241CE000AB2E4 /* XCRemoteSwiftPackageReference "stripe-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8B66F8A72E67612A00760E4E;
@@ -618,13 +618,6 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		8BB619EB2EA6FAB300CFABD4 /* XCLocalSwiftPackageReference "../Downloads/stripe-ios-master" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "../Downloads/stripe-ios-master";
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCRemoteSwiftPackageReference section */
 		8B36D9162E7E31AE00EDDF0F /* XCRemoteSwiftPackageReference "CodeScanner" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -632,6 +625,14 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 2.5.2;
+			};
+		};
+		8B493ED22EC241CE000AB2E4 /* XCRemoteSwiftPackageReference "stripe-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stripe/stripe-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 25.0.0;
 			};
 		};
 		8B66F8BE2E6762AB00760E4E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
@@ -665,6 +666,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8B36D9162E7E31AE00EDDF0F /* XCRemoteSwiftPackageReference "CodeScanner" */;
 			productName = CodeScanner;
+		};
+		8B493ED32EC2480F000AB2E4 /* Stripe */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B493ED22EC241CE000AB2E4 /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = Stripe;
+		};
+		8B493ED52EC2480F000AB2E4 /* StripePayments */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B493ED22EC241CE000AB2E4 /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = StripePayments;
+		};
+		8B493ED92EC2483A000AB2E4 /* StripePaymentSheet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B493ED22EC241CE000AB2E4 /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = StripePaymentSheet;
 		};
 		8B66F8BF2E6762AB00760E4E /* GoogleSignIn */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -700,18 +716,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8B66F8C12E67633D00760E4E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFunctions;
-		};
-		8BB619EC2EA6FAB300CFABD4 /* StripePaymentSheet */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = StripePaymentSheet;
-		};
-		8BB619EE2EA70A6800CFABD4 /* Stripe */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Stripe;
-		};
-		8BB619FC2EA7BD7D00CFABD4 /* StripePaymentsUI */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = StripePaymentsUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

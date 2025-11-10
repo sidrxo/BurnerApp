@@ -86,9 +86,11 @@ struct NavigationCoordinatorView<Content: View>: View {
         case .burnerSetup:
             BurnerModeSetupView(burnerManager: appState.burnerManager)
 
-        case .ticketPurchase(let event, let detent):
-            TicketPurchaseDestination(event: event, initialDetent: detent)
-                .presentationDetents([detent, .height(320), .height(400)])
+        case .ticketPurchase(let event): // ✅ SIMPLIFIED
+            TicketPurchaseView(
+                event: event,
+                viewModel: appState.eventViewModel
+            )
 
         case .ticketDetail(let ticket):
             TicketDetailDestination(ticket: ticket)
@@ -177,7 +179,7 @@ struct NavigationDestinationBuilder: View {
                 TicketDetailDestination(ticket: ticket)
 
             case .ticketPurchase(let event):
-                TicketPurchaseDestination(event: event, initialDetent: .height(240))
+                TicketPurchaseDestination(event: event)
 
             case .transferTicket(let ticket):
                 TransferTicketDestination(ticket: ticket)
@@ -218,22 +220,12 @@ struct NavigationDestinationBuilder: View {
 
 struct TicketPurchaseDestination: View {
     let event: Event
-    let initialDetent: PresentationDetent
-
     @EnvironmentObject var eventViewModel: EventViewModel
-    @State private var selectedDetent: PresentationDetent
-
-    init(event: Event, initialDetent: PresentationDetent) {
-        self.event = event
-        self.initialDetent = initialDetent
-        _selectedDetent = State(initialValue: initialDetent)
-    }
 
     var body: some View {
         TicketPurchaseView(
             event: event,
-            viewModel: eventViewModel,
-            selectedDetent: $selectedDetent
+            viewModel: eventViewModel
         )
     }
 }

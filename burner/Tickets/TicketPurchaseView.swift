@@ -8,357 +8,460 @@ struct TicketPurchaseView: View {
     let event: Event
     @ObservedObject var viewModel: EventViewModel
     @StateObject private var paymentService = StripePaymentService()
-    @Binding var selectedDetent: PresentationDetent
-
+    
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var isSuccess = false
-    @State private var showCardInput = false
-    @State private var showSavedCards = false // ✅ NEW: Show saved cards
+    @State private var currentStep: PurchaseStep = .paymentMethod
     @State private var cardParams: STPPaymentMethodCardParams?
     @State private var isCardValid = false
-    @State private var selectedSavedCard: StripePaymentService.PaymentMethodInfo? // ✅ NEW
+    @State private var selectedSavedCard: StripePaymentService.PaymentMethodInfo?
+    
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var coordinator: NavigationCoordinator
+    
+    enum PurchaseStep {
+        case paymentMethod
+        case cardInput
+        case savedCards
+    }
     
     private var availableTickets: Int {
         max(0, event.maxTickets - event.ticketsSold)
     }
     
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-
-            VStack(spacing: 12) {
-                // Price info
-                HStack {
-                    Text("Total")
-                        .appBody()
-                        .foregroundColor(.gray)
-
-                    Spacer()
-
-                    Text("£\(String(format: "%.2f", event.price))")
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    // Header with event info
+                    eventHeader
+                    
+                    Divider()
+                        .background(Color.gray.opacity(0.3))
+                    
+                    // Main content based on step
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            // Price summary
+                            priceSummary
+                            
+                            Divider()
+                                .background(Color.gray.opacity(0.3))
+                                .padding(.horizontal, 20)
+                            
+                            // Content based on current step
+                            Group {
+                                switch currentStep {
+                                case .paymentMethod:
+                                    paymentMethodSelection
+                                case .cardInput:
+                                    cardInputSection
+                                case .savedCards:
+                                    savedCardsSection
+                                }
+                            }
+                            .animation(.easeInOut(duration: 0.3), value: currentStep)
+                        }
+                        .padding(.vertical, 20)
+                    }
+                    
+                    // Bottom action button
+                    if !paymentService.isProcessing {
+                        bottomActionButton
+                    } else {
+                        processingView
+                    }
+                }
+                
+                if showingAlert {
+                    CustomAlertView(
+                        title: isSuccess ? "Success!" : "Error",
+                        description: alertMessage,
+                        primaryAction: {
+                            showingAlert = false
+                            if isSuccess {
+                                presentationMode.wrappedValue.dismiss()
+                            }
+                        },
+                        primaryActionTitle: "OK",
+                        customContent: EmptyView()
+                    )
+                    .transition(.opacity)
+                    .zIndex(1001)
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        if currentStep != .paymentMethod {
+                            withAnimation {
+                                currentStep = .paymentMethod
+                                selectedSavedCard = nil
+                                cardParams = nil
+                                isCardValid = false
+                            }
+                        } else {
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    }) {
+                        Image(systemName: currentStep != .paymentMethod ? "chevron.left" : "xmark")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                }
+                
+                ToolbarItem(placement: .principal) {
+                    Text("Purchase Ticket")
                         .appBody()
                         .foregroundColor(.white)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(Color.gray.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
-
-                if paymentService.isProcessing {
-                    // Processing state
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                            .tint(.white)
-                        Text("Processing...")
-                            .appFont(size: 23)
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 46)
-                    .background(Color.gray.opacity(0.5))
-                    .clipShape(RoundedRectangle(cornerRadius: 23))
-                    .padding(.horizontal, 20)
-                    .padding(.top, 4)
-                } else if showCardInput {
-                    // Card input view
-                    cardInputSection
-                } else if showSavedCards {
-                    // ✅ NEW: Saved cards selection
-                    savedCardsSection
-                } else {
-                    // Payment method selection
-                    paymentMethodSelection
-                }
-
-                Spacer(minLength: 12)
-            }
-
-            if showingAlert {
-                CustomAlertView(
-                    title: isSuccess ? "Success!" : "Error",
-                    description: alertMessage,
-                    primaryAction: {
-                        showingAlert = false
-                        if isSuccess {
-                            presentationMode.wrappedValue.dismiss()
-                        }
-                    },
-                    primaryActionTitle: "OK",
-                    customContent: EmptyView()
-                )
-                .transition(.opacity)
-                .zIndex(1001)
             }
         }
-        .presentationDetents([.height(showCardInput || showSavedCards ? 400 : 240)])
-        .presentationDragIndicator(.visible)
         .onAppear {
-            // Load saved payment methods
             Task {
                 try? await paymentService.fetchPaymentMethods()
             }
         }
     }
     
-    // MARK: - Card Input Section
-    private var cardInputSection: some View {
+    // MARK: - Event Header
+    private var eventHeader: some View {
+        HStack(spacing: 12) {
+            // Event image
+            KFImage(URL(string: event.imageUrl))
+                .placeholder {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .overlay(
+                            Image(systemName: "music.note")
+                                .font(.system(size: 20))
+                                .foregroundColor(.gray)
+                        )
+                }
+                .resizable()
+                .scaledToFill()
+                .frame(width: 60, height: 60)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(event.name)
+                    .appBody()
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                
+                Text(event.venue)
+                    .appCaption()
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
+        }
+        .padding(16)
+    }
+    
+    // MARK: - Price Summary
+    private var priceSummary: some View {
         VStack(spacing: 12) {
-            CardInputView(cardParams: $cardParams, isValid: $isCardValid)
+            HStack {
+                Text("Ticket Price")
+                    .appBody()
+                    .foregroundColor(.gray)
+                Spacer()
+                Text("£\(String(format: "%.2f", event.price))")
+                    .appBody()
+                    .foregroundColor(.white)
+            }
+            
+            Divider()
+                .background(Color.gray.opacity(0.2))
+            
+            HStack {
+                Text("Total")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.white)
+                Spacer()
+                Text("£\(String(format: "%.2f", event.price))")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+        }
+        .padding(20)
+        .background(Color.white.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 20)
+    }
+    
+    // MARK: - Payment Method Selection
+    private var paymentMethodSelection: some View {
+        VStack(spacing: 16) {
+            Text("Choose Payment Method")
+                .appBody()
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
-
-            HStack(spacing: 12) {
-                // Cancel button
+            
+            // Apple Pay
+            if ApplePayHandler.canMakePayments() {
+                Button(action: handleApplePayPayment) {
+                    HStack {
+                        Image(systemName: "apple.logo")
+                            .font(.system(size: 24))
+                        Text("Apple Pay")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(Color.black)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white, lineWidth: 1)
+                    )
+                }
+                .padding(.horizontal, 20)
+            }
+            
+            // Saved Cards
+            if !paymentService.paymentMethods.isEmpty {
                 Button(action: {
                     withAnimation {
-                        showCardInput = false
-                        cardParams = nil
-                        isCardValid = false
-                        selectedDetent = .height(240)
+                        currentStep = .savedCards
                     }
                 }) {
-                    Text("Cancel")
-                        .font(.appFont(size: 17))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 46)
-                        .background(Color.gray.opacity(0.3))
-                        .clipShape(RoundedRectangle(cornerRadius: 23))
+                    HStack {
+                        Image(systemName: "creditcard.fill")
+                            .font(.system(size: 20))
+                        Text("Saved Cards")
+                            .font(.system(size: 17, weight: .semibold))
+                        Spacer()
+                        Text("\(paymentService.paymentMethods.count)")
+                            .appCaption()
+                            .foregroundColor(.gray)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
+                    .foregroundColor(.white)
+                    .padding(16)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white.opacity(0.05))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-
-                // Pay button
-                Button(action: handleCardPayment) {
-                    Text("Pay £\(String(format: "%.2f", event.price))")
-                        .font(.appFont(size: 17))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 46)
-                        .background(isCardValid ? Color.white.opacity(0.15) : Color.gray.opacity(0.3))
-                        .clipShape(RoundedRectangle(cornerRadius: 23))
+                .padding(.horizontal, 20)
+            }
+            
+            // Add New Card
+            Button(action: {
+                withAnimation {
+                    currentStep = .cardInput
                 }
-                .disabled(!isCardValid)
+            }) {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 20))
+                    Text(paymentService.paymentMethods.isEmpty ? "Card Payment" : "Add New Card")
+                        .font(.system(size: 17, weight: .semibold))
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                }
+                .foregroundColor(.white)
+                .padding(16)
+                .frame(maxWidth: .infinity)
+                .background(Color.white.opacity(0.05))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .padding(.horizontal, 20)
         }
-        .padding(.top, 4)
     }
     
-    // ✅ NEW: Saved Cards Section
+    // MARK: - Card Input Section
+    private var cardInputSection: some View {
+        VStack(spacing: 16) {
+            Text("Enter Card Details")
+                .appBody()
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+            
+            CardInputView(cardParams: $cardParams, isValid: $isCardValid)
+                .padding(.horizontal, 20)
+            
+            // Security badge
+            HStack(spacing: 8) {
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(.green)
+                Text("Secured by Stripe")
+                    .appCaption()
+                    .foregroundColor(.gray)
+            }
+            .padding(.top, 8)
+        }
+    }
+    
+    // MARK: - Saved Cards Section
     private var savedCardsSection: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             Text("Select Payment Method")
                 .appBody()
                 .foregroundColor(.white)
-                .padding(.top, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
             
-            ScrollView {
-                VStack(spacing: 8) {
-                    ForEach(paymentService.paymentMethods) { method in
-                        Button(action: {
-                            selectedSavedCard = method
-                        }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "creditcard.fill")
-                                    .font(.appIcon)
-                                    .foregroundColor(.white)
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("\(method.brand.capitalized) •••• \(method.last4)")
-                                        .appBody()
-                                        .foregroundColor(.white)
-                                    
-                                    Text("Expires \(method.expMonth)/\(method.expYear)")
-                                        .appCaption()
-                                        .foregroundColor(.gray)
-                                }
-                                
-                                Spacer()
-                                
-                                if selectedSavedCard?.id == method.id {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.appIcon)
-                                        .foregroundColor(.green)
-                                }
-                                
-                                if method.isDefault {
-                                    Text("DEFAULT")
-                                        .appCaption()
-                                        .foregroundColor(.black)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(Color.white)
-                                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                                }
-                            }
-                            .padding(12)
-                            .background(selectedSavedCard?.id == method.id ? Color.white.opacity(0.1) : Color.gray.opacity(0.05))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    
-                    // Add New Card button
+            VStack(spacing: 8) {
+                ForEach(paymentService.paymentMethods) { method in
                     Button(action: {
                         withAnimation {
-                            showSavedCards = false
-                            showCardInput = true
-                            selectedSavedCard = nil
-                            selectedDetent = .height(240)
+                            selectedSavedCard = method
                         }
                     }) {
                         HStack(spacing: 12) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.appIcon)
-                                .foregroundColor(.white)
+                            // Card brand icon
+                            Image(systemName: "creditcard.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(selectedSavedCard?.id == method.id ? .green : .white)
                             
-                            Text("Add New Card")
-                                .font(.appFont(size: 17))
-                                .foregroundColor(.white)
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 8) {
+                                    Text(method.brand.capitalized)
+                                        .appBody()
+                                        .foregroundColor(.white)
+                                    
+                                    if method.isDefault {
+                                        Text("DEFAULT")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.black)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(Color.white)
+                                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                                    }
+                                }
+                                
+                                Text("•••• \(method.last4)")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.white)
+                                
+                                Text("Expires \(method.expMonth)/\(method.expYear)")
+                                    .appCaption()
+                                    .foregroundColor(.gray)
+                            }
                             
                             Spacer()
+                            
+                            if selectedSavedCard?.id == method.id {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.green)
+                            }
                         }
-                        .padding(12)
-                        .background(Color.white.opacity(0.05))
+                        .padding(16)
+                        .background(
+                            selectedSavedCard?.id == method.id ?
+                            Color.green.opacity(0.1) :
+                            Color.white.opacity(0.05)
+                        )
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [5]))
+                                .stroke(
+                                    selectedSavedCard?.id == method.id ?
+                                    Color.green : Color.clear,
+                                    lineWidth: 2
+                                )
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .frame(maxHeight: 250)
-            .padding(.horizontal, 20)
-            
-            HStack(spacing: 12) {
-                // Cancel button
-                Button(action: {
-                    withAnimation {
-                        showSavedCards = false
-                        selectedSavedCard = nil
-                        selectedDetent = .height(240)
-                    }
-                }) {
-                    Text("Cancel")
-                        .font(.appFont(size: 17))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 46)
-                        .background(Color.gray.opacity(0.3))
-                        .clipShape(RoundedRectangle(cornerRadius: 23))
-                }
-
-                // Pay with selected card button
-                Button(action: handleSavedCardPayment) {
-                    Text("Pay £\(String(format: "%.2f", event.price))")
-                        .font(.appFont(size: 17))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 46)
-                        .background(selectedSavedCard != nil ? Color.white.opacity(0.15) : Color.gray.opacity(0.3))
-                        .clipShape(RoundedRectangle(cornerRadius: 23))
-                }
-                .disabled(selectedSavedCard == nil)
-            }
             .padding(.horizontal, 20)
         }
-        .padding(.top, 4)
     }
     
-    // MARK: - Payment Method Selection
-    private var paymentMethodSelection: some View {
-        VStack(spacing: 12) {
-            // Apple Pay Button
-            if ApplePayHandler.canMakePayments() {
-                ApplePayButtonView {
-                    handleApplePayPayment()
-                }
-                .frame(height: 46)
-                .clipShape(RoundedRectangle(cornerRadius: 23))
-                .padding(.horizontal, 20)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 23)
-                        .stroke(Color.white.opacity(0.8), lineWidth: 2)
-                )
-            }
-
-            // Or divider
-            HStack {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(height: 1)
-                Text("or")
-                    .appBody()
-                    .foregroundColor(.gray)
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(height: 1)
-            }
-            .padding(.horizontal, 40)
-
-            // ✅ FIXED: Use creditcard.fill for both cases
-            if !paymentService.paymentMethods.isEmpty {
-                // Use saved card button - with creditcard.fill icon
-                Button(action: {
-                    withAnimation {
-                        showSavedCards = true
-                        selectedDetent = .height(400)
-                    }
-                }) {
-                    HStack(spacing: 4) {
-                        Text("Buy with")
-                            .font(.system(size: 23))
-                        Image(systemName: "creditcard.fill")
-                            .font(.system(size: 23))
-                    }
-                    .foregroundColor(.black)
+    // MARK: - Bottom Action Button
+    private var bottomActionButton: some View {
+        VStack(spacing: 0) {
+            Divider()
+                .background(Color.gray.opacity(0.3))
+            
+            Button(action: handlePrimaryAction) {
+                Text(primaryActionTitle)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(isPrimaryActionEnabled ? .black : .white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 46)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 23))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 23)
-                            .stroke(Color.white.opacity(0.8), lineWidth: 2)
-                    )
-                }
-                .padding(.horizontal, 4)
-            } else {
-                // No saved cards - show add card button (FIXED: now using creditcard.fill)
-                Button(action: {
-                    withAnimation {
-                        showCardInput = true
-                        selectedDetent = .height(240)
-                    }
-                }) {
-                    HStack(spacing: 4) {
-                        Text("Buy with")
-                            .font(.system(size: 23))
-                        Image(systemName: "creditcard.fill")
-                            .font(.system(size: 23))
-                    }
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 46)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 23))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 23)
-                            .stroke(Color.white.opacity(0.8), lineWidth: 2)
-                    )
-                }
-                .padding(.horizontal, 4)
+                    .frame(height: 56)
+                    .background(isPrimaryActionEnabled ? Color.white : Color.gray.opacity(0.3))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .disabled(!isPrimaryActionEnabled)
+            .padding(20)
         }
-        .padding(.top, 4)
-        .padding(.horizontal, 10)
+        .background(Color.black)
     }
-
-    // MARK: - Apple Pay Handler
+    
+    // MARK: - Processing View
+    private var processingView: some View {
+        VStack(spacing: 0) {
+            Divider()
+                .background(Color.gray.opacity(0.3))
+            
+            HStack(spacing: 12) {
+                ProgressView()
+                    .tint(.white)
+                Text("Processing Payment...")
+                    .appBody()
+                    .foregroundColor(.white)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .padding(20)
+        }
+        .background(Color.black)
+    }
+    
+    // MARK: - Computed Properties
+    private var primaryActionTitle: String {
+        switch currentStep {
+        case .paymentMethod:
+            return "Select Payment Method"
+        case .cardInput:
+            return isCardValid ? "Pay £\(String(format: "%.2f", event.price))" : "Enter Card Details"
+        case .savedCards:
+            return selectedSavedCard != nil ? "Pay £\(String(format: "%.2f", event.price))" : "Select a Card"
+        }
+    }
+    
+    private var isPrimaryActionEnabled: Bool {
+        switch currentStep {
+        case .paymentMethod:
+            return false
+        case .cardInput:
+            return isCardValid
+        case .savedCards:
+            return selectedSavedCard != nil
+        }
+    }
+    
+    private func handlePrimaryAction() {
+        switch currentStep {
+        case .paymentMethod:
+            break
+        case .cardInput:
+            handleCardPayment()
+        case .savedCards:
+            handleSavedCardPayment()
+        }
+    }
+    
+    // MARK: - Payment Handlers
     private func handleApplePayPayment() {
         guard let eventId = event.id else {
             alertMessage = "Invalid event"
@@ -381,38 +484,26 @@ struct TicketPurchaseView: View {
             return
         }
 
-        print("🔵 Starting Apple Pay flow for event: \(eventId)")
-
         paymentService.processApplePayPayment(
             eventName: event.name,
             amount: event.price,
             eventId: eventId
         ) { result in
             DispatchQueue.main.async {
+                self.alertMessage = result.message
+                self.isSuccess = result.success
+                self.showingAlert = true
                 if result.success {
-                    print("✅ Ticket created successfully: \(result.ticketId ?? "unknown")")
-                    self.alertMessage = result.message
-                    self.isSuccess = true
-                    self.showingAlert = true
                     self.viewModel.fetchEvents()
-                } else {
-                    print("❌ Payment failed: \(result.message)")
-                    self.alertMessage = result.message
-                    self.isSuccess = false
-                    self.showingAlert = true
                 }
             }
         }
     }
 
-    // MARK: - New Card Payment Handler
     private func handleCardPayment() {
-        guard let eventId = event.id else {
-            alertMessage = "Invalid event"
-            isSuccess = false
-            showingAlert = true
-            return
-        }
+        guard let eventId = event.id,
+              let cardParams = cardParams,
+              isCardValid else { return }
 
         guard Auth.auth().currentUser != nil else {
             alertMessage = "Please log in to purchase a ticket"
@@ -420,15 +511,6 @@ struct TicketPurchaseView: View {
             showingAlert = true
             return
         }
-
-        guard let cardParams = cardParams, isCardValid else {
-            alertMessage = "Please enter valid card details"
-            isSuccess = false
-            showingAlert = true
-            return
-        }
-
-        print("🔵 Starting card payment flow for event: \(eventId)")
 
         paymentService.processCardPayment(
             cardParams: cardParams,
@@ -437,35 +519,19 @@ struct TicketPurchaseView: View {
             eventId: eventId
         ) { result in
             DispatchQueue.main.async {
+                self.alertMessage = result.message
+                self.isSuccess = result.success
+                self.showingAlert = true
                 if result.success {
-                    print("✅ Ticket created successfully: \(result.ticketId ?? "unknown")")
-                    self.alertMessage = result.message
-                    self.isSuccess = true
-                    self.showingAlert = true
                     self.viewModel.fetchEvents()
-                    
-                    // Reset card input
-                    self.showCardInput = false
-                    self.cardParams = nil
-                    self.isCardValid = false
-                } else {
-                    print("❌ Payment failed: \(result.message)")
-                    self.alertMessage = result.message
-                    self.isSuccess = false
-                    self.showingAlert = true
                 }
             }
         }
     }
     
-    // ✅ NEW: Saved Card Payment Handler
     private func handleSavedCardPayment() {
-        guard let eventId = event.id else {
-            alertMessage = "Invalid event"
-            isSuccess = false
-            showingAlert = true
-            return
-        }
+        guard let eventId = event.id,
+              let savedCard = selectedSavedCard else { return }
 
         guard Auth.auth().currentUser != nil else {
             alertMessage = "Please log in to purchase a ticket"
@@ -474,15 +540,6 @@ struct TicketPurchaseView: View {
             return
         }
 
-        guard let savedCard = selectedSavedCard else {
-            alertMessage = "Please select a payment method"
-            isSuccess = false
-            showingAlert = true
-            return
-        }
-
-        print("🔵 Starting saved card payment flow for event: \(eventId)")
-
         paymentService.processSavedCardPayment(
             paymentMethodId: savedCard.id,
             eventName: event.name,
@@ -490,44 +547,13 @@ struct TicketPurchaseView: View {
             eventId: eventId
         ) { result in
             DispatchQueue.main.async {
+                self.alertMessage = result.message
+                self.isSuccess = result.success
+                self.showingAlert = true
                 if result.success {
-                    print("✅ Ticket created successfully: \(result.ticketId ?? "unknown")")
-                    self.alertMessage = result.message
-                    self.isSuccess = true
-                    self.showingAlert = true
                     self.viewModel.fetchEvents()
-                    
-                    // Reset selection
-                    self.showSavedCards = false
-                    self.selectedSavedCard = nil
-                } else {
-                    print("❌ Payment failed: \(result.message)")
-                    self.alertMessage = result.message
-                    self.isSuccess = false
-                    self.showingAlert = true
                 }
             }
         }
     }
-}
-
-// MARK: - Preview
-#Preview {
-    TicketPurchaseView(
-        event: Event(
-            name: "Test Event",
-            venue: "Test Venue",
-            price: 25.0,
-            maxTickets: 100,
-            ticketsSold: 50,
-            imageUrl: "",
-            isFeatured: false
-        ),
-        viewModel: EventViewModel(
-            eventRepository: EventRepository(),
-            ticketRepository: TicketRepository(),
-        ),
-        selectedDetent: .constant(.height(240))
-    )
-    .preferredColorScheme(.dark)
 }

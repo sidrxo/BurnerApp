@@ -104,7 +104,7 @@ enum NavigationDestination: Hashable {
 enum ModalPresentation: Identifiable {
     case signIn
     case burnerSetup
-    case ticketPurchase(Event, detent: PresentationDetent = .height(240))
+    case ticketPurchase(Event)
     case ticketDetail(Ticket)
     case shareSheet(items: [Any])
     case cardInput
@@ -118,7 +118,7 @@ enum ModalPresentation: Identifiable {
         switch self {
         case .signIn: return "signIn"
         case .burnerSetup: return "burnerSetup"
-        case .ticketPurchase(let event, _): return "ticketPurchase-\(event.id ?? "")"
+        case .ticketPurchase(let event): return "ticketPurchase-\(event.id ?? "")" // ✅ UPDATED
         case .ticketDetail(let ticket): return "ticketDetail-\(ticket.id ?? "")"
         case .shareSheet: return "shareSheet"
         case .cardInput: return "cardInput"
@@ -132,19 +132,10 @@ enum ModalPresentation: Identifiable {
 
     var isFullScreen: Bool {
         switch self {
-        case .signIn, .burnerSetup, .ticketDetail, .fullScreenQRCode, .passwordlessAuth:
+        case .signIn, .burnerSetup, .ticketDetail, .fullScreenQRCode, .passwordlessAuth, .ticketPurchase: // ✅ ADDED ticketPurchase
             return true
         default:
             return false
-        }
-    }
-
-    var detent: PresentationDetent? {
-        switch self {
-        case .ticketPurchase(_, let detent):
-            return detent
-        default:
-            return nil
         }
     }
 }
@@ -275,11 +266,6 @@ class NavigationCoordinator: ObservableObject {
         activeModal = nil
     }
 
-    func updatePurchaseSheetDetent(_ detent: PresentationDetent, for event: Event) {
-        if case .ticketPurchase(let currentEvent, _) = activeModal, currentEvent.id == event.id {
-            activeModal = .ticketPurchase(event, detent: detent)
-        }
-    }
 
     // MARK: - Alert Methods
 

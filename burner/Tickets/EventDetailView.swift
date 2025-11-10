@@ -16,6 +16,7 @@ struct EventDetailView: View {
     @EnvironmentObject var appState: AppState
 
     @State private var userHasTicket = false
+    @State private var showingSignInAlert = false // ✅ NEW
     
     // Get screen height for responsive sizing
     private let screenHeight = UIScreen.main.bounds.height
@@ -199,8 +200,8 @@ struct EventDetailView: View {
                                 Button(action: {
                                     // Check if user is authenticated
                                     if Auth.auth().currentUser == nil {
-                                        // Show sign-in sheet if not authenticated
-                                        appState.isSignInSheetPresented = true
+                                        // Show sign-in alert if not authenticated
+                                        showingSignInAlert = true
                                     } else {
                                         // Toggle bookmark if authenticated
                                         Task {
@@ -254,7 +255,8 @@ struct EventDetailView: View {
                             } else if availableTickets > 0 {
                                 // Check if user is authenticated
                                 if Auth.auth().currentUser == nil {
-                                    coordinator.showInfo(title: "Sign In Required", message: "Please sign in to purchase tickets")
+                                    // ✅ Show custom alert instead of toast
+                                    showingSignInAlert = true
                                 } else {
                                     coordinator.purchaseTicket(for: event)
                                 }
@@ -273,20 +275,29 @@ struct EventDetailView: View {
                         .padding(.horizontal, 20)
                         .padding(.bottom, 20)
                     }
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.black.opacity(0),
-                                Color.black.opacity(0.8),
-                                Color.black
-                            ]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .frame(height: 120)
-                    )
+                    .background(Color.black)
                 }
-
+                
+                // ✅ NEW: Sign In Alert
+                if showingSignInAlert {
+                    CustomAlertView(
+                        title: "Sign In Required",
+                        description: "Please sign in to continue.",
+                        cancelAction: {
+                            showingSignInAlert = false
+                        },
+                        cancelActionTitle: "Cancel",
+                        primaryAction: {
+                            showingSignInAlert = false
+                            coordinator.showSignIn()
+                        },
+                        primaryActionTitle: "Sign In",
+                        primaryActionColor: .white,
+                        customContent: EmptyView()
+                    )
+                    .transition(.opacity)
+                    .zIndex(1002)
+                }
             }
         }
         .navigationBarBackButtonHidden(false)
@@ -405,4 +416,4 @@ struct ShareSheet: UIViewControllerRepresentable {
         .environmentObject(AppState().eventViewModel)
     }
     .preferredColorScheme(.dark)
-}
+}   
