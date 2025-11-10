@@ -26,6 +26,10 @@ function VenuesPageContent() {
     setNewVenueAddress,
     newVenueCity,
     setNewVenueCity,
+    newVenueLatitude,
+    setNewVenueLatitude,
+    newVenueLongitude,
+    setNewVenueLongitude,
     newVenueCapacity,
     setNewVenueCapacity,
     newVenueContactEmail,
@@ -74,6 +78,10 @@ function VenuesPageContent() {
           setNewVenueAddress={setNewVenueAddress}
           newVenueCity={newVenueCity}
           setNewVenueCity={setNewVenueCity}
+          newVenueLatitude={newVenueLatitude}
+          setNewVenueLatitude={setNewVenueLatitude}
+          newVenueLongitude={newVenueLongitude}
+          setNewVenueLongitude={setNewVenueLongitude}
           newVenueCapacity={newVenueCapacity}
           setNewVenueCapacity={setNewVenueCapacity}
           newVenueContactEmail={newVenueContactEmail}

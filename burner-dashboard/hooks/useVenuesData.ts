@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, doc, getDocs, updateDoc, setDoc, addDoc, deleteDoc, arrayUnion, arrayRemove, query, where } from "firebase/firestore";
+import { collection, doc, getDocs, updateDoc, setDoc, addDoc, deleteDoc, arrayUnion, arrayRemove, query, where, GeoPoint } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/components/useAuth";
 import { toast } from "sonner";
@@ -11,6 +11,8 @@ export type Venue = {
   subAdmins: string[];
   address?: string;
   city?: string;
+  latitude?: number;
+  longitude?: number;
   capacity?: number;
   contactEmail?: string;
   website?: string;
@@ -32,6 +34,8 @@ export function useVenuesData() {
   const [newVenueAdminEmail, setNewVenueAdminEmail] = useState("");
   const [newVenueAddress, setNewVenueAddress] = useState("");
   const [newVenueCity, setNewVenueCity] = useState("");
+  const [newVenueLatitude, setNewVenueLatitude] = useState<string>("");
+  const [newVenueLongitude, setNewVenueLongitude] = useState<string>("");
   const [newVenueCapacity, setNewVenueCapacity] = useState<string>("");
   const [newVenueContactEmail, setNewVenueContactEmail] = useState("");
   const [newVenueWebsite, setNewVenueWebsite] = useState("");
@@ -69,6 +73,8 @@ export function useVenuesData() {
           subAdmins: data.subAdmins || [],
           address: data.address,
           city: data.city,
+          latitude: data.coordinates?.latitude,
+          longitude: data.coordinates?.longitude,
           capacity: data.capacity,
           contactEmail: data.contactEmail,
           website: data.website,
@@ -101,11 +107,17 @@ export function useVenuesData() {
 
     setActionLoading(true);
     try {
+      // Prepare coordinates as GeoPoint if both latitude and longitude are provided
+      const coordinates = (newVenueLatitude && newVenueLongitude)
+        ? new GeoPoint(Number(newVenueLatitude), Number(newVenueLongitude))
+        : null;
+
       // Create the venue first
       const venueRef = await addDoc(collection(db, "venues"), {
         name: newVenueName.trim(),
         address: newVenueAddress.trim() || null,
         city: newVenueCity.trim() || null,
+        coordinates: coordinates,
         capacity: newVenueCapacity ? Number(newVenueCapacity) : null,
         contactEmail: newVenueContactEmail.trim() || null,
         website: newVenueWebsite.trim() || null,
@@ -147,6 +159,8 @@ export function useVenuesData() {
       setNewVenueAdminEmail("");
       setNewVenueAddress("");
       setNewVenueCity("");
+      setNewVenueLatitude("");
+      setNewVenueLongitude("");
       setNewVenueCapacity("");
       setNewVenueContactEmail("");
       setNewVenueWebsite("");
@@ -298,7 +312,7 @@ export function useVenuesData() {
     setActionLoading(true);
     try {
       const venueRef = doc(db, "venues", venueId);
-      
+
       // Filter out undefined values and prepare update object
       const updateData: any = {};
       if (updates.name !== undefined) updateData.name = updates.name;
@@ -308,6 +322,15 @@ export function useVenuesData() {
       if (updates.contactEmail !== undefined) updateData.contactEmail = updates.contactEmail;
       if (updates.website !== undefined) updateData.website = updates.website;
       if (updates.active !== undefined) updateData.active = updates.active;
+
+      // Handle coordinates update
+      if (updates.latitude !== undefined && updates.longitude !== undefined) {
+        if (updates.latitude && updates.longitude) {
+          updateData.coordinates = new GeoPoint(updates.latitude, updates.longitude);
+        } else {
+          updateData.coordinates = null;
+        }
+      }
 
       await updateDoc(venueRef, {
         ...updateData,
@@ -329,6 +352,8 @@ export function useVenuesData() {
     setNewVenueAdminEmail("");
     setNewVenueAddress("");
     setNewVenueCity("");
+    setNewVenueLatitude("");
+    setNewVenueLongitude("");
     setNewVenueCapacity("");
     setNewVenueContactEmail("");
     setNewVenueWebsite("");
@@ -349,6 +374,10 @@ export function useVenuesData() {
     setNewVenueAddress,
     newVenueCity,
     setNewVenueCity,
+    newVenueLatitude,
+    setNewVenueLatitude,
+    newVenueLongitude,
+    setNewVenueLongitude,
     newVenueCapacity,
     setNewVenueCapacity,
     newVenueContactEmail,
