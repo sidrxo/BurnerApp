@@ -6,12 +6,15 @@ struct ExploreView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
+    @EnvironmentObject var tagViewModel: TagViewModel
 
     @State private var searchText = ""
     @State private var selectedEvent: Event? = nil
-    
-    // MARK: - Define Your Genres
-    private let displayGenres = ["Techno", "House", "Drum & Bass", "Trance", "Hip Hop"]
+
+    // MARK: - Dynamic Genres from Firestore
+    private var displayGenres: [String] {
+        tagViewModel.displayTags
+    }
 
     // MARK: - Featured Events
     var featuredEvents: [Event] {

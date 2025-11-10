@@ -73,6 +73,14 @@ service cloud.firestore {
       allow read: if isVenueAdmin() && getUserVenueId() == venueId;
     }
 
+    // --- Tags Collection ---
+    match /tags/{tagId} {
+      // Everyone can read tags (for mobile app display)
+      allow read: if true;
+      // Only site admins can write (managed via cloud functions)
+      allow write: if isSiteAdmin();
+    }
+
     // --- Events Collection ---
     match /events/{eventId} {
       // Everyone can read events (for public listings)

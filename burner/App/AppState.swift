@@ -9,6 +9,7 @@ class AppState: ObservableObject {
     @Published var eventViewModel: EventViewModel
     @Published var bookmarkManager: BookmarkManager
     @Published var ticketsViewModel: TicketsViewModel
+    @Published var tagViewModel: TagViewModel
     @Published var authService: AuthenticationService
     @Published var burnerModeMonitor: BurnerModeMonitor
     @Published var passwordlessAuthHandler: PasswordlessAuthHandler
@@ -72,7 +73,9 @@ class AppState: ObservableObject {
         self.ticketsViewModel = TicketsViewModel(
             ticketRepository: ticketRepository
         )
-        
+
+        self.tagViewModel = TagViewModel()
+
         self.authService = AuthenticationService(
             userRepository: userRepository
         )
