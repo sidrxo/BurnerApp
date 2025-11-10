@@ -46,11 +46,6 @@ struct SearchView: View {
                 await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
             }
         }
-        .onChange(of: coordinator.shouldFocusSearchBar) { _, shouldFocus in
-            if shouldFocus {
-                isSearchFocused = true
-            }
-        }
     }
     
     private var searchSection: some View {

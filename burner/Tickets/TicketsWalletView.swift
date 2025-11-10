@@ -9,8 +9,7 @@ struct TicketsWalletView: View {
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
-    @Binding var selectedTab: Int
-    
+
     @State private var selectedTicketId: String?
     @State private var showingFullScreen = false
     @State private var selectedTicketForQR: TicketWithEventData?

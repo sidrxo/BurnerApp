@@ -8,10 +8,9 @@ import Combine
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
-    @State private var showingSignIn = false
+    @EnvironmentObject var coordinator: NavigationCoordinator
     @State private var currentUser: FirebaseAuth.User?
     @State private var showingAppPicker = false
-    @State private var showingBurnerSetup = false
     
     private let db = Firestore.firestore()
     
@@ -50,45 +49,60 @@ struct SettingsView: View {
                         VStack(spacing: 0) {
                             // ACCOUNT Section
                             MenuSection(title: "ACCOUNT") {
-                                NavigationLink(destination: AccountDetailsView()) {
+                                Button(action: {
+                                    coordinator.navigate(to: .accountDetails)
+                                }) {
                                     MenuItemContent(
                                         title: "Account Details",
                                         subtitle: currentUser?.email ?? "View Account"
                                     )
                                 }
-                                
-                                NavigationLink(destination: BookmarksView()) {
+                                .buttonStyle(PlainButtonStyle())
+
+                                Button(action: {
+                                    coordinator.navigate(to: .bookmarks)
+                                }) {
                                     MenuItemContent(
                                         title: "Bookmarks",
                                         subtitle: "Saved events"
                                     )
                                 }
-                                
-                                NavigationLink(destination: PaymentSettingsView()) {
+                                .buttonStyle(PlainButtonStyle())
+
+                                Button(action: {
+                                    coordinator.navigate(to: .paymentSettings)
+                                }) {
                                     MenuItemContent(
                                         title: "Payment",
                                         subtitle: "Cards & billing"
                                     )
                                 }
-                                
-                                NavigationLink(destination: TransferTicketsListView()) {
+                                .buttonStyle(PlainButtonStyle())
+
+                                Button(action: {
+                                    coordinator.navigate(to: .transferTicketsList)
+                                }) {
                                     MenuItemContent(
                                         title: "Transfer Tickets",
                                         subtitle: "Transfer your ticket to another user"
                                     )
                                 }
-                                
+                                .buttonStyle(PlainButtonStyle())
+
                                 // Scanner access for authorized roles
                                 if (userRole == "scanner" && isScannerActive) ||
                                     userRole == "siteAdmin" ||
                                     userRole == "venueAdmin" ||
                                     userRole == "subAdmin" {
-                                    NavigationLink(destination: ScannerView()) {
+                                    Button(action: {
+                                        coordinator.navigate(to: .scanner)
+                                    }) {
                                         MenuItemContent(
                                             title: "Scanner",
                                             subtitle: "Scan QR codes"
                                         )
                                     }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
                             }
                             
@@ -97,7 +111,7 @@ struct SettingsView: View {
                                 // Show Setup Guide Button only when needed
                                 if needsBurnerSetup {
                                     Button(action: {
-                                        showingBurnerSetup = true
+                                        coordinator.showBurnerSetup()
                                     }) {
                                         MenuItemContent(
                                             title: "Setup Burner Mode",
@@ -109,42 +123,36 @@ struct SettingsView: View {
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
-                                
-                                NavigationLink(destination: SupportView()) {
+
+                                Button(action: {
+                                    coordinator.navigate(to: .support)
+                                }) {
                                     MenuItemContent(
                                         title: "Help & Support",
                                         subtitle: "Get help, terms, privacy"
                                     )
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             }
                             
                             // DEBUG Section
                             #if DEBUG
                             MenuSection(title: "DEBUG") {
-                                NavigationLink(
-                                    destination: DebugMenuView(
-                                        appState: appState,
-                                        burnerManager: burnerManager
-                                    )
-                                ) {
+                                Button(action: {
+                                    coordinator.navigate(to: .debugMenu)
+                                }) {
                                     MenuItemContent(
                                         title: "Debug Menu",
                                         subtitle: "Development tools"
                                     )
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             }
                             #endif
                         }
                         .padding(.horizontal, 20)
                         .padding(.bottom, 100)
                     }
-                    .familyActivityPicker(
-                        isPresented: $showingAppPicker,
-                        selection: Binding(
-                            get: { burnerManager.selectedApps },
-                            set: { burnerManager.selectedApps = $0 }
-                        )
-                    )
                 } else {
                     notSignedInSection
                 }
@@ -160,12 +168,13 @@ struct SettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedOut"))) { _ in
             currentUser = nil
         }
-        .fullScreenCover(isPresented: $showingSignIn) {
-            SignInSheetView(showingSignIn: $showingSignIn)
-        }
-        .fullScreenCover(isPresented: $showingBurnerSetup) {
-            BurnerModeSetupView(burnerManager: burnerManager)
-        }
+        .familyActivityPicker(
+            isPresented: $showingAppPicker,
+            selection: Binding(
+                get: { burnerManager.selectedApps },
+                set: { burnerManager.selectedApps = $0 }
+            )
+        )
     }
     
     // MARK: - Not signed in view
@@ -188,7 +197,7 @@ struct SettingsView: View {
                 }
 
                 Button {
-                    showingSignIn = true
+                    coordinator.showSignIn()
                 } label: {
                     Text("SIGN IN")
                         .font(.appFont(size: 17))

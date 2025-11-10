@@ -186,7 +186,6 @@ class NavigationCoordinator: ObservableObject {
 
     // MARK: - Deep Linking
     @Published var pendingDeepLink: String?
-    @Published var shouldFocusSearchBar: Bool = false
 
     // MARK: - Shared State
     private var cancellables = Set<AnyCancellable>()
@@ -315,15 +314,6 @@ class NavigationCoordinator: ObservableObject {
         // Small delay to ensure state is stable
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             self?.navigate(to: .eventById(eventId), in: .explore)
-        }
-    }
-
-    func focusSearchBar() {
-        selectedTab = .explore
-        shouldFocusSearchBar = true
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.shouldFocusSearchBar = false
         }
     }
 
