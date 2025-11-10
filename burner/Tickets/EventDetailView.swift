@@ -461,16 +461,23 @@ struct EventDetailRow: View {
 struct EventMapView: View {
     let coordinate: CLLocationCoordinate2D
     let venueName: String
+    
+    @State private var region: MKCoordinateRegion
 
-    var body: some View {
-        Map(position: .constant(.region(MKCoordinateRegion(
+    init(coordinate: CLLocationCoordinate2D, venueName: String) {
+        self.coordinate = coordinate
+        self.venueName = venueName
+        _region = State(initialValue: MKCoordinateRegion(
             center: coordinate,
             span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-        )))) {
+        ))
+    }
+
+    var body: some View {
+        Map(position: .constant(.region(region)), interactionModes: []) {
             Marker(venueName, coordinate: coordinate)
         }
         .mapStyle(.standard)
-        .allowsHitTesting(false)
     }
 }
 
