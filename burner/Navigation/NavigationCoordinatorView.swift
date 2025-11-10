@@ -81,7 +81,14 @@ struct NavigationCoordinatorView<Content: View>: View {
     private func modalView(for modal: ModalPresentation) -> some View {
         switch modal {
         case .signIn:
-            SignInSheetView(showingSignIn: .constant(true))
+            SignInSheetView(showingSignIn: Binding(
+                get: { true },
+                set: { newValue in
+                    if !newValue {
+                        coordinator.dismissModal()
+                    }
+                }
+            ))
 
         case .burnerSetup:
             BurnerModeSetupView(burnerManager: appState.burnerManager)
@@ -105,7 +112,14 @@ struct NavigationCoordinatorView<Content: View>: View {
             Text("Saved Cards View") // Placeholder
 
         case .passwordlessAuth:
-            PasswordlessAuthView(showingSignIn: .constant(true))
+            PasswordlessAuthView(showingSignIn: Binding(
+                get: { true },
+                set: { newValue in
+                    if !newValue {
+                        coordinator.dismissModal()
+                    }
+                }
+            ))
 
         case .addPaymentMethod:
             Text("Add Payment Method") // Placeholder

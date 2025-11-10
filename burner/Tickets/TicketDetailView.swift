@@ -98,9 +98,9 @@ struct TicketDetailView: View {
     let ticketWithEvent: TicketWithEventData
     @State private var hasStartedLiveActivity = false
     @State private var isLiveActivityActive = false
-    @State private var showingFullScreen = false
     @State private var showTransferSuccess = false
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var coordinator: NavigationCoordinator
 
     var body: some View {
         ZStack {
@@ -143,12 +143,6 @@ struct TicketDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .fullScreenCover(isPresented: $showingFullScreen) {
-            FullScreenQRCodeView(
-                ticketWithEvent: ticketWithEvent,
-                qrCodeData: qrCodeData
-            )
-        }
         .onAppear {
             autoStartLiveActivityForEventDay()
             checkLiveActivityStatus()
@@ -249,7 +243,7 @@ struct TicketDetailView: View {
                         if appState.burnerManager.isSetupValid {
                             // QR Code section
                             Button(action: {
-                                showingFullScreen = true
+                                coordinator.showFullScreenQRCode(for: ticketWithEvent.ticket)
                             }) {
                                 VStack(spacing: 12) {
                                     QRCodeView(
@@ -512,7 +506,7 @@ struct FullScreenQRCodeView: View {
 // MARK: - Ticket QR Code View (for reuse elsewhere)
 struct TicketQRCodeView: View {
     let ticketWithEvent: TicketWithEventData
-    @State private var showingFullScreen = false
+    @EnvironmentObject var coordinator: NavigationCoordinator
 
     private var qrCodeData: String {
         return ticketWithEvent.ticket.qrCode ?? "INVALID_TICKET"
@@ -520,7 +514,7 @@ struct TicketQRCodeView: View {
 
     var body: some View {
         Button(action: {
-            showingFullScreen = true
+            coordinator.showFullScreenQRCode(for: ticketWithEvent.ticket)
         }) {
             QRCodeView(
                 data: qrCodeData,
@@ -530,12 +524,6 @@ struct TicketQRCodeView: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
-        .fullScreenCover(isPresented: $showingFullScreen) {
-            FullScreenQRCodeView(
-                ticketWithEvent: ticketWithEvent,
-                qrCodeData: qrCodeData
-            )
-        }
     }
 }
 

@@ -31,12 +31,12 @@ struct MainTabView: View {
                     case .tickets:
                         NavigationStack(path: $appState.navigationCoordinator.ticketsPath) {
                             if useWalletView {
-                                TicketsView(selectedTab: $appState.selectedTab)
+                                TicketsView()
                                     .navigationDestination(for: NavigationDestination.self) { destination in
                                         NavigationDestinationBuilder(destination: destination)
                                     }
                             } else {
-                                TicketsWalletView(selectedTab: $appState.selectedTab)
+                                TicketsWalletView()
                                     .navigationDestination(for: NavigationDestination.self) { destination in
                                         NavigationDestinationBuilder(destination: destination)
                                     }
@@ -86,23 +86,6 @@ struct MainTabView: View {
     }
 }
 
-// Environment object to manage tab bar visibility
-class TabBarVisibility: ObservableObject {
-    @Binding var isDetailViewPresented: Bool
-
-    init(isDetailViewPresented: Binding<Bool>) {
-        self._isDetailViewPresented = isDetailViewPresented
-    }
-
-    func hideTabBar() {
-        isDetailViewPresented = true
-    }
-
-    func showTabBar() {
-        isDetailViewPresented = false
-    }
-}
-
 struct CustomTabBar: View {
     @EnvironmentObject var coordinator: NavigationCoordinator
 
@@ -121,11 +104,7 @@ struct CustomTabBar: View {
                 icon: "magnifyingglass",
                 isSelected: coordinator.selectedTab == .explore
             ) {
-                if coordinator.selectedTab == .explore {
-                    coordinator.focusSearchBar()
-                } else {
-                    coordinator.selectTab(.explore)
-                }
+                coordinator.selectTab(.explore)
             }
 
             Spacer()

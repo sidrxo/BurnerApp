@@ -10,9 +10,6 @@ struct TicketsView: View {
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var coordinator: NavigationCoordinator
 
-    // Add binding for selected tab (deprecated, kept for compatibility)
-    @Binding var selectedTab: Int
-
     @State private var searchText = ""
     @State private var selectedFilter: TicketsFilter = .upcoming
     @FocusState private var isSearchFocused: Bool
@@ -299,8 +296,9 @@ enum TicketsFilter: CaseIterable {
 }
 
 #Preview {
-    TicketsView(selectedTab: .constant(2))
+    TicketsView()
         .environmentObject(AppState().ticketsViewModel)
         .environmentObject(AppState().eventViewModel)
+        .environmentObject(NavigationCoordinator())
         .preferredColorScheme(.dark)
 }

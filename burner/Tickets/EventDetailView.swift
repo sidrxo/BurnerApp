@@ -411,9 +411,9 @@ struct ShareSheet: UIViewControllerRepresentable {
             isFeatured: false,
             description: "The Russian techno queen returns to fabric with her hypnotic blend of acid and experimental electronic music."
         ))
-        .environmentObject(TabBarVisibility(isDetailViewPresented: .constant(false)))
         .environmentObject(AppState().bookmarkManager)
         .environmentObject(AppState().eventViewModel)
+        .environmentObject(NavigationCoordinator())
     }
     .preferredColorScheme(.dark)
 }   

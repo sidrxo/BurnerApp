@@ -75,13 +75,6 @@ struct BurnerApp: App {
         configureGlobalAppearance()
     }
 
-    private var tabBarVisibility: TabBarVisibility {
-        TabBarVisibility(isDetailViewPresented: Binding(
-            get: { appState.isDetailViewPresented },
-            set: { appState.isDetailViewPresented = $0 }
-        ))
-    }
-
     var body: some Scene {
         WindowGroup {
             ZStack {
@@ -91,7 +84,6 @@ struct BurnerApp: App {
                     .environmentObject(appState.bookmarkManager)
                     .environmentObject(appState.ticketsViewModel)
                     .environmentObject(appState.authService)
-                    .environmentObject(tabBarVisibility)
                     .onOpenURL { url in
                         handleIncomingURL(url)
                     }
