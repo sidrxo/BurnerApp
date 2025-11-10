@@ -12,6 +12,7 @@ struct SearchView: View {
 
     @State private var searchText = ""
     @State private var sortBy: SortOption = .date
+    @State private var pendingNearbySortRequest = false
     @FocusState private var isSearchFocused: Bool
 
     init() {
@@ -44,8 +45,21 @@ struct SearchView: View {
             viewModel.updateSearchText(newValue, sortBy: sortBy.rawValue)
         }
         .onChange(of: sortBy) { oldValue, newValue in
-            Task {
-                await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
+            if newValue == .nearby {
+                viewModel.requestLocationPermission()
+                pendingNearbySortRequest = true
+            } else {
+                Task {
+                    await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
+                }
+            }
+        }
+        .onChange(of: viewModel.userLocation) { oldValue, newValue in
+            if pendingNearbySortRequest, newValue != nil {
+                pendingNearbySortRequest = false
+                Task {
+                    await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText)
+                }
             }
         }
     }
@@ -113,7 +127,6 @@ struct SearchView: View {
             ) {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     sortBy = .nearby
-                    viewModel.requestLocationPermission()
                 }
             }
 
@@ -318,27 +331,37 @@ class SearchViewModel: ObservableObject {
 
     // MARK: - Sort Events by Distance
     private func sortEventsByDistance() async {
+        print("SearchViewModel: sortEventsByDistance called")
         guard let userLocation = userLocation else {
+            print("SearchViewModel: No user location available")
             errorMessage = "Location not available. Please enable location services."
             return
         }
 
+        print("SearchViewModel: User location: \(userLocation.coordinate.latitude), \(userLocation.coordinate.longitude)")
         isLoading = true
 
         do {
             // Fetch all upcoming events without limit for nearby sorting
             let allEvents = try await eventRepository.fetchUpcomingEvents(sortBy: "startTime", limit: 100)
+            print("SearchViewModel: Fetched \(allEvents.count) events")
 
             // Calculate distance for each event and filter events with coordinates
             let eventsWithDistance = allEvents.compactMap { event -> (Event, CLLocationDistance)? in
-                guard let coordinates = event.coordinates else { return nil }
+                guard let coordinates = event.coordinates else {
+                    print("SearchViewModel: Event '\(event.name)' has no coordinates")
+                    return nil
+                }
                 let eventLocation = CLLocation(
                     latitude: coordinates.latitude,
                     longitude: coordinates.longitude
                 )
                 let distance = userLocation.distance(from: eventLocation)
+                print("SearchViewModel: Event '\(event.name)' distance: \(distance / 1000) km")
                 return (event, distance)
             }
+
+            print("SearchViewModel: \(eventsWithDistance.count) events have coordinates")
 
             // Sort by distance
             let sortedEvents = eventsWithDistance
@@ -347,8 +370,10 @@ class SearchViewModel: ObservableObject {
 
             events = sortedEvents
             hasMoreEvents = false // Disable pagination for nearby view
+            print("SearchViewModel: Sorted events by distance, showing \(sortedEvents.count) events")
 
         } catch {
+            print("SearchViewModel: Error sorting by distance: \(error.localizedDescription)")
             errorMessage = "Failed to sort events by distance: \(error.localizedDescription)"
         }
 
@@ -497,16 +522,20 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
     }
 
     func requestLocation() {
+        print("LocationManager: Requesting location, current status: \(manager.authorizationStatus.rawValue)")
+
         let status = manager.authorizationStatus
 
         switch status {
         case .notDetermined:
+            print("LocationManager: Requesting authorization")
             manager.requestWhenInUseAuthorization()
-            manager.requestLocation()
+            // Don't call requestLocation here - wait for authorization callback
         case .authorizedWhenInUse, .authorizedAlways:
+            print("LocationManager: Already authorized, requesting location")
             manager.requestLocation()
         case .denied, .restricted:
-            print("Location access denied")
+            print("LocationManager: Location access denied or restricted")
         @unknown default:
             break
         }
@@ -514,16 +543,19 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
+        print("LocationManager: Got location: \(location.coordinate.latitude), \(location.coordinate.longitude)")
         onLocationUpdate?(location)
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("Location error: \(error.localizedDescription)")
+        print("LocationManager: Error: \(error.localizedDescription)")
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        print("LocationManager: Authorization changed to: \(manager.authorizationStatus.rawValue)")
         if manager.authorizationStatus == .authorizedWhenInUse ||
            manager.authorizationStatus == .authorizedAlways {
+            print("LocationManager: Now authorized, requesting location")
             manager.requestLocation()
         }
     }
