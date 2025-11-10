@@ -147,7 +147,7 @@ struct SearchView: View {
                         EmptyEventsView(searchText: searchText)
                     } else {
                         ForEach(viewModel.events) { event in
-                            NavigationLink(destination: EventDetailView(event: event)) {
+                            NavigationLink(value: NavigationDestination.eventDetail(event)) {
                                 EventRow(
                                     event: event,
                                     bookmarkManager: bookmarkManager
