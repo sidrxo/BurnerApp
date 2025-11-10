@@ -375,7 +375,7 @@ struct GenreCard: View {
             
             // Text in bottom left
             Text(genreName)
-                .appSectionHeader()
+                .appCard()
                 .foregroundColor(.white)
                 .padding(16)
         }

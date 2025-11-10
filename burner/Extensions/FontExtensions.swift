@@ -19,6 +19,7 @@ extension Font {
     static var appCaption: Font { appFont(size: 12) }
     static var appSecondary: Font { appFont(size: 14) }
     static var appBody: Font { appFont(size: 16) }
+    static var appCard: Font { appFont(size: 18) }
     static var appSectionHeader: Font { appFont(size: 24) }
     static var appPageHeader: Font { appFont(size: 28) }
     static var appHero: Font { appFont(size: 32) }
@@ -46,6 +47,10 @@ extension View {
     func appBody() -> some View {
         self.font(.appBody)
     }
+    
+    func appCard() -> some View {
+           self.font(.appCard)
+       }
         
     func appSectionHeader() -> some View {
         self.font(.appSectionHeader)
