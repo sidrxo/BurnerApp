@@ -4,33 +4,34 @@ import Combine
 
 struct MainTabView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var coordinator: NavigationCoordinator
     @AppStorage("useWalletView") private var useWalletView = true
 
     var body: some View {
         NavigationCoordinatorView {
-            TabView(selection: $appState.navigationCoordinator.selectedTab) {
+            ZStack {
                 // Home Tab
-                NavigationStack(path: $appState.navigationCoordinator.homePath) {
+                NavigationStack(path: $coordinator.homePath) {
                     ExploreView()
                         .navigationDestination(for: NavigationDestination.self) { destination in
                             NavigationDestinationBuilder(destination: destination)
                         }
                 }
-                .tag(AppTab.home)
-                .tabItem { EmptyView() }
+                .opacity(coordinator.selectedTab == .home ? 1 : 0)
+                .zIndex(coordinator.selectedTab == .home ? 1 : 0)
 
                 // Explore Tab
-                NavigationStack(path: $appState.navigationCoordinator.explorePath) {
+                NavigationStack(path: $coordinator.explorePath) {
                     SearchView()
                         .navigationDestination(for: NavigationDestination.self) { destination in
                             NavigationDestinationBuilder(destination: destination)
                         }
                 }
-                .tag(AppTab.explore)
-                .tabItem { EmptyView() }
+                .opacity(coordinator.selectedTab == .explore ? 1 : 0)
+                .zIndex(coordinator.selectedTab == .explore ? 1 : 0)
 
                 // Tickets Tab
-                NavigationStack(path: $appState.navigationCoordinator.ticketsPath) {
+                NavigationStack(path: $coordinator.ticketsPath) {
                     if useWalletView {
                         TicketsView()
                             .navigationDestination(for: NavigationDestination.self) { destination in
@@ -43,39 +44,37 @@ struct MainTabView: View {
                             }
                     }
                 }
-                .tag(AppTab.tickets)
-                .tabItem { EmptyView() }
+                .opacity(coordinator.selectedTab == .tickets ? 1 : 0)
+                .zIndex(coordinator.selectedTab == .tickets ? 1 : 0)
 
                 // Settings Tab
-                NavigationStack(path: $appState.navigationCoordinator.settingsPath) {
+                NavigationStack(path: $coordinator.settingsPath) {
                     SettingsView()
                         .navigationDestination(for: NavigationDestination.self) { destination in
                             NavigationDestinationBuilder(destination: destination)
                         }
                 }
-                .tag(AppTab.settings)
-                .tabItem { EmptyView() }
-            }
-            .tabViewStyle(.automatic)
-            .overlay(alignment: .bottom) {
-                // Custom tab bar overlay - only show when at root of any tab
-                if shouldShowTabBar {
-                    CustomTabBar()
-                        .transition(.move(edge: .bottom))
+                .opacity(coordinator.selectedTab == .settings ? 1 : 0)
+                .zIndex(coordinator.selectedTab == .settings ? 1 : 0)
+                
+                // Custom tab bar overlay
+                VStack {
+                    Spacer()
+                    if shouldShowTabBar {
+                        CustomTabBar()
+                            .transition(.move(edge: .bottom))
+                    }
                 }
+                .zIndex(100)
             }
         }
     }
     
-    // FIXED: Simplified tab bar visibility logic
     private var shouldShowTabBar: Bool {
-        // Don't show if explicitly hidden
-        guard !appState.navigationCoordinator.shouldHideTabBar else {
+        guard !coordinator.shouldHideTabBar else {
             return false
         }
         
-        // Show only at root of each tab
-        let coordinator = appState.navigationCoordinator
         switch coordinator.selectedTab {
         case .home:
             return coordinator.homePath.count == 0
