@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension Font {
-    private static let fontFamily = "Avenir"
+    private static let fontFamily = "SpaceGrotesk"
     
     static func appFont(size: CGFloat, weight: Font.Weight = .regular) -> Font {
         switch weight {
@@ -13,6 +13,7 @@ extension Font {
             return .custom("\(fontFamily)-Regular", size: size)
         }
     }
+    
     
     // Semantic font sizes
     static var appCaption: Font { appFont(size: 12) }

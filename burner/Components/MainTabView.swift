@@ -14,7 +14,7 @@ struct MainTabView: View {
                     switch appState.navigationCoordinator.selectedTab {
                     case .home:
                         NavigationStack(path: $appState.navigationCoordinator.homePath) {
-                            HomeView()
+                            ExploreView()
                                 .navigationDestination(for: NavigationDestination.self) { destination in
                                     NavigationDestinationBuilder(destination: destination)
                                 }

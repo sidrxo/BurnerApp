@@ -1,7 +1,7 @@
 import SwiftUI
 import Kingfisher
 
-struct HomeView: View {
+struct ExploreView: View {
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var appState: AppState
@@ -124,7 +124,7 @@ struct HomeView: View {
         }
         .onChange(of: coordinator.pendingDeepLink) { _, eventId in
             if let eventId = eventId {
-                print("🎯 HomeView: Navigating to event \(eventId)")
+                print("🎯 ExploreView: Navigating to event \(eventId)")
                 coordinator.navigate(to: .eventById(eventId))
             }
         }
@@ -323,9 +323,9 @@ struct EventSection: View {
 }
 
 // MARK: - Preview
-struct HomeView_Previews: PreviewProvider {
+struct ExploreView_Previews: PreviewProvider {
     static var previews: some View {
-        HomeView()
+        ExploreView()
             .environmentObject(AppState().eventViewModel)
             .environmentObject(AppState().bookmarkManager)
             .preferredColorScheme(.dark)
