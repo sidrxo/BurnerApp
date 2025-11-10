@@ -29,6 +29,8 @@
 	</array>
 	<key>NSFamilyControlsUsageDescription</key>
 	<string>This app uses Family Controls to help you stay focused during events by blocking distracting apps when Burner Mode is enabled.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need your location to show you nearby events and help you discover what's happening around you.</string>
 	<key>NSSupportsAutomaticTermination</key>
 	<true/>
 	<key>UIBackgroundModes</key>
