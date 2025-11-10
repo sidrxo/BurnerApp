@@ -625,31 +625,6 @@ export function EventForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="latitude">Latitude</Label>
-          <Input
-            id="latitude"
-            type="number"
-            step="any"
-            value={form.latitude}
-            onChange={(e) => setForm((state) => ({ ...state, latitude: e.target.value }))}
-            placeholder="51.5074"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="longitude">Longitude</Label>
-          <Input
-            id="longitude"
-            type="number"
-            step="any"
-            value={form.longitude}
-            onChange={(e) => setForm((state) => ({ ...state, longitude: e.target.value }))}
-            placeholder="-0.1278"
-          />
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="status">Status</Label>

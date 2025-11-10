@@ -4,6 +4,7 @@ import FirebaseAuth
 import FirebaseFunctions
 import Firebase
 import PassKit
+import MapKit
 
 struct EventDetailView: View {
     let event: Event
@@ -17,6 +18,7 @@ struct EventDetailView: View {
 
     @State private var userHasTicket = false
     @State private var showingSignInAlert = false // ✅ NEW
+    @State private var showingMapsSheet = false
     
     // Get screen height for responsive sizing
     private let screenHeight = UIScreen.main.bounds.height
@@ -145,7 +147,7 @@ struct EventDetailView: View {
                                     Text("About")
                                         .appBody()
                                         .foregroundColor(.white)
-                                    
+
                                     Text(description)
                                         .appBody()
                                         .foregroundColor(.gray)
@@ -154,6 +156,7 @@ struct EventDetailView: View {
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 20)
+                                .padding(.bottom, 8)
                             }
                             
                             // Event details - more compact
@@ -200,6 +203,26 @@ struct EventDetailView: View {
                             }
                             .padding(.horizontal, 20)
 
+                            // Map Section
+                            if let coordinates = event.coordinates {
+                                Button(action: {
+                                    showingMapsSheet = true
+                                }) {
+                                    EventMapView(
+                                        coordinate: CLLocationCoordinate2D(
+                                            latitude: coordinates.latitude,
+                                            longitude: coordinates.longitude
+                                        ),
+                                        venueName: event.venue
+                                    )
+                                    .frame(height: 200)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .padding(.horizontal, 20)
+                                .padding(.top, 8)
+                            }
+
                             // Save and Share buttons side by side (icons only)
                             HStack(spacing: 12) {
                                 // Save/Bookmark button
@@ -216,10 +239,10 @@ struct EventDetailView: View {
                                     }
                                 }) {
                                     Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                                        .font(.system(size: 20))
+                                        .font(.system(size: 22))
                                         .foregroundColor(.white)
                                         .iconButtonStyle(
-                                            size: 50,
+                                            size: 60,
                                             backgroundColor: Color.white.opacity(0.1),
                                             cornerRadius: 12
                                         )
@@ -230,17 +253,17 @@ struct EventDetailView: View {
                                     coordinator.shareEvent(event)
                                 }) {
                                     Image(systemName: "square.and.arrow.up")
-                                        .font(.system(size: 20))
+                                        .font(.system(size: 22))
                                         .foregroundColor(.white)
                                         .iconButtonStyle(
-                                            size: 50,
+                                            size: 60,
                                             backgroundColor: Color.white.opacity(0.1),
                                             cornerRadius: 12
                                         )
                                 }
                             }
                             .padding(.horizontal, 20)
-                            .padding(.top, 8)
+                            .padding(.top, 16)
                             
                             // Bottom spacing for floating button
                             Spacer(minLength: 100)
@@ -319,6 +342,17 @@ struct EventDetailView: View {
             }
         }
         .navigationBarBackButtonHidden(false)
+        .sheet(isPresented: $showingMapsSheet) {
+            if let coordinates = event.coordinates {
+                MapsOptionsSheet(
+                    latitude: coordinates.latitude,
+                    longitude: coordinates.longitude,
+                    venueName: event.venue
+                )
+                .presentationDetents([.height(200)])
+                .presentationDragIndicator(.visible)
+            }
+        }
         .onAppear {
             checkUserTicketStatus()
         }
@@ -420,6 +454,107 @@ struct EventDetailRow: View {
         .padding(.vertical, 8)
         .background(Color.gray.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+// MARK: - Event Map View
+struct EventMapView: View {
+    let coordinate: CLLocationCoordinate2D
+    let venueName: String
+
+    var body: some View {
+        Map(position: .constant(.region(MKCoordinateRegion(
+            center: coordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+        )))) {
+            Marker(venueName, coordinate: coordinate)
+        }
+        .mapStyle(.standard)
+        .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Maps Options Sheet
+struct MapsOptionsSheet: View {
+    let latitude: Double
+    let longitude: Double
+    let venueName: String
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("Open in Maps")
+                .font(.appBody())
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+                .padding(.top, 20)
+                .padding(.bottom, 16)
+
+            VStack(spacing: 12) {
+                Button(action: {
+                    openInAppleMaps()
+                    dismiss()
+                }) {
+                    HStack {
+                        Image(systemName: "map")
+                            .font(.system(size: 20))
+                        Text("Apple Maps")
+                            .font(.appBody())
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
+                Button(action: {
+                    openInGoogleMaps()
+                    dismiss()
+                }) {
+                    HStack {
+                        Image(systemName: "globe")
+                            .font(.system(size: 20))
+                        Text("Google Maps")
+                            .font(.appBody())
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            }
+            .padding(.horizontal, 20)
+
+            Spacer()
+        }
+        .background(Color.black)
+    }
+
+    private func openInAppleMaps() {
+        let mapItem = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude)))
+        mapItem.name = venueName
+        mapItem.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
+    }
+
+    private func openInGoogleMaps() {
+        if let url = URL(string: "comgooglemaps://?q=\(latitude),\(longitude)&center=\(latitude),\(longitude)") {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            } else {
+                // Fallback to web version if Google Maps app is not installed
+                if let webUrl = URL(string: "https://www.google.com/maps/search/?api=1&query=\(latitude),\(longitude)") {
+                    UIApplication.shared.open(webUrl)
+                }
+            }
+        }
     }
 }
 
