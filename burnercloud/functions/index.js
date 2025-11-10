@@ -8,6 +8,7 @@ const adminManagement = require('./admin/adminManagement');
 const scannerManagement = require('./admin/scannerManagement');
 const userValidation = require('./admin/userValidation');
 const venueManagement = require('./venues/venueManagement');
+const tagManagement = require('./tags/tagManagement');
 const ticketQueries = require('./tickets/ticketQueries');
 const scanTicket = require('./tickets/scanTicket');
 const transferTicket = require('./tickets/transferTicket');
@@ -31,6 +32,13 @@ exports.validateUser = userValidation.validateUser;
 
 // ============ VENUE MANAGEMENT ============
 exports.createVenue = venueManagement.createVenue;
+
+// ============ TAG MANAGEMENT ============
+exports.getTags = tagManagement.getTags;
+exports.createTag = tagManagement.createTag;
+exports.updateTag = tagManagement.updateTag;
+exports.deleteTag = tagManagement.deleteTag;
+exports.reorderTags = tagManagement.reorderTags;
 
 // ============ TICKET OPERATIONS ============
 exports.checkUserTicket = ticketQueries.checkUserTicket;

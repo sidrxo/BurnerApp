@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, Home, Settings, Ticket, MapPin, Shield, User } from "lucide-react";
+import { Calendar, Home, Settings, Ticket, MapPin, Shield, User, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/useAuth";
 import { useEffect, useState } from "react";
@@ -72,6 +72,11 @@ export function AppNavbar() {
         title: "Admin Management",
         url: "/admin-management",
         icon: Shield,
+      });
+      navigationItems.splice(5, 0, {
+        title: "Tag Management",
+        url: "/tag-management",
+        icon: Tag,
       });
     }
   }
