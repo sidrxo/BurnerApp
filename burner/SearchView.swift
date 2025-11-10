@@ -2,6 +2,7 @@ import SwiftUI
 import Kingfisher
 import Combine
 import FirebaseFirestore
+import CoreLocation
 
 // MARK: - Optimized SearchView
 struct SearchView: View {
@@ -21,6 +22,7 @@ struct SearchView: View {
     enum SortOption: String {
         case date = "date"
         case price = "price"
+        case nearby = "nearby"
     }
 
     var body: some View {
@@ -105,6 +107,16 @@ struct SearchView: View {
                 }
             }
 
+            FilterButton(
+                title: "NEARBY",
+                isSelected: sortBy == .nearby
+            ) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    sortBy = .nearby
+                    viewModel.requestLocationPermission()
+                }
+            }
+
             Spacer()
         }
         .padding(.horizontal, 20)
@@ -129,27 +141,6 @@ struct SearchView: View {
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .onAppear {
-                                // Load more when reaching last item
-                                if event.id == viewModel.events.last?.id {
-                                    Task {
-                                        await viewModel.loadMoreEvents(
-                                            sortBy: sortBy.rawValue,
-                                            searchText: searchText
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Loading more indicator
-                        if viewModel.isLoadingMore {
-                            HStack {
-                                Spacer()
-                                CustomLoadingIndicator(size: 35)
-                                    .padding(.vertical, 20)
-                                Spacer()
-                            }
                         }
                     }
                 }
@@ -175,6 +166,7 @@ class SearchViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isLoadingMore = false
     @Published var errorMessage: String?
+    @Published var userLocation: CLLocation?
 
     private var hasMoreEvents = true
     private var lastDocument: Date?
@@ -184,7 +176,8 @@ class SearchViewModel: ObservableObject {
     private let eventRepository: OptimizedEventRepository
     private var searchCancellable: AnyCancellable?
     private let searchSubject = PassthroughSubject<(String, String), Never>()
-    
+    private let locationManager = LocationManager()
+
     // ADD THIS: Constant for initial load limit
     private let initialLoadLimit = 6
     private let paginationLimit = 10
@@ -192,6 +185,19 @@ class SearchViewModel: ObservableObject {
     init(eventRepository: OptimizedEventRepository) {
         self.eventRepository = eventRepository
         setupSearchDebouncing()
+        setupLocationObserver()
+    }
+
+    private func setupLocationObserver() {
+        locationManager.onLocationUpdate = { [weak self] location in
+            Task { @MainActor in
+                self?.userLocation = location
+            }
+        }
+    }
+
+    func requestLocationPermission() {
+        locationManager.requestLocation()
     }
     
     // MARK: - Setup Search Debouncing
@@ -301,11 +307,52 @@ class SearchViewModel: ObservableObject {
     
     // MARK: - Change Sort
     func changeSort(to sortBy: String, searchText: String) async {
-        if searchText.isEmpty {
+        if sortBy == "nearby" {
+            await sortEventsByDistance()
+        } else if searchText.isEmpty {
             await loadInitialEvents(sortBy: sortBy)
         } else {
             await performSearch(searchText: searchText, sortBy: sortBy)
         }
+    }
+
+    // MARK: - Sort Events by Distance
+    private func sortEventsByDistance() async {
+        guard let userLocation = userLocation else {
+            errorMessage = "Location not available. Please enable location services."
+            return
+        }
+
+        isLoading = true
+
+        do {
+            // Fetch all upcoming events without limit for nearby sorting
+            let allEvents = try await eventRepository.fetchUpcomingEvents(sortBy: "startTime", limit: 100)
+
+            // Calculate distance for each event and filter events with coordinates
+            let eventsWithDistance = allEvents.compactMap { event -> (Event, CLLocationDistance)? in
+                guard let coordinates = event.coordinates else { return nil }
+                let eventLocation = CLLocation(
+                    latitude: coordinates.latitude,
+                    longitude: coordinates.longitude
+                )
+                let distance = userLocation.distance(from: eventLocation)
+                return (event, distance)
+            }
+
+            // Sort by distance
+            let sortedEvents = eventsWithDistance
+                .sorted { $0.1 < $1.1 }
+                .map { $0.0 }
+
+            events = sortedEvents
+            hasMoreEvents = false // Disable pagination for nearby view
+
+        } catch {
+            errorMessage = "Failed to sort events by distance: \(error.localizedDescription)"
+        }
+
+        isLoading = false
     }
 
     // MARK: - Refresh Events
@@ -435,6 +482,50 @@ struct EmptyEventsView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, minHeight: 300)
+    }
+}
+
+// MARK: - Location Manager
+class LocationManager: NSObject, CLLocationManagerDelegate {
+    private let manager = CLLocationManager()
+    var onLocationUpdate: ((CLLocation) -> Void)?
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyBest
+    }
+
+    func requestLocation() {
+        let status = manager.authorizationStatus
+
+        switch status {
+        case .notDetermined:
+            manager.requestWhenInUseAuthorization()
+            manager.requestLocation()
+        case .authorizedWhenInUse, .authorizedAlways:
+            manager.requestLocation()
+        case .denied, .restricted:
+            print("Location access denied")
+        @unknown default:
+            break
+        }
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.last else { return }
+        onLocationUpdate?(location)
+    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("Location error: \(error.localizedDescription)")
+    }
+
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        if manager.authorizationStatus == .authorizedWhenInUse ||
+           manager.authorizationStatus == .authorizedAlways {
+            manager.requestLocation()
+        }
     }
 }
 

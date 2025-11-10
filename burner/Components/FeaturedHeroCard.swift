@@ -22,16 +22,16 @@ struct FeaturedHeroCard: View {
                     }
                     .resizable()
                     .scaledToFill()
-                    .frame(width: geometry.size.width, height: 500)
+                    .frame(width: geometry.size.width, height: 400)
                     .clipShape(RoundedRectangle(cornerRadius: 20))
-                
+
                 // Gradient overlay
                 LinearGradient(
                     gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.8)]),
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(width: geometry.size.width, height: 500)
+                .frame(width: geometry.size.width, height: 400)
                 .clipShape(RoundedRectangle(cornerRadius: 20))
                 
                 VStack {
@@ -100,9 +100,9 @@ struct FeaturedHeroCard: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
                 }
-                .frame(width: geometry.size.width, height: 500)
+                .frame(width: geometry.size.width, height: 400)
             }
         }
-        .frame(height: 500)
+        .frame(height: 400)
     }
 }
