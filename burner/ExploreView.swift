@@ -15,7 +15,7 @@ struct ExploreView: View {
     @State private var showingSignInAlert = false
 
     // ✅ Maximum distance for "nearby" events (in meters)
-    private let maxNearbyDistance: CLLocationDistance = 50_000 // 50km / ~31 miles
+    private let maxNearbyDistance: CLLocationDistance = 50_000 // ~31 miles
 
     // MARK: - Dynamic Genres from Firestore
     private var displayGenres: [String] {
@@ -103,11 +103,12 @@ struct ExploreView: View {
 
     // Helper function to format distance
     private func formatDistance(_ distance: CLLocationDistance) -> String {
-        let km = distance / 1000
-        if km < 1 {
-            return String(format: "%.0fm", distance)
+        let miles = distance * 0.000621371
+        if miles < 0.1 {
+            let feet = distance * 3.28084
+            return String(format: "%.0fft", feet)
         } else {
-            return String(format: "%.1fkm", km)
+            return String(format: "%.1fmi", miles)
         }
     }
     
@@ -210,9 +211,6 @@ struct ExploreView: View {
         }
         .navigationBarHidden(true)
         .background(Color.black)
-        .refreshable {
-            eventViewModel.fetchEvents()
-        }
         .onChange(of: coordinator.pendingDeepLink) { _, eventId in
             if let eventId = eventId {
                 coordinator.navigate(to: .eventById(eventId))

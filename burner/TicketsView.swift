@@ -97,10 +97,6 @@ struct TicketsView: View {
         }
         .background(Color.black)
         .navigationBarHidden(true)
-        .refreshable {
-            ticketsViewModel.fetchUserTickets()
-            eventViewModel.fetchEvents()
-        }
     }
 
     private var emptyStateView: some View {

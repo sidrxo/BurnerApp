@@ -164,6 +164,23 @@ struct TicketPurchaseView: View {
                     .transition(.opacity)
                     .zIndex(1001)
                 }
+
+                // Loading indicator overlay
+                if paymentService.isProcessing {
+                    ZStack {
+                        Color.black.opacity(0.8)
+                            .ignoresSafeArea()
+
+                        VStack(spacing: 16) {
+                            CustomLoadingIndicator(size: 50)
+                            Text("Processing payment...")
+                                .appBody()
+                                .foregroundColor(.white)
+                        }
+                    }
+                    .transition(.opacity)
+                    .zIndex(1002)
+                }
             }
             .navigationBarTitleDisplayMode(.inline)
             .interactiveDismissDisabled(false)
