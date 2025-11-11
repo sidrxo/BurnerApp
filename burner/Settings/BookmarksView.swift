@@ -108,7 +108,8 @@ struct BookmarksView: View {
             }
             
             Button("Browse Events") {
-                // Dismiss bookmarks view to return to settings
+                // Navigate to Home tab (Explore view)
+                coordinator.selectTab(.home)
                 dismiss()
             }
             .font(.appFont(size: 17))

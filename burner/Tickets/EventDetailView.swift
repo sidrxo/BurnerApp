@@ -356,6 +356,14 @@ struct EventDetailView: View {
         .onAppear {
             checkUserTicketStatus()
         }
+        .onChange(of: ticketsViewModel.tickets.count) { _, _ in
+            // Refresh ticket status when tickets list changes
+            checkUserTicketStatus()
+        }
+        .onChange(of: event.ticketsSold) { _, _ in
+            // Refresh when tickets sold changes
+            checkUserTicketStatus()
+        }
         .onReceive(eventViewModel.$errorMessage) { errorMessage in
             if let errorMessage = errorMessage {
                 coordinator.showError(title: "Error", message: errorMessage)
