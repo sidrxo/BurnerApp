@@ -11,25 +11,30 @@ import UIKit
 
 class ApplePayHandler: NSObject {
     static let shared = ApplePayHandler()
-    
+
     var paymentController: PKPaymentAuthorizationController?
     var paymentSummaryItems = [PKPaymentSummaryItem]()
     var onPaymentSuccess: ((PKPayment) -> Void)?
     var onPaymentFailure: ((Error) -> Void)?
-    
+    var onCancelled: (() -> Void)?
+    var paymentWasAuthorized = false
+
     // Replace with your actual Merchant ID from Apple Developer
     let merchantID = "merchant.BurnerTickets"
     let currencyCode = "GBP"
     let countryCode = "GB"
-    
+
     func startPayment(
         eventName: String,
         amount: Double,
         onSuccess: @escaping (PKPayment) -> Void,
-        onFailure: @escaping (Error) -> Void
+        onFailure: @escaping (Error) -> Void,
+        onCancelled: @escaping () -> Void = {}
     ) {
         self.onPaymentSuccess = onSuccess
         self.onPaymentFailure = onFailure
+        self.onCancelled = onCancelled
+        self.paymentWasAuthorized = false
         
         // Create payment summary items
         let ticketItem = PKPaymentSummaryItem(
@@ -87,17 +92,23 @@ extension ApplePayHandler: PKPaymentAuthorizationControllerDelegate {
     ) {
         // Here you would send the payment token to your backend
         // For now, we'll just call success
-        
+
         // Example: Send payment.token.paymentData to your server
         // let paymentData = payment.token.paymentData
-        
+
+        paymentWasAuthorized = true
         onPaymentSuccess?(payment)
-        
+
         // Complete the payment
         completion(PKPaymentAuthorizationResult(status: .success, errors: nil))
     }
-    
+
     func paymentAuthorizationControllerDidFinish(_ controller: PKPaymentAuthorizationController) {
         controller.dismiss()
+
+        // If payment was not authorized, the user cancelled
+        if !paymentWasAuthorized {
+            onCancelled?()
+        }
     }
 }

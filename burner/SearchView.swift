@@ -41,9 +41,6 @@ struct SearchView: View {
         .task {
             await viewModel.loadInitialEvents(sortBy: sortBy.rawValue)
         }
-        .refreshable {
-            await viewModel.refreshEvents(sortBy: sortBy.rawValue)
-        }
         .onChange(of: searchText) { oldValue, newValue in
             viewModel.updateSearchText(newValue, sortBy: sortBy.rawValue)
         }
@@ -87,7 +84,7 @@ struct SearchView: View {
                     },
                     cancelActionTitle: "Cancel",
                     primaryAction: {
-               
+
                             showingSignInAlert = false
                         appState.isSignInSheetPresented = true
                     },
@@ -96,6 +93,14 @@ struct SearchView: View {
                 )
                 .transition(.opacity)
                 .zIndex(999)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("EmptyStateEnabled"))) { _ in
+            viewModel.clearAllResults()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("EmptyStateDisabled"))) { _ in
+            Task {
+                await viewModel.loadInitialEvents(sortBy: sortBy.rawValue)
             }
         }
     }
@@ -423,6 +428,16 @@ class SearchViewModel: ObservableObject {
     func refreshEvents(sortBy: String) async {
         searchCache.removeAll()
         await loadInitialEvents(sortBy: sortBy)
+    }
+
+    // MARK: - Clear All Results (for Debug Empty State)
+    func clearAllResults() {
+        events = []
+        searchCache.removeAll()
+        hasMoreEvents = false
+        isLoading = false
+        isLoadingMore = false
+        errorMessage = nil
     }
 }
 
