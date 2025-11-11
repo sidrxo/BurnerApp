@@ -21,55 +21,52 @@ struct BookmarksView: View {
     }
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header Section
-                SettingsHeaderSection(title: "Bookmarks")
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
+        VStack(spacing: 0) {
+            // Header Section
+            SettingsHeaderSection(title: "Bookmarks")
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
 
 
 
-                if !bookmarkManager.bookmarkedEvents.isEmpty {
+            if !bookmarkManager.bookmarkedEvents.isEmpty {
 
-                }
-
-                if bookmarkManager.isLoading {
-                    loadingView
-                } else if bookmarkManager.bookmarkedEvents.isEmpty {
-                    emptyStateView
-                } else {
-                    bookmarksList
-                }
             }
-            .background(Color.black)
-            .navigationBarHidden(true)
-            .overlay {
-                if showingSignInAlert {
-                    CustomAlertView(
-                        title: "Sign In Required",
-                        description: "You need to be signed in to bookmark events",
-                        cancelAction: {
-                            withAnimation {
-                                showingSignInAlert = false
-                            }
-                        },
-                        cancelActionTitle: "Cancel",
-                        primaryAction: {
-                            withAnimation {
-                                showingSignInAlert = false
-                            }
-                            appState.isSignInSheetPresented = true
-                        },
-                        primaryActionTitle: "Sign In",
-                        customContent: EmptyView()
-                    )
-                    .transition(.opacity)
-                    .zIndex(999)
-                }
+
+            if bookmarkManager.isLoading {
+                loadingView
+            } else if bookmarkManager.bookmarkedEvents.isEmpty {
+                emptyStateView
+            } else {
+                bookmarksList
             }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
+        .background(Color.black)
+        .navigationBarHidden(true)
+        .overlay {
+            if showingSignInAlert {
+                CustomAlertView(
+                    title: "Sign In Required",
+                    description: "You need to be signed in to bookmark events",
+                    cancelAction: {
+                        withAnimation {
+                            showingSignInAlert = false
+                        }
+                    },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        withAnimation {
+                            showingSignInAlert = false
+                        }
+                        appState.isSignInSheetPresented = true
+                    },
+                    primaryActionTitle: "Sign In",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(999)
+            }
+        }
     }
     
     // MARK: - Search Section
@@ -143,97 +140,6 @@ struct BookmarksView: View {
             .padding(.bottom, 100)
         }
         .background(Color.black)
-    }
-}
-
-// MARK: - Bookmark List Item
-struct BookmarkListItem: View {
-    let event: Event
-    @ObservedObject var bookmarkManager: BookmarkManager
-    @State private var showingRemoveAlert = false
-
-    var body: some View {
-        ZStack {
-            HStack(spacing: 12) {
-                // Event Image
-                KFImage(URL(string: event.imageUrl))
-                    .placeholder {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.gray.opacity(0.3))
-                            .overlay(
-                                Image(systemName: "music.note")
-                                    .appSectionHeader()
-                                    .foregroundColor(.gray)
-                            )
-                    }
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 60, height: 60)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-
-                // Event Details
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(event.name)
-                        .appBody()
-                        .foregroundColor(.white)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-
-                    Text(event.venue)
-                        .appSecondary()
-                        .foregroundColor(.gray)
-                        .lineLimit(1)
-
-                    HStack(spacing: 4) {
-                        Image(systemName: "calendar")
-                            .appCaption()
-                            .foregroundColor(.gray)
-
-                        Text((event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month()))
-                            .appCaption()
-                            .foregroundColor(.gray)
-                    }
-
-                    Text("£\(String(format: "%.2f", event.price))")
-                        .appSecondary()
-                        .foregroundColor(.white)
-                }
-
-                Spacer()
-
-                // Remove Bookmark Button
-                Button(action: {
-                    showingRemoveAlert = true
-                }) {
-                    Image(systemName: "bookmark.fill")
-                        .appBody()
-                        .foregroundColor(.white)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color.gray.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-
-            if showingRemoveAlert {
-                CustomAlertView(
-                    title: "Remove Bookmark",
-                    description: "Are you sure you want to remove this event from your bookmarks?",
-                    cancelAction: { showingRemoveAlert = false },
-                    cancelActionTitle: "Cancel",
-                    primaryAction: {
-                        showingRemoveAlert = false
-                        Task {
-                            await bookmarkManager.toggleBookmark(for: event)
-                        }
-                    },
-                    primaryActionTitle: "Remove",
-                    customContent: EmptyView()
-                )
-                .transition(.opacity)
-                .zIndex(1001)
-            }
-        }
     }
 }
 

@@ -6,6 +6,7 @@ struct FeaturedHeroCard: View {
     let event: Event
     @ObservedObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var appState: AppState
+    @State private var showingSignInAlert = false
 
     private var isBookmarked: Bool {
         guard let eventId = event.id else { return false }
@@ -80,8 +81,8 @@ struct FeaturedHeroCard: View {
                             Button(action: {
                                 // Check if user is authenticated
                                 if Auth.auth().currentUser == nil {
-                                    // Show sign-in sheet if not authenticated
-                                    appState.isSignInSheetPresented = true
+                                    // Show sign-in alert if not authenticated
+                                    showingSignInAlert = true
                                 } else {
                                     // Toggle bookmark if authenticated
                                     Task {
@@ -104,5 +105,29 @@ struct FeaturedHeroCard: View {
             }
         }
         .frame(height: 400)
+        .overlay {
+            if showingSignInAlert {
+                CustomAlertView(
+                    title: "Sign In Required",
+                    description: "You need to be signed in to bookmark events",
+                    cancelAction: {
+                        withAnimation {
+                            showingSignInAlert = false
+                        }
+                    },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        withAnimation {
+                            showingSignInAlert = false
+                        }
+                        appState.isSignInSheetPresented = true
+                    },
+                    primaryActionTitle: "Sign In",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(999)
+            }
+        }
     }
 }
