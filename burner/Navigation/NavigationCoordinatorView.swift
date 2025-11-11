@@ -96,7 +96,7 @@ struct NavigationCoordinatorView<Content: View>: View {
         case .burnerSetup:
             BurnerModeSetupView(burnerManager: appState.burnerManager)
 
-        case .ticketPurchase(let event): // ✅ SIMPLIFIED
+        case .ticketPurchase(let event):
             TicketPurchaseView(
                 event: event,
                 viewModel: appState.eventViewModel
@@ -108,12 +108,6 @@ struct NavigationCoordinatorView<Content: View>: View {
         case .shareSheet(let items):
             ActivityViewController(activityItems: items)
 
-        case .cardInput:
-            Text("Card Input View") // Placeholder
-
-        case .savedCards:
-            Text("Saved Cards View") // Placeholder
-
         case .passwordlessAuth:
             PasswordlessAuthView(showingSignIn: Binding(
                 get: { true },
@@ -123,12 +117,6 @@ struct NavigationCoordinatorView<Content: View>: View {
                     }
                 }
             ))
-
-        case .addPaymentMethod:
-            Text("Add Payment Method") // Placeholder
-
-        case .manualTicketEntry:
-            Text("Manual Ticket Entry") // Placeholder
 
         case .fullScreenQRCode(let ticket):
             // Use the FullScreenQRCodeView from TicketDetailView.swift

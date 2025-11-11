@@ -56,31 +56,28 @@ struct TicketsWalletView: View {
     }
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                Color.black.ignoresSafeArea()
-                
-                VStack(spacing: 0) {
-                    if !ticketsViewModel.tickets.isEmpty || ticketsViewModel.isLoading {
-                        HeaderSection(title: "My Tickets")
-                    }
-                    
-                    if ticketsViewModel.isLoading && ticketsViewModel.tickets.isEmpty {
-                        loadingView
-                    } else if ticketsViewModel.tickets.isEmpty {
-                        emptyStateView
-                    } else {
-                        walletStackView
-                    }
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                if !ticketsViewModel.tickets.isEmpty || ticketsViewModel.isLoading {
+                    HeaderSection(title: "My Tickets")
+                }
+
+                if ticketsViewModel.isLoading && ticketsViewModel.tickets.isEmpty {
+                    loadingView
+                } else if ticketsViewModel.tickets.isEmpty {
+                    emptyStateView
+                } else {
+                    walletStackView
                 }
             }
-            .navigationBarHidden(true)
-            .refreshable {
-                ticketsViewModel.fetchUserTickets()
-                eventViewModel.fetchEvents()
-            }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
+        .navigationBarHidden(true)
+        .refreshable {
+            ticketsViewModel.fetchUserTickets()
+            eventViewModel.fetchEvents()
+        }
         .fullScreenCover(isPresented: $showingFullScreen) {
             if let ticket = selectedTicketForQR {
                 FullScreenQRCodeView(
