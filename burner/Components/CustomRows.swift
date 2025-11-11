@@ -271,6 +271,7 @@ struct BookmarkButton: View {
     @ObservedObject var bookmarkManager: BookmarkManager
     let size: CGFloat
     @EnvironmentObject var appState: AppState
+    @State private var showingSignInAlert = false
 
     init(event: Event, bookmarkManager: BookmarkManager, size: CGFloat = 18) {
         self.event = event
@@ -279,23 +280,44 @@ struct BookmarkButton: View {
     }
 
     var body: some View {
-        Button(action: {
-            // Check if user is authenticated
-            if Auth.auth().currentUser == nil {
-                // Show sign-in sheet if not authenticated
-                appState.isSignInSheetPresented = true
-            } else {
-                // Toggle bookmark if authenticated
-                Task {
-                    await bookmarkManager.toggleBookmark(for: event)
+        ZStack {
+            Button(action: {
+                // Check if user is authenticated
+                if Auth.auth().currentUser == nil {
+                    // Show alert if not authenticated
+                    showingSignInAlert = true
+                } else {
+                    // Toggle bookmark if authenticated
+                    Task {
+                        await bookmarkManager.toggleBookmark(for: event)
+                    }
                 }
+            }) {
+                Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                    .font(.appIcon)
+                    .foregroundColor(isBookmarked ? .white : .gray)
+                    .scaleEffect(isBookmarked ? 1.1 : 1.0)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: isBookmarked)
             }
-        }) {
-            Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                .font(.appIcon)
-                .foregroundColor(isBookmarked ? .white : .gray)
-                .scaleEffect(isBookmarked ? 1.1 : 1.0)
-                .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: isBookmarked)
+
+            if showingSignInAlert {
+                CustomAlertView(
+                    title: "Sign In Required",
+                    description: "You need to be signed in to bookmark events",
+                    cancelAction: {
+                        showingSignInAlert = false
+                    },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        showingSignInAlert = false
+                        appState.isSignInSheetPresented = true
+                    },
+                    primaryActionTitle: "Sign In",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1002)
+            }
         }
     }
 

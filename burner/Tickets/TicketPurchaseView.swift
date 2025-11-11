@@ -16,7 +16,8 @@ struct TicketPurchaseView: View {
     @State private var cardParams: STPPaymentMethodCardParams?
     @State private var isCardValid = false
     @State private var selectedSavedCard: StripePaymentService.PaymentMethodInfo?
-    
+    @State private var dragOffset: CGFloat = 0
+
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var coordinator: NavigationCoordinator
     
@@ -47,11 +48,11 @@ struct TicketPurchaseView: View {
                         VStack(spacing: 20) {
                             // Price summary
                             priceSummary
-                            
+
                             Divider()
                                 .background(Color.gray.opacity(0.3))
                                 .padding(.horizontal, 20)
-                            
+
                             // Content based on current step
                             Group {
                                 switch currentStep {
@@ -67,6 +68,25 @@ struct TicketPurchaseView: View {
                         }
                         .padding(.vertical, 20)
                     }
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                if currentStep != .paymentMethod && value.translation.width > 0 {
+                                    dragOffset = value.translation.width
+                                }
+                            }
+                            .onEnded { value in
+                                if currentStep != .paymentMethod && value.translation.width > 100 {
+                                    withAnimation {
+                                        currentStep = .paymentMethod
+                                        selectedSavedCard = nil
+                                        cardParams = nil
+                                        isCardValid = false
+                                    }
+                                }
+                                dragOffset = 0
+                            }
+                    )
                     
                     // Bottom action button
                     if !paymentService.isProcessing {
@@ -166,29 +186,14 @@ struct TicketPurchaseView: View {
     
     // MARK: - Price Summary
     private var priceSummary: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("Ticket Price")
-                    .appBody()
-                    .foregroundColor(.gray)
-                Spacer()
-                Text("£\(String(format: "%.2f", event.price))")
-                    .appBody()
-                    .foregroundColor(.white)
-            }
-            
-            Divider()
-                .background(Color.gray.opacity(0.2))
-            
-            HStack {
-                Text("Total")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.white)
-                Spacer()
-                Text("£\(String(format: "%.2f", event.price))")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.white)
-            }
+        HStack {
+            Text("Total")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(.white)
+            Spacer()
+            Text("£\(String(format: "%.2f", event.price))")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(.white)
         }
         .padding(20)
         .background(Color.white.opacity(0.05))
@@ -205,23 +210,23 @@ struct TicketPurchaseView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
             
-            // Apple Pay
+            // Apple Pay - Native styled button
             if ApplePayHandler.canMakePayments() {
                 Button(action: handleApplePayPayment) {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: "apple.logo")
-                            .font(.system(size: 24))
-                        Text("Apple Pay")
+                            .font(.system(size: 20, weight: .semibold))
+                        Text("Pay")
                             .font(.system(size: 17, weight: .semibold))
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+                    .frame(height: 50)
                     .background(Color.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white, lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
                     )
                 }
                 .padding(.horizontal, 20)
@@ -256,27 +261,23 @@ struct TicketPurchaseView: View {
                 .padding(.horizontal, 20)
             }
             
-            // Add New Card
+            // Pay with Card
             Button(action: {
                 withAnimation {
                     currentStep = .cardInput
                 }
             }) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 20))
-                    Text(paymentService.paymentMethods.isEmpty ? "Card Payment" : "Add New Card")
+                HStack(spacing: 8) {
+                    Image(systemName: "creditcard.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                    Text(paymentService.paymentMethods.isEmpty ? "Pay with Card" : "Use Another Card")
                         .font(.system(size: 17, weight: .semibold))
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
                 }
                 .foregroundColor(.white)
-                .padding(16)
                 .frame(maxWidth: .infinity)
-                .background(Color.white.opacity(0.05))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .frame(height: 50)
+                .background(Color.white.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .padding(.horizontal, 20)
         }
@@ -464,21 +465,21 @@ struct TicketPurchaseView: View {
     // MARK: - Payment Handlers
     private func handleApplePayPayment() {
         guard let eventId = event.id else {
-            alertMessage = "Invalid event"
+            alertMessage = "Unable to process this event"
             isSuccess = false
             showingAlert = true
             return
         }
 
         guard Auth.auth().currentUser != nil else {
-            alertMessage = "Please log in to purchase a ticket"
+            alertMessage = "You need to be signed in to buy tickets"
             isSuccess = false
             showingAlert = true
             return
         }
 
         guard ApplePayHandler.canMakePayments() else {
-            alertMessage = "Apple Pay is not available on this device"
+            alertMessage = "Apple Pay isn't available on this device"
             isSuccess = false
             showingAlert = true
             return
@@ -506,7 +507,7 @@ struct TicketPurchaseView: View {
               isCardValid else { return }
 
         guard Auth.auth().currentUser != nil else {
-            alertMessage = "Please log in to purchase a ticket"
+            alertMessage = "You need to be signed in to buy tickets"
             isSuccess = false
             showingAlert = true
             return
@@ -534,7 +535,7 @@ struct TicketPurchaseView: View {
               let savedCard = selectedSavedCard else { return }
 
         guard Auth.auth().currentUser != nil else {
-            alertMessage = "Please log in to purchase a ticket"
+            alertMessage = "You need to be signed in to buy tickets"
             isSuccess = false
             showingAlert = true
             return
