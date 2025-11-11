@@ -9,10 +9,11 @@ class BookmarkManager: ObservableObject {
     @Published var bookmarkedEvents: [Event] = []
     @Published var bookmarkStatus: [String: Bool] = [:]
     @Published var isLoading = false
-    
+
     private let bookmarkRepository: BookmarkRepository
     private let eventRepository: EventRepository
-    
+    private var isSimulatingEmptyData = false
+
     init(
         bookmarkRepository: BookmarkRepository,
         eventRepository: EventRepository
@@ -24,12 +25,18 @@ class BookmarkManager: ObservableObject {
     
     // MARK: - Setup Listener
     private func setupBookmarkListener() {
+        guard !isSimulatingEmptyData else { return }
+
+        bookmarkRepository.stopObserving()
+
         guard let userId = Auth.auth().currentUser?.uid else { return }
-        
+
         bookmarkRepository.observeBookmarks(userId: userId) { [weak self] result in
             guard let self = self else { return }
-            
+
             Task { @MainActor in
+                guard !self.isSimulatingEmptyData else { return }
+
                 switch result {
                 case .success(let bookmarks):
                     // Update bookmark status dictionary
@@ -86,6 +93,8 @@ class BookmarkManager: ObservableObject {
     
     // MARK: - Toggle Bookmark
     func toggleBookmark(for event: Event) async {
+        guard !isSimulatingEmptyData else { return }
+
         guard let userId = Auth.auth().currentUser?.uid,
               let eventId = event.id else {
             return
@@ -132,6 +141,7 @@ class BookmarkManager: ObservableObject {
     }
 
     func refreshBookmarks() {
+        guard !isSimulatingEmptyData else { return }
         setupBookmarkListener()
     }
 
@@ -139,5 +149,20 @@ class BookmarkManager: ObservableObject {
         bookmarkedEvents = []
         bookmarkStatus = [:]
         bookmarkRepository.stopObserving()
+    }
+
+    // MARK: - Debug helpers
+    func simulateEmptyData() {
+        isSimulatingEmptyData = true
+        bookmarkRepository.stopObserving()
+        bookmarkedEvents = []
+        bookmarkStatus = [:]
+        isLoading = false
+    }
+
+    func resumeFromSimulation() {
+        guard isSimulatingEmptyData else { return }
+        isSimulatingEmptyData = false
+        setupBookmarkListener()
     }
 }

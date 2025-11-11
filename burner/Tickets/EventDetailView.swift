@@ -60,7 +60,7 @@ struct EventDetailView: View {
         } else if availableTickets > 0 {
             return .white
         } else {
-            return Color.gray.opacity(0.3)
+            return .red
         }
     }
 
@@ -75,7 +75,7 @@ struct EventDetailView: View {
     }
 
     var isButtonDisabled: Bool {
-        return availableTickets == 0 && !userHasTicket
+        userHasTicket || availableTickets == 0
     }
     
     var body: some View {

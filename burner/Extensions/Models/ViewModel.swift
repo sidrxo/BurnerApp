@@ -13,10 +13,11 @@ class EventViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var successMessage: String?
     @Published var userTicketStatus: [String: Bool] = [:]
-    
+
     private let eventRepository: EventRepository
     private let ticketRepository: TicketRepository
     private var cancellables = Set<AnyCancellable>()
+    private var isSimulatingEmptyData = false
     
     init(
         eventRepository: EventRepository,
@@ -28,14 +29,23 @@ class EventViewModel: ObservableObject {
     
     // MARK: - Fetch Events
     func fetchEvents() {
+        guard !isSimulatingEmptyData else {
+            isLoading = false
+            events = []
+            userTicketStatus = [:]
+            return
+        }
+
         isLoading = true
-        
+
         eventRepository.observeEvents { [weak self] result in
             guard let self = self else { return }
-            
+
             Task { @MainActor in
+                guard !self.isSimulatingEmptyData else { return }
+
                 self.isLoading = false
-                
+
                 switch result {
                 case .success(let events):
                     self.events = events
@@ -46,6 +56,23 @@ class EventViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    // MARK: - Debug helpers
+    func simulateEmptyData() {
+        isSimulatingEmptyData = true
+        eventRepository.stopObserving()
+        events = []
+        userTicketStatus = [:]
+        isLoading = false
+        errorMessage = nil
+        successMessage = nil
+    }
+
+    func resumeFromSimulation() {
+        guard isSimulatingEmptyData else { return }
+        isSimulatingEmptyData = false
+        fetchEvents()
     }
     
     func fetchEvent(byId eventId: String) async throws -> Event {
@@ -142,8 +169,9 @@ class TicketsViewModel: ObservableObject {
     @Published var tickets: [Ticket] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
-    
+
     private let ticketRepository: TicketRepository
+    private var isSimulatingEmptyData = false
     
     init(ticketRepository: TicketRepository) {
         self.ticketRepository = ticketRepository
@@ -151,6 +179,12 @@ class TicketsViewModel: ObservableObject {
     
     // MARK: - Fetch User Tickets
     func fetchUserTickets() {
+        guard !isSimulatingEmptyData else {
+            isLoading = false
+            tickets = []
+            return
+        }
+
         guard let userId = Auth.auth().currentUser?.uid else {
             // Don't set error message when user is not authenticated
             isLoading = false
@@ -163,6 +197,8 @@ class TicketsViewModel: ObservableObject {
             guard let self = self else { return }
 
             Task { @MainActor in
+                guard !self.isSimulatingEmptyData else { return }
+
                 self.isLoading = false
 
                 switch result {
@@ -183,6 +219,21 @@ class TicketsViewModel: ObservableObject {
     func clearTickets() {
         tickets = []
         errorMessage = nil
+    }
+
+    // MARK: - Debug helpers
+    func simulateEmptyData() {
+        isSimulatingEmptyData = true
+        ticketRepository.stopObserving()
+        tickets = []
+        isLoading = false
+        errorMessage = nil
+    }
+
+    func resumeFromSimulation() {
+        guard isSimulatingEmptyData else { return }
+        isSimulatingEmptyData = false
+        fetchUserTickets()
     }
 
     // MARK: - Cleanup
