@@ -40,16 +40,12 @@ struct PasswordlessAuthView: View {
 
                                 // Header
                                 VStack(spacing: 12) {
-                                    Image(systemName: emailSent ? "envelope.badge.fill" : "envelope")
-                                        .font(.system(size: 60))
-                                        .foregroundColor(.white)
-                                        .padding(.bottom, 8)
-
-                                    Text(emailSent ? "Check your email" : "Sign in with email")
-                                        .appPageHeader()
+                                    
+                                    Text(emailSent ? "Check your email" : "Enter your email")
+                                        .appSectionHeader()
                                         .foregroundColor(.white)
 
-                                    Text(emailSent ? "We sent a sign-in link to \(email)" : "We'll send you a magic link to sign in")
+                                    Text(emailSent ? "We sent a sign-in link to \(email)" : "We'll send you a link to sign in")
                                         .appBody()
                                         .foregroundColor(.white.opacity(0.7))
                                         .multilineTextAlignment(.center)
@@ -61,10 +57,7 @@ struct PasswordlessAuthView: View {
                                 // Email input form
                                 VStack(spacing: 20) {
                                     VStack(alignment: .leading, spacing: 8) {
-                                        Text("Email")
-                                            .appCaption()
-                                            .foregroundColor(.white.opacity(0.7))
-
+                                    
                                         TextField("", text: $email)
                                             .appBody()
                                             .foregroundColor(.white)
@@ -108,7 +101,7 @@ struct PasswordlessAuthView: View {
                                                 handleSendLink()
                                             } label: {
                                                 Text("Resend Link")
-                                                    .font(.appFont(size: 17))
+                                                    .appBody()
                                                     .foregroundColor(.blue)
                                             }
                                         } else {
@@ -143,19 +136,17 @@ struct PasswordlessAuthView: View {
                     // Bottom button
                     if !emailSent {
                         VStack(spacing: 0) {
-                            Divider()
-                                .background(Color.white.opacity(0.1))
-                            
+                                               
                             Button {
                                 handleSendLink()
                             } label: {
-                                Text("Send Sign-In Link")
-                                    .font(.appFont(size: 17))
-                                    .foregroundColor(.white)
+                                Text("SEND LINK")
+                                    .appBody()
+                                    .foregroundColor(.black)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 16)
-                                    .background(isButtonEnabled ? Color.white.opacity(0.15) : Color.white.opacity(0.05))
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .background(.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
                             .disabled(!isButtonEnabled || isLoading)
                             .padding(.horizontal, 24)
