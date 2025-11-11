@@ -217,16 +217,20 @@ struct ExploreView: View {
         .overlay(
             Group {
                 if showingLocationPrompt {
-                    LocationPromptModal {
-                        showingLocationPrompt = false
-                    }
-                    .environmentObject(locationManager)
-                    .transition(.move(edge: .bottom))
-                    .zIndex(1000)
+                    Color.clear
+                        .ignoresSafeArea()
+                        .overlay(
+                            LocationPromptModal {
+                                withAnimation(.easeOut(duration: 0.25)) {
+                                    showingLocationPrompt = false
+                                }
+                            }
+                            .environmentObject(locationManager)
+                        )
+                        .zIndex(1000)
                 }
             }
         )
-        .animation(.easeInOut, value: showingLocationPrompt)
     }
     
     // MARK: - Loading View
@@ -273,6 +277,16 @@ struct ExploreView: View {
                 )
             }
 
+            // Second Featured Card
+            if featuredEvents.count > 1 {
+                NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[1])) {
+                    FeaturedHeroCard(event: featuredEvents[1], bookmarkManager: bookmarkManager)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 40)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+
             // This Week Section
             if !thisWeekEvents.isEmpty {
                 EventSection(
@@ -282,16 +296,6 @@ struct ExploreView: View {
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: false
                 )
-            }
-
-            // Second Featured Card
-            if featuredEvents.count > 1 {
-                NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[1])) {
-                    FeaturedHeroCard(event: featuredEvents[1], bookmarkManager: bookmarkManager)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 40)
-                }
-                .buttonStyle(PlainButtonStyle())
             }
 
             // Genre Cards - Horizontal Scrolling
