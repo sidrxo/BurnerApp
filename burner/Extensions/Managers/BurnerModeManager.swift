@@ -2,6 +2,7 @@ import Swift
 import Foundation
 import FamilyControls
 import ManagedSettings
+import DeviceActivity
 import Combine
 
 @MainActor
@@ -17,19 +18,13 @@ class BurnerModeManager: ObservableObject {
     @Published var isAuthorized = false
     
     private let store = ManagedSettingsStore()
+    private let center = DeviceActivityCenter()
     private var authorizationCancellable: AnyCancellable?
     
-    // All possible categories that exist in iOS
-    // This is a comprehensive list - adjust based on what you want to require
-    private let allRequiredCategories = [
-        "Social", "Games", "Entertainment", "Creativity", "Productivity",
-        "Education", "Utilities", "Business", "Developer Tools", "Graphics & Design",
-        "Lifestyle", "Music", "News", "Photo & Video", "Shopping",
-        "Sports", "Travel", "Health & Fitness", "Food & Drink", "Finance",
-        "Weather", "Reference", "Navigation", "Medical", "Books"
-    ]
+    // App Group for sharing data with extension
+    private let appGroupDefaults = UserDefaults(suiteName: "group.com.gas.Burner")
     
-    let minimumCategoriesRequired = 8 // Must select 8+ categories
+    let minimumCategoriesRequired = 8
     
     init() {
         loadSelectedApps()
@@ -38,7 +33,6 @@ class BurnerModeManager: ObservableObject {
     }
     
     private func setupAuthorizationMonitoring() {
-        // Monitor authorization status changes
         authorizationCancellable = AuthorizationCenter.shared.$authorizationStatus
             .receive(on: DispatchQueue.main)
             .sink { [weak self] status in
@@ -46,7 +40,6 @@ class BurnerModeManager: ObservableObject {
                 self?.checkSetupCompliance()
             }
         
-        // Initial check
         isAuthorized = AuthorizationCenter.shared.authorizationStatus == .approved
     }
     
@@ -57,7 +50,6 @@ class BurnerModeManager: ObservableObject {
    
     @discardableResult
     func checkSetupCompliance() -> Bool {
-        // First check authorization
         guard isAuthorized else {
             setupError = "Screen Time permission required"
             isSetupValid = false
@@ -66,7 +58,6 @@ class BurnerModeManager: ObservableObject {
         
         let categoryCount = selectedApps.categoryTokens.count
         
-        // Require all categories to be selected
         if categoryCount < minimumCategoriesRequired {
             setupError = "Please select more categories."
             isSetupValid = false
@@ -108,7 +99,8 @@ class BurnerModeManager: ObservableObject {
     }
     
     private func loadSelectedApps() {
-        if let data = UserDefaults.standard.data(forKey: "selectedApps"),
+        // Try app group first, fall back to standard UserDefaults
+        if let data = appGroupDefaults?.data(forKey: "selectedApps") ?? UserDefaults.standard.data(forKey: "selectedApps"),
            let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) {
             selectedApps = selection
         }
@@ -116,6 +108,8 @@ class BurnerModeManager: ObservableObject {
     
     private func saveSelectedApps() {
         if let data = try? JSONEncoder().encode(selectedApps) {
+            // Save to both locations
+            appGroupDefaults?.set(data, forKey: "selectedApps")
             UserDefaults.standard.set(data, forKey: "selectedApps")
         }
     }
@@ -136,16 +130,43 @@ class BurnerModeManager: ObservableObject {
         // Request authorization
         try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
         
-        // Block ALL categories except the selected apps (if any)
+        // CRITICAL SECURITY MEASURES
+        
+        // 1. Block app removal (prevents uninstallation)
+        store.application.denyAppRemoval = true
+        
+        // 2. Apply shields to apps
         if selectedApps.applicationTokens.isEmpty {
-            // Block everything - no exceptions
             store.shield.applicationCategories = .all()
         } else {
-            // Block all except selected apps
             store.shield.applicationCategories = .all(except: selectedApps.applicationTokens)
         }
+        
+        // 3. Start Device Activity monitoring to reapply restrictions
+        try startDeviceActivityMonitoring()
 
+        // Save state to both UserDefaults locations
+        appGroupDefaults?.set(true, forKey: "burnerModeEnabled")
         UserDefaults.standard.set(true, forKey: "burnerModeEnabled")
+    }
+    
+    private func startDeviceActivityMonitoring() throws {
+        // Create a schedule that runs all day, every day
+        let schedule = DeviceActivitySchedule(
+            intervalStart: DateComponents(hour: 0, minute: 0),
+            intervalEnd: DateComponents(hour: 23, minute: 59),
+            repeats: true
+        )
+        
+        let activityName = DeviceActivityName("burner.protection")
+        
+        do {
+            try center.startMonitoring(activityName, during: schedule)
+            print("✅ Device Activity monitoring started")
+        } catch {
+            print("❌ Failed to start monitoring: \(error)")
+            throw error
+        }
     }
 
     func disable() {
@@ -153,25 +174,30 @@ class BurnerModeManager: ObservableObject {
             return
         }
 
+        // Stop device activity monitoring
+        let activityName = DeviceActivityName("burner.protection")
+        center.stopMonitoring([activityName])
+        
+        // Clear all restrictions
         store.clearAllSettings()
+        
+        // Update state in both locations
+        appGroupDefaults?.set(false, forKey: "burnerModeEnabled")
         UserDefaults.standard.set(false, forKey: "burnerModeEnabled")
     }
     
     func clearAllSelections() {
         selectedApps = FamilyActivitySelection()
+        appGroupDefaults?.removeObject(forKey: "selectedApps")
         UserDefaults.standard.removeObject(forKey: "selectedApps")
     }
     
     var isSetup: Bool {
-        // Consider burner mode set up if:
-        // 1. Screen Time is authorized
-        // 2. There are enough categories selected
-        // 3. The setup is valid
-        // 4. The selection has been saved
         return isAuthorized &&
                isSetupValid &&
                hasAllCategoriesSelected() &&
-               UserDefaults.standard.data(forKey: "selectedApps") != nil
+               (appGroupDefaults?.data(forKey: "selectedApps") != nil ||
+                UserDefaults.standard.data(forKey: "selectedApps") != nil)
     }
 }
 
