@@ -56,9 +56,10 @@ struct SettingsView: View {
                                         title: "Account Details",
                                         subtitle: currentUser?.email ?? "View Account"
                                     )
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(PlainButtonStyle())
-                                
+
                                 Button(action: {
                                     coordinator.navigate(to: .bookmarks)
                                 }) {
@@ -66,9 +67,10 @@ struct SettingsView: View {
                                         title: "Bookmarks",
                                         subtitle: "Saved events"
                                     )
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(PlainButtonStyle())
-                                
+
                                 Button(action: {
                                     coordinator.navigate(to: .paymentSettings)
                                 }) {
@@ -76,9 +78,10 @@ struct SettingsView: View {
                                         title: "Payment",
                                         subtitle: "Cards & billing"
                                     )
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(PlainButtonStyle())
-                                
+
                                 Button(action: {
                                     coordinator.navigate(to: .transferTicketsList)
                                 }) {
@@ -86,9 +89,10 @@ struct SettingsView: View {
                                         title: "Transfer Tickets",
                                         subtitle: "Transfer your ticket to another user"
                                     )
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(PlainButtonStyle())
-                                
+
                                 // Scanner access for authorized roles
                                 if (userRole == "scanner" && isScannerActive) ||
                                     userRole == "siteAdmin" ||
@@ -101,11 +105,12 @@ struct SettingsView: View {
                                             title: "Scanner",
                                             subtitle: "Scan QR codes"
                                         )
+                                        .contentShape(Rectangle())
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
                             }
-                            
+
                             // APP Section
                             MenuSection(title: "APP") {
                                 // Show Setup Guide Button only when needed
@@ -123,7 +128,7 @@ struct SettingsView: View {
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
-                                
+
                                 Button(action: {
                                     coordinator.navigate(to: .support)
                                 }) {
@@ -131,10 +136,11 @@ struct SettingsView: View {
                                         title: "Help & Support",
                                         subtitle: "Get help, terms, privacy"
                                     )
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
-                            
+
                             // DEBUG Section
 #if DEBUG
                             MenuSection(title: "DEBUG") {
@@ -145,6 +151,7 @@ struct SettingsView: View {
                                         title: "Debug Menu",
                                         subtitle: "Development tools"
                                     )
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }

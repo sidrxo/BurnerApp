@@ -108,7 +108,7 @@ struct ExploreView: View {
             let feet = distance * 3.28084
             return String(format: "%.0fft", feet)
         } else {
-            return String(format: "%.1fmi", miles)
+            return String(format: "%.0fmi", round(miles))
         }
     }
     
@@ -253,7 +253,7 @@ struct ExploreView: View {
             // 1st Featured Hero Card
             if let featured = featuredEvents.first {
                 NavigationLink(value: NavigationDestination.eventDetail(featured)) {
-                    FeaturedHeroCard(event: featured, bookmarkManager: bookmarkManager)
+                    FeaturedHeroCard(event: featured, bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 40)
                 }
@@ -287,7 +287,7 @@ struct ExploreView: View {
             // 2nd Featured Card
             if featuredEvents.count > 1 {
                 NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[1])) {
-                    FeaturedHeroCard(event: featuredEvents[1], bookmarkManager: bookmarkManager)
+                    FeaturedHeroCard(event: featuredEvents[1], bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 40)
                 }
@@ -353,13 +353,13 @@ struct ExploreView: View {
                     if featuredEvents.count > 2 {
                         // 3rd featured card (index 2)
                         NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[2])) {
-                            FeaturedHeroCard(event: featuredEvents[2], bookmarkManager: bookmarkManager)
+                            FeaturedHeroCard(event: featuredEvents[2], bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 40)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
-                    
+
                     // ✅ Genre Cards live HERE, directly under that first in-loop featured card
                     GenreCardsSection(
                         genres: displayGenres,
@@ -373,7 +373,7 @@ struct ExploreView: View {
                     let featuredIndex = 2 + (index / 2)
                     if featuredIndex < featuredEvents.count {
                         NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[featuredIndex])) {
-                            FeaturedHeroCard(event: featuredEvents[featuredIndex], bookmarkManager: bookmarkManager)
+                            FeaturedHeroCard(event: featuredEvents[featuredIndex], bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 40)
                         }

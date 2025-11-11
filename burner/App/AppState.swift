@@ -262,6 +262,9 @@ class AppState: ObservableObject {
         eventViewModel.simulateEmptyData()
         ticketsViewModel.simulateEmptyData()
         bookmarkManager.simulateEmptyData()
+
+        // Notify SearchView to clear its results
+        NotificationCenter.default.post(name: NSNotification.Name("EmptyStateEnabled"), object: nil)
     }
 
     func disableEmptyFirestoreSimulation() {
@@ -270,5 +273,8 @@ class AppState: ObservableObject {
         eventViewModel.resumeFromSimulation()
         ticketsViewModel.resumeFromSimulation()
         bookmarkManager.resumeFromSimulation()
+
+        // Notify SearchView to restore its results
+        NotificationCenter.default.post(name: NSNotification.Name("EmptyStateDisabled"), object: nil)
     }
 }

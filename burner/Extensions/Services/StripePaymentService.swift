@@ -222,11 +222,6 @@ class StripePaymentService: NSObject, ObservableObject {
         guard !isProcessing else { return }
 
         Task {
-            await MainActor.run {
-                self.isProcessing = true
-                self.errorMessage = nil
-            }
-
             do {
                 // Use prepared intent if available for this event
                 let (clientSecret, intentId): (String, String)
@@ -256,6 +251,12 @@ class StripePaymentService: NSObject, ObservableObject {
                         amount: amount,
                         onSuccess: { payment in
                             Task {
+                                // Show processing indicator only after user authorizes
+                                await MainActor.run {
+                                    self.isProcessing = true
+                                    self.errorMessage = nil
+                                }
+
                                 let apiClient = STPAPIClient.shared
                                 apiClient.createPaymentMethod(with: payment) { paymentMethod, error in
                                     Task {
@@ -330,6 +331,10 @@ class StripePaymentService: NSObject, ObservableObject {
                                     ticketId: nil
                                 ))
                             }
+                        },
+                        onCancelled: {
+                            // User dismissed the Apple Pay sheet - do nothing
+                            // Don't call completion, just silently return
                         }
                     )
                 }

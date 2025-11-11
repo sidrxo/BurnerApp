@@ -5,10 +5,9 @@ import FirebaseAuth
 struct FeaturedHeroCard: View {
     let event: Event
     @ObservedObject var bookmarkManager: BookmarkManager
+    @Binding var showingSignInAlert: Bool
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
-
-    @State private var showingSignInAlert = false
 
     private var isBookmarked: Bool {
         guard let eventId = event.id else { return false }
@@ -101,26 +100,6 @@ struct FeaturedHeroCard: View {
                     .padding(.bottom, 20)
                 }
                 .frame(width: geometry.size.width, height: 400)
-
-                // Sign In Alert
-                if showingSignInAlert {
-                    CustomAlertView(
-                        title: "Sign In Required",
-                        description: "You need to be signed in to bookmark events.",
-                        cancelAction: {
-                            showingSignInAlert = false
-                        },
-                        cancelActionTitle: "Dismiss",
-                        primaryAction: {
-                            showingSignInAlert = false
-                            coordinator.showSignIn()
-                        },
-                        primaryActionTitle: "Sign In",
-                        customContent: EmptyView()
-                    )
-                    .transition(.opacity)
-                    .zIndex(999)
-                }
             }
         }
         .frame(height: 400)
