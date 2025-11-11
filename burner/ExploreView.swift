@@ -1,5 +1,6 @@
 import SwiftUI
 import Kingfisher
+import CoreLocation
 
 struct ExploreView: View {
     @EnvironmentObject var eventViewModel: EventViewModel
@@ -7,9 +8,11 @@ struct ExploreView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
     @EnvironmentObject var tagViewModel: TagViewModel
+    @EnvironmentObject var locationService: LocationService
 
     @State private var searchText = ""
     @State private var selectedEvent: Event? = nil
+    @State private var showingLocationSheet = false
 
     // MARK: - Dynamic Genres from Firestore
     private var displayGenres: [String] {
@@ -72,7 +75,33 @@ struct ExploreView: View {
     var popularEventsPreview: [Event] {
         Array(popularEvents.prefix(5))
     }
-    
+
+    // MARK: - Nearby Events
+    var nearbyEvents: [Event] {
+        guard let userLocation = locationService.userLocation else { return [] }
+
+        return eventViewModel.events
+            .filter { event in
+                guard let startTime = event.startTime,
+                      let coordinates = event.coordinates else { return false }
+                return !event.isFeatured && startTime > Date()
+            }
+            .map { event -> (Event, Double) in
+                let eventLocation = CLLocation(
+                    latitude: event.coordinates!.latitude,
+                    longitude: event.coordinates!.longitude
+                )
+                let distance = userLocation.distance(from: eventLocation)
+                return (event, distance)
+            }
+            .sorted { $0.1 < $1.1 }
+            .map { $0.0 }
+    }
+
+    var nearbyEventsPreview: [Event] {
+        Array(nearbyEvents.prefix(5))
+    }
+
     // MARK: - Genre-Based Events
     func allEventsForGenre(_ genre: String) -> [Event] {
         eventViewModel.events
@@ -110,7 +139,26 @@ struct ExploreView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                HeaderSection(title: "Explore")
+                // Custom Header with map icon
+                HStack {
+                    Text("Explore")
+                        .font(.appFont(size: 28, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Spacer()
+
+                    Button(action: {
+                        showingLocationSheet = true
+                    }) {
+                        Image(systemName: "map.circle.fill")
+                            .font(.system(size: 32))
+                            .foregroundColor(.white)
+                            .frame(width: 40, height: 40)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 24)
 
                 if eventViewModel.isLoading && eventViewModel.events.isEmpty {
                     loadingView
@@ -124,6 +172,11 @@ struct ExploreView: View {
         .background(Color.black)
         .refreshable {
             eventViewModel.fetchEvents()
+        }
+        .sheet(isPresented: $showingLocationSheet) {
+            LocationSelectionSheet(locationService: locationService)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.hidden)
         }
         .onChange(of: coordinator.pendingDeepLink) { _, eventId in
             if let eventId = eventId {
@@ -165,7 +218,18 @@ struct ExploreView: View {
                     showViewAllButton: false
                 )
             }
-            
+
+            // Nearby Section - Only show if location is set
+            if locationService.locationData != nil && !nearbyEvents.isEmpty {
+                EventSection(
+                    title: "Nearby",
+                    events: nearbyEventsPreview,
+                    allEvents: nearbyEvents,
+                    bookmarkManager: bookmarkManager,
+                    showViewAllButton: nearbyEvents.count > 5
+                )
+            }
+
             // This Week Section - FIXED: Pass full events list
             if !thisWeekEvents.isEmpty {
                 EventSection(

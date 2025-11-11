@@ -8,6 +8,7 @@ import CoreLocation
 struct SearchView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var coordinator: NavigationCoordinator
+    @EnvironmentObject var locationService: LocationService
     @StateObject private var viewModel: SearchViewModel
 
     @State private var searchText = ""
@@ -46,19 +47,26 @@ struct SearchView: View {
         }
         .onChange(of: sortBy) { oldValue, newValue in
             if newValue == .nearby {
-                viewModel.requestLocationPermission()
-                pendingNearbySortRequest = true
+                // Use centralized location service
+                if locationService.userLocation == nil {
+                    locationService.requestLocation()
+                    pendingNearbySortRequest = true
+                } else {
+                    Task {
+                        await viewModel.changeSort(to: newValue.rawValue, searchText: searchText, userLocation: locationService.userLocation)
+                    }
+                }
             } else {
                 Task {
-                    await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
+                    await viewModel.changeSort(to: newValue.rawValue, searchText: searchText, userLocation: nil)
                 }
             }
         }
-        .onChange(of: viewModel.userLocation) { oldValue, newValue in
+        .onChange(of: locationService.userLocation) { oldValue, newValue in
             if pendingNearbySortRequest, newValue != nil {
                 pendingNearbySortRequest = false
                 Task {
-                    await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText)
+                    await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText, userLocation: newValue)
                 }
             }
         }
@@ -179,7 +187,6 @@ class SearchViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isLoadingMore = false
     @Published var errorMessage: String?
-    @Published var userLocation: CLLocation?
 
     private var hasMoreEvents = true
     private var lastDocument: Date?
@@ -189,7 +196,6 @@ class SearchViewModel: ObservableObject {
     private let eventRepository: OptimizedEventRepository
     private var searchCancellable: AnyCancellable?
     private let searchSubject = PassthroughSubject<(String, String), Never>()
-    private let locationManager = LocationManager()
 
     // ADD THIS: Constant for initial load limit
     private let initialLoadLimit = 6
@@ -198,19 +204,6 @@ class SearchViewModel: ObservableObject {
     init(eventRepository: OptimizedEventRepository) {
         self.eventRepository = eventRepository
         setupSearchDebouncing()
-        setupLocationObserver()
-    }
-
-    private func setupLocationObserver() {
-        locationManager.onLocationUpdate = { [weak self] location in
-            Task { @MainActor in
-                self?.userLocation = location
-            }
-        }
-    }
-
-    func requestLocationPermission() {
-        locationManager.requestLocation()
     }
     
     // MARK: - Setup Search Debouncing
@@ -319,9 +312,9 @@ class SearchViewModel: ObservableObject {
     }
     
     // MARK: - Change Sort
-    func changeSort(to sortBy: String, searchText: String) async {
+    func changeSort(to sortBy: String, searchText: String, userLocation: CLLocation?) async {
         if sortBy == "nearby" {
-            await sortEventsByDistance()
+            await sortEventsByDistance(userLocation: userLocation)
         } else if searchText.isEmpty {
             await loadInitialEvents(sortBy: sortBy)
         } else {
@@ -330,7 +323,7 @@ class SearchViewModel: ObservableObject {
     }
 
     // MARK: - Sort Events by Distance
-    private func sortEventsByDistance() async {
+    private func sortEventsByDistance(userLocation: CLLocation?) async {
         print("SearchViewModel: sortEventsByDistance called")
         guard let userLocation = userLocation else {
             print("SearchViewModel: No user location available")
@@ -515,57 +508,6 @@ struct EmptyEventsView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, minHeight: 300)
-    }
-}
-
-// MARK: - Location Manager
-class LocationManager: NSObject, CLLocationManagerDelegate {
-    private let manager = CLLocationManager()
-    var onLocationUpdate: ((CLLocation) -> Void)?
-
-    override init() {
-        super.init()
-        manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyBest
-    }
-
-    func requestLocation() {
-        print("LocationManager: Requesting location, current status: \(manager.authorizationStatus.rawValue)")
-
-        let status = manager.authorizationStatus
-
-        switch status {
-        case .notDetermined:
-            print("LocationManager: Requesting authorization")
-            manager.requestWhenInUseAuthorization()
-            // Don't call requestLocation here - wait for authorization callback
-        case .authorizedWhenInUse, .authorizedAlways:
-            print("LocationManager: Already authorized, requesting location")
-            manager.requestLocation()
-        case .denied, .restricted:
-            print("LocationManager: Location access denied or restricted")
-        @unknown default:
-            break
-        }
-    }
-
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let location = locations.last else { return }
-        print("LocationManager: Got location: \(location.coordinate.latitude), \(location.coordinate.longitude)")
-        onLocationUpdate?(location)
-    }
-
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("LocationManager: Error: \(error.localizedDescription)")
-    }
-
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        print("LocationManager: Authorization changed to: \(manager.authorizationStatus.rawValue)")
-        if manager.authorizationStatus == .authorizedWhenInUse ||
-           manager.authorizationStatus == .authorizedAlways {
-            print("LocationManager: Now authorized, requesting location")
-            manager.requestLocation()
-        }
     }
 }
 

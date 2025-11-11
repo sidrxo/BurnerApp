@@ -21,8 +21,13 @@ struct SignInSheetView: View {
     // Passwordless auth navigation
     @State private var showingPasswordlessAuth = false
 
+    // Burner Mode Setup navigation
+    @State private var showingBurnerSetup = false
+
     // Random background image
     @State private var selectedBackground: String = "Background1"
+
+    @EnvironmentObject var appState: AppState
 
     var body: some View {
         NavigationStack {
@@ -121,6 +126,11 @@ struct SignInSheetView: View {
         }
             .fullScreenCover(isPresented: $showingPasswordlessAuth) {
                 PasswordlessAuthView(showingSignIn: $showingSignIn)
+            }
+            .fullScreenCover(isPresented: $showingBurnerSetup) {
+                BurnerModeSetupView(burnerManager: appState.burnerManager, onSkip: {
+                    showingBurnerSetup = false
+                })
             }
             .onAppear {
                 selectRandomBackground()
@@ -495,11 +505,22 @@ struct SignInSheetView: View {
             withAnimation {
                 isLoading = false
             }
-            
+
             triggerSuccessFeedback()
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
-            
-            showingSignIn = false
+
+            // Check if burner mode needs setup
+            let needsBurnerSetup = !appState.burnerManager.isSetup || !appState.burnerManager.isAuthorized
+
+            if needsBurnerSetup {
+                // Show burner mode setup
+                showingSignIn = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    showingBurnerSetup = true
+                }
+            } else {
+                showingSignIn = false
+            }
         }
     }
     

@@ -69,6 +69,7 @@ struct BurnerApp: App {
     @StateObject private var appState = AppState()
     @State private var shouldResetApp = false
     @State private var showingVideoSplash = true
+    @State private var showingLocationPrompt = false
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -87,12 +88,14 @@ struct BurnerApp: App {
                     .environmentObject(appState.ticketsViewModel)
                     .environmentObject(appState.tagViewModel)
                     .environmentObject(appState.authService)
+                    .environmentObject(appState.locationService)
                     .onOpenURL { url in
                         handleIncomingURL(url)
                     }
                     .onAppear {
                         appState.loadInitialData()
                         setupResetObserver()
+                        showLocationPromptIfNeeded()
                     }
                     .id(shouldResetApp)
                     .tint(.white)
@@ -128,10 +131,25 @@ struct BurnerApp: App {
                     .zIndex(2000)
                 }
             }
+            .sheet(isPresented: $showingLocationPrompt) {
+                LocationSelectionSheet(locationService: appState.locationService)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.hidden)
+            }
             .animation(.easeInOut(duration: 0.3), value: appState.showingBurnerLockScreen)
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             configureGlobalAppearance()
+        }
+    }
+
+    // MARK: - Location Prompt
+    private func showLocationPromptIfNeeded() {
+        // Show location prompt after splash video and only if not seen before
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+            if !appState.locationService.hasSeenLocationPrompt {
+                showingLocationPrompt = true
+            }
         }
     }
 
