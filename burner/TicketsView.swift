@@ -106,11 +106,11 @@ struct TicketsView: View {
     private var emptyStateView: some View {
         GeometryReader { geometry in
             VStack(spacing: 20) {
-                Image("transparent")
+                Image("ticket")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 180)
-                    .clipShape(Circle())
+                    .frame(width: 140)
+                    .padding(.bottom, 30)
                 VStack(spacing: 8) {
                     Text("MEET ME IN THE MOMENT")
                         .appSectionHeader()

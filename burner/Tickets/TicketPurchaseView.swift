@@ -1,10 +1,10 @@
+// TicketPurchaseView.swift
+
 import SwiftUI
 import Kingfisher
 import FirebaseAuth
 import PassKit
 @_spi(STP) import StripePaymentSheet
-
-
 
 struct TicketPurchaseView: View {
     let event: Event
@@ -36,45 +36,115 @@ struct TicketPurchaseView: View {
         NavigationStack {
             ZStack {
                 Color.black.ignoresSafeArea()
-
+                
                 VStack(spacing: 0) {
-                    // Header with event info
+                    // Header
                     eventHeader
                     
                     Divider()
                         .background(Color.gray.opacity(0.3))
                     
-                    // Main content based on step
-                    ScrollView {
-                        VStack(spacing: 20) {
-                            // Price summary
-                            priceSummary
-                            
-                            Divider()
-                                .background(Color.gray.opacity(0.3))
-                                .padding(.horizontal, 20)
-                            
-                            // Content based on current step
-                            Group {
-                                switch currentStep {
-                                case .paymentMethod:
-                                    paymentMethodSelection
-                                case .cardInput:
-                                    cardInputSection
-                                case .savedCards:
-                                    savedCardsSection
+                    Group {
+                        if currentStep == .paymentMethod {
+                            VStack(spacing: 20) {
+                                // Price summary
+                                priceSummary
+                                
+                                Divider()
+                                    .background(Color.gray.opacity(0.3))
+                                    .padding(.horizontal, 20)
+                                
+                                Spacer(minLength: 0)
+                                
+                                // ✅ Buttons section
+                                VStack(spacing: 12) {
+                                    if ApplePayHandler.canMakePayments() {
+                                        Button(action: {
+                                            handleApplePayPayment()
+                                        }) {
+                                            HStack(spacing: 6) {
+                                                Text("Buy with")
+                                                Image(systemName: "applelogo")
+                                                    .font(.system(size: 24, weight: .semibold))
+                                                    .baselineOffset(-1)
+                                            }
+                                            .appSectionHeader()
+                                            .foregroundColor(.white)
+                                            .frame(maxWidth: .infinity, minHeight: 50)
+                                            .background(Color.black)
+                                            .clipShape(Capsule())
+                                            .overlay(
+                                                Capsule()
+                                                    .stroke(Color.white, lineWidth: 2)
+                                            )
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                        .accessibilityLabel("Buy with Apple Pay")
+                                    }
+                                    
+                                    Button(action: {
+                                        withAnimation {
+                                            if !paymentService.paymentMethods.isEmpty {
+                                                currentStep = .savedCards
+                                            } else {
+                                                currentStep = .cardInput
+                                            }
+                                        }
+                                    }) {
+                                        HStack(spacing: 6) {
+                                            Text("Buy with")
+                                            Image(systemName: "creditcard.fill")
+                                        }
+                                        .appSectionHeader()
+                                        .foregroundColor(.black)
+                                        .frame(maxWidth: .infinity, minHeight: 50)
+                                        .background(Color.white)
+                                        .clipShape(Capsule())
+                                        .overlay(
+                                            Capsule()
+                                                .stroke(Color.white, lineWidth: 2)
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
+                                .padding(.horizontal, 20)
+                                
+                                // Terms
+                                Text("By continuing, you agree to our\nTerms of Service and Privacy Policy.")
+                                    .appCaption()
+                                    .foregroundColor(.gray)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 8)
+                                    .padding(.bottom, 20)
                             }
-                            .animation(.easeInOut(duration: 0.3), value: currentStep)
+                            .padding(.vertical, 20)
+                            .frame(maxHeight: .infinity, alignment: .top)
+                        } else {
+                            ScrollView {
+                                VStack(spacing: 20) {
+                                    priceSummary
+                                    
+                                    Divider()
+                                        .background(Color.gray.opacity(0.3))
+                                        .padding(.horizontal, 20)
+                                    
+                                    Group {
+                                        switch currentStep {
+                                        case .paymentMethod:
+                                            EmptyView()
+                                        case .cardInput:
+                                            cardInputSection
+                                        case .savedCards:
+                                            savedCardsSection
+                                        }
+                                    }
+                                    .animation(.easeInOut(duration: 0.3), value: currentStep)
+                                }
+                                .padding(.vertical, 20)
+                                .padding(.bottom, 20)
+                            }
                         }
-                        .padding(.vertical, 20)
-                    }
-                    
-                    // Bottom action button
-                    if !paymentService.isProcessing {
-                        bottomActionButton
-                    } else {
-                        processingView
                     }
                 }
                 
@@ -125,32 +195,25 @@ struct TicketPurchaseView: View {
             }
         }
         .onAppear {
-            // ✅ OPTIMIZATION: Pre-create payment intent and fetch payment methods in parallel
             Task {
-                async let paymentMethods: Void = paymentService.fetchPaymentMethods()
-                async let paymentPrep: Void = preparePaymentIntent()
-                
-                // Wait for both to complete
-                _ = try? await [paymentMethods, paymentPrep]
+                // Run these in parallel and await both
+                async let methodsResult: Void? = try? paymentService.fetchPaymentMethods()
+                async let prepResult: Void = preparePaymentIntent()
+                _ = await (methodsResult, prepResult)
             }
         }
     }
     
-    // ✅ NEW: Pre-create payment intent when view appears
     private func preparePaymentIntent() async {
         guard let eventId = event.id else { return }
         guard Auth.auth().currentUser != nil else { return }
-        
-        // Only prepare for Apple Pay users (to avoid unnecessary API calls)
         guard ApplePayHandler.canMakePayments() else { return }
-        
-        await paymentService.preparePayment(eventId: eventId)
+        // `preparePayment` is not async; don't await it.
+        paymentService.preparePayment(eventId: eventId)
     }
     
-    // MARK: - Event Header
     private var eventHeader: some View {
         HStack(spacing: 12) {
-            // Event image
             KFImage(URL(string: event.imageUrl))
                 .placeholder {
                     Rectangle()
@@ -173,17 +236,15 @@ struct TicketPurchaseView: View {
                     .lineLimit(2)
                 
                 Text(event.venue)
-                    .appCaption()
+                    .appBody()
                     .foregroundColor(.gray)
                     .lineLimit(1)
             }
-            
             Spacer()
         }
         .padding(16)
     }
     
-    // MARK: - Price Summary
     private var priceSummary: some View {
         HStack {
             Text("Total")
@@ -200,77 +261,6 @@ struct TicketPurchaseView: View {
         .padding(.horizontal, 20)
     }
     
-    // MARK: - Payment Method Selection
-    private var paymentMethodSelection: some View {
-        VStack(spacing: 16) {
-            Text("Choose Payment Method")
-                .appBody()
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-
-            // Apple Pay Button - Native style
-            if ApplePayHandler.canMakePayments() {
-                Button(action: handleApplePayPayment) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "applelogo")
-                            .appCard()
-                        Text("Pay")
-                            .appCard()
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
-                    )
-                }
-                // Remove the .disabled and .opacity modifiers
-                .padding(.horizontal, 20)
-            }
-
-            // Pay with Card Button - Same style as Apple Pay
-            Button(action: {
-                withAnimation {
-                    if !paymentService.paymentMethods.isEmpty {
-                        currentStep = .savedCards
-                    } else {
-                        currentStep = .cardInput
-                    }
-                }
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "creditcard.fill")
-                        .appCard()
-                    Text("Pay with Card")
-                        .appCard()
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(Color.black)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
-                )
-            }
-            .padding(.horizontal, 20)
-            
-            // Terms text
-            Text("By continuing, you agree to our Terms of Service and Privacy Policy")
-                .appCaption()
-                .foregroundColor(.gray)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-        }
-    }
-    
-    // MARK: - Card Input Section
     private var cardInputSection: some View {
         VStack(spacing: 16) {
             Text("Enter Card Details")
@@ -288,12 +278,11 @@ struct TicketPurchaseView: View {
         }
     }
     
-    // MARK: - Saved Cards Section
     private var savedCardsSection: some View {
         VStack(spacing: 16) {
             HStack {
                 Text("Select Payment Method")
-                    .appBody()
+                    .appCard()
                     .foregroundColor(.white)
                 
                 Spacer()
@@ -304,8 +293,8 @@ struct TicketPurchaseView: View {
                     }
                 }) {
                     Text("Add New")
-                        .appCaption()
-                        .foregroundColor(.blue)
+                        .appBody()
+                        .foregroundColor(.white)
                 }
             }
             .padding(.horizontal, 20)
@@ -318,7 +307,6 @@ struct TicketPurchaseView: View {
                         }
                     }) {
                         HStack(spacing: 12) {
-                            // Card brand icon
                             ZStack {
                                 RoundedRectangle(cornerRadius: 6)
                                     .fill(Color.white.opacity(0.1))
@@ -360,7 +348,7 @@ struct TicketPurchaseView: View {
                                             .clipShape(RoundedRectangle(cornerRadius: 3))
                                     }
                                 }
-
+                                
                                 Text("•••• \(method.last4)")
                                     .appBody()
                                     .foregroundColor(.white)
@@ -401,82 +389,6 @@ struct TicketPurchaseView: View {
         }
     }
     
-    // MARK: - Bottom Action Button
-    private var bottomActionButton: some View {
-        VStack(spacing: 0) {
-            Divider()
-                .background(Color.gray.opacity(0.3))
-            
-            Button(action: handlePrimaryAction) {
-                Text(primaryActionTitle)
-                    .appBody()
-                    .foregroundColor(isPrimaryActionEnabled ? .black : .white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(isPrimaryActionEnabled ? Color.white : Color.gray.opacity(0.3))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .disabled(!isPrimaryActionEnabled)
-            .padding(20)
-        }
-        .background(Color.black)
-    }
-    
-    // MARK: - Processing View
-    private var processingView: some View {
-        VStack(spacing: 0) {
-            Divider()
-                .background(Color.gray.opacity(0.3))
-            
-            HStack(spacing: 12) {
-                ProgressView()
-                    .tint(.white)
-                Text("Processing Payment...")
-                    .appBody()
-                    .foregroundColor(.white)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .padding(20)
-        }
-        .background(Color.black)
-    }
-    
-    // MARK: - Computed Properties
-    private var primaryActionTitle: String {
-        switch currentStep {
-        case .paymentMethod:
-            return "Select Payment Method"
-        case .cardInput:
-            return isCardValid ? "Pay £\(String(format: "%.2f", event.price))" : "Enter Card Details"
-        case .savedCards:
-            return selectedSavedCard != nil ? "Pay £\(String(format: "%.2f", event.price))" : "Select a Card"
-        }
-    }
-    
-    private var isPrimaryActionEnabled: Bool {
-        switch currentStep {
-        case .paymentMethod:
-            return false
-        case .cardInput:
-            return isCardValid
-        case .savedCards:
-            return selectedSavedCard != nil
-        }
-    }
-    
-    private func handlePrimaryAction() {
-        switch currentStep {
-        case .paymentMethod:
-            break
-        case .cardInput:
-            handleCardPayment()
-        case .savedCards:
-            handleSavedCardPayment()
-        }
-    }
-    
-    // MARK: - Payment Handlers
     private func handleApplePayPayment() {
         guard let eventId = event.id else {
             alertMessage = "Invalid event"
@@ -484,43 +396,26 @@ struct TicketPurchaseView: View {
             showingAlert = true
             return
         }
-
+        
         guard Auth.auth().currentUser != nil else {
             alertMessage = "Please log in to purchase a ticket"
             isSuccess = false
             showingAlert = true
             return
         }
-
+        
         guard ApplePayHandler.canMakePayments() else {
             alertMessage = "Apple Pay is not available on this device"
             isSuccess = false
             showingAlert = true
             return
         }
-
-        #if DEBUG
-        let trace = PaymentTrace(
-            name: "ApplePay",
-            context: [
-                "eventId": eventId,
-                "price": String(format: "%.2f", event.price)
-            ]
-        )
-        trace.mark("button.tapped", extra: "mainThread=\(Thread.isMainThread)")
-        #else
-        let trace: PaymentTrace? = nil
-        #endif
-
+        
         paymentService.processApplePayPayment(
             eventName: event.name,
             amount: event.price,
             eventId: eventId,
-            trace: trace
         ) { result in
-            #if DEBUG
-            trace.finish(success: result.success, message: result.message)
-            #endif
             DispatchQueue.main.async {
                 self.alertMessage = result.message
                 self.isSuccess = result.success
@@ -531,19 +426,19 @@ struct TicketPurchaseView: View {
             }
         }
     }
-
+    
     private func handleCardPayment() {
         guard let eventId = event.id,
               let cardParams = cardParams,
               isCardValid else { return }
-
+        
         guard Auth.auth().currentUser != nil else {
             alertMessage = "Please log in to purchase a ticket"
             isSuccess = false
             showingAlert = true
             return
         }
-
+        
         paymentService.processCardPayment(
             cardParams: cardParams,
             eventName: event.name,
@@ -564,14 +459,14 @@ struct TicketPurchaseView: View {
     private func handleSavedCardPayment() {
         guard let eventId = event.id,
               let savedCard = selectedSavedCard else { return }
-
+        
         guard Auth.auth().currentUser != nil else {
             alertMessage = "Please log in to purchase a ticket"
             isSuccess = false
             showingAlert = true
             return
         }
-
+        
         paymentService.processSavedCardPayment(
             paymentMethodId: savedCard.id,
             eventName: event.name,

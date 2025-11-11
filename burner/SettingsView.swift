@@ -181,11 +181,12 @@ struct SettingsView: View {
     private var notSignedInSection: some View {
         GeometryReader { geometry in
             VStack(spacing: 20) {
-                Image("transparent")
+                Image("user")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 180)
-                    .clipShape(Circle())
+                    .frame(width: 120)
+                    .padding(.bottom, 30)
+
                 VStack(spacing: 8) {
                     Text("WHERE WILL YOU GO")
                         .appSectionHeader()

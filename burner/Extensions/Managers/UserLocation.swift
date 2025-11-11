@@ -69,7 +69,6 @@ class UserLocationManager: NSObject, ObservableObject {
         // Check if we have a recent cached location
         if let cachedLocation = locationManager.location {
             let age = Date().timeIntervalSince(cachedLocation.timestamp)
-            
             // If cached location is less than 5 minutes old, use it immediately
             if age < 300 {
                 handleLocationUpdate(cachedLocation)
@@ -92,7 +91,6 @@ class UserLocationManager: NSObject, ObservableObject {
     // MARK: - Handle Location Update
     private func handleLocationUpdate(_ location: CLLocation) {
         guard !hasCalledCompletion else { return }
-        
         hasCalledCompletion = true
         
         // Save immediately with "Current Location" as placeholder
@@ -105,20 +103,24 @@ class UserLocationManager: NSObject, ObservableObject {
         
         saveLocation(immediateLocation)
         
-        // Add UX delay for smooth feedback
-        DispatchQueue.main.asyncAfter(deadline: .now() + uxDelay) { [weak self] in
-            guard let self = self else { return }
-            self.locationCompletion?(.success(immediateLocation))
-            self.locationCompletion = nil
+        // Capture delay before crossing concurrency boundary
+        let delay = uxDelay
+        let completionHandler = locationCompletion
+        // Clear stored completion so we don't retain it longer than needed
+        locationCompletion = nil
+        
+        // Add UX delay for smooth feedback using Swift concurrency
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            completionHandler?(.success(immediateLocation))
         }
         
         // Reverse geocode in background to get city name
-        geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, error in
-            guard let self = self else { return }
-            
+        geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, _ in
+            guard let self else { return }
             let cityName = placemarks?.first?.locality ??
-                          placemarks?.first?.name ??
-                          "Current Location"
+                           placemarks?.first?.name ??
+                           "Current Location"
             
             let updatedLocation = UserLocation(
                 latitude: location.coordinate.latitude,
@@ -136,7 +138,7 @@ class UserLocationManager: NSObject, ObservableObject {
     // MARK: - Geocode City
     func geocodeCity(_ cityName: String, completion: @escaping (Result<UserLocation, Error>) -> Void) {
         geocoder.geocodeAddressString(cityName) { [weak self] placemarks, error in
-            if let error = error {
+            if let error {
                 completion(.failure(error))
                 return
             }
@@ -147,21 +149,23 @@ class UserLocationManager: NSObject, ObservableObject {
                 return
             }
             
-            let cityName = placemark.locality ?? placemark.name ?? cityName
-            
+            let resolvedName = placemark.locality ?? placemark.name ?? cityName
             let userLocation = UserLocation(
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude,
-                name: cityName,
+                name: resolvedName,
                 timestamp: Date()
             )
             
+            // Capture needed values before hopping across concurrency boundaries
+            let delay = self?.uxDelay ?? 0.6
+            
             Task { @MainActor in
-                // Add UX delay for manual entry
-                DispatchQueue.main.asyncAfter(deadline: .now() + (self?.uxDelay ?? 0.6)) {
-                    self?.saveLocation(userLocation)
-                    completion(.success(userLocation))
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                if let self {
+                    self.saveLocation(userLocation)
                 }
+                completion(.success(userLocation))
             }
         }
     }
@@ -188,7 +192,6 @@ class UserLocationManager: NSObject, ObservableObject {
 extension UserLocationManager: CLLocationManagerDelegate {
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
-        
         Task { @MainActor in
             self.handleLocationUpdate(location)
         }
@@ -196,19 +199,23 @@ extension UserLocationManager: CLLocationManagerDelegate {
     
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor in
-            locationCompletion?(.failure(error))
-            locationCompletion = nil
+            let completion = self.locationCompletion
+            self.locationCompletion = nil
+            completion?(.failure(error))
         }
     }
     
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         Task { @MainActor in
-            if manager.authorizationStatus == .authorizedWhenInUse ||
-               manager.authorizationStatus == .authorizedAlways {
+            switch manager.authorizationStatus {
+            case .authorizedWhenInUse, .authorizedAlways:
                 manager.requestLocation()
-            } else if manager.authorizationStatus == .denied {
-                locationCompletion?(.failure(LocationError.accessDenied))
-                locationCompletion = nil
+            case .denied:
+                let completion = self.locationCompletion
+                self.locationCompletion = nil
+                completion?(.failure(LocationError.accessDenied))
+            default:
+                break
             }
         }
     }

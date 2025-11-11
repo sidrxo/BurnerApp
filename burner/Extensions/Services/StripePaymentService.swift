@@ -1,3 +1,5 @@
+// StripePaymentService.swift
+
 import Foundation
 import FirebaseAuth
 import FirebaseFunctions
@@ -8,7 +10,6 @@ import Combine
 import UIKit
 import PassKit
 
-
 @MainActor
 class StripePaymentService: NSObject, ObservableObject {
     @Published var isProcessing = false
@@ -18,7 +19,7 @@ class StripePaymentService: NSObject, ObservableObject {
     @Published var isPaymentSheetReady = false
     @Published var paymentMethods: [PaymentMethodInfo] = []
     
-    // ✅ NEW: Payment Intent Pre-creation Properties
+    // ✅ Payment Intent Pre-creation Properties
     @Published var isPreparing = false
     private var preparedClientSecret: String?
     private var preparedIntentId: String?
@@ -46,76 +47,47 @@ class StripePaymentService: NSObject, ObservableObject {
         super.init()
         // TODO: Move this to an env/remote-config before production.
         StripeAPI.defaultPublishableKey = "pk_test_51SKOqrFxXnVDuRLXw30ABLXPF9QyorMesOCHN9sMbRAIokEIL8gptsxxX4APRJSO0b8SRGvyAUBNzBZqCCgOSvVI00fxiHOZNe"
-
-        if StripeAPI.defaultPublishableKey == "PK_TEST" {
-            print("⚠️ WARNING: Stripe publishable key not set! Get it from https://dashboard.stripe.com/test/apikeys")
-        }
     }
     
     // -------------------------
-    // ✅ NEW: Payment Intent Pre-creation
+    // Payment Intent Pre-creation
     // -------------------------
-    
-    /// Pre-creates a payment intent in the background to improve Apple Pay UX
-    /// This should be called when the purchase view appears, not when the button is tapped
+    /// Pre-creates a payment intent in the background to improve Apple Pay UX.
+    /// Call this when the purchase view appears.
     func preparePayment(eventId: String) {
-        // Don't prepare if already preparing or if we have a prepared intent for this event
-        guard !isPreparing else {
-            print("⚠️ Already preparing payment, skipping")
-            return
-        }
+        guard !isPreparing else { return }
+        if preparedEventId == eventId, preparedIntentId != nil { return }
         
-        // If we already have a prepared intent for this event, don't create another
-        if preparedEventId == eventId, preparedIntentId != nil {
-            print("✅ Payment intent already prepared for event: \(eventId)")
-            return
-        }
-        
-        // Cancel any existing preparation task
         preparationTask?.cancel()
         
-        // Start new preparation
         preparationTask = Task {
             await MainActor.run { self.isPreparing = true }
-            
             do {
-                print("🔵 Pre-creating payment intent for event: \(eventId)")
                 let (clientSecret, intentId) = try await createPaymentIntent(eventId: eventId)
-                
-                // Only save if we weren't cancelled
                 guard !Task.isCancelled else {
-                    print("⚠️ Payment preparation cancelled")
                     await MainActor.run { self.isPreparing = false }
                     return
                 }
-                
                 await MainActor.run {
                     self.preparedClientSecret = clientSecret
                     self.preparedIntentId = intentId
                     self.preparedEventId = eventId
                     self.isPreparing = false
                 }
-                
-                print("✅ Payment intent pre-created successfully: \(intentId)")
-                
-                // Schedule cleanup after 10 minutes (payment intents expire after 24h, but we refresh earlier)
+                // Cleanup after ~10 minutes
                 Task {
-                    try? await Task.sleep(nanoseconds: 10 * 60 * 1_000_000_000) // 10 minutes
+                    try? await Task.sleep(nanoseconds: 10 * 60 * 1_000_000_000)
                     await self.clearPreparedIntent(ifMatching: intentId)
                 }
-                
             } catch {
-                print("⚠️ Failed to pre-create payment intent: \(error.localizedDescription)")
                 await MainActor.run { self.isPreparing = false }
             }
         }
     }
     
-    /// Clears the prepared payment intent if it matches the given ID
     private func clearPreparedIntent(ifMatching intentId: String) async {
         await MainActor.run {
             if self.preparedIntentId == intentId {
-                print("🧹 Clearing expired prepared payment intent: \(intentId)")
                 self.preparedClientSecret = nil
                 self.preparedIntentId = nil
                 self.preparedEventId = nil
@@ -123,7 +95,6 @@ class StripePaymentService: NSObject, ObservableObject {
         }
     }
     
-    /// Clears any prepared payment intent (call this when leaving the purchase screen)
     func clearPreparedIntent() {
         preparationTask?.cancel()
         preparedClientSecret = nil
@@ -136,10 +107,7 @@ class StripePaymentService: NSObject, ObservableObject {
     // Process Payment with Payment Sheet
     // -------------------------
     func processPayment(eventName: String, amount: Double, eventId: String, completion: @escaping (PaymentResult) -> Void) {
-        guard !isProcessing else {
-            print("⚠️ Payment already in progress, ignoring duplicate call")
-            return
-        }
+        guard !isProcessing else { return }
         
         Task {
             await MainActor.run {
@@ -148,13 +116,8 @@ class StripePaymentService: NSObject, ObservableObject {
             }
             
             do {
-                print("🔵 Creating payment intent for event: \(eventId)")
                 let (clientSecret, intentId) = try await createPaymentIntent(eventId: eventId)
-                print("✅ Payment intent created: \(intentId)")
-                
-                await MainActor.run {
-                    self.currentPaymentIntentId = intentId
-                }
+                await MainActor.run { self.currentPaymentIntentId = intentId }
                 
                 var configuration = PaymentSheet.Configuration()
                 configuration.merchantDisplayName = "Burner"
@@ -179,22 +142,16 @@ class StripePaymentService: NSObject, ObservableObject {
                 }
                 
             } catch let error as NSError {
-                if error.domain == "FIRFunctionsErrorDomain" {
-                    let msg = (error.userInfo["details"] as? String) ?? error.localizedDescription
-                    await MainActor.run {
-                        self.isProcessing = false
-                        self.isPaymentSheetReady = false
-                        self.errorMessage = msg
-                        completion(PaymentResult(success: false, message: msg, ticketId: nil))
-                    }
-                } else {
-                    await MainActor.run {
-                        self.isProcessing = false
-                        self.isPaymentSheetReady = false
-                        self.errorMessage = error.localizedDescription
-                        completion(PaymentResult(success: false, message: "Setup failed: \(error.localizedDescription)", ticketId: nil))
-                    }
+                let msg: String = (error.domain == "FIRFunctionsErrorDomain")
+                ? ((error.userInfo["details"] as? String) ?? error.localizedDescription)
+                : error.localizedDescription
+                
+                await MainActor.run {
+                    self.isProcessing = false
+                    self.isPaymentSheetReady = false
+                    self.errorMessage = msg
                 }
+                completion(PaymentResult(success: false, message: "Setup failed: \(msg)", ticketId: nil))
             }
         }
     }
@@ -217,7 +174,6 @@ class StripePaymentService: NSObject, ObservableObject {
             } catch {
                 completion(PaymentResult(success: false, message: error.localizedDescription, ticketId: nil))
             }
-            
             await MainActor.run {
                 self.isPaymentSheetReady = false
             }
@@ -231,18 +187,13 @@ class StripePaymentService: NSObject, ObservableObject {
         guard Auth.auth().currentUser != nil else {
             throw PaymentError.notAuthenticated
         }
-        
-        do {
-            let result = try await functions.httpsCallable("createPaymentIntent").call(["eventId": eventId])
-            guard let data = result.data as? [String: Any],
-                  let clientSecret = data["clientSecret"] as? String,
-                  let paymentIntentId = data["paymentIntentId"] as? String else {
-                throw PaymentError.invalidResponse
-            }
-            return (clientSecret, paymentIntentId)
-        } catch {
-            throw error
+        let result = try await functions.httpsCallable("createPaymentIntent").call(["eventId": eventId])
+        guard let data = result.data as? [String: Any],
+              let clientSecret = data["clientSecret"] as? String,
+              let paymentIntentId = data["paymentIntentId"] as? String else {
+            throw PaymentError.invalidResponse
         }
+        return (clientSecret, paymentIntentId)
     }
 
     // -------------------------
@@ -260,20 +211,15 @@ class StripePaymentService: NSObject, ObservableObject {
     }
 
     // -------------------------
-    // ✅ UPDATED: Process Apple Pay Payment (Custom Flow) — now with pre-creation support
+    // Process Apple Pay Payment (Custom Flow) — uses pre-creation if available
     // -------------------------
     func processApplePayPayment(
         eventName: String,
         amount: Double,
         eventId: String,
-        trace: PaymentTrace? = nil,
         completion: @escaping (PaymentResult) -> Void
     ) {
-        guard !isProcessing else {
-            trace?.mark("blocked.isProcessing")
-            print("⚠️ Payment already in progress, ignoring duplicate call")
-            return
-        }
+        guard !isProcessing else { return }
 
         Task {
             await MainActor.run {
@@ -282,54 +228,38 @@ class StripePaymentService: NSObject, ObservableObject {
             }
 
             do {
-                // ✅ OPTIMIZATION: Use prepared intent if available for this event
+                // Use prepared intent if available for this event
                 let (clientSecret, intentId): (String, String)
-                
                 if let prepared = preparedIntentId,
                    let secret = preparedClientSecret,
                    preparedEventId == eventId {
-                    // Use the pre-created payment intent
-                    print("✅ Using pre-created payment intent: \(prepared)")
-                    trace?.mark("using.preparedIntent", extra: "intentId=\(prepared)")
                     clientSecret = secret
                     intentId = prepared
-                    
-                    // Clear the prepared state immediately so it's not reused
                     await MainActor.run {
                         self.preparedClientSecret = nil
                         self.preparedIntentId = nil
                         self.preparedEventId = nil
                     }
                 } else {
-                    // Fallback: create payment intent on demand
-                    print("⚠️ No prepared intent available, creating on demand")
-                    trace?.mark("createPaymentIntent.begin")
                     let result = try await createPaymentIntent(eventId: eventId)
                     clientSecret = result.0
                     intentId = result.1
-                    trace?.mark("createPaymentIntent.end", extra: "intentId=\(intentId)")
                 }
 
                 await MainActor.run {
                     self.currentPaymentIntentId = intentId
                 }
 
-                trace?.mark("ApplePayHandler.start")
                 await MainActor.run {
                     ApplePayHandler.shared.startPayment(
                         eventName: eventName,
                         amount: amount,
                         onSuccess: { payment in
-                            trace?.mark("applePay.authorized")
-
                             Task {
                                 let apiClient = STPAPIClient.shared
-
-                                trace?.mark("createPaymentMethod.begin")
                                 apiClient.createPaymentMethod(with: payment) { paymentMethod, error in
                                     Task {
                                         if let error = error {
-                                            trace?.mark("createPaymentMethod.error", extra: error.localizedDescription)
                                             await MainActor.run { self.isProcessing = false }
                                             completion(PaymentResult(
                                                 success: false,
@@ -340,7 +270,6 @@ class StripePaymentService: NSObject, ObservableObject {
                                         }
 
                                         guard let paymentMethod = paymentMethod else {
-                                            trace?.mark("createPaymentMethod.nil")
                                             await MainActor.run { self.isProcessing = false }
                                             completion(PaymentResult(
                                                 success: false,
@@ -349,17 +278,13 @@ class StripePaymentService: NSObject, ObservableObject {
                                             ))
                                             return
                                         }
-                                        trace?.mark("createPaymentMethod.end", extra: "pm=\(paymentMethod.stripeId)")
 
-                                        // Confirm the payment intent
                                         let paymentIntentParams = STPPaymentIntentParams(clientSecret: clientSecret)
                                         paymentIntentParams.paymentMethodId = paymentMethod.stripeId
 
-                                        trace?.mark("confirmPaymentIntent.begin")
                                         apiClient.confirmPaymentIntent(with: paymentIntentParams) { confirmResult, confirmError in
                                             Task {
                                                 if let confirmError = confirmError {
-                                                    trace?.mark("confirmPaymentIntent.error", extra: confirmError.localizedDescription)
                                                     await MainActor.run { self.isProcessing = false }
                                                     completion(PaymentResult(
                                                         success: false,
@@ -370,16 +295,11 @@ class StripePaymentService: NSObject, ObservableObject {
                                                 }
 
                                                 if let paymentIntent = confirmResult, paymentIntent.status == .succeeded {
-                                                    trace?.mark("confirmPaymentIntent.succeeded")
-                                                    // Create ticket on backend
                                                     do {
-                                                        trace?.mark("confirmPurchase.begin")
                                                         let ticketResult = try await self.confirmPurchase(paymentIntentId: intentId)
-                                                        trace?.mark("confirmPurchase.end", extra: "success=\(ticketResult.success) ticketId=\(ticketResult.ticketId ?? "nil")")
                                                         await MainActor.run { self.isProcessing = false }
                                                         completion(ticketResult)
                                                     } catch {
-                                                        trace?.mark("confirmPurchase.error", extra: error.localizedDescription)
                                                         await MainActor.run { self.isProcessing = false }
                                                         completion(PaymentResult(
                                                             success: false,
@@ -388,7 +308,6 @@ class StripePaymentService: NSObject, ObservableObject {
                                                         ))
                                                     }
                                                 } else {
-                                                    trace?.mark("confirmPaymentIntent.notSucceeded", extra: "status=\(String(confirmResult?.status.rawValue ?? -1))")
                                                     await MainActor.run { self.isProcessing = false }
                                                     completion(PaymentResult(
                                                         success: false,
@@ -403,7 +322,6 @@ class StripePaymentService: NSObject, ObservableObject {
                             }
                         },
                         onFailure: { error in
-                            trace?.mark("applePay.failed", extra: error.localizedDescription)
                             Task {
                                 await MainActor.run { self.isProcessing = false }
                                 completion(PaymentResult(
@@ -417,13 +335,9 @@ class StripePaymentService: NSObject, ObservableObject {
                 }
 
             } catch let error as NSError {
-                trace?.mark("setup.error", extra: error.localizedDescription)
-                let errorMessage: String
-                if error.domain == "FIRFunctionsErrorDomain" {
-                    errorMessage = (error.userInfo["details"] as? String) ?? error.localizedDescription
-                } else {
-                    errorMessage = error.localizedDescription
-                }
+                let errorMessage: String = (error.domain == "FIRFunctionsErrorDomain")
+                ? ((error.userInfo["details"] as? String) ?? error.localizedDescription)
+                : error.localizedDescription
 
                 await MainActor.run {
                     self.isProcessing = false
@@ -438,10 +352,7 @@ class StripePaymentService: NSObject, ObservableObject {
     // Process Card Payment
     // -------------------------
     func processCardPayment(cardParams: STPPaymentMethodCardParams, eventName: String, amount: Double, eventId: String, completion: @escaping (PaymentResult) -> Void) {
-        guard !isProcessing else {
-            print("⚠️ Payment already in progress, ignoring duplicate call")
-            return
-        }
+        guard !isProcessing else { return }
 
         Task {
             await MainActor.run {
@@ -504,12 +415,9 @@ class StripePaymentService: NSObject, ObservableObject {
                 }
 
             } catch let error as NSError {
-                let errorMessage: String
-                if error.domain == "FIRFunctionsErrorDomain" {
-                    errorMessage = (error.userInfo["details"] as? String) ?? error.localizedDescription
-                } else {
-                    errorMessage = error.localizedDescription
-                }
+                let errorMessage: String = (error.domain == "FIRFunctionsErrorDomain")
+                ? ((error.userInfo["details"] as? String) ?? error.localizedDescription)
+                : error.localizedDescription
 
                 await MainActor.run {
                     self.isProcessing = false
@@ -629,10 +537,7 @@ class StripePaymentService: NSObject, ObservableObject {
         eventId: String,
         completion: @escaping (PaymentResult) -> Void
     ) {
-        guard !isProcessing else {
-            print("⚠️ Payment already in progress, ignoring duplicate call")
-            return
-        }
+        guard !isProcessing else { return }
 
         Task {
             await MainActor.run {
@@ -678,12 +583,9 @@ class StripePaymentService: NSObject, ObservableObject {
                 }
 
             } catch let error as NSError {
-                let errorMessage: String
-                if error.domain == "FIRFunctionsErrorDomain" {
-                    errorMessage = (error.userInfo["details"] as? String) ?? error.localizedDescription
-                } else {
-                    errorMessage = error.localizedDescription
-                }
+                let errorMessage: String = (error.domain == "FIRFunctionsErrorDomain")
+                ? ((error.userInfo["details"] as? String) ?? error.localizedDescription)
+                : error.localizedDescription
 
                 await MainActor.run {
                     self.isProcessing = false
