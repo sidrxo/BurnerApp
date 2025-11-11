@@ -319,7 +319,7 @@ struct LocationPromptModal: View {
             Task { @MainActor in
                 isLoading = false
                 switch result {
-                case .success(let coordinate):
+                case .success:
                     locationManager.saveLocationPreference(.city(trimmedCity))
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         onDismiss()

@@ -369,24 +369,20 @@ enum UserLocation: Codable, Equatable {
     }
 }
 
-// MARK: - CLLocationCoordinate2D Codable Extension
+// MARK: - Coordinate Wrapper for Codable Support
 
-extension CLLocationCoordinate2D: Codable {
-    enum CodingKeys: String, CodingKey {
-        case latitude
-        case longitude
+// Wrapper struct to handle CLLocationCoordinate2D encoding/decoding
+// This avoids declaring conformance on imported types
+struct CodableCoordinate: Codable, Equatable {
+    let latitude: Double
+    let longitude: Double
+
+    init(from coordinate: CLLocationCoordinate2D) {
+        self.latitude = coordinate.latitude
+        self.longitude = coordinate.longitude
     }
-    
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let latitude = try container.decode(Double.self, forKey: .latitude)
-        let longitude = try container.decode(Double.self, forKey: .longitude)
-        self.init(latitude: latitude, longitude: longitude)
-    }
-    
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(latitude, forKey: .latitude)
-        try container.encode(longitude, forKey: .longitude)
+
+    var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
 }

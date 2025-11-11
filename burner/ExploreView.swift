@@ -80,42 +80,24 @@ struct ExploreView: View {
         Array(popularEvents.prefix(5))
     }
     
-    // MARK: - Nearby Events (with better debugging)
+    // MARK: - Nearby Events (optimized)
     var nearbyEvents: [Event] {
         // Check if we have a current location
         guard let userLocation = locationManager.currentLocation else {
-            print("🗺️ ExploreView: No current location available")
             return []
         }
-        
-        print("🗺️ ExploreView: User location: \(userLocation.coordinate.latitude), \(userLocation.coordinate.longitude)")
-        print("🗺️ ExploreView: Total events to filter: \(eventViewModel.events.count)")
-        
-        // Count and list events with coordinates
-        let eventsWithCoordinates = eventViewModel.events.filter { $0.coordinates != nil }
-        print("🗺️ ExploreView: Events with coordinates: \(eventsWithCoordinates.count)")
-        
-        // Log which events have coordinates and their details
-        for event in eventsWithCoordinates {
-            let isFeatured = event.isFeatured
-            let startTime = event.startTime
-            let isPast = startTime.map { $0 <= Date() } ?? true
-            print("🗺️ ExploreView: ✓ '\(event.name)' - Featured: \(isFeatured), StartTime: \(startTime?.description ?? "nil"), IsPast: \(isPast)")
-        }
-        
+
+        let now = Date()
+
+        // Optimized: single pass through events with minimal logging
         let nearby = eventViewModel.events
+            .lazy
             .filter { event in
-                guard let startTime = event.startTime else {
+                // Quick checks first
+                guard let startTime = event.startTime, startTime > now else {
                     return false
                 }
-                
-                // Check if event is in the future
-                if startTime <= Date() {
-                    return false
-                }
-                
-                // Allow all upcoming events (including featured)
-                return true
+                return event.coordinates != nil
             }
             .compactMap { event -> (event: Event, distance: CLLocationDistance)? in
                 guard let coordinates = event.coordinates else {
@@ -126,21 +108,18 @@ struct ExploreView: View {
                     longitude: coordinates.longitude
                 )
                 let distance = userLocation.distance(from: eventLocation)
-                
+
                 // Filter by max radius
                 guard distance <= maxNearbyRadius else {
-                    print("🗺️ ExploreView: Event '\(event.name)' is too far: \(distance/1000)km (max: \(maxNearbyRadius/1000)km)")
                     return nil
                 }
-                
-                print("🗺️ ExploreView: ✓ Event '\(event.name)' is \(distance/1000) km away - INCLUDED")
+
                 return (event, distance)
             }
             .sorted { $0.distance < $1.distance }
             .map { $0.event }
-        
-        print("🗺️ ExploreView: Found \(nearby.count) nearby events within \(maxNearbyRadius/1000)km radius")
-        return nearby
+
+        return Array(nearby)
     }
     
     var nearbyEventsPreview: [Event] {
@@ -186,11 +165,10 @@ struct ExploreView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     // Header with Map Button
-                    HStack(alignment: .center, spacing: 0) {
+                    HStack {
                         Text("Explore")
                             .appPageHeader()
                             .foregroundColor(.white)
-                            .padding(.leading, 20)
 
                         Spacer()
 
@@ -207,10 +185,8 @@ struct ExploreView: View {
                                 .clipShape(Circle())
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .padding(.trailing, 20)
                     }
-                    .frame(height: 60)
-                    .padding(.top, 8)
+                    .padding(.bottom, 30)
 
                     if eventViewModel.isLoading && eventViewModel.events.isEmpty {
                         loadingView
@@ -232,26 +208,24 @@ struct ExploreView: View {
                 }
             }
             .onAppear {
-                // Debug print on appear
-                print("🗺️ ExploreView appeared")
-                print("🗺️ Total events: \(eventViewModel.events.count)")
-                print("🗺️ Has location preference: \(locationManager.hasLocationPreference)")
-                print("🗺️ Has location: \(locationManager.currentLocation != nil)")
-                if let loc = locationManager.currentLocation {
-                    print("🗺️ Location: \(loc.coordinate.latitude), \(loc.coordinate.longitude)")
-                }
-            }
-            
-            // Location Prompt Modal
-            if showingLocationPrompt {
-                LocationPromptModal {
-                    showingLocationPrompt = false
-                }
-                .environmentObject(locationManager)
-                .transition(.move(edge: .bottom))
-                .zIndex(999)
+                // Minimal logging for performance
+                #if DEBUG
+                print("🗺️ ExploreView appeared - Events: \(eventViewModel.events.count), Has location: \(locationManager.currentLocation != nil)")
+                #endif
             }
         }
+        .overlay(
+            Group {
+                if showingLocationPrompt {
+                    LocationPromptModal {
+                        showingLocationPrompt = false
+                    }
+                    .environmentObject(locationManager)
+                    .transition(.move(edge: .bottom))
+                    .zIndex(1000)
+                }
+            }
+        )
         .animation(.easeInOut, value: showingLocationPrompt)
     }
     
@@ -276,7 +250,7 @@ struct ExploreView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
             }
-            
+
             // Popular Section
             if !popularEvents.isEmpty {
                 EventSection(
@@ -287,7 +261,7 @@ struct ExploreView: View {
                     showViewAllButton: false
                 )
             }
-            
+
             // Nearby Section - Only show if user has set location preference at least once
             if locationManager.hasLocationPreference {
                 EventSection(
@@ -298,7 +272,7 @@ struct ExploreView: View {
                     showViewAllButton: nearbyEvents.count > 5
                 )
             }
-            
+
             // This Week Section
             if !thisWeekEvents.isEmpty {
                 EventSection(
@@ -310,15 +284,25 @@ struct ExploreView: View {
                 )
             }
 
+            // Second Featured Card
+            if featuredEvents.count > 1 {
+                NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[1])) {
+                    FeaturedHeroCard(event: featuredEvents[1], bookmarkManager: bookmarkManager)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 40)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+
             // Genre Cards - Horizontal Scrolling
             GenreCardsSection(
                 genres: displayGenres,
                 allEventsForGenre: { genre in allEventsForGenre(genre) }
             )
 
-            // Genre Sections
-            genreSectionsWithFeaturedCards
-            
+            // Genre Sections (without second featured card since we moved it above)
+            genreSectionsWithoutSecondFeatured
+
             // All Events Section
             if !allEvents.isEmpty {
                 EventSection(
@@ -332,18 +316,19 @@ struct ExploreView: View {
         }
     }
     
-    private var genreSectionsWithFeaturedCards: some View {
+    private var genreSectionsWithoutSecondFeatured: some View {
         let genresWithEvents = displayGenres.filter { genre in
             !allEventsForGenre(genre).isEmpty
         }
-        
+
         return ForEach(Array(genresWithEvents.enumerated()), id: \.offset) { index, genre in
             let genreEvents = allEventsForGenre(genre)
             let genrePreview = eventsForGenrePreview(genre)
-            
+
             Group {
-                if index % 2 == 0 {
-                    let featuredIndex = 1 + (index / 2)
+                // Show featured cards after every 2 genres, starting from the 3rd featured card (index 2)
+                if index % 2 == 0 && index > 0 {
+                    let featuredIndex = 2 + (index / 2) - 1
                     if featuredIndex < featuredEvents.count {
                         NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[featuredIndex])) {
                             FeaturedHeroCard(event: featuredEvents[featuredIndex], bookmarkManager: bookmarkManager)
@@ -353,7 +338,7 @@ struct ExploreView: View {
                         .buttonStyle(PlainButtonStyle())
                     }
                 }
-                
+
                 EventSection(
                     title: genre,
                     events: genrePreview,
