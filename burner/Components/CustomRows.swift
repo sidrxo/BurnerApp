@@ -201,7 +201,7 @@ extension EventRow {
             showDetailedDate: false,
             bookmarkSize: 18,
             horizontalPadding: 20,
-            verticalPadding: 12,
+            verticalPadding: 8,
             backgroundColor: Color.clear,
             cornerRadius: 0
         )
