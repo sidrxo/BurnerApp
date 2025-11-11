@@ -186,29 +186,31 @@ struct ExploreView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     // Header with Map Button
-                    ZStack {
-                        HeaderSection(title: "Explore")
-                        
-                        // Map button overlaid on top right
-                        HStack {
-                            Spacer()
-                            
-                            Button(action: {
-                                withAnimation {
-                                    showingLocationPrompt = true
-                                }
-                            }) {
-                                Image(systemName: "map")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.white)
-                                    .frame(width: 40, height: 40)
-                                    .background(Color.white.opacity(0.1))
-                                    .clipShape(Circle())
+                    HStack(alignment: .center, spacing: 0) {
+                        Text("Explore")
+                            .appPageHeader()
+                            .foregroundColor(.white)
+                            .padding(.leading, 20)
+
+                        Spacer()
+
+                        Button(action: {
+                            withAnimation {
+                                showingLocationPrompt = true
                             }
-                            .buttonStyle(PlainButtonStyle())
-                            .padding(.trailing, 20)
+                        }) {
+                            Image(systemName: "map")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(.white)
+                                .frame(width: 44, height: 44)
+                                .background(Color.white.opacity(0.1))
+                                .clipShape(Circle())
                         }
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.trailing, 20)
                     }
+                    .frame(height: 60)
+                    .padding(.top, 8)
 
                     if eventViewModel.isLoading && eventViewModel.events.isEmpty {
                         loadingView
@@ -247,7 +249,7 @@ struct ExploreView: View {
                 }
                 .environmentObject(locationManager)
                 .transition(.move(edge: .bottom))
-                .zIndex(1)
+                .zIndex(999)
             }
         }
         .animation(.easeInOut, value: showingLocationPrompt)
@@ -293,9 +295,7 @@ struct ExploreView: View {
                     events: nearbyEventsPreview,
                     allEvents: nearbyEvents,
                     bookmarkManager: bookmarkManager,
-                    showViewAllButton: nearbyEvents.count > 5,
-                    showDistance: true,
-                    locationManager: locationManager
+                    showViewAllButton: nearbyEvents.count > 5
                 )
             }
             
@@ -403,25 +403,19 @@ struct EventSection: View {
     let allEvents: [Event]
     let bookmarkManager: BookmarkManager
     let showViewAllButton: Bool
-    let showDistance: Bool
-    let locationManager: LocationManager?
-    
+
     init(
         title: String,
         events: [Event],
         allEvents: [Event]? = nil,
         bookmarkManager: BookmarkManager,
-        showViewAllButton: Bool = true,
-        showDistance: Bool = false,
-        locationManager: LocationManager? = nil
+        showViewAllButton: Bool = true
     ) {
         self.title = title
         self.events = events
         self.allEvents = allEvents ?? events
         self.bookmarkManager = bookmarkManager
         self.showViewAllButton = showViewAllButton
-        self.showDistance = showDistance
-        self.locationManager = locationManager
     }
     
     var body: some View {
@@ -477,8 +471,7 @@ struct EventSection: View {
                         NavigationLink(value: NavigationDestination.eventDetail(event)) {
                             EventRow(
                                 event: event,
-                                bookmarkManager: bookmarkManager,
-                                distanceText: showDistance && locationManager != nil ? getDistanceText(for: event) : nil
+                                bookmarkManager: bookmarkManager
                             )
                         }
                         .buttonStyle(PlainButtonStyle())
@@ -487,17 +480,6 @@ struct EventSection: View {
             }
         }
         .padding(.bottom, 40)
-    }
-    
-    private func getDistanceText(for event: Event) -> String? {
-        guard let locationManager = locationManager,
-              let coordinates = event.coordinates else {
-            return nil
-        }
-        return locationManager.formattedDistance(to: CLLocationCoordinate2D(
-            latitude: coordinates.latitude,
-            longitude: coordinates.longitude
-        ))
     }
 }
 

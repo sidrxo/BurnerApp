@@ -8,6 +8,7 @@ import CoreLocation
 struct SearchView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var coordinator: NavigationCoordinator
+    @EnvironmentObject var locationManager: LocationManager
     @StateObject private var viewModel: SearchViewModel
 
     @State private var searchText = ""
@@ -15,7 +16,7 @@ struct SearchView: View {
     @State private var pendingNearbySortRequest = false
     @FocusState private var isSearchFocused: Bool
 
-    init() {
+    init(locationManager: LocationManager? = nil) {
         let repository = OptimizedEventRepository()
         _viewModel = StateObject(wrappedValue: SearchViewModel(eventRepository: repository))
     }
@@ -46,19 +47,19 @@ struct SearchView: View {
         }
         .onChange(of: sortBy) { oldValue, newValue in
             if newValue == .nearby {
-                viewModel.requestLocationPermission()
+                viewModel.requestLocationPermission(locationManager: locationManager)
                 pendingNearbySortRequest = true
             } else {
                 Task {
-                    await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
+                    await viewModel.changeSort(to: newValue.rawValue, searchText: searchText, userLocation: locationManager.currentLocation)
                 }
             }
         }
-        .onChange(of: viewModel.userLocation) { oldValue, newValue in
+        .onChange(of: locationManager.currentLocation) { oldValue, newValue in
             if pendingNearbySortRequest, newValue != nil {
                 pendingNearbySortRequest = false
                 Task {
-                    await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText)
+                    await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText, userLocation: newValue)
                 }
             }
         }
@@ -179,41 +180,29 @@ class SearchViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isLoadingMore = false
     @Published var errorMessage: String?
-    @Published var userLocation: CLLocation?
 
     private var hasMoreEvents = true
     private var lastDocument: Date?
     private var currentSearchText = ""
     private var searchCache: [String: [Event]] = [:]
+    private var nearbyCache: (location: CLLocation, events: [Event], timestamp: Date)?
+    private let nearbyCacheTimeout: TimeInterval = 300 // 5 minutes
 
     private let eventRepository: OptimizedEventRepository
     private var searchCancellable: AnyCancellable?
     private let searchSubject = PassthroughSubject<(String, String), Never>()
-    private let locationManager = LocationManager()
 
-    // ADD THIS: Constant for initial load limit
+    // Constant for initial load limit
     private let initialLoadLimit = 6
     private let paginationLimit = 10
+    private let nearbyFetchLimit = 50 // Reduced from 100
 
     init(eventRepository: OptimizedEventRepository) {
         self.eventRepository = eventRepository
         setupSearchDebouncing()
-        setupLocationObserver()
     }
 
-    private func setupLocationObserver() {
-        locationManager.onLocationUpdate = { [weak self] coordinate in
-            Task { @MainActor in
-                // Convert CLLocationCoordinate2D to CLLocation
-                self?.userLocation = CLLocation(
-                    latitude: coordinate.latitude,
-                    longitude: coordinate.longitude
-                )
-            }
-        }
-    }
-
-    func requestLocationPermission() {
+    func requestLocationPermission(locationManager: LocationManager) {
         locationManager.requestLocation()
     }
     
@@ -323,9 +312,9 @@ class SearchViewModel: ObservableObject {
     }
     
     // MARK: - Change Sort
-    func changeSort(to sortBy: String, searchText: String) async {
+    func changeSort(to sortBy: String, searchText: String, userLocation: CLLocation?) async {
         if sortBy == "nearby" {
-            await sortEventsByDistance()
+            await sortEventsByDistance(userLocation: userLocation)
         } else if searchText.isEmpty {
             await loadInitialEvents(sortBy: sortBy)
         } else {
@@ -334,38 +323,37 @@ class SearchViewModel: ObservableObject {
     }
 
     // MARK: - Sort Events by Distance
-    private func sortEventsByDistance() async {
-        print("SearchViewModel: sortEventsByDistance called")
+    private func sortEventsByDistance(userLocation: CLLocation?) async {
         guard let userLocation = userLocation else {
-            print("SearchViewModel: No user location available")
             errorMessage = "Location not available. Please enable location services."
             return
         }
 
-        print("SearchViewModel: User location: \(userLocation.coordinate.latitude), \(userLocation.coordinate.longitude)")
+        // Check cache first
+        if let cache = nearbyCache,
+           Date().timeIntervalSince(cache.timestamp) < nearbyCacheTimeout,
+           cache.location.distance(from: userLocation) < 1000 { // Within 1km of cached location
+            events = cache.events
+            hasMoreEvents = false
+            return
+        }
+
         isLoading = true
 
         do {
-            // Fetch all upcoming events without limit for nearby sorting
-            let allEvents = try await eventRepository.fetchUpcomingEvents(sortBy: "startTime", limit: 100)
-            print("SearchViewModel: Fetched \(allEvents.count) events")
+            // Fetch upcoming events with reduced limit
+            let allEvents = try await eventRepository.fetchUpcomingEvents(sortBy: "startTime", limit: nearbyFetchLimit)
 
-            // Calculate distance for each event and filter events with coordinates
+            // Calculate distance and filter events with coordinates
             let eventsWithDistance = allEvents.compactMap { event -> (Event, CLLocationDistance)? in
-                guard let coordinates = event.coordinates else {
-                    print("SearchViewModel: Event '\(event.name)' has no coordinates")
-                    return nil
-                }
+                guard let coordinates = event.coordinates else { return nil }
                 let eventLocation = CLLocation(
                     latitude: coordinates.latitude,
                     longitude: coordinates.longitude
                 )
                 let distance = userLocation.distance(from: eventLocation)
-                print("SearchViewModel: Event '\(event.name)' distance: \(distance / 1000) km")
                 return (event, distance)
             }
-
-            print("SearchViewModel: \(eventsWithDistance.count) events have coordinates")
 
             // Sort by distance
             let sortedEvents = eventsWithDistance
@@ -374,11 +362,12 @@ class SearchViewModel: ObservableObject {
 
             events = sortedEvents
             hasMoreEvents = false // Disable pagination for nearby view
-            print("SearchViewModel: Sorted events by distance, showing \(sortedEvents.count) events")
+
+            // Cache the results
+            nearbyCache = (location: userLocation, events: sortedEvents, timestamp: Date())
 
         } catch {
-            print("SearchViewModel: Error sorting by distance: \(error.localizedDescription)")
-            errorMessage = "Failed to sort events by distance: \(error.localizedDescription)"
+            errorMessage = "Failed to sort events by distance. Please try again."
         }
 
         isLoading = false

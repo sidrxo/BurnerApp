@@ -14,17 +14,17 @@ struct LocationPromptModal: View {
     var body: some View {
         ZStack {
             // Semi-transparent background
-            Color.clear
+            Color.black.opacity(0.5)
                 .ignoresSafeArea()
                 .onTapGesture {
                     if !isRequestingLocation && !isLoading {
                         onDismiss()
                     }
                 }
-            
+
             VStack {
                 Spacer()
-                
+
                 VStack(spacing: 0) {
                     // Handle bar
                     RoundedRectangle(cornerRadius: 2.5)
@@ -41,7 +41,7 @@ struct LocationPromptModal: View {
                                     }
                                 }
                         )
-                    
+
                     if showingManualEntry {
                         manualEntryView
                     } else {
@@ -49,9 +49,10 @@ struct LocationPromptModal: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .background(Color.black)
+                .background(Color(red: 18/255, green: 18/255, blue: 18/255))
                 .clipShape(RoundedRectangle(cornerRadius: 20))
             }
+            .ignoresSafeArea(edges: .bottom)
         }
         .transition(.move(edge: .bottom))
         .onChange(of: locationManager.currentLocation) { oldValue, newValue in
