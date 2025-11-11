@@ -27,6 +27,9 @@ class AppState: ObservableObject {
     // ✅ Track if user manually signed out
     @Published var userDidSignOut = false
 
+    // Debug
+    @Published var isSimulatingEmptyFirestore = false
+
     // ✅ User role and scanner status (fetched on sign in)
     @Published var userRole: String = ""
     @Published var isScannerActive: Bool = false
@@ -172,9 +175,11 @@ class AppState: ObservableObject {
     // MARK: - User Sign In/Out Handlers
     private func handleUserSignedIn() {
         // Fetch data when user signs in
-        eventViewModel.fetchEvents()
-        ticketsViewModel.fetchUserTickets()
-        bookmarkManager.refreshBookmarks()
+        if !isSimulatingEmptyFirestore {
+            eventViewModel.fetchEvents()
+            ticketsViewModel.fetchUserTickets()
+            bookmarkManager.refreshBookmarks()
+        }
 
         // ✅ FIXED: Restart Burner Mode monitoring for new user
         burnerModeMonitor.stopMonitoring()
@@ -237,10 +242,33 @@ class AppState: ObservableObject {
     
     // MARK: - Initial Data Load
     func loadInitialData() {
-        eventViewModel.fetchEvents()
+        if isSimulatingEmptyFirestore {
+            eventViewModel.simulateEmptyData()
+            ticketsViewModel.simulateEmptyData()
+            bookmarkManager.simulateEmptyData()
+        } else {
+            eventViewModel.fetchEvents()
 
-        if authService.currentUser != nil {
-            ticketsViewModel.fetchUserTickets()
+            if authService.currentUser != nil {
+                ticketsViewModel.fetchUserTickets()
+            }
         }
+    }
+
+    // MARK: - Debug Helpers
+    func enableEmptyFirestoreSimulation() {
+        guard !isSimulatingEmptyFirestore else { return }
+        isSimulatingEmptyFirestore = true
+        eventViewModel.simulateEmptyData()
+        ticketsViewModel.simulateEmptyData()
+        bookmarkManager.simulateEmptyData()
+    }
+
+    func disableEmptyFirestoreSimulation() {
+        guard isSimulatingEmptyFirestore else { return }
+        isSimulatingEmptyFirestore = false
+        eventViewModel.resumeFromSimulation()
+        ticketsViewModel.resumeFromSimulation()
+        bookmarkManager.resumeFromSimulation()
     }
 }

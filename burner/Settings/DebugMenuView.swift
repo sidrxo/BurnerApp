@@ -27,6 +27,23 @@ struct DebugMenuView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(PlainButtonStyle())
+
+                        Button(action: {
+                            if appState.isSimulatingEmptyFirestore {
+                                appState.disableEmptyFirestoreSimulation()
+                            } else {
+                                appState.enableEmptyFirestoreSimulation()
+                            }
+                        }) {
+                            MenuItemContent(
+                                title: appState.isSimulatingEmptyFirestore ? "Restore Firestore Data" : "Simulate Empty Firestore",
+                                subtitle: appState.isSimulatingEmptyFirestore
+                                    ? "Resume live events, tickets, and venues"
+                                    : "Show empty states with no events, tickets, or venues"
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
 
                     MenuSection(title: "BURNER MODE") {
