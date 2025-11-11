@@ -13,6 +13,7 @@ struct ExploreView: View {
 
     @State private var searchText = ""
     @State private var selectedEvent: Event? = nil
+    @State private var showingSignInAlert = false
 
     // ✅ Maximum distance for "nearby" events (in meters)
     private let maxNearbyDistance: CLLocationDistance = 50_000 // 50km / ~31 miles
@@ -168,9 +169,9 @@ struct ExploreView: View {
                     Text("Explore")
                         .appPageHeader()
                         .foregroundColor(.white)
-                    
+
                     Spacer()
-                    
+
                     // Location Button - Top Right
                     Button(action: {
                         coordinator.activeModal = .helloWorld
@@ -179,7 +180,7 @@ struct ExploreView: View {
                             Circle()
                                 .fill(userLocationManager.savedLocation != nil ? Color.white.opacity(0.2) : Color.white.opacity(0.1))
                                 .frame(width: 44, height: 44)
-                            
+
                             Image(systemName: "map.fill")
                                 .font(.system(size: 20))
                                 .foregroundColor(.white)
@@ -207,6 +208,30 @@ struct ExploreView: View {
             if let eventId = eventId {
                 print("🎯 ExploreView: Navigating to event \(eventId)")
                 coordinator.navigate(to: .eventById(eventId))
+            }
+        }
+        .overlay {
+            if showingSignInAlert {
+                CustomAlertView(
+                    title: "Sign In Required",
+                    description: "You need to be signed in to bookmark events",
+                    cancelAction: {
+                        withAnimation {
+                            showingSignInAlert = false
+                        }
+                    },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        withAnimation {
+                            showingSignInAlert = false
+                        }
+                        appState.isSignInSheetPresented = true
+                    },
+                    primaryActionTitle: "Sign In",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(999)
             }
         }
     }
@@ -240,10 +265,11 @@ struct ExploreView: View {
                     events: popularEventsPreview,
                     allEvents: popularEvents,
                     bookmarkManager: bookmarkManager,
-                    showViewAllButton: false
+                    showViewAllButton: false,
+                    showingSignInAlert: $showingSignInAlert
                 )
             }
-            
+
             // This Week Section
             if !thisWeekEvents.isEmpty {
                 EventSection(
@@ -251,10 +277,11 @@ struct ExploreView: View {
                     events: thisWeekEventsPreview,
                     allEvents: thisWeekEvents,
                     bookmarkManager: bookmarkManager,
-                    showViewAllButton: false
+                    showViewAllButton: false,
+                    showingSignInAlert: $showingSignInAlert
                 )
             }
-            
+
             // Nearby Section - only show if user has set location
             if userLocationManager.savedLocation != nil && !nearbyEvents.isEmpty {
                 EventSection(
@@ -262,7 +289,8 @@ struct ExploreView: View {
                     events: nearbyEventsPreview,
                     allEvents: nearbyEvents,
                     bookmarkManager: bookmarkManager,
-                    showViewAllButton: false
+                    showViewAllButton: false,
+                    showingSignInAlert: $showingSignInAlert
                 )
             }
             
@@ -292,7 +320,8 @@ struct ExploreView: View {
                     events: allEventsPreview,
                     allEvents: allEvents,
                     bookmarkManager: bookmarkManager,
-                    showViewAllButton: allEvents.count > 6
+                    showViewAllButton: allEvents.count > 6,
+                    showingSignInAlert: $showingSignInAlert
                 )
             }
         }
@@ -302,11 +331,11 @@ struct ExploreView: View {
         let genresWithEvents = displayGenres.filter { genre in
             !allEventsForGenre(genre).isEmpty
         }
-        
+
         return ForEach(Array(genresWithEvents.enumerated()), id: \.offset) { index, genre in
             let genreEvents = allEventsForGenre(genre)
             let genrePreview = eventsForGenrePreview(genre)
-            
+
             Group {
                 // ✅ Start from index 2 (3rd featured card) since we already showed 1st and 2nd
                 if index % 2 == 0 {
@@ -320,13 +349,14 @@ struct ExploreView: View {
                         .buttonStyle(PlainButtonStyle())
                     }
                 }
-                
+
                 EventSection(
                     title: genre,
                     events: genrePreview,
                     allEvents: genreEvents,
                     bookmarkManager: bookmarkManager,
-                    showViewAllButton: true
+                    showViewAllButton: true,
+                    showingSignInAlert: $showingSignInAlert
                 )
             }
         }
@@ -370,21 +400,24 @@ struct EventSection: View {
     let allEvents: [Event]        // All events for navigation
     let bookmarkManager: BookmarkManager
     let showViewAllButton: Bool
-    
+    @Binding var showingSignInAlert: Bool
+
     init(
         title: String,
         events: [Event],
         allEvents: [Event]? = nil,
         bookmarkManager: BookmarkManager,
-        showViewAllButton: Bool = true
+        showViewAllButton: Bool = true,
+        showingSignInAlert: Binding<Bool> = .constant(false)
     ) {
         self.title = title
         self.events = events
         self.allEvents = allEvents ?? events
         self.bookmarkManager = bookmarkManager
         self.showViewAllButton = showViewAllButton
+        self._showingSignInAlert = showingSignInAlert
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Section Header
@@ -392,9 +425,9 @@ struct EventSection: View {
                 Text(title)
                     .appSectionHeader()
                     .foregroundColor(.white)
-                
+
                 Spacer()
-                
+
                 if showViewAllButton {
                     NavigationLink(value: NavigationDestination.filteredEvents(
                         EventSectionDestination(title: title, events: allEvents)
@@ -410,14 +443,15 @@ struct EventSection: View {
                 }
             }
             .padding(.horizontal, 20)
-            
+
             // Event List
             LazyVStack(spacing: 0) {
                 ForEach(events) { event in
                     NavigationLink(value: NavigationDestination.eventDetail(event)) {
                         EventRow(
                             event: event,
-                            bookmarkManager: bookmarkManager
+                            bookmarkManager: bookmarkManager,
+                            showingSignInAlert: $showingSignInAlert
                         )
                     }
                     .buttonStyle(PlainButtonStyle())

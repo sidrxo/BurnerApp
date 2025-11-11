@@ -2,6 +2,14 @@ import SwiftUI
 import Kingfisher
 import FirebaseAuth
 
+// MARK: - Alert Preference Key
+struct BookmarkAlertPreferenceKey: PreferenceKey {
+    static var defaultValue: Bool = false
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = value || nextValue()
+    }
+}
+
 // MARK: - Unified Event Row Component
 struct EventRow: View {
     let event: Event
@@ -10,14 +18,16 @@ struct EventRow: View {
     let configuration: Configuration
     let onCancel: (() -> Void)?
     let distanceText: String?
-    
+    @Binding var showingSignInAlert: Bool
+
     init(
         event: Event,
         ticket: Ticket? = nil,
         bookmarkManager: BookmarkManager? = nil,
         configuration: Configuration = .eventList,
         onCancel: (() -> Void)? = nil,
-        distanceText: String? = nil
+        distanceText: String? = nil,
+        showingSignInAlert: Binding<Bool> = .constant(false)
     ) {
         self.event = event
         self.ticket = ticket
@@ -25,6 +35,7 @@ struct EventRow: View {
         self.configuration = configuration
         self.onCancel = onCancel
         self.distanceText = distanceText
+        self._showingSignInAlert = showingSignInAlert
     }
     
     var body: some View {
@@ -148,10 +159,11 @@ struct EventRow: View {
                 BookmarkButton(
                     event: event,
                     bookmarkManager: bookmarkManager,
-                    size: configuration.bookmarkSize
+                    size: configuration.bookmarkSize,
+                    showingSignInAlert: $showingSignInAlert
                 )
             }
-            
+
             // QR code for all tickets (including past/used)
             if let ticket = ticket {
                 if ticket.status == "confirmed" || ticket.status == "used" {
@@ -234,33 +246,39 @@ extension EventRow {
 
 // MARK: - Convenience Initializers
 extension EventRow {
-    init(event: Event, bookmarkManager: BookmarkManager) {
+    init(event: Event, bookmarkManager: BookmarkManager, showingSignInAlert: Binding<Bool> = .constant(false)) {
         self.init(
             event: event,
             ticket: nil,
             bookmarkManager: bookmarkManager,
             configuration: .eventList,
-            onCancel: nil
+            onCancel: nil,
+            distanceText: nil,
+            showingSignInAlert: showingSignInAlert
         )
     }
-    
+
     init(ticketWithEvent: TicketWithEventData, isPast: Bool, onCancel: @escaping () -> Void) {
         self.init(
             event: ticketWithEvent.event,
             ticket: ticketWithEvent.ticket,
             bookmarkManager: nil,
             configuration: .ticketRow,
-            onCancel: onCancel
+            onCancel: onCancel,
+            distanceText: nil,
+            showingSignInAlert: .constant(false)
         )
     }
-    
+
     init(ticketWithEvent: TicketWithEventData, isPast: Bool, bookmarkManager: BookmarkManager, onCancel: @escaping () -> Void) {
         self.init(
             event: ticketWithEvent.event,
             ticket: ticketWithEvent.ticket,
             bookmarkManager: bookmarkManager,
             configuration: .ticketRowWithBookmark,
-            onCancel: onCancel
+            onCancel: onCancel,
+            distanceText: nil,
+            showingSignInAlert: .constant(false)
         )
     }
 }
@@ -271,53 +289,35 @@ struct BookmarkButton: View {
     @ObservedObject var bookmarkManager: BookmarkManager
     let size: CGFloat
     @EnvironmentObject var appState: AppState
-    @State private var showingSignInAlert = false
+    @Binding var showingSignInAlert: Bool
 
-    init(event: Event, bookmarkManager: BookmarkManager, size: CGFloat = 18) {
+    init(event: Event, bookmarkManager: BookmarkManager, size: CGFloat = 18, showingSignInAlert: Binding<Bool>) {
         self.event = event
         self.bookmarkManager = bookmarkManager
         self.size = size
+        self._showingSignInAlert = showingSignInAlert
     }
 
     var body: some View {
-        ZStack {
-            Button(action: {
-                // Check if user is authenticated
-                if Auth.auth().currentUser == nil {
-                    // Show alert if not authenticated
+        Button(action: {
+            // Check if user is authenticated
+            if Auth.auth().currentUser == nil {
+                // Show alert if not authenticated
+                withAnimation {
                     showingSignInAlert = true
-                } else {
-                    // Toggle bookmark if authenticated
-                    Task {
-                        await bookmarkManager.toggleBookmark(for: event)
-                    }
                 }
-            }) {
-                Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                    .font(.appIcon)
-                    .foregroundColor(isBookmarked ? .white : .gray)
-                    .scaleEffect(isBookmarked ? 1.1 : 1.0)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: isBookmarked)
+            } else {
+                // Toggle bookmark if authenticated
+                Task {
+                    await bookmarkManager.toggleBookmark(for: event)
+                }
             }
-
-            if showingSignInAlert {
-                CustomAlertView(
-                    title: "Sign In Required",
-                    description: "You need to be signed in to bookmark events",
-                    cancelAction: {
-                        showingSignInAlert = false
-                    },
-                    cancelActionTitle: "Cancel",
-                    primaryAction: {
-                        showingSignInAlert = false
-                        appState.isSignInSheetPresented = true
-                    },
-                    primaryActionTitle: "Sign In",
-                    customContent: EmptyView()
-                )
-                .transition(.opacity)
-                .zIndex(1002)
-            }
+        }) {
+            Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                .font(.appIcon)
+                .foregroundColor(isBookmarked ? .white : .gray)
+                .scaleEffect(isBookmarked ? 1.1 : 1.0)
+                .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: isBookmarked)
         }
     }
 
