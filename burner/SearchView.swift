@@ -202,9 +202,13 @@ class SearchViewModel: ObservableObject {
     }
 
     private func setupLocationObserver() {
-        locationManager.onLocationUpdate = { [weak self] location in
+        locationManager.onLocationUpdate = { [weak self] coordinate in
             Task { @MainActor in
-                self?.userLocation = location
+                // Convert CLLocationCoordinate2D to CLLocation
+                self?.userLocation = CLLocation(
+                    latitude: coordinate.latitude,
+                    longitude: coordinate.longitude
+                )
             }
         }
     }
@@ -519,55 +523,6 @@ struct EmptyEventsView: View {
 }
 
 // MARK: - Location Manager
-class LocationManager: NSObject, CLLocationManagerDelegate {
-    private let manager = CLLocationManager()
-    var onLocationUpdate: ((CLLocation) -> Void)?
-
-    override init() {
-        super.init()
-        manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyBest
-    }
-
-    func requestLocation() {
-        print("LocationManager: Requesting location, current status: \(manager.authorizationStatus.rawValue)")
-
-        let status = manager.authorizationStatus
-
-        switch status {
-        case .notDetermined:
-            print("LocationManager: Requesting authorization")
-            manager.requestWhenInUseAuthorization()
-            // Don't call requestLocation here - wait for authorization callback
-        case .authorizedWhenInUse, .authorizedAlways:
-            print("LocationManager: Already authorized, requesting location")
-            manager.requestLocation()
-        case .denied, .restricted:
-            print("LocationManager: Location access denied or restricted")
-        @unknown default:
-            break
-        }
-    }
-
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let location = locations.last else { return }
-        print("LocationManager: Got location: \(location.coordinate.latitude), \(location.coordinate.longitude)")
-        onLocationUpdate?(location)
-    }
-
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("LocationManager: Error: \(error.localizedDescription)")
-    }
-
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        print("LocationManager: Authorization changed to: \(manager.authorizationStatus.rawValue)")
-        if manager.authorizationStatus == .authorizedWhenInUse ||
-           manager.authorizationStatus == .authorizedAlways {
-            print("LocationManager: Now authorized, requesting location")
-            manager.requestLocation()
-        }
-    }
-}
 
 // MARK: - Preview
 struct SearchView_Previews: PreviewProvider {

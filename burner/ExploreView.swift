@@ -1,5 +1,7 @@
 import SwiftUI
 import Kingfisher
+import CoreLocation
+internal import FirebaseFirestoreInternal
 
 struct ExploreView: View {
     @EnvironmentObject var eventViewModel: EventViewModel
@@ -7,9 +9,14 @@ struct ExploreView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
     @EnvironmentObject var tagViewModel: TagViewModel
+    @EnvironmentObject var locationManager: LocationManager
 
     @State private var searchText = ""
     @State private var selectedEvent: Event? = nil
+    @State private var showingLocationPrompt = false
+
+    // Maximum radius for nearby events (80km = ~50 miles)
+    private let maxNearbyRadius: CLLocationDistance = 80_000 // 80km in meters
 
     // MARK: - Dynamic Genres from Firestore
     private var displayGenres: [String] {
@@ -73,6 +80,73 @@ struct ExploreView: View {
         Array(popularEvents.prefix(5))
     }
     
+    // MARK: - Nearby Events (with better debugging)
+    var nearbyEvents: [Event] {
+        // Check if we have a current location
+        guard let userLocation = locationManager.currentLocation else {
+            print("🗺️ ExploreView: No current location available")
+            return []
+        }
+        
+        print("🗺️ ExploreView: User location: \(userLocation.coordinate.latitude), \(userLocation.coordinate.longitude)")
+        print("🗺️ ExploreView: Total events to filter: \(eventViewModel.events.count)")
+        
+        // Count and list events with coordinates
+        let eventsWithCoordinates = eventViewModel.events.filter { $0.coordinates != nil }
+        print("🗺️ ExploreView: Events with coordinates: \(eventsWithCoordinates.count)")
+        
+        // Log which events have coordinates and their details
+        for event in eventsWithCoordinates {
+            let isFeatured = event.isFeatured
+            let startTime = event.startTime
+            let isPast = startTime.map { $0 <= Date() } ?? true
+            print("🗺️ ExploreView: ✓ '\(event.name)' - Featured: \(isFeatured), StartTime: \(startTime?.description ?? "nil"), IsPast: \(isPast)")
+        }
+        
+        let nearby = eventViewModel.events
+            .filter { event in
+                guard let startTime = event.startTime else {
+                    return false
+                }
+                
+                // Check if event is in the future
+                if startTime <= Date() {
+                    return false
+                }
+                
+                // Allow all upcoming events (including featured)
+                return true
+            }
+            .compactMap { event -> (event: Event, distance: CLLocationDistance)? in
+                guard let coordinates = event.coordinates else {
+                    return nil
+                }
+                let eventLocation = CLLocation(
+                    latitude: coordinates.latitude,
+                    longitude: coordinates.longitude
+                )
+                let distance = userLocation.distance(from: eventLocation)
+                
+                // Filter by max radius
+                guard distance <= maxNearbyRadius else {
+                    print("🗺️ ExploreView: Event '\(event.name)' is too far: \(distance/1000)km (max: \(maxNearbyRadius/1000)km)")
+                    return nil
+                }
+                
+                print("🗺️ ExploreView: ✓ Event '\(event.name)' is \(distance/1000) km away - INCLUDED")
+                return (event, distance)
+            }
+            .sorted { $0.distance < $1.distance }
+            .map { $0.event }
+        
+        print("🗺️ ExploreView: Found \(nearby.count) nearby events within \(maxNearbyRadius/1000)km radius")
+        return nearby
+    }
+    
+    var nearbyEventsPreview: [Event] {
+        Array(nearbyEvents.prefix(5))
+    }
+    
     // MARK: - Genre-Based Events
     func allEventsForGenre(_ genre: String) -> [Event] {
         eventViewModel.events
@@ -108,29 +182,75 @@ struct ExploreView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                HeaderSection(title: "Explore")
+        ZStack {
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Header with Map Button
+                    ZStack {
+                        HeaderSection(title: "Explore")
+                        
+                        // Map button overlaid on top right
+                        HStack {
+                            Spacer()
+                            
+                            Button(action: {
+                                withAnimation {
+                                    showingLocationPrompt = true
+                                }
+                            }) {
+                                Image(systemName: "map")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.white)
+                                    .frame(width: 40, height: 40)
+                                    .background(Color.white.opacity(0.1))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(.trailing, 20)
+                        }
+                    }
 
-                if eventViewModel.isLoading && eventViewModel.events.isEmpty {
-                    loadingView
-                } else {
-                    contentView
+                    if eventViewModel.isLoading && eventViewModel.events.isEmpty {
+                        loadingView
+                    } else {
+                        contentView
+                    }
+                }
+                .padding(.bottom, 100)
+            }
+            .navigationBarHidden(true)
+            .background(Color.black)
+            .refreshable {
+                eventViewModel.fetchEvents()
+            }
+            .onChange(of: coordinator.pendingDeepLink) { _, eventId in
+                if let eventId = eventId {
+                    print("🎯 ExploreView: Navigating to event \(eventId)")
+                    coordinator.navigate(to: .eventById(eventId))
                 }
             }
-            .padding(.bottom, 100)
-        }
-        .navigationBarHidden(true)
-        .background(Color.black)
-        .refreshable {
-            eventViewModel.fetchEvents()
-        }
-        .onChange(of: coordinator.pendingDeepLink) { _, eventId in
-            if let eventId = eventId {
-                print("🎯 ExploreView: Navigating to event \(eventId)")
-                coordinator.navigate(to: .eventById(eventId))
+            .onAppear {
+                // Debug print on appear
+                print("🗺️ ExploreView appeared")
+                print("🗺️ Total events: \(eventViewModel.events.count)")
+                print("🗺️ Has location preference: \(locationManager.hasLocationPreference)")
+                print("🗺️ Has location: \(locationManager.currentLocation != nil)")
+                if let loc = locationManager.currentLocation {
+                    print("🗺️ Location: \(loc.coordinate.latitude), \(loc.coordinate.longitude)")
+                }
+            }
+            
+            // Location Prompt Modal
+            if showingLocationPrompt {
+                LocationPromptModal {
+                    showingLocationPrompt = false
+                }
+                .environmentObject(locationManager)
+                .transition(.move(edge: .bottom))
+                .zIndex(1)
             }
         }
+        .animation(.easeInOut, value: showingLocationPrompt)
     }
     
     // MARK: - Loading View
@@ -155,23 +275,36 @@ struct ExploreView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             
-            // Popular Section - FIXED: Pass full events list
+            // Popular Section
             if !popularEvents.isEmpty {
                 EventSection(
                     title: "Popular",
                     events: popularEventsPreview,
-                    allEvents: popularEvents,  // NEW: Pass all events
+                    allEvents: popularEvents,
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: false
                 )
             }
             
-            // This Week Section - FIXED: Pass full events list
+            // Nearby Section - Only show if user has set location preference at least once
+            if locationManager.hasLocationPreference {
+                EventSection(
+                    title: "Nearby",
+                    events: nearbyEventsPreview,
+                    allEvents: nearbyEvents,
+                    bookmarkManager: bookmarkManager,
+                    showViewAllButton: nearbyEvents.count > 5,
+                    showDistance: true,
+                    locationManager: locationManager
+                )
+            }
+            
+            // This Week Section
             if !thisWeekEvents.isEmpty {
                 EventSection(
                     title: "This Week",
                     events: thisWeekEventsPreview,
-                    allEvents: thisWeekEvents,  // NEW: Pass all events
+                    allEvents: thisWeekEvents,
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: false
                 )
@@ -186,12 +319,12 @@ struct ExploreView: View {
             // Genre Sections
             genreSectionsWithFeaturedCards
             
-            // All Events Section - FIXED: Pass full events list
+            // All Events Section
             if !allEvents.isEmpty {
                 EventSection(
                     title: "All Events",
                     events: allEventsPreview,
-                    allEvents: allEvents,  // NEW: Pass all events
+                    allEvents: allEvents,
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: allEvents.count > 6
                 )
@@ -221,11 +354,10 @@ struct ExploreView: View {
                     }
                 }
                 
-                // FIXED: Pass both preview and full events list
                 EventSection(
                     title: genre,
                     events: genrePreview,
-                    allEvents: genreEvents,  // NEW: Pass all events
+                    allEvents: genreEvents,
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: true
                 )
@@ -264,27 +396,32 @@ struct SeededRandomNumberGenerator: RandomNumberGenerator {
     }
 }
 
-// MARK: - Reusable Event Section Component
-// FIXED: Use NavigationLink instead of Button for chevron
+// MARK: - Reusable Event Section Component (UPDATED - removed subtitle)
 struct EventSection: View {
     let title: String
-    let events: [Event]          // Preview events to display
-    let allEvents: [Event]        // NEW: All events for navigation
+    let events: [Event]
+    let allEvents: [Event]
     let bookmarkManager: BookmarkManager
     let showViewAllButton: Bool
+    let showDistance: Bool
+    let locationManager: LocationManager?
     
     init(
         title: String,
         events: [Event],
-        allEvents: [Event]? = nil,  // NEW: Optional, defaults to events
+        allEvents: [Event]? = nil,
         bookmarkManager: BookmarkManager,
-        showViewAllButton: Bool = true
+        showViewAllButton: Bool = true,
+        showDistance: Bool = false,
+        locationManager: LocationManager? = nil
     ) {
         self.title = title
         self.events = events
-        self.allEvents = allEvents ?? events  // Use allEvents if provided, otherwise use events
+        self.allEvents = allEvents ?? events
         self.bookmarkManager = bookmarkManager
         self.showViewAllButton = showViewAllButton
+        self.showDistance = showDistance
+        self.locationManager = locationManager
     }
     
     var body: some View {
@@ -297,8 +434,8 @@ struct EventSection: View {
                 
                 Spacer()
                 
-                // FIXED: Use NavigationLink instead of Button
-                if showViewAllButton {
+                // View All Button
+                if showViewAllButton && !allEvents.isEmpty {
                     NavigationLink(value: NavigationDestination.filteredEvents(
                         EventSectionDestination(title: title, events: allEvents)
                     )) {
@@ -314,20 +451,53 @@ struct EventSection: View {
             }
             .padding(.horizontal, 20)
             
-            // Event List
-            LazyVStack(spacing: 0) {
-                ForEach(events) { event in
-                    NavigationLink(value: NavigationDestination.eventDetail(event)) {
-                        EventRow(
-                            event: event,
-                            bookmarkManager: bookmarkManager
-                        )
+            // Event List or Empty State
+            if events.isEmpty && title == "Nearby" {
+                // Show empty state for nearby section
+                VStack(spacing: 12) {
+                    Image(systemName: "map")
+                        .font(.system(size: 32))
+                        .foregroundColor(.gray)
+                    
+                    Text("No nearby events")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    Text("No events found near your location")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else if !events.isEmpty {
+                LazyVStack(spacing: 0) {
+                    ForEach(events) { event in
+                        NavigationLink(value: NavigationDestination.eventDetail(event)) {
+                            EventRow(
+                                event: event,
+                                bookmarkManager: bookmarkManager,
+                                distanceText: showDistance && locationManager != nil ? getDistanceText(for: event) : nil
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
             }
         }
         .padding(.bottom, 40)
+    }
+    
+    private func getDistanceText(for event: Event) -> String? {
+        guard let locationManager = locationManager,
+              let coordinates = event.coordinates else {
+            return nil
+        }
+        return locationManager.formattedDistance(to: CLLocationCoordinate2D(
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude
+        ))
     }
 }
 
@@ -356,7 +526,6 @@ struct GenreCardsSection: View {
     }
 }
 
-// MARK: - Genre Card
 // MARK: - Genre Card
 struct GenreCard: View {
     let genreName: String

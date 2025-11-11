@@ -2,6 +2,7 @@ import SwiftUI
 import FirebaseCore
 import FirebaseAuth
 import GoogleSignIn
+import Combine
 
 // MARK: - AppDelegate
 class AppDelegate: NSObject, UIApplicationDelegate {
@@ -87,6 +88,7 @@ struct BurnerApp: App {
                     .environmentObject(appState.ticketsViewModel)
                     .environmentObject(appState.tagViewModel)
                     .environmentObject(appState.authService)
+                    .environmentObject(appState.locationManager)
                     .onOpenURL { url in
                         handleIncomingURL(url)
                     }
