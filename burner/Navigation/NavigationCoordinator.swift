@@ -95,7 +95,36 @@ enum NavigationDestination: Hashable {
     }
 
     static func == (lhs: NavigationDestination, rhs: NavigationDestination) -> Bool {
-        lhs.hashValue == rhs.hashValue
+        switch (lhs, rhs) {
+        case (.eventDetail(let lEvent), .eventDetail(let rEvent)):
+            return lEvent.id == rEvent.id
+        case (.eventById(let lId), .eventById(let rId)):
+            return lId == rId
+        case (.filteredEvents(let lDest), .filteredEvents(let rDest)):
+            return lDest == rDest
+        case (.ticketDetail(let lTicket), .ticketDetail(let rTicket)):
+            return lTicket.id == rTicket.id
+        case (.ticketPurchase(let lEvent), .ticketPurchase(let rEvent)):
+            return lEvent.id == rEvent.id
+        case (.transferTicket(let lTicket), .transferTicket(let rTicket)):
+            return lTicket.id == rTicket.id
+        case (.transferTicketsList, .transferTicketsList):
+            return true
+        case (.accountDetails, .accountDetails):
+            return true
+        case (.bookmarks, .bookmarks):
+            return true
+        case (.paymentSettings, .paymentSettings):
+            return true
+        case (.scanner, .scanner):
+            return true
+        case (.support, .support):
+            return true
+        case (.debugMenu, .debugMenu):
+            return true
+        default:
+            return false
+        }
     }
 }
 
