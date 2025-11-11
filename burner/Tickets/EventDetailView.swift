@@ -239,7 +239,7 @@ struct EventDetailView: View {
                                     }
                                 }) {
                                     Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                                        .font(.system(size: 22))
+                                        .appCard()
                                         .foregroundColor(.white)
                                         .iconButtonStyle(
                                             size: 60,
@@ -253,7 +253,7 @@ struct EventDetailView: View {
                                     coordinator.shareEvent(event)
                                 }) {
                                     Image(systemName: "square.and.arrow.up")
-                                        .font(.system(size: 22))
+                                        .appCard()
                                         .foregroundColor(.white)
                                         .iconButtonStyle(
                                             size: 60,
@@ -504,12 +504,12 @@ struct MapsOptionsSheet: View {
                 }) {
                     HStack {
                         Image(systemName: "map")
-                            .font(.system(size: 20))
+                            .appCard()
                         Text("Apple Maps")
                             .appBody()
                         Spacer()
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
+                            .appSecondary()
                             .foregroundColor(.gray)
                     }
                     .foregroundColor(.white)
@@ -524,12 +524,12 @@ struct MapsOptionsSheet: View {
                 }) {
                     HStack {
                         Image(systemName: "globe")
-                            .font(.system(size: 20))
+                            .appCard()
                         Text("Google Maps")
                             .appBody()
                         Spacer()
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
+                            .appSecondary()
                             .foregroundColor(.gray)
                     }
                     .foregroundColor(.white)

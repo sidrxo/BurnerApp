@@ -12,14 +12,14 @@ struct ReauthenticationView: View {
     @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 Color.black.ignoresSafeArea()
 
                 VStack(spacing: 24) {
                     VStack(spacing: 12) {
                         Text("Re-authentication Required")
-                            .font(.system(size: 24, weight: .bold))
+                            .appSectionHeader()
                             .foregroundColor(.white)
 
                         Text("For security reasons, please confirm your password to delete your account.")

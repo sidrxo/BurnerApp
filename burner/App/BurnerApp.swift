@@ -138,54 +138,31 @@ struct BurnerApp: App {
 
     // MARK: - URL Handling
     private func handleIncomingURL(_ url: URL) {
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("🔗 INCOMING URL")
-        print("   Full URL: \(url.absoluteString)")
-        print("   Scheme: \(url.scheme ?? "nil")")
-        print("   Host: \(url.host ?? "nil")")
-        print("   Path: \(url.path)")
-        print("   Path Components: \(url.pathComponents)")
-        print("   Last Component: \(url.lastPathComponent)")
-
         // 1) Google Sign-In first
         if GIDSignIn.sharedInstance.handle(url) {
-            print("✅ Handled by Google Sign-In")
-            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             return
         }
 
         // 2) Check for Firebase passwordless sign-in link
         if appState.passwordlessAuthHandler.handleSignInLink(url: url) {
-            print("✅ Handled by Passwordless Auth")
-            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             return
         }
 
         // 3) Our custom scheme(s)
         guard url.scheme?.lowercased() == "burner" else {
-            print("⚠️ Not a burner:// URL, ignoring")
-            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             return
         }
 
         if let deeplink = parseBurnerDeepLink(url) {
             switch deeplink {
             case .event(let id):
-                print("✅ Parsed as event deep link")
-                print("   Event ID: \(id)")
-                print("   ID length: \(id.count)")
                 navigateToEvent(eventId: id)
             case .auth(let link):
-                print("✅ Parsed as auth deep link")
-                print("   Link: \(link)")
                 // Handle the passwordless auth link
                 if let linkUrl = URL(string: link) {
                     _ = appState.passwordlessAuthHandler.handleSignInLink(url: linkUrl)
                 }
             }
-        } else {
-            print("❌ Failed to parse deep link")
-            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         }
     }
 
@@ -195,57 +172,38 @@ struct BurnerApp: App {
     }
 
     private func parseBurnerDeepLink(_ url: URL) -> BurnerDeepLink? {
-        print("🔍 Parsing deep link...")
-
         guard let comps = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
-            print("❌ Failed to create URLComponents")
             return nil
         }
 
         // Case A: burner://auth?link=<url> (passwordless auth)
         if comps.host == "auth" {
-            print("   Detected auth format: burner://auth?link=<url>")
             if let linkParam = comps.queryItems?.first(where: { $0.name == "link" })?.value {
-                print("   Extracted link: '\(linkParam)'")
                 return .auth(linkParam)
             }
-            print("   No link parameter found")
             return nil
         }
 
         // Case B: burner://event/12345 (host-based)
         if comps.host == "event" {
-            print("   Detected host-based format: burner://event/ID")
             let id = url.lastPathComponent
-            print("   Extracted ID: '\(id)'")
             return id.isEmpty ? nil : .event(id)
         }
 
         // Case C: burner:///event/12345 (path-based)
         let parts = url.pathComponents.filter { $0 != "/" }
-        print("   Path components (filtered): \(parts)")
 
         if parts.count >= 2, parts[0] == "event" {
-            print("   Detected path-based format: burner:///event/ID")
             let id = parts[1]
-            print("   Extracted ID: '\(id)'")
             return id.isEmpty ? nil : .event(id)
         }
 
-        print("   No valid format detected")
         return nil
     }
     
     private func navigateToEvent(eventId: String) {
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("🚀 DEEP LINK NAVIGATION")
-        print("   Event ID: \(eventId)")
-        print("   Current tab: \(appState.navigationCoordinator.selectedTab)")
-
         // Use NavigationCoordinator for deep linking
         appState.navigationCoordinator.handleDeepLink(eventId: eventId)
-        print("✅ Handled deep link via NavigationCoordinator")
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
     private func setupResetObserver() {

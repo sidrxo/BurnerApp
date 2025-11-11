@@ -34,7 +34,7 @@ struct EmailAuthView: View {
                             // Header
                             VStack(spacing: 12) {
                                 Text(headerTitle)
-                                    .font(.system(size: 28, weight: .semibold))
+                                    .appPageHeader()
                                     .foregroundColor(.white)
                                 
                                 if let subtitle = headerSubtitle {
@@ -118,7 +118,7 @@ struct EmailAuthView: View {
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "chevron.left")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .appBody()
                                 Text("Back")
                                     .appBody()
                             }
@@ -132,7 +132,7 @@ struct EmailAuthView: View {
                         dismiss()
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .semibold))
+                            .appBody()
                             .foregroundColor(.white.opacity(0.7))
                             .frame(width: 32, height: 32)
                             .background(Color.white.opacity(0.1))
@@ -225,10 +225,10 @@ struct EmailAuthView: View {
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(Color.white.opacity(0.2), lineWidth: 1)
                     )
-                
+
                 if isSignUpMode {
                     Text("Must be at least 6 characters")
-                        .font(.system(size: 12))
+                        .appCaption()
                         .foregroundColor(.white.opacity(0.5))
                 }
             }

@@ -281,7 +281,7 @@ struct FeatureRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: icon)
-                .font(.system(size: 24))
+                .appSectionHeader()
                 .foregroundColor(.blue)
                 .frame(width: 32)
             

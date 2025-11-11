@@ -312,16 +312,16 @@ struct ToastAlertView: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 24))
+                .appSectionHeader()
                 .foregroundColor(iconColor)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .appBody()
                     .foregroundColor(.white)
 
                 Text(message)
-                    .font(.system(size: 13))
+                    .appSecondary()
                     .foregroundColor(.white.opacity(0.9))
             }
 

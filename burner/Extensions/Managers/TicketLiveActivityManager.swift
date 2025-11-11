@@ -38,7 +38,7 @@ class TicketLiveActivityManager {
                 )
             }
         } catch {
-            print("Error starting live activity: \(error)")
+            // Live activity start failed silently
         }
     }
     

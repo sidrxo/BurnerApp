@@ -84,13 +84,10 @@ struct ExploreView: View {
             )
             let distance = userLocation.distance(from: eventLocation)
 
-            // ✅ Only include events within maxNearbyDistance (50km)
             guard distance <= maxNearbyDistance else {
-                print("📍 Filtering out \(event.name) - \(String(format: "%.1f", distance/1000))km away (max: \(maxNearbyDistance/1000)km)")
                 return nil
             }
 
-            print("📍 Including \(event.name) - \(String(format: "%.1f", distance/1000))km away")
             return (event, distance)
         }
 
@@ -194,7 +191,7 @@ struct ExploreView: View {
                                 .frame(width: 44, height: 44)
 
                             Image(systemName: "map")
-                                .font(.system(size: 20))
+                                .appCard()
                                 .foregroundColor(userLocationManager.savedLocation != nil ? .white : .gray.opacity(0.5))
                         }
                     }
@@ -218,7 +215,6 @@ struct ExploreView: View {
         }
         .onChange(of: coordinator.pendingDeepLink) { _, eventId in
             if let eventId = eventId {
-                print("🎯 ExploreView: Navigating to event \(eventId)")
                 coordinator.navigate(to: .eventById(eventId))
             }
         }

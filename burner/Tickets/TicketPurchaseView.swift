@@ -110,7 +110,7 @@ struct TicketPurchaseView: View {
                         }
                     }) {
                         Image(systemName: currentStep != .paymentMethod ? "chevron.left" : "xmark")
-                            .font(.system(size: 17, weight: .semibold))
+                            .appBody()
                             .foregroundColor(.white)
                     }
                 }
@@ -139,7 +139,7 @@ struct TicketPurchaseView: View {
                         .fill(Color.gray.opacity(0.3))
                         .overlay(
                             Image(systemName: "music.note")
-                                .font(.system(size: 20))
+                                .appCard()
                                 .foregroundColor(.gray)
                         )
                 }
@@ -169,11 +169,11 @@ struct TicketPurchaseView: View {
     private var priceSummary: some View {
         HStack {
             Text("Total")
-                .font(.system(size: 20, weight: .semibold))
+                .appCard()
                 .foregroundColor(.white)
             Spacer()
             Text("£\(String(format: "%.2f", event.price))")
-                .font(.system(size: 20, weight: .semibold))
+                .appCard()
                 .foregroundColor(.white)
         }
         .padding(20)
@@ -196,9 +196,9 @@ struct TicketPurchaseView: View {
                 Button(action: handleApplePayPayment) {
                     HStack(spacing: 8) {
                         Image(systemName: "applelogo")
-                            .font(.system(size: 20, weight: .medium))
+                            .appCard()
                         Text("Pay")
-                            .font(.system(size: 20, weight: .medium))
+                            .appCard()
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -225,9 +225,9 @@ struct TicketPurchaseView: View {
             }) {
                 HStack(spacing: 8) {
                     Image(systemName: "creditcard.fill")
-                        .font(.system(size: 20, weight: .medium))
+                        .appCard()
                     Text("Pay with Card")
-                        .font(.system(size: 20, weight: .medium))
+                        .appCard()
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
@@ -258,7 +258,7 @@ struct TicketPurchaseView: View {
             // Security badge
             HStack(spacing: 8) {
                 Image(systemName: "lock.shield.fill")
-                    .font(.system(size: 14))
+                    .appSecondary()
                     .foregroundColor(.green)
                 Text("Secured by Stripe")
                     .appCaption()
@@ -287,7 +287,7 @@ struct TicketPurchaseView: View {
                         HStack(spacing: 12) {
                             // Card brand icon
                             Image(systemName: "creditcard.fill")
-                                .font(.system(size: 24))
+                                .appSectionHeader()
                                 .foregroundColor(selectedSavedCard?.id == method.id ? .green : .white)
                             
                             VStack(alignment: .leading, spacing: 4) {
@@ -306,9 +306,9 @@ struct TicketPurchaseView: View {
                                             .clipShape(RoundedRectangle(cornerRadius: 4))
                                     }
                                 }
-                                
+
                                 Text("•••• \(method.last4)")
-                                    .font(.system(size: 16, weight: .medium))
+                                    .appBody()
                                     .foregroundColor(.white)
                                 
                                 Text("Expires \(method.expMonth)/\(method.expYear)")
@@ -320,7 +320,7 @@ struct TicketPurchaseView: View {
                             
                             if selectedSavedCard?.id == method.id {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 24))
+                                    .appSectionHeader()
                                     .foregroundColor(.green)
                             }
                         }
@@ -355,7 +355,7 @@ struct TicketPurchaseView: View {
             
             Button(action: handlePrimaryAction) {
                 Text(primaryActionTitle)
-                    .font(.system(size: 17, weight: .semibold))
+                    .appBody()
                     .foregroundColor(isPrimaryActionEnabled ? .black : .white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)

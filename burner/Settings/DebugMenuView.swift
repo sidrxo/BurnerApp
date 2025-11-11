@@ -6,6 +6,7 @@ struct DebugMenuView: View {
     @AppStorage("useWalletView") private var useWalletView = true
     @State private var showBurnerError = false
     @State private var burnerErrorMessage = ""
+    @State private var showResetConfirmation = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -15,8 +16,19 @@ struct DebugMenuView: View {
             
             ScrollView {
                 VStack(spacing: 0) {
-                    // ... other sections remain the same ...
-                    
+                    MenuSection(title: "APP DATA") {
+                        Button(action: {
+                            showResetConfirmation = true
+                        }) {
+                            MenuItemContent(
+                                title: "Reset App to First Install",
+                                subtitle: "Clear all data and settings"
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+
                     MenuSection(title: "BURNER MODE") {
                         Button(action: {
                             toggleBurnerMode()
@@ -41,10 +53,44 @@ struct DebugMenuView: View {
         } message: {
             Text(burnerErrorMessage)
         }
+        .alert("Reset App?", isPresented: $showResetConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Reset", role: .destructive) {
+                resetAppToFirstInstall()
+            }
+        } message: {
+            Text("This will clear all app data, sign you out, and reset the app to its first install state. This action cannot be undone.")
+        }
     }
-    
-    // ... other functions remain the same ...
-    
+
+    private func resetAppToFirstInstall() {
+        Task {
+            // Sign out the user if signed in
+            if appState.authService.currentUser != nil {
+                try? appState.authService.signOut()
+            }
+
+            // Clear UserDefaults
+            if let bundleID = Bundle.main.bundleIdentifier {
+                UserDefaults.standard.removePersistentDomain(forName: bundleID)
+            }
+
+            // Disable burner mode if enabled
+            if appState.showingBurnerLockScreen {
+                burnerManager.disable()
+                await MainActor.run {
+                    appState.showingBurnerLockScreen = false
+                }
+            }
+
+            // Reset navigation
+            await MainActor.run {
+                appState.navigationCoordinator.resetAllNavigation()
+                appState.navigationCoordinator.selectTab(.home)
+            }
+        }
+    }
+
     private func toggleBurnerMode() {
         if appState.showingBurnerLockScreen {
             // Disable burner mode
@@ -82,7 +128,6 @@ struct DebugMenuView: View {
                 // Could show setup sheet here if needed
                 burnerErrorMessage = "Burner mode setup not valid"
                 showBurnerError = true
-                print("⚠️ [Debug] Burner mode setup not valid")
             }
         }
     }

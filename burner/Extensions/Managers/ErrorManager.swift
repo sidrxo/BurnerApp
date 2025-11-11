@@ -32,13 +32,12 @@ class ErrorManager: ObservableObject {
 
     // Log error without showing UI
     func logError(_ error: Error, context: String? = nil) {
-        let prefix = context ?? "Error"
-        print("❌ \(prefix): \(error.localizedDescription)")
+        // Error logging removed - errors are handled through UI
     }
 
     // Log success
     func logSuccess(_ message: String) {
-        print("✅ \(message)")
+        // Success logging removed - handled through UI
     }
 }
 

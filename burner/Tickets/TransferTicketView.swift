@@ -22,7 +22,7 @@ struct TransferTicketView: View {
                 VStack(spacing: 24) {
                     // Icon
                     Image(systemName: "arrow.right.circle.fill")
-                        .font(.system(size: 60))
+                        .appLargeIcon
                         .foregroundColor(.white)
 
                     // Title
@@ -60,11 +60,11 @@ struct TransferTicketView: View {
                     // Disclaimer
                     VStack(spacing: 8) {
                         Text("Important")
-                            .font(.system(size: 12, weight: .semibold))
+                            .appCaption()
                             .foregroundColor(.white)
 
                         Text("Once transferred, you will no longer have access to this ticket. The recipient will receive a notification and the ticket will appear in their account.")
-                            .font(.system(size: 12, weight: .regular))
+                            .appCaption()
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)

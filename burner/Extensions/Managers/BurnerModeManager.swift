@@ -132,11 +132,7 @@ class BurnerModeManager: ObservableObject {
         guard hasAllCategoriesSelected() else {
             throw BurnerModeError.invalidSetup("Not enough categories selected")
         }
-        
-        print("Enabling Block-All Burner Mode...")
-        print("Categories selected: \(selectedApps.categoryTokens.count)")
-        print("Apps to keep available: \(selectedApps.applicationTokens.count)")
-        
+
         // Request authorization
         try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
         
@@ -148,21 +144,17 @@ class BurnerModeManager: ObservableObject {
             // Block all except selected apps
             store.shield.applicationCategories = .all(except: selectedApps.applicationTokens)
         }
-        
+
         UserDefaults.standard.set(true, forKey: "burnerModeEnabled")
-        print("Block-All Burner mode enabled")
     }
-    
+
     func disable() {
         guard isAuthorized else {
-            print("Cannot disable: Screen Time permission required")
             return
         }
-        
-        print("Disabling burner mode...")
+
         store.clearAllSettings()
         UserDefaults.standard.set(false, forKey: "burnerModeEnabled")
-        print("Burner mode disabled")
     }
     
     func clearAllSelections() {
