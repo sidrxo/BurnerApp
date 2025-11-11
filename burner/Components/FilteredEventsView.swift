@@ -6,7 +6,9 @@ struct FilteredEventsView: View {
     let title: String
     let events: [Event]
     @EnvironmentObject var bookmarkManager: BookmarkManager
-    
+    @EnvironmentObject var appState: AppState
+    @State private var showingSignInAlert = false
+
     var body: some View {
         VStack(spacing: 0) {
             if events.isEmpty {
@@ -22,7 +24,8 @@ struct FilteredEventsView: View {
                             NavigationLink(value: NavigationDestination.eventDetail(event)) {
                                 EventRow(
                                     event: event,
-                                    bookmarkManager: bookmarkManager
+                                    bookmarkManager: bookmarkManager,
+                                    showingSignInAlert: $showingSignInAlert
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
@@ -30,15 +33,38 @@ struct FilteredEventsView: View {
                     }
                     .padding(.bottom, 100)
                 }
-              
+
             }
-            
+
         }
         .background(Color.black)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color.black, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
+        .overlay {
+            if showingSignInAlert {
+                CustomAlertView(
+                    title: "Sign In Required",
+                    description: "You need to be signed in to bookmark events",
+                    cancelAction: {
+                        withAnimation {
+                            showingSignInAlert = false
+                        }
+                    },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        withAnimation {
+                            showingSignInAlert = false
+                        }
+                        appState.isSignInSheetPresented = true
+                    },
+                    primaryActionTitle: "Sign In",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(999)
+            }
         }
     }
     

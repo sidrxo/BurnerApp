@@ -8,11 +8,13 @@ import CoreLocation
 struct SearchView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var coordinator: NavigationCoordinator
+    @EnvironmentObject var appState: AppState
     @StateObject private var viewModel: SearchViewModel
 
     @State private var searchText = ""
     @State private var sortBy: SortOption = .date
     @State private var pendingNearbySortRequest = false
+    @State private var showingSignInAlert = false
     @FocusState private var isSearchFocused: Bool
 
     init() {
@@ -60,6 +62,30 @@ struct SearchView: View {
                 Task {
                     await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText)
                 }
+            }
+        }
+        .overlay {
+            if showingSignInAlert {
+                CustomAlertView(
+                    title: "Sign In Required",
+                    description: "You need to be signed in to bookmark events",
+                    cancelAction: {
+                        withAnimation {
+                            showingSignInAlert = false
+                        }
+                    },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        withAnimation {
+                            showingSignInAlert = false
+                        }
+                        appState.isSignInSheetPresented = true
+                    },
+                    primaryActionTitle: "Sign In",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(999)
             }
         }
     }
@@ -150,7 +176,8 @@ struct SearchView: View {
                             NavigationLink(value: NavigationDestination.eventDetail(event)) {
                                 EventRow(
                                     event: event,
-                                    bookmarkManager: bookmarkManager
+                                    bookmarkManager: bookmarkManager,
+                                    showingSignInAlert: $showingSignInAlert
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())

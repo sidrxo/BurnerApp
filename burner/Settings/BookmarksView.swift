@@ -4,7 +4,9 @@ import Kingfisher
 struct BookmarksView: View {
     // Use @EnvironmentObject instead of @StateObject
     @EnvironmentObject var bookmarkManager: BookmarkManager
+    @EnvironmentObject var appState: AppState
     @State private var searchText = ""
+    @State private var showingSignInAlert = false
     @Environment(\.dismiss) var dismiss
     
     private var filteredBookmarks: [Event] {
@@ -27,11 +29,11 @@ struct BookmarksView: View {
                     .padding(.top, 20)
 
 
-                
+
                 if !bookmarkManager.bookmarkedEvents.isEmpty {
-                    
+
                 }
-                
+
                 if bookmarkManager.isLoading {
                     loadingView
                 } else if bookmarkManager.bookmarkedEvents.isEmpty {
@@ -42,6 +44,30 @@ struct BookmarksView: View {
             }
             .background(Color.black)
             .navigationBarHidden(true)
+            .overlay {
+                if showingSignInAlert {
+                    CustomAlertView(
+                        title: "Sign In Required",
+                        description: "You need to be signed in to bookmark events",
+                        cancelAction: {
+                            withAnimation {
+                                showingSignInAlert = false
+                            }
+                        },
+                        cancelActionTitle: "Cancel",
+                        primaryAction: {
+                            withAnimation {
+                                showingSignInAlert = false
+                            }
+                            appState.isSignInSheetPresented = true
+                        },
+                        primaryActionTitle: "Sign In",
+                        customContent: EmptyView()
+                    )
+                    .transition(.opacity)
+                    .zIndex(999)
+                }
+            }
         }
         .navigationViewStyle(StackNavigationViewStyle())
     }
@@ -107,7 +133,8 @@ struct BookmarksView: View {
                     NavigationLink(destination: EventDetailView(event: event)) {
                         EventRow(
                             event: event,
-                            bookmarkManager: bookmarkManager
+                            bookmarkManager: bookmarkManager,
+                            showingSignInAlert: $showingSignInAlert
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
