@@ -87,6 +87,7 @@ struct BurnerApp: App {
                     .environmentObject(appState.ticketsViewModel)
                     .environmentObject(appState.tagViewModel)
                     .environmentObject(appState.authService)
+                    .environmentObject(appState.userLocationManager)
                     .onOpenURL { url in
                         handleIncomingURL(url)
                     }

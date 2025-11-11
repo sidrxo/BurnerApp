@@ -1,5 +1,7 @@
 import SwiftUI
 import Kingfisher
+import CoreLocation
+internal import FirebaseFirestoreInternal
 
 struct ExploreView: View {
     @EnvironmentObject var eventViewModel: EventViewModel
@@ -7,9 +9,13 @@ struct ExploreView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
     @EnvironmentObject var tagViewModel: TagViewModel
+    @EnvironmentObject var userLocationManager: UserLocationManager
 
     @State private var searchText = ""
     @State private var selectedEvent: Event? = nil
+
+    // ✅ Maximum distance for "nearby" events (in meters)
+    private let maxNearbyDistance: CLLocationDistance = 50_000 // 50km / ~31 miles
 
     // MARK: - Dynamic Genres from Firestore
     private var displayGenres: [String] {
@@ -49,6 +55,53 @@ struct ExploreView: View {
     
     var thisWeekEventsPreview: [Event] {
         Array(thisWeekEvents.prefix(5))
+    }
+    
+    // MARK: - Nearby Events (Filtered by Distance)
+    var nearbyEvents: [Event] {
+        guard let userLocation = userLocationManager.currentCLLocation else {
+            return []
+        }
+        
+        let now = Date()
+        
+        // Get all upcoming events with coordinates
+        let eventsWithCoordinates = eventViewModel.events
+            .filter { event in
+                guard let startTime = event.startTime,
+                      let _ = event.coordinates else {
+                    return false
+                }
+                return !event.isFeatured && startTime > now
+            }
+        
+        // Calculate distance and filter by max distance
+        let eventsWithDistance = eventsWithCoordinates.compactMap { event -> (Event, CLLocationDistance)? in
+            guard let coordinates = event.coordinates else { return nil }
+            let eventLocation = CLLocation(
+                latitude: coordinates.latitude,
+                longitude: coordinates.longitude
+            )
+            let distance = userLocation.distance(from: eventLocation)
+            
+            // ✅ Only include events within maxNearbyDistance (50km)
+            guard distance <= maxNearbyDistance else {
+                print("📍 Filtering out \(event.name) - \(String(format: "%.1f", distance/1000))km away (max: \(maxNearbyDistance/1000)km)")
+                return nil
+            }
+            
+            print("📍 Including \(event.name) - \(String(format: "%.1f", distance/1000))km away")
+            return (event, distance)
+        }
+        
+        // Sort by distance (closest first)
+        return eventsWithDistance
+            .sorted { $0.1 < $1.1 }
+            .map { $0.0 }
+    }
+    
+    var nearbyEventsPreview: [Event] {
+        Array(nearbyEvents.prefix(5))
     }
     
     // MARK: - Popular Events
@@ -110,7 +163,32 @@ struct ExploreView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                HeaderSection(title: "Explore")
+                // Header with Location Button
+                HStack {
+                    Text("Explore")
+                        .appPageHeader()
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    // Location Button - Top Right
+                    Button(action: {
+                        coordinator.activeModal = .helloWorld
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(userLocationManager.savedLocation != nil ? Color.white.opacity(0.2) : Color.white.opacity(0.1))
+                                .frame(width: 44, height: 44)
+                            
+                            Image(systemName: "map.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.white)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 60)
+                .padding(.bottom, 30)
 
                 if eventViewModel.isLoading && eventViewModel.events.isEmpty {
                     loadingView
@@ -145,7 +223,7 @@ struct ExploreView: View {
     // MARK: - Content View
     private var contentView: some View {
         VStack(spacing: 0) {
-            // Featured Hero Card
+            // 1st Featured Hero Card
             if let featured = featuredEvents.first {
                 NavigationLink(value: NavigationDestination.eventDetail(featured)) {
                     FeaturedHeroCard(event: featured, bookmarkManager: bookmarkManager)
@@ -155,43 +233,64 @@ struct ExploreView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             
-            // Popular Section - FIXED: Pass full events list
+            // Popular Section
             if !popularEvents.isEmpty {
                 EventSection(
                     title: "Popular",
                     events: popularEventsPreview,
-                    allEvents: popularEvents,  // NEW: Pass all events
+                    allEvents: popularEvents,
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: false
                 )
             }
             
-            // This Week Section - FIXED: Pass full events list
+            // This Week Section
             if !thisWeekEvents.isEmpty {
                 EventSection(
                     title: "This Week",
                     events: thisWeekEventsPreview,
-                    allEvents: thisWeekEvents,  // NEW: Pass all events
+                    allEvents: thisWeekEvents,
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: false
                 )
             }
+            
+            // Nearby Section - only show if user has set location
+            if userLocationManager.savedLocation != nil && !nearbyEvents.isEmpty {
+                EventSection(
+                    title: "Nearby",
+                    events: nearbyEventsPreview,
+                    allEvents: nearbyEvents,
+                    bookmarkManager: bookmarkManager,
+                    showViewAllButton: false
+                )
+            }
+            
+            // ✅ 2nd Featured Card (before genre cards)
+            if featuredEvents.count > 1 {
+                NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[1])) {
+                    FeaturedHeroCard(event: featuredEvents[1], bookmarkManager: bookmarkManager)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 40)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
 
-            // Genre Cards - Horizontal Scrolling
+            // ✅ Genre Cards - Horizontal Scrolling (moved here, after 2nd featured)
             GenreCardsSection(
                 genres: displayGenres,
                 allEventsForGenre: { genre in allEventsForGenre(genre) }
             )
 
-            // Genre Sections
+            // Genre Sections with remaining featured cards
             genreSectionsWithFeaturedCards
             
-            // All Events Section - FIXED: Pass full events list
+            // All Events Section
             if !allEvents.isEmpty {
                 EventSection(
                     title: "All Events",
                     events: allEventsPreview,
-                    allEvents: allEvents,  // NEW: Pass all events
+                    allEvents: allEvents,
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: allEvents.count > 6
                 )
@@ -209,8 +308,9 @@ struct ExploreView: View {
             let genrePreview = eventsForGenrePreview(genre)
             
             Group {
+                // ✅ Start from index 2 (3rd featured card) since we already showed 1st and 2nd
                 if index % 2 == 0 {
-                    let featuredIndex = 1 + (index / 2)
+                    let featuredIndex = 2 + (index / 2) // Start from 3rd featured card
                     if featuredIndex < featuredEvents.count {
                         NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[featuredIndex])) {
                             FeaturedHeroCard(event: featuredEvents[featuredIndex], bookmarkManager: bookmarkManager)
@@ -221,11 +321,10 @@ struct ExploreView: View {
                     }
                 }
                 
-                // FIXED: Pass both preview and full events list
                 EventSection(
                     title: genre,
                     events: genrePreview,
-                    allEvents: genreEvents,  // NEW: Pass all events
+                    allEvents: genreEvents,
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: true
                 )
@@ -265,24 +364,23 @@ struct SeededRandomNumberGenerator: RandomNumberGenerator {
 }
 
 // MARK: - Reusable Event Section Component
-// FIXED: Use NavigationLink instead of Button for chevron
 struct EventSection: View {
     let title: String
     let events: [Event]          // Preview events to display
-    let allEvents: [Event]        // NEW: All events for navigation
+    let allEvents: [Event]        // All events for navigation
     let bookmarkManager: BookmarkManager
     let showViewAllButton: Bool
     
     init(
         title: String,
         events: [Event],
-        allEvents: [Event]? = nil,  // NEW: Optional, defaults to events
+        allEvents: [Event]? = nil,
         bookmarkManager: BookmarkManager,
         showViewAllButton: Bool = true
     ) {
         self.title = title
         self.events = events
-        self.allEvents = allEvents ?? events  // Use allEvents if provided, otherwise use events
+        self.allEvents = allEvents ?? events
         self.bookmarkManager = bookmarkManager
         self.showViewAllButton = showViewAllButton
     }
@@ -297,7 +395,6 @@ struct EventSection: View {
                 
                 Spacer()
                 
-                // FIXED: Use NavigationLink instead of Button
                 if showViewAllButton {
                     NavigationLink(value: NavigationDestination.filteredEvents(
                         EventSectionDestination(title: title, events: allEvents)
@@ -356,7 +453,6 @@ struct GenreCardsSection: View {
     }
 }
 
-// MARK: - Genre Card
 // MARK: - Genre Card
 struct GenreCard: View {
     let genreName: String

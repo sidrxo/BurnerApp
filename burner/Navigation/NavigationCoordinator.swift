@@ -113,12 +113,13 @@ enum ModalPresentation: Identifiable {
     case addPaymentMethod
     case manualTicketEntry
     case fullScreenQRCode(Ticket)
+    case helloWorld  // ✅ NEW
 
     var id: String {
         switch self {
         case .signIn: return "signIn"
         case .burnerSetup: return "burnerSetup"
-        case .ticketPurchase(let event): return "ticketPurchase-\(event.id ?? "")" // ✅ UPDATED
+        case .ticketPurchase(let event): return "ticketPurchase-\(event.id ?? "")"
         case .ticketDetail(let ticket): return "ticketDetail-\(ticket.id ?? "")"
         case .shareSheet: return "shareSheet"
         case .cardInput: return "cardInput"
@@ -127,13 +128,16 @@ enum ModalPresentation: Identifiable {
         case .addPaymentMethod: return "addPaymentMethod"
         case .manualTicketEntry: return "manualTicketEntry"
         case .fullScreenQRCode(let ticket): return "fullScreenQRCode-\(ticket.id ?? "")"
+        case .helloWorld: return "helloWorld"  // ✅ NEW
         }
     }
 
     var isFullScreen: Bool {
         switch self {
-        case .signIn, .burnerSetup, .ticketDetail, .fullScreenQRCode, .passwordlessAuth, .ticketPurchase: // ✅ ADDED ticketPurchase
+        case .signIn, .burnerSetup, .ticketDetail, .fullScreenQRCode, .passwordlessAuth, .ticketPurchase:
             return true
+        case .helloWorld:  // ✅ CHANGED - now a sheet instead of fullscreen
+            return false
         default:
             return false
         }
