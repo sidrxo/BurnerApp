@@ -227,7 +227,7 @@ struct ExploreView: View {
             if showingSignInAlert {
                 CustomAlertView(
                     title: "Sign In Required",
-                    description: "You need to be signed in to bookmark events",
+                    description: "You need to be signed in to bookmark events.",
                     cancelAction: {
                             showingSignInAlert = false
                 },

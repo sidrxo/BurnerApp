@@ -32,7 +32,7 @@ struct CustomAlertView<Content: View>: View {
         self.cancelActionTitle = cancelActionTitle
         self.primaryAction = primaryAction
         self.primaryActionTitle = primaryActionTitle
-        self.primaryActionColor = primaryActionColor // ✅ ADD THIS LINE
+        self.primaryActionColor = primaryActionColor
         self.customContent = customContent
     }
 
@@ -40,13 +40,13 @@ struct CustomAlertView<Content: View>: View {
         HStack {
             VStack(spacing: 0) {
                 Text(title)
-                    .appFont(size: 17, weight: .semibold)
+                    .appCard()
                     .foregroundColor(.white)
                     .padding(.top, 19)
                     .padding(.bottom, 2)
 
                 Text(description)
-                    .appCaption()
+                    .appSecondary()
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 16)
@@ -95,28 +95,4 @@ struct CustomAlertView<Content: View>: View {
             : Color(red: 1, green: 1, blue: 1, opacity: 0.4)
         )
     }
-}
-
-
-
-#Preview {
-    ZStack {
-        Color.black
-            .ignoresSafeArea()
-        
-        CustomAlertView(
-            title: "Sign In Required",
-            description: "You need to be signed in to buy tickets.",
-            cancelAction: {
-                // Cancel action
-            },
-            cancelActionTitle: "Cancel",
-            primaryAction: {
-                // Primary action
-            },
-            primaryActionTitle: "Sign In",
-            customContent: EmptyView()
-        )
-    }
-    .preferredColorScheme(.dark)
 }
