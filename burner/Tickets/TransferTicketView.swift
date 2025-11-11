@@ -22,7 +22,7 @@ struct TransferTicketView: View {
                 VStack(spacing: 24) {
                     // Icon
                     Image(systemName: "arrow.right.circle.fill")
-                        .appLargeIcon
+                        .font(.system(size: 60))
                         .foregroundColor(.white)
 
                     // Title

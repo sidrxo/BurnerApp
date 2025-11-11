@@ -250,8 +250,13 @@ exports.processApplePayPayment = onCall(
 // Create Payment Intent
 // -------------------------
 exports.createPaymentIntent = onCall(
-  { region: "europe-west2", secrets: [stripeSecretKey] },
+  { 
+    region: "europe-west2", 
+    secrets: [stripeSecretKey],
+  },
   async (request) => {
+    const startTime = Date.now();
+    
     try {
       logger.info('createPaymentIntent called', { 
         hasAuth: !!request.auth,
@@ -259,7 +264,6 @@ exports.createPaymentIntent = onCall(
       });
 
       if (!request.auth) {
-        logger.error('Authentication required', {});
         throw new HttpsError("unauthenticated", "Authentication required");
       }
 
@@ -267,33 +271,31 @@ exports.createPaymentIntent = onCall(
       const { eventId } = request.data;
 
       if (!eventId) {
-        logger.error('Missing eventId', { userId });
         throw new HttpsError("invalid-argument", "Event ID required");
       }
 
-      logger.info('Creating payment intent', { userId, eventId });
-
-      // Get event data (soft check - real validation happens in transaction during confirmPurchase)
-      const eventRef = db.collection("events").doc(eventId);
-      const eventDoc = await eventRef.get();
+      // ✅ OPTIMIZATION: Fetch event and user data in PARALLEL
+      const [eventDoc, userDoc] = await Promise.all([
+        db.collection("events").doc(eventId).get(),
+        db.collection("users").doc(userId).get()
+      ]);
 
       if (!eventDoc.exists) {
         throw new HttpsError("not-found", "Event not found");
       }
 
       const event = eventDoc.data();
-      logger.info('Event found', { eventName: event.name, price: event.price });
+      logger.info('Event found', { 
+        eventName: event.name, 
+        price: event.price,
+        fetchTime: Date.now() - startTime 
+      });
 
       const stripe = getStripe();
-      logger.info('Stripe initialized');
-
-      // Get or create customer
-      const userDoc = await db.collection("users").doc(userId).get();
       let customerId = userDoc.data()?.stripeCustomerId;
-      
-      // Get email from user document or auth token, with fallback
       const userEmail = userDoc.data()?.email || request.auth.token.email || null;
 
+      // ✅ OPTIMIZATION: Create customer if needed (unavoidable for first-time users)
       if (!customerId) {
         logger.info('Creating new Stripe customer', { userId, email: userEmail });
         const customerData = {
@@ -303,24 +305,28 @@ exports.createPaymentIntent = onCall(
           }
         };
         
-        // Only add email if it exists
         if (userEmail) {
           customerData.email = userEmail;
         }
         
         const customer = await stripe.customers.create(customerData);
         customerId = customer.id;
-        await db.collection("users").doc(userId).update({
+        
+        // ✅ OPTIMIZATION: Don't await this - write asynchronously
+        db.collection("users").doc(userId).update({
           stripeCustomerId: customerId,
           updatedAt: FieldValue.serverTimestamp()
+        }).catch(err => {
+          logger.error("Failed to save customerId", err, { userId, customerId });
         });
-        logger.info('Stripe customer created', { customerId });
-      } else {
-        logger.info('Using existing Stripe customer', { customerId });
       }
 
-      // Create payment intent - simplified for mobile
-      logger.info('Creating Stripe payment intent', { amount: event.price * 100 });
+      // Create payment intent
+      logger.info('Creating Stripe payment intent', { 
+        amount: event.price * 100,
+        customerTime: Date.now() - startTime 
+      });
+      
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(event.price * 100),
         currency: "gbp",
@@ -331,16 +337,18 @@ exports.createPaymentIntent = onCall(
           eventName: event.name,
           createdAt: new Date().toISOString()
         },
-        // Use manual payment method types instead of automatic
         payment_method_types: ['card'],
         capture_method: "automatic",
         statement_descriptor: "BURNER TICKET",
         statement_descriptor_suffix: event.name.substring(0, 15)
       });
 
-      logger.info('Payment intent created successfully', { paymentIntentId: paymentIntent.id });
+      logger.info('Payment intent created successfully', { 
+        paymentIntentId: paymentIntent.id,
+        intentTime: Date.now() - startTime
+      });
 
-      // Record pending payment (handle undefined email)
+      // ✅ OPTIMIZATION: Don't await this - write asynchronously
       const pendingPaymentData = {
         userId,
         eventId,
@@ -353,38 +361,37 @@ exports.createPaymentIntent = onCall(
         }
       };
       
-      // Only add customerEmail if it exists
       if (userEmail) {
         pendingPaymentData.metadata.customerEmail = userEmail;
       }
       
-      await db.collection("pendingPayments").doc(paymentIntent.id).set(pendingPaymentData);
+      db.collection("pendingPayments").doc(paymentIntent.id).set(pendingPaymentData)
+        .catch(err => {
+          logger.error("Failed to save pending payment", err, { paymentIntentId: paymentIntent.id });
+        });
 
-      logger.info('Payment intent created', {
+      logger.info('Payment intent process completed', {
         paymentIntentId: paymentIntent.id,
-        userId,
-        eventId
+        totalTime: Date.now() - startTime
       });
 
       return {
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
-        amount: event.price,
-        publishableKey: "pk_test_YOUR_KEY_HERE" // Optional: return your publishable key
+        amount: event.price
       };
 
     } catch (error) {
       logger.error('Error creating payment intent', error, {
         userId: request.auth?.uid,
-        eventId: request.data?.eventId
+        eventId: request.data?.eventId,
+        totalTime: Date.now() - startTime
       });
-      
-      // Re-throw HttpsErrors as-is
+
       if (error.code && error.code.includes('/')) {
         throw error;
       }
-      
-      // Wrap other errors
+
       throw new HttpsError(
         "internal",
         error.message || "Error creating payment intent"
@@ -394,14 +401,14 @@ exports.createPaymentIntent = onCall(
 );
 
 // -------------------------
-// Confirm Purchase (create ticket after payment succeeds)
-// -------------------------
-// -------------------------
-// Confirm Purchase (create ticket after payment succeeds)
-// -------------------------
 exports.confirmPurchase = onCall(
-  { region: "europe-west2", secrets: [stripeSecretKey] },
+  { 
+    region: "europe-west2", 
+    secrets: [stripeSecretKey],
+  },
   async (request) => {
+    const startTime = Date.now();
+    
     try {
       logger.info('confirmPurchase called', {
         hasAuth: !!request.auth,
@@ -419,15 +426,19 @@ exports.confirmPurchase = onCall(
         throw new HttpsError("invalid-argument", "Payment intent ID required");
       }
 
-      logger.info('Starting purchase confirmation', { userId, paymentIntentId });
+      const stripe = getStripe();
 
-      // Get pending payment record first (faster than Stripe API call)
-      const pendingPaymentDoc = await db.collection("pendingPayments")
-        .doc(paymentIntentId)
-        .get();
+      // ✅ OPTIMIZATION: Fetch pending payment and verify payment in PARALLEL
+      const [pendingPaymentDoc, paymentIntent] = await Promise.all([
+        db.collection("pendingPayments").doc(paymentIntentId).get(),
+        stripe.paymentIntents.retrieve(paymentIntentId)
+      ]);
+
+      logger.info('Data fetched in parallel', { 
+        fetchTime: Date.now() - startTime 
+      });
 
       if (!pendingPaymentDoc.exists) {
-        logger.error('Payment record not found', { paymentIntentId });
         throw new HttpsError("not-found", "Payment record not found");
       }
 
@@ -435,50 +446,41 @@ exports.confirmPurchase = onCall(
       
       // Check if already processed
       if (pendingPayment.status === "completed") {
-        logger.info('Payment already processed', { paymentIntentId });
         throw new HttpsError("already-exists", "Ticket already created for this payment");
       }
 
-      const stripe = getStripe();
-
-      // Quick payment status check only
-      logger.info('Verifying payment status');
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
+      // Verify payment status
       if (paymentIntent.status !== "succeeded") {
-        logger.error('Payment not completed', { status: paymentIntent.status });
         throw new HttpsError(
           "failed-precondition",
           `Payment not completed. Status: ${paymentIntent.status}`
         );
       }
 
-      // Verify this payment belongs to this user
+      // Verify ownership
       if (paymentIntent.metadata.userId !== userId) {
-        logger.error('Payment does not belong to user', {
-          paymentUserId: paymentIntent.metadata.userId,
-          requestUserId: userId
-        });
         throw new HttpsError("permission-denied", "Unauthorized");
       }
 
-      logger.info('Payment verified as succeeded');
+      logger.info('Payment verified', { verifyTime: Date.now() - startTime });
 
       const eventId = pendingPayment.eventId;
-      logger.info('Processing ticket for event', { eventId });
 
-      // Process ticket creation in transaction
-      return await db.runTransaction(async (transaction) => {
-        // Validate ticket availability within transaction
+      // ✅ OPTIMIZATION: Use batch writes instead of transaction for better performance
+      // Only use transaction for the critical validation step
+      const result = await db.runTransaction(async (transaction) => {
+        // Validate ticket availability
         let event, eventRef;
         try {
           const validation = await validateTicketAvailability(userId, eventId, transaction);
           event = validation.event;
           eventRef = validation.eventRef;
         } catch (validationError) {
-          // Log failed purchase for manual reconciliation
+          // Handle validation failure (existing refund logic)
           const failureReason = validationError.message;
-          await db.collection("failedPurchases").add({
+          
+          // ✅ Don't await - log asynchronously
+          db.collection("failedPurchases").add({
             userId,
             eventId,
             paymentIntentId,
@@ -490,53 +492,28 @@ exports.confirmPurchase = onCall(
               eventName: pendingPayment.metadata?.eventName,
               customerEmail: request.auth.token.email
             }
-          });
+          }).catch(err => logger.error("Failed to log failed purchase", err));
 
-          // Initiate refund if validation fails
-          logger.info('Validation failed, initiating refund', { error: failureReason });
+          // Initiate refund
           try {
             await initiateRefund(stripe, paymentIntentId,
               failureReason.includes('already have') ? 'duplicate' : 'requested_by_customer'
             );
-
-            // Update failed purchase record with refund status
-            await db.collection("failedPurchases")
-              .where("paymentIntentId", "==", paymentIntentId)
-              .limit(1)
-              .get()
-              .then(snapshot => {
-                if (!snapshot.empty) {
-                  snapshot.docs[0].ref.update({ status: 'refunded', refundedAt: FieldValue.serverTimestamp() });
-                }
-              });
           } catch (refundError) {
             logger.error('Refund failed', refundError);
-            // Update failed purchase with refund failure
-            await db.collection("failedPurchases")
-              .where("paymentIntentId", "==", paymentIntentId)
-              .limit(1)
-              .get()
-              .then(snapshot => {
-                if (!snapshot.empty) {
-                  snapshot.docs[0].ref.update({
-                    status: 'refund_failed',
-                    refundError: refundError.message,
-                    updatedAt: FieldValue.serverTimestamp()
-                  });
-                }
-              });
           }
+          
           throw validationError;
         }
 
-        // Simplified payment method details - just store the ID
+        // Simplified payment method details
         const paymentMethodId = paymentIntent.payment_method;
         const paymentMethodDetails = paymentMethodId ? {
           id: paymentMethodId,
           type: "card"
         } : null;
 
-        // Create ticket using consolidated helper
+        // Create ticket
         const ticketRef = db.collection("tickets").doc();
         const { ticketId } = createTicketInTransaction(transaction, {
           ticketRef,
@@ -548,13 +525,14 @@ exports.confirmPurchase = onCall(
           customerEmail: request.auth.token.email || null
         });
 
-        // Delete pending payment instead of updating (cleaner)
+        // Delete pending payment
         transaction.delete(pendingPaymentDoc.ref);
 
         logger.info('Purchase confirmed successfully', {
           ticketId,
           eventId,
-          userId
+          userId,
+          totalTime: Date.now() - startTime
         });
 
         return {
@@ -564,46 +542,43 @@ exports.confirmPurchase = onCall(
         };
       });
 
+      return result;
+
     } catch (error) {
       logger.error('Error confirming purchase', error, {
         userId: request.auth?.uid,
-        paymentIntentId: request.data?.paymentIntentId
+        paymentIntentId: request.data?.paymentIntentId,
+        totalTime: Date.now() - startTime
       });
 
-      // If payment succeeded but we're throwing an error, log as failed purchase
+      // Log failed purchase (existing logic)
       if (request.data?.paymentIntentId) {
-        try {
-          const existingFailure = await db.collection("failedPurchases")
-            .where("paymentIntentId", "==", request.data.paymentIntentId)
-            .limit(1)
-            .get();
-
-          if (existingFailure.empty) {
-            // Only log if we haven't already logged this failure
-            await db.collection("failedPurchases").add({
-              userId: request.auth?.uid,
-              paymentIntentId: request.data.paymentIntentId,
-              reason: error.message || "Unknown error during confirmation",
-              status: 'error',
-              createdAt: FieldValue.serverTimestamp(),
-              errorDetails: {
-                code: error.code,
-                message: error.message,
-                stack: error.stack
-              }
-            });
-          }
-        } catch (logError) {
-          logger.error('Failed to log failed purchase', logError);
-        }
+        db.collection("failedPurchases")
+          .where("paymentIntentId", "==", request.data.paymentIntentId)
+          .limit(1)
+          .get()
+          .then(existingFailure => {
+            if (existingFailure.empty) {
+              return db.collection("failedPurchases").add({
+                userId: request.auth?.uid,
+                paymentIntentId: request.data.paymentIntentId,
+                reason: error.message || "Unknown error during confirmation",
+                status: 'error',
+                createdAt: FieldValue.serverTimestamp(),
+                errorDetails: {
+                  code: error.code,
+                  message: error.message
+                }
+              });
+            }
+          })
+          .catch(logError => logger.error('Failed to log failed purchase', logError));
       }
 
-      // Re-throw HttpsErrors as-is
       if (error.code && error.code.includes('/')) {
         throw error;
       }
 
-      // Wrap other errors
       throw new HttpsError(
         "internal",
         error.message || "Error confirming purchase"

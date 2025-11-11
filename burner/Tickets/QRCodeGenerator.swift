@@ -186,7 +186,7 @@ struct QRCodeScannerView: View {
                 }) {
                     VStack(spacing: 16) {
                         Image(systemName: "qrcode.viewfinder")
-                            .font(.appLargeIcon)
+                            .font(.system(size: 60))
                             .foregroundColor(.white)
 
                         Text("Scan Ticket QR Code")

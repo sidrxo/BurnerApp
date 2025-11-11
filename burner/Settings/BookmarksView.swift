@@ -42,22 +42,22 @@ struct BookmarksView: View {
             }
         }
         .background(Color.black)
-        .navigationBarHidden(true)
+        .navigationBarTitleDisplayMode(.inline)
         .overlay {
             if showingSignInAlert {
                 CustomAlertView(
                     title: "Sign In Required",
-                    description: "You need to be signed in to bookmark events",
+                    description: "You need to be signed in to bookmark events.",
                     cancelAction: {
-                        withAnimation {
+
                             showingSignInAlert = false
-                        }
+                       
                     },
                     cancelActionTitle: "Cancel",
                     primaryAction: {
-                        withAnimation {
+                      
                             showingSignInAlert = false
-                        }
+                      
                         appState.isSignInSheetPresented = true
                     },
                     primaryActionTitle: "Sign In",

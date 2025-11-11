@@ -269,7 +269,7 @@ struct TicketDetailView: View {
 
                                     VStack(spacing: 10) {
                                         Image(systemName: "lock.fill")
-                                            .appLargeIcon
+                                            .font(.system(size: 60))
                                             .foregroundColor(.white.opacity(0.3))
 
                                         Text("BURNER MODE\nREQUIRED")

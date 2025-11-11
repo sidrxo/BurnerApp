@@ -4,6 +4,8 @@ import FirebaseAuth
 import PassKit
 @_spi(STP) import StripePaymentSheet
 
+
+
 struct TicketPurchaseView: View {
     let event: Event
     @ObservedObject var viewModel: EventViewModel
@@ -123,10 +125,26 @@ struct TicketPurchaseView: View {
             }
         }
         .onAppear {
+            // ✅ OPTIMIZATION: Pre-create payment intent and fetch payment methods in parallel
             Task {
-                try? await paymentService.fetchPaymentMethods()
+                async let paymentMethods: Void = paymentService.fetchPaymentMethods()
+                async let paymentPrep: Void = preparePaymentIntent()
+                
+                // Wait for both to complete
+                _ = try? await [paymentMethods, paymentPrep]
             }
         }
+    }
+    
+    // ✅ NEW: Pre-create payment intent when view appears
+    private func preparePaymentIntent() async {
+        guard let eventId = event.id else { return }
+        guard Auth.auth().currentUser != nil else { return }
+        
+        // Only prepare for Apple Pay users (to avoid unnecessary API calls)
+        guard ApplePayHandler.canMakePayments() else { return }
+        
+        await paymentService.preparePayment(eventId: eventId)
     }
     
     // MARK: - Event Header
@@ -210,6 +228,7 @@ struct TicketPurchaseView: View {
                             .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
                     )
                 }
+                // Remove the .disabled and .opacity modifiers
                 .padding(.horizontal, 20)
             }
 
@@ -240,6 +259,14 @@ struct TicketPurchaseView: View {
                 )
             }
             .padding(.horizontal, 20)
+            
+            // Terms text
+            Text("By continuing, you agree to our Terms of Service and Privacy Policy")
+                .appCaption()
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
         }
     }
     
@@ -252,32 +279,38 @@ struct TicketPurchaseView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
             
-            CardInputView(cardParams: $cardParams, isValid: $isCardValid)
-                .padding(.horizontal, 20)
-            
-            // Security badge
-            HStack(spacing: 8) {
-                Image(systemName: "lock.shield.fill")
-                    .appSecondary()
-                    .foregroundColor(.green)
-                Text("Secured by Stripe")
-                    .appCaption()
-                    .foregroundColor(.gray)
-            }
-            .padding(.top, 8)
+            CardInputView(
+                cardParams: $cardParams,
+                isValid: $isCardValid
+            )
+            .frame(height: 200)
+            .padding(.horizontal, 20)
         }
     }
     
     // MARK: - Saved Cards Section
     private var savedCardsSection: some View {
         VStack(spacing: 16) {
-            Text("Select Payment Method")
-                .appBody()
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
+            HStack {
+                Text("Select Payment Method")
+                    .appBody()
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Button(action: {
+                    withAnimation {
+                        currentStep = .cardInput
+                    }
+                }) {
+                    Text("Add New")
+                        .appCaption()
+                        .foregroundColor(.blue)
+                }
+            }
+            .padding(.horizontal, 20)
             
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 ForEach(paymentService.paymentMethods) { method in
                     Button(action: {
                         withAnimation {
@@ -286,24 +319,45 @@ struct TicketPurchaseView: View {
                     }) {
                         HStack(spacing: 12) {
                             // Card brand icon
-                            Image(systemName: "creditcard.fill")
-                                .appSectionHeader()
-                                .foregroundColor(selectedSavedCard?.id == method.id ? .green : .white)
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack(spacing: 8) {
-                                    Text(method.brand.capitalized)
-                                        .appBody()
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.white.opacity(0.1))
+                                    .frame(width: 40, height: 28)
+                                
+                                if method.brand.lowercased() == "visa" {
+                                    Text("VISA")
+                                        .font(.system(size: 8, weight: .bold))
                                         .foregroundColor(.white)
+                                } else if method.brand.lowercased() == "mastercard" {
+                                    HStack(spacing: -4) {
+                                        Circle()
+                                            .fill(Color.red.opacity(0.8))
+                                            .frame(width: 12, height: 12)
+                                        Circle()
+                                            .fill(Color.orange.opacity(0.8))
+                                            .frame(width: 12, height: 12)
+                                    }
+                                } else {
+                                    Image(systemName: "creditcard.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.white)
+                                }
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    Text(method.brand.capitalized)
+                                        .appCaption()
+                                        .foregroundColor(.gray)
                                     
                                     if method.isDefault {
                                         Text("DEFAULT")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.black)
-                                            .padding(.horizontal, 6)
+                                            .font(.system(size: 8, weight: .bold))
+                                            .foregroundColor(.green)
+                                            .padding(.horizontal, 4)
                                             .padding(.vertical, 2)
-                                            .background(Color.white)
-                                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                                            .background(Color.green.opacity(0.2))
+                                            .clipShape(RoundedRectangle(cornerRadius: 3))
                                     }
                                 }
 
@@ -445,11 +499,28 @@ struct TicketPurchaseView: View {
             return
         }
 
+        #if DEBUG
+        let trace = PaymentTrace(
+            name: "ApplePay",
+            context: [
+                "eventId": eventId,
+                "price": String(format: "%.2f", event.price)
+            ]
+        )
+        trace.mark("button.tapped", extra: "mainThread=\(Thread.isMainThread)")
+        #else
+        let trace: PaymentTrace? = nil
+        #endif
+
         paymentService.processApplePayPayment(
             eventName: event.name,
             amount: event.price,
-            eventId: eventId
+            eventId: eventId,
+            trace: trace
         ) { result in
+            #if DEBUG
+            trace.finish(success: result.success, message: result.message)
+            #endif
             DispatchQueue.main.async {
                 self.alertMessage = result.message
                 self.isSuccess = result.success

@@ -110,7 +110,7 @@ struct ScannerView: View {
             Spacer()
             
             Image(systemName: "exclamationmark.triangle")
-                .font(.appLargeIcon)
+                .font(.system(size: 60))
                 .foregroundColor(.gray)
 
             VStack(spacing: 8) {
@@ -163,7 +163,7 @@ struct ScannerView: View {
                     // Scanner icon and description
                     VStack(spacing: 16) {
                         Image(systemName: "qrcode.viewfinder")
-                            .font(.appLargeIcon)
+                            .font(.system(size: 60))
                             .foregroundColor(.white)
                             .padding(.top, 40)
 

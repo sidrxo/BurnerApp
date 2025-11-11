@@ -533,7 +533,7 @@ struct EmptyEventsView: View {
                 .frame(height: 60)
 
             Image(systemName: searchText.isEmpty ? "calendar.badge.exclamationmark" : "magnifyingglass")
-                .font(.appLargeIcon)
+                .font(.system(size: 60))
                 .foregroundColor(.gray)
 
             VStack(spacing: 8) {

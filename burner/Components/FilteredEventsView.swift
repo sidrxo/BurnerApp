@@ -46,17 +46,17 @@ struct FilteredEventsView: View {
             if showingSignInAlert {
                 CustomAlertView(
                     title: "Sign In Required",
-                    description: "You need to be signed in to bookmark events",
+                    description: "You need to be signed in to bookmark events.",
                     cancelAction: {
-                        withAnimation {
+                        
                             showingSignInAlert = false
-                        }
+                      
                     },
                     cancelActionTitle: "Cancel",
                     primaryAction: {
-                        withAnimation {
+                       
                             showingSignInAlert = false
-                        }
+                     
                         appState.isSignInSheetPresented = true
                     },
                     primaryActionTitle: "Sign In",
@@ -71,7 +71,7 @@ struct FilteredEventsView: View {
     private var emptyStateView: some View {
         VStack(spacing: 20) {
             Image(systemName: "calendar.badge.exclamationmark")
-                .font(.appLargeIcon)
+                .font(.system(size: 60))
                 .foregroundColor(.gray)
             
             VStack(spacing: 8) {

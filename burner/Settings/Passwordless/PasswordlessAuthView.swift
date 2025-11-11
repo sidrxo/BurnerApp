@@ -41,7 +41,7 @@ struct PasswordlessAuthView: View {
                                 // Header
                                 VStack(spacing: 12) {
                                     Image(systemName: emailSent ? "envelope.badge.fill" : "envelope")
-                                        .appLargeIcon
+                                        .font(.system(size: 60))
                                         .foregroundColor(.white)
                                         .padding(.bottom, 8)
 
