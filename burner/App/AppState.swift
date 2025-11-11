@@ -239,22 +239,9 @@ class AppState: ObservableObject {
     // MARK: - Initial Data Load
     func loadInitialData() {
         eventViewModel.fetchEvents()
-        
+
         if authService.currentUser != nil {
             ticketsViewModel.fetchUserTickets()
         }
-    }
-}
-
-// MARK: - Environment Key for AppState
-struct AppStateKey: EnvironmentKey {
-    @MainActor
-    static let defaultValue = AppState()
-}
-
-extension EnvironmentValues {
-    var appState: AppState {
-        get { self[AppStateKey.self] }
-        set { self[AppStateKey.self] = newValue }
     }
 }

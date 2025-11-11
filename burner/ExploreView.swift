@@ -12,7 +12,6 @@ struct ExploreView: View {
     @EnvironmentObject var userLocationManager: UserLocationManager
 
     @State private var searchText = ""
-    @State private var selectedEvent: Event? = nil
     @State private var showingSignInAlert = false
 
     // ✅ Maximum distance for "nearby" events (in meters)
