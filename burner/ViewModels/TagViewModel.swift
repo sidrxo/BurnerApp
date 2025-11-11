@@ -72,7 +72,6 @@ class TagViewModel: ObservableObject {
                     self.isLoading = false
 
                     if let error = error {
-                        print("❌ Error fetching tags: \(error.localizedDescription)")
                         self.error = error.localizedDescription
                         // Fall back to default tags if error
                         self.setDefaultTags()
@@ -80,7 +79,6 @@ class TagViewModel: ObservableObject {
                     }
 
                     guard let documents = snapshot?.documents else {
-                        print("⚠️ No tags found in Firestore, using defaults")
                         self.setDefaultTags()
                         return
                     }
@@ -90,10 +88,8 @@ class TagViewModel: ObservableObject {
                     }
 
                     if fetchedTags.isEmpty {
-                        print("⚠️ No valid tags parsed, using defaults")
                         self.setDefaultTags()
                     } else {
-                        print("✅ Loaded \(fetchedTags.count) tags from Firestore")
                         self.tags = fetchedTags
                     }
                 }
@@ -116,6 +112,5 @@ class TagViewModel: ObservableObject {
                 updatedAt: Date()
             )
         }
-        print("📝 Using default tags: \(defaultTagNames)")
     }
 }

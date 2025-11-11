@@ -38,12 +38,12 @@ class BookmarkManager: ObservableObject {
                         newStatus[bookmark.eventId] = true
                     }
                     self.bookmarkStatus = newStatus
-                    
+
                     // Fetch full event details
                     await self.fetchBookmarkedEvents(bookmarks: bookmarks)
-                    
-                case .failure(let error):
-                    print("❌ Error fetching bookmarks: \(error.localizedDescription)")
+
+                case .failure:
+                    break
                 }
             }
         }
@@ -88,7 +88,6 @@ class BookmarkManager: ObservableObject {
     func toggleBookmark(for event: Event) async {
         guard let userId = Auth.auth().currentUser?.uid,
               let eventId = event.id else {
-            print("❌ User not authenticated or invalid event ID")
             return
         }
         
@@ -124,7 +123,6 @@ class BookmarkManager: ObservableObject {
             await MainActor.run {
                 self.bookmarkStatus[eventId] = isCurrentlyBookmarked
             }
-            print("❌ Error toggling bookmark: \(error.localizedDescription)")
         }
     }
     

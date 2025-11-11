@@ -130,7 +130,7 @@ struct PaymentSettingsView: View {
         }) {
             HStack(spacing: 12) {
                 Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 18, weight: .semibold))
+                    .appCard()
 
                 Text("Add Payment Method")
                     .appBody()
@@ -254,7 +254,7 @@ struct PaymentMethodRow: View {
         HStack(spacing: 12) {
             // Card icon
             Image(systemName: cardIcon)
-                .font(.system(size: 24))
+                .appSectionHeader()
                 .foregroundColor(.white)
                 .frame(width: 40, height: 40)
                 .background(Color.gray.opacity(0.3))
@@ -304,7 +304,7 @@ struct PaymentMethodRow: View {
                 }
             } label: {
                 Image(systemName: "ellipsis.circle.fill")
-                    .font(.system(size: 24))
+                    .appSectionHeader()
                     .foregroundColor(.gray)
             }
         }

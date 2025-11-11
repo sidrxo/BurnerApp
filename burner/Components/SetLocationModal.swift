@@ -31,13 +31,13 @@ struct SetLocationModal: View {
                                 .scaleEffect(0.9)
                         } else {
                             Image(systemName: "location.fill")
-                                .font(.system(size: 20))
+                                .appCard()
                         }
                         Text("Use Current Location")
                             .appBody()
                         Spacer()
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
+                            .appSecondary()
                             .foregroundColor(.gray)
                     }
                     .foregroundColor(.white)
@@ -52,12 +52,12 @@ struct SetLocationModal: View {
                 }) {
                     HStack {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 20))
+                            .appCard()
                         Text("Search for a City")
                             .appBody()
                         Spacer()
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
+                            .appSecondary()
                             .foregroundColor(.gray)
                     }
                     .foregroundColor(.white)
@@ -118,7 +118,7 @@ struct ManualCityEntryView: View {
     @FocusState private var isFocused: Bool
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 20) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Enter City Name")
@@ -185,18 +185,14 @@ struct ManualCityEntryView: View {
     private func geocodeCity() {
         isProcessing = true
         errorMessage = nil
-        
-        print("📍 ManualCityEntryView: Geocoding city: \(cityInput)")
-        
+
         locationManager.geocodeCity(cityInput) { result in
             isProcessing = false
-            
+
             switch result {
-            case .success(let location):
-                print("📍 ManualCityEntryView: City geocoded successfully: \(location.name)")
+            case .success:
                 onDismiss()
             case .failure(let error):
-                print("📍 ManualCityEntryView: Geocoding error: \(error.localizedDescription)")
                 errorMessage = error.localizedDescription
             }
         }

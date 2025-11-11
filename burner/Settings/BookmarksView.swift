@@ -2,9 +2,9 @@ import SwiftUI
 import Kingfisher
 
 struct BookmarksView: View {
-    // Use @EnvironmentObject instead of @StateObject
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var coordinator: NavigationCoordinator
     @State private var searchText = ""
     @State private var showingSignInAlert = false
     @Environment(\.dismiss) var dismiss
@@ -127,7 +127,9 @@ struct BookmarksView: View {
         ScrollView {
             LazyVStack(spacing: 12) {
                 ForEach(filteredBookmarks) { event in
-                    NavigationLink(destination: EventDetailView(event: event)) {
+                    Button {
+                        coordinator.navigate(to: .eventDetail(event), in: .settings)
+                    } label: {
                         EventRow(
                             event: event,
                             bookmarkManager: bookmarkManager,

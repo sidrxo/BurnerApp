@@ -71,29 +71,16 @@ struct EventDetailDestination: View {
                     }
                 }
                 .onAppear {
-                    print("🟢 EventDetailDestination.onAppear - Starting load for eventId: \(eventId)")
                     Task { await load() }
                 }
             }
         }
         .navigationBarBackButtonHidden(false)
-        .onAppear {
-            print("🟢 EventDetailDestination VIEW appeared with eventId: \(eventId)")
-        }
-        .onDisappear {
-            print("🔴 EventDetailDestination VIEW disappeared")
-        }
     }
 
     private func load() async {
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("🔍 EventDetailDestination.load() START")
-        print("   Event ID: \(eventId)")
-        // Removed Thread.isMainThread check as it's not safe in async context
-        
         // Validate eventId
         guard !eventId.isEmpty else {
-            print("❌ Event ID is empty!")
             await MainActor.run {
                 loadError = "Invalid event ID"
             }
@@ -101,48 +88,29 @@ struct EventDetailDestination: View {
         }
 
         // First check if event is already loaded in memory
-        print("📦 Checking cache... EventViewModel has \(eventViewModel.events.count) events")
         if let e = eventViewModel.events.first(where: { $0.id == eventId }) {
-            print("✅ Found event in cache:")
-            print("   Name: \(e.name)")
-            print("   Venue: \(e.venue)")
             await MainActor.run {
                 event = e
             }
-            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             return
         }
 
-        print("⚠️ Event not in cache, fetching from server...")
-        print("   Available event IDs in cache: \(eventViewModel.events.compactMap { $0.id }.prefix(5))")
-        
         await MainActor.run {
             isLoading = true
         }
-        
+
         defer {
             Task { @MainActor in
                 isLoading = false
-                print("🏁 EventDetailDestination.load() COMPLETE")
-                print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             }
         }
 
         do {
-            print("📡 Calling eventViewModel.fetchEvent(byId: \(eventId))...")
             let e = try await eventViewModel.fetchEvent(byId: eventId)
-            print("✅ Successfully fetched event:")
-            print("   Name: \(e.name)")
-            print("   Venue: \(e.venue)")
-            print("   Price: £\(e.price)")
             await MainActor.run {
                 event = e
             }
         } catch {
-            print("❌ Failed to fetch event:")
-            print("   Error: \(error)")
-            print("   Error type: \(type(of: error))")
-            print("   Localized: \(error.localizedDescription)")
             await MainActor.run {
                 loadError = error.localizedDescription
             }

@@ -96,7 +96,6 @@ struct ScannerView: View {
             }
         }
         .onAppear {
-            print("🟢 [Scanner] View appeared")
             fetchUserRoleFromClaims()
             checkScannerAccessFromClaims()
         }
@@ -277,7 +276,7 @@ struct ScannerView: View {
     
     // MARK: - Scanner Sheet
     private var scannerSheet: some View {
-        NavigationView {
+        NavigationStack {
             CodeScannerView(
                 codeTypes: [.qr],
                 scanMode: .once,
@@ -310,13 +309,7 @@ struct ScannerView: View {
     private var canScanTickets: Bool {
         let hasValidRole = ["scanner", "siteAdmin", "venueAdmin", "subAdmin"].contains(userRole)
         let canScan = hasValidRole && (isScannerActive || userRole != "scanner")
-        
-        print("🔍 [Scanner] Access Check:")
-        print("   • User Role: \(userRole)")
-        print("   • Has Valid Role: \(hasValidRole)")
-        print("   • Scanner Active: \(isScannerActive)")
-        print("   • Can Scan: \(canScan)")
-        
+
         return canScan
     }
 
@@ -338,27 +331,21 @@ struct ScannerView: View {
     
     private func fetchUserRoleFromClaims() {
         guard Auth.auth().currentUser != nil else {
-            print("🔴 [Scanner] No user signed in")
             return
         }
-        
-        print("🔵 [Scanner] Fetching role from custom claims")
-        
+
         Task {
             do {
                 if let role = try await appState.authService.getUserRole() {
                     await MainActor.run {
                         self.userRole = role
-                        print("✅ [Scanner] User role from custom claims: \(role)")
                     }
                 } else {
                     await MainActor.run {
                         self.userRole = "user"
-                        print("⚠️ [Scanner] No role in custom claims, defaulting to 'user'")
                     }
                 }
             } catch {
-                print("🔴 [Scanner] Error fetching custom claims: \(error.localizedDescription)")
                 await MainActor.run {
                     self.userRole = "user"
                 }
@@ -368,23 +355,18 @@ struct ScannerView: View {
 
     private func checkScannerAccessFromClaims() {
         guard Auth.auth().currentUser != nil else {
-            print("🔴 [Scanner] No user for scanner access check")
             isCheckingScanner = false
             return
         }
 
-        print("🔵 [Scanner] Checking scanner access from custom claims")
-        
         Task {
             do {
                 let active = try await appState.authService.isScannerActive()
                 await MainActor.run {
                     self.isScannerActive = active
                     self.isCheckingScanner = false
-                    print("✅ [Scanner] Scanner active from custom claims: \(active)")
                 }
             } catch {
-                print("🔴 [Scanner] Error checking scanner access: \(error.localizedDescription)")
                 await MainActor.run {
                     self.isScannerActive = false
                     self.isCheckingScanner = false
@@ -397,11 +379,9 @@ struct ScannerView: View {
         isShowingScanner = false
         switch result {
         case .success(let result):
-            print("🔵 [Scanner] QR Code scanned: \(result.string)")
             scannedValue = result.string
             processTicket(qrCodeData: scannedValue)
         case .failure(let error):
-            print("🔴 [Scanner] Scan failed: \(error.localizedDescription)")
             errorMessage = "Scanning failed: \(error.localizedDescription)"
             showingError = true
         }
@@ -409,7 +389,6 @@ struct ScannerView: View {
     
     private func processManualTicket() {
         let ticketId = manualTicketNumber.trimmingCharacters(in: .whitespacesAndNewlines)
-        print("🔵 [Scanner] Processing manual ticket: \(ticketId)")
         processTicket(qrCodeData: nil, ticketId: ticketId)
     }
     
@@ -418,28 +397,24 @@ struct ScannerView: View {
         if let data = qrData.data(using: .utf8),
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let ticketId = json["ticketId"] as? String {
-            print("🔵 [Scanner] Extracted ticketId from JSON: \(ticketId)")
             return ticketId
         }
         // Legacy format
         let components = qrData.components(separatedBy: ":")
         if let ticketIdIndex = components.firstIndex(of: "TICKET"), ticketIdIndex + 1 < components.count {
             let ticketId = components[ticketIdIndex + 1]
-            print("🔵 [Scanner] Extracted ticketId from legacy format: \(ticketId)")
             return ticketId
         }
-        print("⚠️ [Scanner] Could not extract ticketId, using raw QR data")
         return nil
     }
     
     private func processTicket(qrCodeData: String? = nil, ticketId: String? = nil) {
         guard !isProcessing else {
-            print("⚠️ [Scanner] Already processing a ticket")
             return
         }
-        
+
         let finalTicketId: String
-        
+
         if let ticketId = ticketId {
             finalTicketId = ticketId
         } else if let qrData = qrCodeData, let extracted = extractTicketId(from: qrData) {
@@ -447,46 +422,32 @@ struct ScannerView: View {
         } else if let qrData = qrCodeData {
             finalTicketId = qrData
         } else {
-            print("🔴 [Scanner] Invalid ticket data")
             errorMessage = "Invalid ticket data"
             showingError = true
             return
         }
-        
+
         guard !finalTicketId.isEmpty else {
-            print("🔴 [Scanner] Empty ticket ID")
             errorMessage = "Invalid ticket ID"
             showingError = true
             return
         }
-        
-        print("🔵 [Scanner] Processing ticket with ID: \(finalTicketId)")
-        print("🔵 [Scanner] Current user role: \(userRole)")
-        print("🔵 [Scanner] Scanner active: \(isScannerActive)")
-        
+
         isProcessing = true
-        
+
         // Call Cloud Function
         let scanFunction = functions.httpsCallable("scanTicket")
         let data: [String: Any] = [
             "ticketId": finalTicketId,
             "qrCodeData": qrCodeData as Any
         ]
-        
-        print("🔵 [Scanner] Calling Cloud Function with data: \(data)")
-        
+
         scanFunction.call(data) { result, error in
             DispatchQueue.main.async {
                 self.isProcessing = false
                 self.manualTicketNumber = ""
 
                 if let error = error as NSError? {
-                    print("🔴 [Scanner] Cloud Function error:")
-                    print("   • Error code: \(error.code)")
-                    print("   • Error domain: \(error.domain)")
-                    print("   • Error description: \(error.localizedDescription)")
-                    print("   • User info: \(error.userInfo)")
-                    
                     // Parse error message for better user feedback
                     var errorMsg = error.localizedDescription
 
@@ -503,44 +464,39 @@ struct ScannerView: View {
                     self.showingError = true
                     return
                 }
-                
+
                 guard let data = result?.data as? [String: Any] else {
-                    print("🔴 [Scanner] Invalid response from Cloud Function")
                     self.errorMessage = "Invalid response from server"
                     self.showingError = true
                     return
                 }
-                
-                print("✅ [Scanner] Cloud Function response: \(data)")
-                
+
                 let success = data["success"] as? Bool ?? false
                 let message = data["message"] as? String ?? ""
                 let ticketStatus = data["ticketStatus"] as? String ?? ""
-                
+
                 if success {
                     // Ticket successfully scanned
-                    print("✅ [Scanner] Ticket scanned successfully")
                     self.successMessage = message
                     self.showingSuccess = true
-                    
+
                     // Haptic feedback
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.success)
                 } else if ticketStatus == "used" {
                     // Ticket already used - show detailed alert
-                    print("⚠️ [Scanner] Ticket already used")
                     if let ticketData = data["ticket"] as? [String: Any],
                        let scannedAt = data["usedAt"] as? String,
                        let scannedByName = data["scannedByName"] as? String {
-                        
+
                         let eventName = ticketData["eventName"] as? String ?? "Unknown Event"
                         let userName = ticketData["userName"] as? String ?? "Unknown"
                         let ticketNumber = ticketData["ticketNumber"] as? String ?? "N/A"
                         let scannedByEmail = data["scannedByEmail"] as? String
-                        
+
                         // Format the scanned time
                         let formattedTime = self.formatScanTime(scannedAt)
-                        
+
                         self.alreadyUsedDetails = AlreadyUsedTicket(
                             ticketNumber: ticketNumber,
                             eventName: eventName,
@@ -550,7 +506,7 @@ struct ScannerView: View {
                             scannedByEmail: scannedByEmail
                         )
                         self.showingAlreadyUsed = true
-                        
+
                         // Haptic feedback for error
                         let generator = UINotificationFeedbackGenerator()
                         generator.notificationOccurred(.error)
@@ -560,10 +516,9 @@ struct ScannerView: View {
                     }
                 } else {
                     // Other error
-                    print("🔴 [Scanner] Ticket scan failed: \(message)")
                     self.errorMessage = message
                     self.showingError = true
-                    
+
                     // Haptic feedback
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.error)

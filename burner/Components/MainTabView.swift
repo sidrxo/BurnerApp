@@ -5,7 +5,6 @@ import Combine
 struct MainTabView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
-    @AppStorage("useWalletView") private var useWalletView = true
 
     var body: some View {
         NavigationCoordinatorView {
@@ -32,17 +31,10 @@ struct MainTabView: View {
 
                 // Tickets Tab
                 NavigationStack(path: $coordinator.ticketsPath) {
-                    if useWalletView {
-                        TicketsView()
-                            .navigationDestination(for: NavigationDestination.self) { destination in
-                                NavigationDestinationBuilder(destination: destination)
-                            }
-                    } else {
-                        TicketsWalletView()
-                            .navigationDestination(for: NavigationDestination.self) { destination in
-                                NavigationDestinationBuilder(destination: destination)
-                            }
-                    }
+                    TicketsView()
+                        .navigationDestination(for: NavigationDestination.self) { destination in
+                            NavigationDestinationBuilder(destination: destination)
+                        }
                 }
                 .opacity(coordinator.selectedTab == .tickets ? 1 : 0)
                 .zIndex(coordinator.selectedTab == .tickets ? 1 : 0)
@@ -145,7 +137,7 @@ struct TabBarButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 24, weight: .regular))
+                .appSectionHeader()
                 .foregroundColor(isSelected ? .white : .gray)
                 .rotationEffect(.degrees(rotationDegrees))
                 .frame(width: 44, height: 44)

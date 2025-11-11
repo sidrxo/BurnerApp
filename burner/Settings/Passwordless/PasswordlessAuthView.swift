@@ -41,12 +41,12 @@ struct PasswordlessAuthView: View {
                                 // Header
                                 VStack(spacing: 12) {
                                     Image(systemName: emailSent ? "envelope.badge.fill" : "envelope")
-                                        .font(.system(size: 48))
+                                        .appLargeIcon
                                         .foregroundColor(.white)
                                         .padding(.bottom, 8)
 
                                     Text(emailSent ? "Check your email" : "Sign in with email")
-                                        .font(.system(size: 28, weight: .semibold))
+                                        .appPageHeader()
                                         .foregroundColor(.white)
 
                                     Text(emailSent ? "We sent a sign-in link to \(email)" : "We'll send you a magic link to sign in")
@@ -197,7 +197,7 @@ struct PasswordlessAuthView: View {
                         dismiss()
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .semibold))
+                            .appBody()
                             .foregroundColor(.white.opacity(0.7))
                             .frame(width: 32, height: 32)
                             .background(Color.white.opacity(0.1))
@@ -216,7 +216,7 @@ struct PasswordlessAuthView: View {
     private func instructionRow(number: String, text: String) -> some View {
         HStack(spacing: 12) {
             Text(number)
-                .font(.system(size: 14, weight: .semibold))
+                .appSecondary()
                 .foregroundColor(.white)
                 .frame(width: 24, height: 24)
                 .background(Color.white.opacity(0.15))

@@ -266,17 +266,18 @@ struct TicketDetailView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .fill(Color.white.opacity(0.05))
                                         .frame(width: 200, height: 200)
-                                    
+
                                     VStack(spacing: 10) {
-                                        Text("🔒")
-                                            .font(.system(size: 56))
-                                        
+                                        Image(systemName: "lock.fill")
+                                            .appLargeIcon
+                                            .foregroundColor(.white.opacity(0.3))
+
                                         Text("BURNER MODE\nREQUIRED")
                                             .font(.custom("Avenir", size: 15).weight(.black))
                                             .foregroundColor(.white.opacity(0.8))
                                             .multilineTextAlignment(.center)
                                             .tracking(1)
-                                        
+
                                         Text("Enable in Settings")
                                             .font(.custom("Avenir", size: 10).weight(.semibold))
                                             .foregroundColor(.white.opacity(0.4))
@@ -285,13 +286,15 @@ struct TicketDetailView: View {
                                 }
                             }
                         }
-                        
-                        // Ticket number
-                        Text(ticketWithEvent.ticket.ticketNumber ?? "N/A")
-                            .font(.custom("Avenir", size: 15).weight(.black))
-                            .foregroundColor(.white)
-                            .tracking(3)
-                            .padding(.bottom, 8)
+
+                        // Ticket number - only show if burner mode is setup
+                        if appState.burnerManager.isSetupValid {
+                            Text(ticketWithEvent.ticket.ticketNumber ?? "N/A")
+                                .font(.custom("Avenir", size: 15).weight(.black))
+                                .foregroundColor(.white)
+                                .tracking(3)
+                                .padding(.bottom, 8)
+                        }
                     }
                     .frame(height: bottomSectionHeight)
                 }

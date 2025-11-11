@@ -192,7 +192,6 @@ class AppState: ObservableObject {
                 userRole = try await authService.getUserRole() ?? ""
                 isScannerActive = try await authService.isScannerActive()
             } catch {
-                print("Error fetching user role: \(error)")
                 userRole = ""
                 isScannerActive = false
             }
