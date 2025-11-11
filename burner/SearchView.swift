@@ -9,6 +9,7 @@ struct SearchView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var coordinator: NavigationCoordinator
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var userLocationManager: UserLocationManager
     @StateObject private var viewModel: SearchViewModel
 
     @State private var searchText = ""
@@ -48,8 +49,17 @@ struct SearchView: View {
         }
         .onChange(of: sortBy) { oldValue, newValue in
             if newValue == .nearby {
-                viewModel.requestLocationPermission()
-                pendingNearbySortRequest = true
+                // Use shared location manager
+                if userLocationManager.savedLocation != nil {
+                    // Already have location, sort immediately
+                    Task {
+                        await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
+                    }
+                } else {
+                    // Need to request location
+                    viewModel.requestLocationPermission()
+                    pendingNearbySortRequest = true
+                }
             } else {
                 Task {
                     await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
@@ -59,6 +69,14 @@ struct SearchView: View {
         .onChange(of: viewModel.userLocation) { oldValue, newValue in
             if pendingNearbySortRequest, newValue != nil {
                 pendingNearbySortRequest = false
+                Task {
+                    await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText)
+                }
+            }
+        }
+        .onChange(of: userLocationManager.savedLocation) { oldValue, newValue in
+            // If location changed and we're on nearby view, refresh
+            if sortBy == .nearby, newValue != nil {
                 Task {
                     await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText)
                 }
@@ -148,11 +166,16 @@ struct SearchView: View {
             }
 
             FilterButton(
-                title: "NEARBY",
+                title: nearbyButtonTitle,
                 isSelected: sortBy == .nearby
             ) {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    sortBy = .nearby
+                // If already on nearby, show location modal to reset
+                if sortBy == .nearby {
+                    coordinator.activeModal = .helloWorld
+                } else {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        sortBy = .nearby
+                    }
                 }
             }
 
@@ -161,6 +184,16 @@ struct SearchView: View {
         .padding(.horizontal, 20)
         .padding(.top, 16)
         .padding(.bottom, 16)
+    }
+
+    private var nearbyButtonTitle: String {
+        // If user has set a location and nearby is selected, show the city name
+        if let savedLocation = userLocationManager.savedLocation {
+            // Extract city name (remove any state/country info)
+            let cityName = savedLocation.name.components(separatedBy: ",").first?.trimmingCharacters(in: .whitespaces) ?? savedLocation.name
+            return cityName.uppercased()
+        }
+        return "NEARBY"
     }
 
     private var contentSection: some View {
