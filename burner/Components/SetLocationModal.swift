@@ -16,7 +16,7 @@ struct SetLocationModal: View {
                 .appBody()
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
-                .padding(.top, 20)
+                .padding(.top, 30)
                 .padding(.bottom, 16)
 
             // Buttons — same layout & styling as MapsOptionsSheet

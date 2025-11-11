@@ -229,16 +229,12 @@ struct ExploreView: View {
                     title: "Sign In Required",
                     description: "You need to be signed in to bookmark events",
                     cancelAction: {
-                        withAnimation {
                             showingSignInAlert = false
-                        }
-                    },
+                },
                     cancelActionTitle: "Cancel",
                     primaryAction: {
-                        withAnimation {
-                            showingSignInAlert = false
-                        }
-                        appState.isSignInSheetPresented = true
+                        showingSignInAlert = false
+                        coordinator.showSignIn()
                     },
                     primaryActionTitle: "Sign In",
                     customContent: EmptyView()

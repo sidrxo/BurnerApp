@@ -323,7 +323,7 @@ struct EventDetailView: View {
                 if showingSignInAlert {
                     CustomAlertView(
                         title: "Sign In Required",
-                        description: "Please sign in to continue.",
+                        description: "You need to be signed in to bookmark events.",
                         cancelAction: {
                             showingSignInAlert = false
                         },
@@ -494,7 +494,7 @@ struct MapsOptionsSheet: View {
                 .appBody()
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
-                .padding(.top, 20)
+                .padding(.top, 30)
                 .padding(.bottom, 16)
 
             VStack(spacing: 12) {
