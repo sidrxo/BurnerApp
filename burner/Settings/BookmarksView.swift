@@ -107,7 +107,7 @@ struct BookmarksView: View {
                     .padding(.horizontal, 40)
             }
             
-            Button("Browse Events") {
+            Button("BROWSE EVENTS") {
                 // Navigate to Home tab (Explore view)
                 coordinator.selectTab(.home)
                 dismiss()
