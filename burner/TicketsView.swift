@@ -106,11 +106,14 @@ struct TicketsView: View {
     private var emptyStateView: some View {
         GeometryReader { geometry in
             VStack(spacing: 20) {
+                // ✅ Fixed-height frame for image
                 Image("ticket")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 140)
+                    .frame(height: 140) // fixed height
+                    .frame(maxWidth: .infinity) // center horizontally
                     .padding(.bottom, 30)
+                
                 VStack(spacing: 8) {
                     Text("MEET ME IN THE MOMENT")
                         .appSectionHeader()
@@ -121,6 +124,7 @@ struct TicketsView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
                 }
+                
                 Button {
                     // Navigate to Home tab using coordinator
                     coordinator.selectTab(.home)

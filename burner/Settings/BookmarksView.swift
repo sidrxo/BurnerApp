@@ -88,9 +88,12 @@ struct BookmarksView: View {
     // MARK: - Empty State
     private var emptyStateView: some View {
         VStack(spacing: 20) {
-            Image(systemName: "bookmark")
-                .appHero()
-                .foregroundColor(.gray)
+            Image("bookmark")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 140) // ← fixed height
+                .frame(maxWidth: .infinity) // center horizontally
+                .padding(.bottom, 30)
             
             VStack(spacing: 8) {
                 Text("No Bookmarks Yet")

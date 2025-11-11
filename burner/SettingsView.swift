@@ -58,7 +58,7 @@ struct SettingsView: View {
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
-
+                                
                                 Button(action: {
                                     coordinator.navigate(to: .bookmarks)
                                 }) {
@@ -68,7 +68,7 @@ struct SettingsView: View {
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
-
+                                
                                 Button(action: {
                                     coordinator.navigate(to: .paymentSettings)
                                 }) {
@@ -78,7 +78,7 @@ struct SettingsView: View {
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
-
+                                
                                 Button(action: {
                                     coordinator.navigate(to: .transferTicketsList)
                                 }) {
@@ -88,7 +88,7 @@ struct SettingsView: View {
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
-
+                                
                                 // Scanner access for authorized roles
                                 if (userRole == "scanner" && isScannerActive) ||
                                     userRole == "siteAdmin" ||
@@ -116,14 +116,14 @@ struct SettingsView: View {
                                         MenuItemContent(
                                             title: "Setup Burner Mode",
                                             subtitle: burnerManager.isAuthorized
-                                                ? "Configure app blocking"
-                                                : "Screen Time permissions needed"
+                                            ? "Configure app blocking"
+                                            : "Screen Time permissions needed"
                                         )
                                         .contentShape(Rectangle())
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
-
+                                
                                 Button(action: {
                                     coordinator.navigate(to: .support)
                                 }) {
@@ -136,7 +136,7 @@ struct SettingsView: View {
                             }
                             
                             // DEBUG Section
-                            #if DEBUG
+#if DEBUG
                             MenuSection(title: "DEBUG") {
                                 Button(action: {
                                     coordinator.navigate(to: .debugMenu)
@@ -148,7 +148,7 @@ struct SettingsView: View {
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
-                            #endif
+#endif
                         }
                         .padding(.horizontal, 20)
                         .padding(.bottom, 100)
@@ -176,17 +176,18 @@ struct SettingsView: View {
             )
         )
     }
-    
     // MARK: - Not signed in view
     private var notSignedInSection: some View {
         GeometryReader { geometry in
             VStack(spacing: 20) {
+                // ✅ Add fixed-height frame around image
                 Image("user")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 120)
+                    .frame(height: 140) // ← fixed height
+                    .frame(maxWidth: .infinity) // center horizontally
                     .padding(.bottom, 30)
-
+                
                 VStack(spacing: 8) {
                     Text("WHERE WILL YOU GO")
                         .appSectionHeader()
@@ -196,7 +197,7 @@ struct SettingsView: View {
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
                 }
-
+                
                 Button {
                     coordinator.showSignIn()
                 } label: {

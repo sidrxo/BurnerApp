@@ -79,10 +79,10 @@ struct SignInSheetView: View {
                 Image("transparent")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 180)
+                    .frame(width: 150)
                     .padding(.bottom, 60)
                     .clipShape(Circle())
-                    .padding(.bottom, 10)// 👈 makes it circular
+                    .padding(.bottom, 60)// 👈 makes it circular
 
 
                 
@@ -159,7 +159,7 @@ struct SignInSheetView: View {
                         .resizable()
                         .frame(width: 22, height: 22)
 
-                    Text("Continue with Google")
+                    Text("SIGN IN WITH GOOGLE")
                         .font(.appFont(size: 17))
                 }
                 .foregroundColor(.white)
@@ -179,7 +179,7 @@ struct SignInSheetView: View {
                     Image(systemName: "applelogo")
                         .font(.appIcon)
 
-                    Text("Continue with Apple")
+                    Text("SIGN IN WITH APPLE")
                         .font(.appFont(size: 17))
                 }
                 .foregroundColor(.black)
@@ -199,7 +199,7 @@ struct SignInSheetView: View {
                     Image(systemName: "envelope")
                         .font(.appIcon)
 
-                    Text("Continue with Email")
+                    Text("SIGN IN WITH EMAIL")
                         .font(.appFont(size: 17))
                 }
                 .foregroundColor(.white)

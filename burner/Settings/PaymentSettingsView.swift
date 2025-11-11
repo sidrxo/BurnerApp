@@ -19,6 +19,28 @@ struct PaymentSettingsView: View {
     @State private var alertMessage = ""
     @State private var alertTitle = ""
 
+    // MARK: - Logging state
+    @State private var fetchLogStart: Date? = nil
+    @State private var fetchLogStep: Int = 0
+    private static let timeFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.dateFormat = "HH:mm:ss.SSS"
+        return df
+    }()
+    private func startFetchLog(_ reason: String) {
+        fetchLogStart = Date()
+        fetchLogStep = 0
+        logFetch("START fetchPaymentMethods (\(reason))")
+    }
+    private func logFetch(_ message: String) {
+        fetchLogStep += 1
+        let now = Date()
+        let ts = Self.timeFormatter.string(from: now)
+        let elapsed = fetchLogStart.map { now.timeIntervalSince($0) } ?? 0
+        let elapsedStr = String(format: "%.3fs", elapsed)
+        print("⏱️ [\(ts)] [+\(elapsedStr)] [step \(fetchLogStep)] PaymentSettingsView: \(message)")
+    }
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -81,7 +103,25 @@ struct PaymentSettingsView: View {
                     ScrollView {
                         VStack(spacing: 12) {
                             if paymentService.paymentMethods.isEmpty {
-                                // ... empty state
+                                // Simple empty state
+                                VStack(spacing: 12) {
+                                    Image(systemName: "creditcard")
+                                        .font(.system(size: 40, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .padding(.top, 28)
+
+                                    Text("No saved payment methods")
+                                        .appSectionHeader()
+                                        .foregroundColor(.white)
+
+                                    Text("Add a card to speed up checkout.")
+                                        .appBody()
+                                        .foregroundColor(.gray)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 24)
+                                .background(Color.white.opacity(0.06))
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
                             } else {
                                 ForEach(paymentService.paymentMethods) { method in
                                     PaymentMethodRow(
@@ -103,7 +143,6 @@ struct PaymentSettingsView: View {
                         .padding(.top, 16)
                         .padding(.bottom, 20)
                     }
-
                 }
             }
 
@@ -124,6 +163,7 @@ struct PaymentSettingsView: View {
         }
     }
 
+    // MARK: - Add Payment Button
     private var addPaymentButton: some View {
         Button(action: {
             showAddCard = true
@@ -144,26 +184,34 @@ struct PaymentSettingsView: View {
         .buttonStyle(PlainButtonStyle())
     }
 
-    private func loadPaymentMethods() {
+    // MARK: - Fetch methods with logging/timer
+    private func loadPaymentMethods(reason: String = "onAppear") {
         guard Auth.auth().currentUser != nil else {
+            startFetchLog(reason)
+            logFetch("SKIP: No authenticated user")
             return
         }
-        
-        // Prevent duplicate requests
         guard !isLoading else {
+            startFetchLog(reason)
+            logFetch("SKIP: Already loading")
             return
         }
 
+        startFetchLog(reason)
         isLoading = true
+        logFetch("Calling paymentService.fetchPaymentMethods()")
+
         Task {
             do {
                 try await paymentService.fetchPaymentMethods()
                 await MainActor.run {
                     isLoading = false
+                    logFetch("SUCCESS: fetched \(paymentService.paymentMethods.count) methods")
                 }
             } catch {
                 await MainActor.run {
                     isLoading = false
+                    logFetch("ERROR: \(error.localizedDescription)")
                     alertTitle = "Error"
                     alertMessage = "Failed to load payment methods: \(error.localizedDescription)"
                     showAlert = true
@@ -171,6 +219,7 @@ struct PaymentSettingsView: View {
             }
         }
     }
+
     private func saveCard() {
         guard let cardParams = cardParams else { return }
 
@@ -190,6 +239,8 @@ struct PaymentSettingsView: View {
                     alertMessage = "Payment method added successfully"
                     showAlert = true
                 }
+                // Optional: refresh with logging
+                // loadPaymentMethods(reason: "post-save refresh")
             } catch {
                 await MainActor.run {
                     isLoading = false
@@ -206,11 +257,16 @@ struct PaymentSettingsView: View {
         Task {
             do {
                 try await paymentService.deletePaymentMethod(paymentMethodId: paymentMethodId)
-                // Refresh the payment methods list after deletion
-                try await paymentService.fetchPaymentMethods()
+                // End loading state so our load guard passes
+                await MainActor.run {
+                    isLoading = false
+                }
+                // Refresh the payment methods list after deletion with logging
+                loadPaymentMethods(reason: "post-delete refresh")
             } catch {
                 await MainActor.run {
                     isLoading = false
+                    logFetch("ERROR during delete: \(error.localizedDescription)")
                     alertTitle = "Error"
                     alertMessage = "Failed to delete payment method: \(error.localizedDescription)"
                     showAlert = true
@@ -230,6 +286,8 @@ struct PaymentSettingsView: View {
                     alertMessage = "Default payment method updated"
                     showAlert = true
                 }
+                // Optional: refresh with logging
+                // loadPaymentMethods(reason: "post-setDefault refresh")
             } catch {
                 await MainActor.run {
                     isLoading = false
