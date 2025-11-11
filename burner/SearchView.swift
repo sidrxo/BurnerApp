@@ -66,20 +66,15 @@ struct SearchView: View {
                 }
             }
         }
-        .onChange(of: viewModel.userLocation) { oldValue, newValue in
-            if pendingNearbySortRequest, newValue != nil {
+        .onChange(of: (viewModel.userLocation.map { "\($0.coordinate.latitude),\($0.coordinate.longitude)" })) { _, newKey in
+            if pendingNearbySortRequest, newKey != nil {
                 pendingNearbySortRequest = false
-                Task {
-                    await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText)
-                }
+                Task { await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText) }
             }
         }
-        .onChange(of: userLocationManager.savedLocation) { oldValue, newValue in
-            // If location changed and we're on nearby view, refresh
-            if sortBy == .nearby, newValue != nil {
-                Task {
-                    await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText)
-                }
+        .onChange(of: userLocationManager.savedLocation?.name) { _, newName in
+            if sortBy == .nearby, newName != nil {
+                Task { await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText) }
             }
         }
         .overlay {
@@ -171,7 +166,7 @@ struct SearchView: View {
             ) {
                 // If already on nearby, show location modal to reset
                 if sortBy == .nearby {
-                    coordinator.activeModal = .helloWorld
+                    coordinator.activeModal = .SetLocation
                 } else {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         sortBy = .nearby

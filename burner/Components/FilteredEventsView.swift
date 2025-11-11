@@ -8,7 +8,7 @@ struct FilteredEventsView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var appState: AppState
     @State private var showingSignInAlert = false
-
+    
     var body: some View {
         VStack(spacing: 0) {
             if events.isEmpty {
@@ -17,7 +17,7 @@ struct FilteredEventsView: View {
                 SettingsHeaderSection(title: title)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-
+                
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(events) { event in
@@ -33,9 +33,9 @@ struct FilteredEventsView: View {
                     }
                     .padding(.bottom, 100)
                 }
-
+                
             }
-
+            
         }
         .background(Color.black)
         .navigationBarTitleDisplayMode(.inline)
@@ -73,12 +73,12 @@ struct FilteredEventsView: View {
             Image(systemName: "calendar.badge.exclamationmark")
                 .font(.appLargeIcon)
                 .foregroundColor(.gray)
-
+            
             VStack(spacing: 8) {
                 Text("No Events Found")
                     .appSectionHeader()
                     .foregroundColor(.white)
-
+                
                 Text("No events available in this category")
                     .appBody()
                     .foregroundColor(.gray)
@@ -88,15 +88,5 @@ struct FilteredEventsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-
-
-#Preview {
-    NavigationStack {
-        FilteredEventsView(
-            title: "Techno",
-            events: []
-        )
-        .environmentObject(AppState().bookmarkManager)
-    }
-    .preferredColorScheme(.dark)
+    
 }

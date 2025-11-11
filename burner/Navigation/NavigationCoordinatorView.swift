@@ -80,6 +80,9 @@ struct NavigationCoordinatorView<Content: View>: View {
     @ViewBuilder
     private func modalView(for modal: ModalPresentation) -> some View {
         switch modal {
+        case .SetLocation:
+            // Present your new modal. Adjust init/props to match your SetLocationModal.swift
+            SetLocationModal()
         case .signIn:
             SignInSheetView(showingSignIn: Binding(
                 get: { true },

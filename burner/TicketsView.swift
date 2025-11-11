@@ -80,7 +80,7 @@ struct TicketsView: View {
         // ❌ Removed NavigationView - now handled by MainTabView
         VStack(spacing: 0) {
             if !ticketsViewModel.tickets.isEmpty || ticketsViewModel.isLoading {
-                HeaderSection(title: "My Tickets")
+                HeaderSection(title: "Tickets")
                 searchSection
                 filtersSection
             }

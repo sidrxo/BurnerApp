@@ -184,7 +184,7 @@ struct ExploreView: View {
 
                     // Location Button - Top Right
                     Button(action: {
-                        coordinator.activeModal = .helloWorld
+                        coordinator.activeModal = .SetLocation
                     }) {
                         ZStack {
                             Circle()
@@ -271,7 +271,7 @@ struct ExploreView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             
-            // Popular Section
+            // Popular
             if !popularEvents.isEmpty {
                 EventSection(
                     title: "Popular",
@@ -283,7 +283,7 @@ struct ExploreView: View {
                 )
             }
 
-            // This Week Section
+            // This Week
             if !thisWeekEvents.isEmpty {
                 EventSection(
                     title: "This Week",
@@ -295,7 +295,7 @@ struct ExploreView: View {
                 )
             }
 
-            // ✅ 2nd Featured Card (moved up, before nearby and genre cards)
+            // 2nd Featured Card
             if featuredEvents.count > 1 {
                 NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[1])) {
                     FeaturedHeroCard(event: featuredEvents[1], bookmarkManager: bookmarkManager)
@@ -305,10 +305,9 @@ struct ExploreView: View {
                 .buttonStyle(PlainButtonStyle())
             }
 
-            // Nearby Section - moved below 2nd featured card
+            // Nearby
             if userLocationManager.savedLocation != nil && !nearbyEvents.isEmpty {
                 VStack(alignment: .leading, spacing: 16) {
-                    // Section Header
                     HStack {
                         Text("Nearby")
                             .appSectionHeader()
@@ -317,9 +316,8 @@ struct ExploreView: View {
                     }
                     .padding(.horizontal, 20)
 
-                    // Event List with distances
                     LazyVStack(spacing: 0) {
-                        ForEach(Array(nearbyEventsPreview.enumerated()), id: \.element.event.id) { index, item in
+                        ForEach(Array(nearbyEventsPreview.enumerated()), id: \.element.event.id) { _, item in
                             NavigationLink(value: NavigationDestination.eventDetail(item.event)) {
                                 EventRow(
                                     event: item.event,
@@ -335,16 +333,10 @@ struct ExploreView: View {
                 .padding(.bottom, 40)
             }
 
-            // ✅ Genre Cards - Horizontal Scrolling (moved below nearby)
-            GenreCardsSection(
-                genres: displayGenres,
-                allEventsForGenre: { genre in allEventsForGenre(genre) }
-            )
-
-            // Genre Sections with remaining featured cards
+            // 👉 Genre sections now handle: third featured + genre cards + remaining featured interleaves
             genreSectionsWithFeaturedCards
-            
-            // All Events Section
+
+            // All Events
             if !allEvents.isEmpty {
                 EventSection(
                     title: "All Events",
@@ -357,20 +349,39 @@ struct ExploreView: View {
             }
         }
     }
+
     
     private var genreSectionsWithFeaturedCards: some View {
-        let genresWithEvents = displayGenres.filter { genre in
-            !allEventsForGenre(genre).isEmpty
-        }
+        let genresWithEvents = displayGenres.filter { !allEventsForGenre($0).isEmpty }
 
         return ForEach(Array(genresWithEvents.enumerated()), id: \.offset) { index, genre in
             let genreEvents = allEventsForGenre(genre)
             let genrePreview = eventsForGenrePreview(genre)
 
             Group {
-                // ✅ Start from index 2 (3rd featured card) since we already showed 1st and 2nd
-                if index % 2 == 0 {
-                    let featuredIndex = 2 + (index / 2) // Start from 3rd featured card
+                // --- Insert the "third" featured card right before the first genre section ---
+                if index == 0 {
+                    if featuredEvents.count > 2 {
+                        // 3rd featured card (index 2)
+                        NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[2])) {
+                            FeaturedHeroCard(event: featuredEvents[2], bookmarkManager: bookmarkManager)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 40)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    
+                    // ✅ Genre Cards live HERE, directly under that first in-loop featured card
+                    GenreCardsSection(
+                        genres: displayGenres,
+                        allEventsForGenre: { g in allEventsForGenre(g) }
+                    )
+                }
+                // --- For subsequent featured interleaves, continue your existing pattern ---
+                else if index % 2 == 0 {
+                    // Start from the 4th featured card onward:
+                    // index 2 -> featuredIndex 3, index 4 -> 4, etc.
+                    let featuredIndex = 2 + (index / 2)
                     if featuredIndex < featuredEvents.count {
                         NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[featuredIndex])) {
                             FeaturedHeroCard(event: featuredEvents[featuredIndex], bookmarkManager: bookmarkManager)
@@ -381,6 +392,7 @@ struct ExploreView: View {
                     }
                 }
 
+                // --- The genre section itself ---
                 EventSection(
                     title: genre,
                     events: genrePreview,
@@ -392,6 +404,7 @@ struct ExploreView: View {
             }
         }
     }
+
 }
 
 // MARK: - Event Section Destination

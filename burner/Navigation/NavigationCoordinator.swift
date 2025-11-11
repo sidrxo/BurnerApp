@@ -113,7 +113,7 @@ enum ModalPresentation: Identifiable {
     case addPaymentMethod
     case manualTicketEntry
     case fullScreenQRCode(Ticket)
-    case helloWorld  // ✅ NEW
+    case SetLocation  // ✅ NEW
 
     var id: String {
         switch self {
@@ -128,7 +128,7 @@ enum ModalPresentation: Identifiable {
         case .addPaymentMethod: return "addPaymentMethod"
         case .manualTicketEntry: return "manualTicketEntry"
         case .fullScreenQRCode(let ticket): return "fullScreenQRCode-\(ticket.id ?? "")"
-        case .helloWorld: return "helloWorld"  // ✅ NEW
+        case .SetLocation: return "SetLocation"  // ✅ NEW
         }
     }
 
@@ -136,7 +136,7 @@ enum ModalPresentation: Identifiable {
         switch self {
         case .signIn, .burnerSetup, .ticketDetail, .fullScreenQRCode, .passwordlessAuth, .ticketPurchase:
             return true
-        case .helloWorld:  // ✅ CHANGED - now a sheet instead of fullscreen
+        case .SetLocation:  // ✅ CHANGED - now a sheet instead of fullscreen
             return false
         default:
             return false
