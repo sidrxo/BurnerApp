@@ -59,13 +59,13 @@ struct ExploreView: View {
     }
     
     // MARK: - Nearby Events (Filtered by Distance)
-    var nearbyEvents: [Event] {
+    var nearbyEvents: [(event: Event, distance: CLLocationDistance)] {
         guard let userLocation = userLocationManager.currentCLLocation else {
             return []
         }
-        
+
         let now = Date()
-        
+
         // Get all upcoming events with coordinates
         let eventsWithCoordinates = eventViewModel.events
             .filter { event in
@@ -75,7 +75,7 @@ struct ExploreView: View {
                 }
                 return !event.isFeatured && startTime > now
             }
-        
+
         // Calculate distance and filter by max distance
         let eventsWithDistance = eventsWithCoordinates.compactMap { event -> (Event, CLLocationDistance)? in
             guard let coordinates = event.coordinates else { return nil }
@@ -84,25 +84,35 @@ struct ExploreView: View {
                 longitude: coordinates.longitude
             )
             let distance = userLocation.distance(from: eventLocation)
-            
+
             // ✅ Only include events within maxNearbyDistance (50km)
             guard distance <= maxNearbyDistance else {
                 print("📍 Filtering out \(event.name) - \(String(format: "%.1f", distance/1000))km away (max: \(maxNearbyDistance/1000)km)")
                 return nil
             }
-            
+
             print("📍 Including \(event.name) - \(String(format: "%.1f", distance/1000))km away")
             return (event, distance)
         }
-        
+
         // Sort by distance (closest first)
         return eventsWithDistance
             .sorted { $0.1 < $1.1 }
-            .map { $0.0 }
+            .map { (event: $0.0, distance: $0.1) }
     }
-    
-    var nearbyEventsPreview: [Event] {
+
+    var nearbyEventsPreview: [(event: Event, distance: CLLocationDistance)] {
         Array(nearbyEvents.prefix(5))
+    }
+
+    // Helper function to format distance
+    private func formatDistance(_ distance: CLLocationDistance) -> String {
+        let km = distance / 1000
+        if km < 1 {
+            return String(format: "%.0fm", distance)
+        } else {
+            return String(format: "%.1fkm", km)
+        }
     }
     
     // MARK: - Popular Events
@@ -178,17 +188,20 @@ struct ExploreView: View {
                     }) {
                         ZStack {
                             Circle()
-                                .fill(userLocationManager.savedLocation != nil ? Color.white.opacity(0.2) : Color.white.opacity(0.1))
+                                .stroke(
+                                    userLocationManager.savedLocation != nil ? Color.white : Color.gray.opacity(0.5),
+                                    lineWidth: 1
+                                )
                                 .frame(width: 44, height: 44)
 
-                            Image(systemName: "map.fill")
+                            Image(systemName: "map")
                                 .font(.system(size: 20))
-                                .foregroundColor(.white)
+                                .foregroundColor(userLocationManager.savedLocation != nil ? .white : .gray.opacity(0.5))
                         }
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 60)
+                .padding(.top, 50)
                 .padding(.bottom, 30)
 
                 if eventViewModel.isLoading && eventViewModel.events.isEmpty {
@@ -282,19 +295,7 @@ struct ExploreView: View {
                 )
             }
 
-            // Nearby Section - only show if user has set location
-            if userLocationManager.savedLocation != nil && !nearbyEvents.isEmpty {
-                EventSection(
-                    title: "Nearby",
-                    events: nearbyEventsPreview,
-                    allEvents: nearbyEvents,
-                    bookmarkManager: bookmarkManager,
-                    showViewAllButton: false,
-                    showingSignInAlert: $showingSignInAlert
-                )
-            }
-            
-            // ✅ 2nd Featured Card (before genre cards)
+            // ✅ 2nd Featured Card (moved up, before nearby and genre cards)
             if featuredEvents.count > 1 {
                 NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[1])) {
                     FeaturedHeroCard(event: featuredEvents[1], bookmarkManager: bookmarkManager)
@@ -304,7 +305,37 @@ struct ExploreView: View {
                 .buttonStyle(PlainButtonStyle())
             }
 
-            // ✅ Genre Cards - Horizontal Scrolling (moved here, after 2nd featured)
+            // Nearby Section - moved below 2nd featured card
+            if userLocationManager.savedLocation != nil && !nearbyEvents.isEmpty {
+                VStack(alignment: .leading, spacing: 16) {
+                    // Section Header
+                    HStack {
+                        Text("Nearby")
+                            .appSectionHeader()
+                            .foregroundColor(.white)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+
+                    // Event List with distances
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(nearbyEventsPreview.enumerated()), id: \.element.event.id) { index, item in
+                            NavigationLink(value: NavigationDestination.eventDetail(item.event)) {
+                                EventRow(
+                                    event: item.event,
+                                    bookmarkManager: bookmarkManager,
+                                    distanceText: formatDistance(item.distance),
+                                    showingSignInAlert: $showingSignInAlert
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                }
+                .padding(.bottom, 40)
+            }
+
+            // ✅ Genre Cards - Horizontal Scrolling (moved below nearby)
             GenreCardsSection(
                 genres: displayGenres,
                 allEventsForGenre: { genre in allEventsForGenre(genre) }

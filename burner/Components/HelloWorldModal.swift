@@ -13,99 +13,82 @@ struct HelloWorldModal: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            Text("Set Your Location")
-                .font(.system(size: 24, weight: .semibold))
-                .foregroundColor(.white)
-                .padding(.top, 20)
+            // Drag indicator (visual cue)
+            Capsule()
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: 36, height: 5)
+                .padding(.top, 8)
                 .padding(.bottom, 16)
-            
+
+            Text("Set Your Location")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.bottom, 20)
+
             if let error = errorMessage {
                 Text(error)
-                    .font(.system(size: 14))
+                    .font(.system(size: 13))
                     .foregroundColor(.red)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
             }
-            
-            VStack(spacing: 12) {
+
+            VStack(spacing: 0) {
                 // Current Location Button
                 Button(action: {
                     requestCurrentLocation()
                 }) {
-                    HStack {
+                    HStack(spacing: 12) {
                         if isProcessing && !showingManualEntry {
                             ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(0.8)
+                                .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                                .scaleEffect(0.9)
                         } else {
                             Image(systemName: "location.fill")
-                                .font(.system(size: 20))
+                                .font(.system(size: 18))
+                                .foregroundColor(.blue)
                         }
-                        Text("Use Current Location")
-                            .font(.system(size: 16))
+                        Text("Current Location")
+                            .font(.system(size: 17))
+                            .foregroundColor(.white)
                         Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
                     }
-                    .foregroundColor(.white)
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 16)
+                    .background(Color.white.opacity(0.05))
                 }
                 .disabled(isProcessing)
-                
+
+                Divider()
+                    .background(Color.gray.opacity(0.2))
+                    .padding(.leading, 48)
+
                 // Manual Entry Button
                 Button(action: {
                     showingManualEntry = true
                 }) {
-                    HStack {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 20))
-                        Text("Manually Enter City")
-                            .font(.system(size: 16))
+                    HStack(spacing: 12) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 18))
+                            .foregroundColor(.blue)
+                        Text("Search for a City")
+                            .font(.system(size: 17))
+                            .foregroundColor(.white)
                         Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
                     }
-                    .foregroundColor(.white)
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 16)
+                    .background(Color.white.opacity(0.05))
                 }
             }
-            .padding(.horizontal, 20)
-            
-            // Show current saved location if exists
-            if let savedLocation = appState.userLocationManager.savedLocation {
-                VStack(spacing: 8) {
-                    Text("Current Location")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
-                    
-                    Text(savedLocation.name)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white)
-                    
-                    Button(action: {
-                        print("📍 HelloWorldModal: Clear button tapped")
-                        appState.userLocationManager.clearLocation()
-                        dismiss()
-                    }) {
-                        Text("Clear Location")
-                            .font(.system(size: 14))
-                            .foregroundColor(.red)
-                    }
-                }
-                .padding(.top, 16)
-            }
-            
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 16)
+
             Spacer()
         }
         .background(Color.black)
-        .presentationDetents([.height(showingManualEntry ? 350 : 250)])
-        .presentationDragIndicator(.visible)
+        .presentationDetents([.height(180)])
+        .presentationDragIndicator(.hidden)
         .sheet(isPresented: $showingManualEntry) {
             ManualCityEntryView(locationManager: appState.userLocationManager, onDismiss: {
                 showingManualEntry = false

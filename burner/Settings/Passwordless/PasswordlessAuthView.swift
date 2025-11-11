@@ -64,7 +64,7 @@ struct PasswordlessAuthView: View {
                                         Text("Email")
                                             .appCaption()
                                             .foregroundColor(.white.opacity(0.7))
-                                        
+
                                         TextField("", text: $email)
                                             .appBody()
                                             .foregroundColor(.white)
@@ -80,21 +80,6 @@ struct PasswordlessAuthView: View {
                                                     .stroke(Color.white.opacity(0.2), lineWidth: 1)
                                             )
                                     }
-                                    
-                                    // Info box
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "info.circle")
-                                            .font(.system(size: 16))
-                                            .foregroundColor(.blue)
-                                        
-                                        Text("No password needed. Just click the link in your email to sign in.")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(.white.opacity(0.7))
-                                            .fixedSize(horizontal: false, vertical: true)
-                                    }
-                                    .padding(12)
-                                    .background(Color.blue.opacity(0.1))
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
                                 }
                                 .padding(.horizontal, 24)
                             } else {

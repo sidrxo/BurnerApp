@@ -40,13 +40,13 @@ struct CustomAlertView<Content: View>: View {
         HStack {
             VStack(spacing: 0) {
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .appFont(size: 17, weight: .semibold)
                     .foregroundColor(.white)
                     .padding(.top, 19)
                     .padding(.bottom, 2)
 
                 Text(description)
-                    .font(.system(size: 13))
+                    .appCaption()
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 16)
@@ -61,7 +61,7 @@ struct CustomAlertView<Content: View>: View {
                     if let cancelAction, let cancelActionTitle {
                         Button { cancelAction() } label: {
                             Text(cancelActionTitle)
-                                .font(.system(size: 17))
+                                .appFont(size: 17)
                                 .foregroundColor(.white)
                                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
                         }
@@ -75,8 +75,8 @@ struct CustomAlertView<Content: View>: View {
                     if let primaryAction, let primaryActionTitle {
                         Button { primaryAction() } label: {
                             Text(primaryActionTitle)
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(primaryActionColor) // 👈 now configurable
+                                .appFont(size: 17, weight: .semibold)
+                                .foregroundColor(primaryActionColor)
                                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
                         }
                     }

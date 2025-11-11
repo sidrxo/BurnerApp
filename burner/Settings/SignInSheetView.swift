@@ -10,6 +10,7 @@ import Combine
 struct SignInSheetView: View {
     @Binding var showingSignIn: Bool
     var onSkip: (() -> Void)? = nil
+    @EnvironmentObject var appState: AppState
 
     @State private var isLoading = false
     @State private var errorMessage = ""
@@ -20,6 +21,9 @@ struct SignInSheetView: View {
 
     // Passwordless auth navigation
     @State private var showingPasswordlessAuth = false
+
+    // Burner mode setup navigation
+    @State private var showingBurnerModeSetup = false
 
     // Random background image
     @State private var selectedBackground: String = "Background1"
@@ -121,6 +125,15 @@ struct SignInSheetView: View {
         }
             .fullScreenCover(isPresented: $showingPasswordlessAuth) {
                 PasswordlessAuthView(showingSignIn: $showingSignIn)
+            }
+            .fullScreenCover(isPresented: $showingBurnerModeSetup) {
+                BurnerModeSetupView(
+                    burnerManager: appState.burnerManager,
+                    onSkip: {
+                        showingBurnerModeSetup = false
+                        showingSignIn = false
+                    }
+                )
             }
             .onAppear {
                 selectRandomBackground()
@@ -495,11 +508,18 @@ struct SignInSheetView: View {
             withAnimation {
                 isLoading = false
             }
-            
+
             triggerSuccessFeedback()
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
-            
-            showingSignIn = false
+
+            // Check if burner mode is setup
+            if !appState.burnerManager.isSetup {
+                // Show burner mode setup
+                showingBurnerModeSetup = true
+            } else {
+                // Already setup, just dismiss
+                showingSignIn = false
+            }
         }
     }
     

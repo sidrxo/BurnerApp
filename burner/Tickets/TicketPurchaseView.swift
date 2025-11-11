@@ -34,7 +34,7 @@ struct TicketPurchaseView: View {
         NavigationStack {
             ZStack {
                 Color.black.ignoresSafeArea()
-                
+
                 VStack(spacing: 0) {
                     // Header with event info
                     eventHeader
@@ -94,6 +94,7 @@ struct TicketPurchaseView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .interactiveDismissDisabled(false)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
@@ -166,29 +167,14 @@ struct TicketPurchaseView: View {
     
     // MARK: - Price Summary
     private var priceSummary: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("Ticket Price")
-                    .appBody()
-                    .foregroundColor(.gray)
-                Spacer()
-                Text("£\(String(format: "%.2f", event.price))")
-                    .appBody()
-                    .foregroundColor(.white)
-            }
-            
-            Divider()
-                .background(Color.gray.opacity(0.2))
-            
-            HStack {
-                Text("Total")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.white)
-                Spacer()
-                Text("£\(String(format: "%.2f", event.price))")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.white)
-            }
+        HStack {
+            Text("Total")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(.white)
+            Spacer()
+            Text("£\(String(format: "%.2f", event.price))")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(.white)
         }
         .padding(20)
         .background(Color.white.opacity(0.05))
@@ -204,79 +190,54 @@ struct TicketPurchaseView: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
-            
-            // Apple Pay
+
+            // Apple Pay Button - Native style
             if ApplePayHandler.canMakePayments() {
                 Button(action: handleApplePayPayment) {
-                    HStack {
-                        Image(systemName: "apple.logo")
-                            .font(.system(size: 24))
-                        Text("Apple Pay")
-                            .font(.system(size: 17, weight: .semibold))
+                    HStack(spacing: 8) {
+                        Image(systemName: "applelogo")
+                            .font(.system(size: 20, weight: .medium))
+                        Text("Pay")
+                            .font(.system(size: 20, weight: .medium))
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+                    .frame(height: 50)
                     .background(Color.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white, lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
                     )
                 }
                 .padding(.horizontal, 20)
             }
-            
-            // Saved Cards
-            if !paymentService.paymentMethods.isEmpty {
-                Button(action: {
-                    withAnimation {
-                        currentStep = .savedCards
-                    }
-                }) {
-                    HStack {
-                        Image(systemName: "creditcard.fill")
-                            .font(.system(size: 20))
-                        Text("Saved Cards")
-                            .font(.system(size: 17, weight: .semibold))
-                        Spacer()
-                        Text("\(paymentService.paymentMethods.count)")
-                            .appCaption()
-                            .foregroundColor(.gray)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
-                    }
-                    .foregroundColor(.white)
-                    .padding(16)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .padding(.horizontal, 20)
-            }
-            
-            // Add New Card
+
+            // Pay with Card Button - Same style as Apple Pay
             Button(action: {
                 withAnimation {
-                    currentStep = .cardInput
+                    if !paymentService.paymentMethods.isEmpty {
+                        currentStep = .savedCards
+                    } else {
+                        currentStep = .cardInput
+                    }
                 }
             }) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 20))
-                    Text(paymentService.paymentMethods.isEmpty ? "Card Payment" : "Add New Card")
-                        .font(.system(size: 17, weight: .semibold))
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
+                HStack(spacing: 8) {
+                    Image(systemName: "creditcard.fill")
+                        .font(.system(size: 20, weight: .medium))
+                    Text("Pay with Card")
+                        .font(.system(size: 20, weight: .medium))
                 }
                 .foregroundColor(.white)
-                .padding(16)
                 .frame(maxWidth: .infinity)
-                .background(Color.white.opacity(0.05))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .frame(height: 50)
+                .background(Color.black)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
+                )
             }
             .padding(.horizontal, 20)
         }
