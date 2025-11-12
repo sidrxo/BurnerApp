@@ -176,6 +176,8 @@ struct ExploreView: View {
                     Text("Explore")
                         .appPageHeader()
                         .foregroundColor(.white)
+                        .padding(.bottom, 2)
+
 
                     Spacer()
 
@@ -198,7 +200,7 @@ struct ExploreView: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 50)
+                .padding(.top, 44)
                 .padding(.bottom, 30)
 
                 if eventViewModel.isLoading && eventViewModel.events.isEmpty {

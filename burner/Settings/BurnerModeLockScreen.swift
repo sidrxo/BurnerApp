@@ -5,11 +5,8 @@ struct BurnerModeLockScreen: View {
     @EnvironmentObject var appState: AppState
     @State private var currentTime = Date()
     @State private var showExitConfirmation = false
-    @State private var showTimerAlert = false
     @State private var timerCountdown: Int = 600 // 10 minutes in seconds
     @State private var timerIsActive = false
-    @State private var longPressProgress: Double = 0.0
-    @State private var isLongPressing = false
     @State private var opacity: Double = 0 // For fade-in animation
     @State private var eventEndTime: Date = Date()
 
@@ -63,8 +60,23 @@ struct BurnerModeLockScreen: View {
 
             // Content
             VStack(spacing: 0) {
+                // Top bar with X button (for testing only)
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        exitBurnerModeImmediately()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.7))
+                            .frame(width: 44, height: 44)
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.top, 20)
+                }
+                
                 Spacer()
-                    .frame(maxHeight: 200)
+                    .frame(maxHeight: 150)
 
                 // Main content
                 VStack(spacing: 40) {
@@ -111,62 +123,53 @@ struct BurnerModeLockScreen: View {
                                     .stroke(Color.white.opacity(0.2), lineWidth: 1)
                             )
                     )
+                    
+                    // Exit timer countdown (only show when active)
+                    if timerIsActive {
+                        VStack(spacing: 8) {
+                            Text("UNLOCKING IN")
+                                .appCaption()
+                                .fontWeight(.semibold)
+                                .foregroundColor(.red.opacity(0.8))
+                                .tracking(1)
 
-                    // Exit button with long press
-                    ZStack {
-                        // Long press progress ring
-                        if isLongPressing {
-                            Circle()
-                                .trim(from: 0, to: longPressProgress)
-                                .stroke(Color.white, lineWidth: 3)
-                                .frame(width: 120, height: 120)
-                                .rotationEffect(.degrees(-90))
-                                .animation(.linear(duration: 0.1), value: longPressProgress)
+                            Text(formattedTimerCountdown)
+                                .appFont(size: 32, weight: .bold)
+                                .foregroundColor(.red)
+                                .monospacedDigit()
                         }
+                        .padding(.vertical, 20)
+                        .padding(.horizontal, 30)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.red.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                        .transition(.scale.combined(with: .opacity))
+                    }
 
+                    // Exit button to start timer (only show when timer is not active)
+                    if !timerIsActive {
                         Button(action: {
-                            // Tap action - show timer
-                            startExitTimer()
+                            showExitConfirmation = true
                         }) {
                             Text("Need your phone?\nTap here to go back.")
                                 .appCaption()
                                 .fontWeight(.semibold)
                                 .foregroundColor(.white.opacity(0.6))
                                 .multilineTextAlignment(.center)
+                                .lineLimit(nil)                           // allow multiple lines
+                                .fixedSize(horizontal: false, vertical: true) // expand vertically if needed
+                                .padding(.vertical, 22)                   // a touch more vertical padding
+                                .padding(.horizontal, 20)
                                 .tracking(1)
-                                .padding(20)
+
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .simultaneousGesture(
-                            LongPressGesture(minimumDuration: 10.0)
-                                .onEnded { _ in
-                                    // Long press completed - exit immediately
-                                    isLongPressing = false
-                                    longPressProgress = 0.0
-                                    exitBurnerMode()
-                                }
-                        )
-                        .simultaneousGesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { _ in
-                                    if !isLongPressing {
-                                        isLongPressing = true
-                                        startLongPressAnimation()
-                                    }
-                                }
-                                .onEnded { _ in
-                                    isLongPressing = false
-                                    longPressProgress = 0.0
-                                }
-                        )
-                    }
-
-                    // Hint text
-                    if isLongPressing {
-                        Text("Hold for 10 seconds to exit immediately")
-                            .appCaption()
-                            .foregroundColor(.white.opacity(0.5))
-                            .transition(.opacity)
+                        .transition(.opacity)
                     }
                 }
 
@@ -174,26 +177,24 @@ struct BurnerModeLockScreen: View {
             }
             .frame(maxWidth: .infinity)
 
-            // Timer alert overlay
-            if showTimerAlert {
+            // Exit confirmation alert
+            if showExitConfirmation {
                 CustomAlertView(
-                    title: "Exit Timer Active",
-                    description: "Your phone will unlock in \(formattedTimerCountdown)\n\nHold the exit button for 10 seconds to unlock immediately.",
+                    title: "Exit Burner Mode?",
+                    description: "Are you sure you need to use your phone? A 10-minute timer will start before your phone unlocks.",
                     cancelAction: {
                         withAnimation {
-                            showTimerAlert = false
-                            timerIsActive = false
-                            timerCountdown = 600
+                            showExitConfirmation = false
                         }
                     },
-                    cancelActionTitle: "Cancel",
+                    cancelActionTitle: "Stay Focused",
                     primaryAction: {
-                        // Keep timer running
                         withAnimation {
-                            showTimerAlert = false
+                            showExitConfirmation = false
+                            startExitTimer()
                         }
                     },
-                    primaryActionTitle: "OK",
+                    primaryActionTitle: "Yes, Start Timer",
                     customContent: EmptyView()
                 )
                 .transition(.opacity)
@@ -248,18 +249,13 @@ struct BurnerModeLockScreen: View {
     }
 
     private func startExitTimer() {
-        withAnimation {
-            timerIsActive = true
-            timerCountdown = 600 // Reset to 10 minutes
-            showTimerAlert = true
-        }
+        timerIsActive = true
+        timerCountdown = 600 // Reset to 10 minutes
     }
 
-    private func startLongPressAnimation() {
-        // Animate progress over 10 seconds
-        withAnimation(.linear(duration: 10.0)) {
-            longPressProgress = 1.0
-        }
+    private func exitBurnerModeImmediately() {
+        // For testing - immediate exit without timer
+        exitBurnerMode()
     }
 
     private func exitBurnerMode() {

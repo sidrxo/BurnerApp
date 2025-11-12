@@ -1,54 +1,48 @@
-// DeviceActivityMonitor.swift (in your extension target)
-import DeviceActivity
-import ManagedSettings
-import FamilyControls
-import SwiftUI
+//
+//  DeviceActivityMonitorExtension.swift
+//  BurnerDeviceActivityMonitor
+//
+//  Created by Sid Rao on 11/11/2025.
+//
 
-class BurnerDeviceActivityMonitor: DeviceActivityMonitor {
-    
+import DeviceActivity
+
+// Optionally override any of the functions below.
+// Make sure that your class name matches the NSExtensionPrincipalClass in your Info.plist.
+class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     override func intervalDidStart(for activity: DeviceActivityName) {
         super.intervalDidStart(for: activity)
         
-        // Reapply restrictions when interval starts
-        let store = ManagedSettingsStore()
-        
-        // Check if burner mode should be active
-        let defaults = UserDefaults(suiteName: "group.com.gas.Burner") // Use app group
-        let isEnabled = defaults?.bool(forKey: "burnerModeEnabled") ?? false
-        
-        if isEnabled {
-            reapplyRestrictions(store: store)
-        }
+        // Handle the start of the interval.
     }
     
     override func intervalDidEnd(for activity: DeviceActivityName) {
         super.intervalDidEnd(for: activity)
-        // Keep restrictions active - don't disable automatically
+        
+        // Handle the end of the interval.
     }
     
     override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
         super.eventDidReachThreshold(event, activity: activity)
+        
+        // Handle the event reaching its threshold.
     }
     
-    private func reapplyRestrictions(store: ManagedSettingsStore) {
-        // Load saved selection from shared UserDefaults
-        let defaults = UserDefaults(suiteName: "group.com.gas.Burner")
+    override func intervalWillStartWarning(for activity: DeviceActivityName) {
+        super.intervalWillStartWarning(for: activity)
         
-        guard let data = defaults?.data(forKey: "selectedApps"),
-              let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) else {
-            // If no selection, block everything
-            store.shield.applicationCategories = .all()
-            return
-        }
+        // Handle the warning before the interval starts.
+    }
+    
+    override func intervalWillEndWarning(for activity: DeviceActivityName) {
+        super.intervalWillEndWarning(for: activity)
         
-        // Reapply the same restrictions
-        if selection.applicationTokens.isEmpty {
-            store.shield.applicationCategories = .all()
-        } else {
-            store.shield.applicationCategories = .all(except: selection.applicationTokens)
-        }
+        // Handle the warning before the interval ends.
+    }
+    
+    override func eventWillReachThresholdWarning(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
+        super.eventWillReachThresholdWarning(event, activity: activity)
         
-        // CRITICAL: Block Settings app to prevent uninstallation
-        store.application.denyAppRemoval = true
+        // Handle the warning before the event reaches its threshold.
     }
 }
