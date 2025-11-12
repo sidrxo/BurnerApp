@@ -324,7 +324,7 @@ class StripePaymentService: NSObject, ObservableObject {
                                                         #endif
                                                         completion(PaymentResult(
                                                             success: false,
-                                                            message: PaymentError.processingError.errorDescription!,
+                                                            message: PaymentError.processingError.errorDescription ?? "Payment processing error",
                                                             ticketId: nil
                                                         ))
                                                     }
@@ -448,7 +448,7 @@ class StripePaymentService: NSObject, ObservableObject {
                         #if DEBUG
                         print("❌ Ticket Creation Error: \(error.localizedDescription)")
                         #endif
-                        completion(PaymentResult(success: false, message: PaymentError.processingError.errorDescription!, ticketId: nil))
+                        completion(PaymentResult(success: false, message: PaymentError.processingError.errorDescription ?? "Payment processing error", ticketId: nil))
                     }
                 } else {
                     await MainActor.run { self.isProcessing = false }
@@ -629,7 +629,7 @@ class StripePaymentService: NSObject, ObservableObject {
                         #if DEBUG
                         print("❌ Saved Card Ticket Creation Error: \(error.localizedDescription)")
                         #endif
-                        completion(PaymentResult(success: false, message: PaymentError.processingError.errorDescription!, ticketId: nil))
+                        completion(PaymentResult(success: false, message: PaymentError.processingError.errorDescription ?? "Payment processing error", ticketId: nil))
                     }
                 } else {
                     await MainActor.run { self.isProcessing = false }

@@ -169,76 +169,84 @@ struct ExploreView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                // Header with Location Button
-                HStack {
-                    Text("Explore")
-                        .appPageHeader()
-                        .foregroundColor(.white)
-                        .padding(.bottom, 2)
+        ErrorBoundary(
+            errorTitle: "Failed to Load Events",
+            errorMessage: eventViewModel.errorMessage ?? "Unable to load events. Please check your connection and try again.",
+            onRetry: {
+                eventViewModel.fetchEvents()
+            }
+        ) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Header with Location Button
+                    HStack {
+                        Text("Explore")
+                            .appPageHeader()
+                            .foregroundColor(.white)
+                            .padding(.bottom, 2)
 
 
-                    Spacer()
+                        Spacer()
 
-                    // Location Button - Top Right
-                    Button(action: {
-                        coordinator.activeModal = .SetLocation
-                    }) {
-                        ZStack {
-                            Circle()
-                                .stroke(
-                                    userLocationManager.savedLocation != nil ? Color.white : Color.gray.opacity(0.5),
-                                    lineWidth: 1
-                                )
-                                .frame(width: 44, height: 44)
+                        // Location Button - Top Right
+                        Button(action: {
+                            coordinator.activeModal = .SetLocation
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .stroke(
+                                        userLocationManager.savedLocation != nil ? Color.white : Color.gray.opacity(0.5),
+                                        lineWidth: 1
+                                    )
+                                    .frame(width: 44, height: 44)
 
-                            Image(systemName: "map")
-                                .appCard()
-                                .foregroundColor(userLocationManager.savedLocation != nil ? .white : .gray.opacity(0.5))
+                                Image(systemName: "map")
+                                    .appCard()
+                                    .foregroundColor(userLocationManager.savedLocation != nil ? .white : .gray.opacity(0.5))
+                            }
                         }
                     }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 44)
-                .padding(.bottom, 30)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 44)
+                    .padding(.bottom, 30)
 
-                if eventViewModel.isLoading && eventViewModel.events.isEmpty {
-                    loadingView
-                } else {
-                    contentView
+                    if eventViewModel.isLoading && eventViewModel.events.isEmpty {
+                        loadingView
+                    } else {
+                        contentView
+                    }
+                }
+                .padding(.bottom, 100)
+            }
+            .refreshable {
+                eventViewModel.fetchEvents()
+            }
+            .navigationBarHidden(true)
+            .background(Color.black)
+            .onChange(of: coordinator.pendingDeepLink) { _, eventId in
+                if let eventId = eventId {
+                    coordinator.navigate(to: .eventById(eventId))
                 }
             }
-            .padding(.bottom, 100)
-        }
-        .refreshable {
-            eventViewModel.fetchEvents()
-        }
-        .navigationBarHidden(true)
-        .background(Color.black)
-        .onChange(of: coordinator.pendingDeepLink) { _, eventId in
-            if let eventId = eventId {
-                coordinator.navigate(to: .eventById(eventId))
-            }
-        }
-        .overlay {
-            if showingSignInAlert {
-                CustomAlertView(
-                    title: "Sign In Required",
-                    description: "You need to be signed in to bookmark events.",
-                    cancelAction: {
-                            showingSignInAlert = false
-                },
-                    cancelActionTitle: "Cancel",
-                    primaryAction: {
-                        showingSignInAlert = false
-                        coordinator.showSignIn()
+            .overlay {
+                if showingSignInAlert {
+                    CustomAlertView(
+                        title: "Sign In Required",
+                        description: "You need to be signed in to bookmark events.",
+                        cancelAction: {
+                                showingSignInAlert = false
                     },
-                    primaryActionTitle: "Sign In",
-                    customContent: EmptyView()
-                )
-                .transition(.opacity)
-                .zIndex(999)
+                        cancelActionTitle: "Cancel",
+                        primaryAction: {
+                            showingSignInAlert = false
+                            coordinator.showSignIn()
+                        },
+                        primaryActionTitle: "Sign In",
+                        customContent: EmptyView()
+                    )
+                    .transition(.opacity)
+                    .zIndex(999)
+                }
             }
         }
     }
@@ -255,148 +263,149 @@ struct ExploreView: View {
     // MARK: - Content View
     private var contentView: some View {
         VStack(spacing: 0) {
-            // 1st Featured Hero Card
-            if let featured = featuredEvents.first {
-                NavigationLink(value: NavigationDestination.eventDetail(featured)) {
-                    FeaturedHeroCard(event: featured, bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 40)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            
-            // Popular
-            if !popularEvents.isEmpty {
-                EventSection(
-                    title: "Popular",
-                    events: popularEventsPreview,
-                    allEvents: popularEvents,
-                    bookmarkManager: bookmarkManager,
-                    showViewAllButton: false,
-                    showingSignInAlert: $showingSignInAlert
-                )
-            }
-
-            // This Week
-            if !thisWeekEvents.isEmpty {
-                EventSection(
-                    title: "This Week",
-                    events: thisWeekEventsPreview,
-                    allEvents: thisWeekEvents,
-                    bookmarkManager: bookmarkManager,
-                    showViewAllButton: false,
-                    showingSignInAlert: $showingSignInAlert
-                )
-            }
-
-            // 2nd Featured Card
-            if featuredEvents.count > 1 {
-                NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[1])) {
-                    FeaturedHeroCard(event: featuredEvents[1], bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 40)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-
-            // Nearby
-            if userLocationManager.savedLocation != nil && !nearbyEvents.isEmpty {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        Text("Nearby")
-                            .appSectionHeader()
-                            .foregroundColor(.white)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
-
-                    LazyVStack(spacing: 0) {
-                        ForEach(Array(nearbyEventsPreview.enumerated()), id: \.element.event.id) { _, item in
-                            NavigationLink(value: NavigationDestination.eventDetail(item.event)) {
-                                EventRow(
-                                    event: item.event,
-                                    bookmarkManager: bookmarkManager,
-                                    distanceText: formatDistance(item.distance),
-                                    showingSignInAlert: $showingSignInAlert
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                }
-                .padding(.bottom, 40)
-            }
-
-            // 👉 Genre sections now handle: third featured + genre cards + remaining featured interleaves
-            genreSectionsWithFeaturedCards
-
-            // All Events
-            if !allEvents.isEmpty {
-                EventSection(
-                    title: "All Events",
-                    events: allEventsPreview,
-                    allEvents: allEvents,
-                    bookmarkManager: bookmarkManager,
-                    showViewAllButton: allEvents.count > 6,
-                    showingSignInAlert: $showingSignInAlert
-                )
-            }
+            // Build content sections in order
+            buildContentSections()
         }
     }
 
-
-    private var genreSectionsWithFeaturedCards: some View {
+    // MARK: - Build Content Sections (Simplified & Clean)
+    @ViewBuilder
+    private func buildContentSections() -> some View {
         let genresWithEvents = displayGenres.filter { !allEventsForGenre($0).isEmpty }
 
-        return ForEach(Array(genresWithEvents.enumerated()), id: \.offset) { index, genre in
-            let genreEvents = allEventsForGenre(genre)
-            let genrePreview = eventsForGenrePreview(genre)
+        // 1. First featured card
+        if featuredEvents.count > 0 {
+            featuredCard(featuredEvents[0])
+        }
 
-            Group {
-                // --- Insert the "third" featured card right before the first genre section ---
-                if index == 0 {
-                    if featuredEvents.count > 2 {
-                        // 3rd featured card (index 2)
-                        NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[2])) {
-                            FeaturedHeroCard(event: featuredEvents[2], bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 40)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
+        // 2. Popular section
+        if !popularEvents.isEmpty {
+            EventSection(
+                title: "Popular",
+                events: popularEventsPreview,
+                allEvents: popularEvents,
+                bookmarkManager: bookmarkManager,
+                showViewAllButton: false,
+                showingSignInAlert: $showingSignInAlert
+            )
+        }
 
-                    // ✅ Genre Cards live HERE, directly under that first in-loop featured card
-                    GenreCardsSection(
-                        genres: displayGenres,
-                        allEventsForGenre: { g in allEventsForGenre(g) }
-                    )
-                }
-                // --- For subsequent featured interleaves, continue your existing pattern ---
-                else if index % 2 == 0 {
-                    // Start from the 4th featured card onward:
-                    // index 2 -> featuredIndex 3, index 4 -> 4, etc.
-                    let featuredIndex = 2 + (index / 2)
-                    if featuredIndex < featuredEvents.count {
-                        NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[featuredIndex])) {
-                            FeaturedHeroCard(event: featuredEvents[featuredIndex], bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 40)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
+        // 3. Second featured card
+        if featuredEvents.count > 1 {
+            featuredCard(featuredEvents[1])
+        }
 
-                // --- The genre section itself ---
-                EventSection(
-                    title: genre,
-                    events: genrePreview,
-                    allEvents: genreEvents,
-                    bookmarkManager: bookmarkManager,
-                    showViewAllButton: true,
-                    showingSignInAlert: $showingSignInAlert
-                )
+        // 4. This Week section
+        if !thisWeekEvents.isEmpty {
+            EventSection(
+                title: "This Week",
+                events: thisWeekEventsPreview,
+                allEvents: thisWeekEvents,
+                bookmarkManager: bookmarkManager,
+                showViewAllButton: false,
+                showingSignInAlert: $showingSignInAlert
+            )
+        }
+
+        // 5. Third featured card
+        if featuredEvents.count > 2 {
+            featuredCard(featuredEvents[2])
+        }
+
+        // 6. Nearby section (if location available)
+        if userLocationManager.savedLocation != nil && !nearbyEvents.isEmpty {
+            nearbySection
+        }
+
+        // 7. Genre Cards (horizontal scroll of genre chips)
+        if !displayGenres.isEmpty {
+            GenreCardsSection(
+                genres: displayGenres,
+                allEventsForGenre: { g in allEventsForGenre(g) }
+            )
+        }
+
+        // 8. Interleave remaining featured cards (4+) with genre sections
+        ForEach(Array(genresWithEvents.enumerated()), id: \.offset) { index, genre in
+            // Insert a featured card every 2 genre sections, starting from featured[3]
+            let featuredIndex = 3 + (index / 2)
+            if index % 2 == 0 && featuredIndex < featuredEvents.count {
+                featuredCard(featuredEvents[featuredIndex])
+            }
+
+            // Genre section
+            EventSection(
+                title: genre,
+                events: eventsForGenrePreview(genre),
+                allEvents: allEventsForGenre(genre),
+                bookmarkManager: bookmarkManager,
+                showViewAllButton: true,
+                showingSignInAlert: $showingSignInAlert
+            )
+        }
+
+        // 9. Any remaining featured cards after all genres
+        let featuredAfterGenres = 3 + ((genresWithEvents.count + 1) / 2)
+        if featuredAfterGenres < featuredEvents.count {
+            ForEach(featuredAfterGenres..<featuredEvents.count, id: \.self) { index in
+                featuredCard(featuredEvents[index])
             }
         }
+
+        // 10. All Events section
+        if !allEvents.isEmpty {
+            EventSection(
+                title: "All Events",
+                events: allEventsPreview,
+                allEvents: allEvents,
+                bookmarkManager: bookmarkManager,
+                showViewAllButton: allEvents.count > 6,
+                showingSignInAlert: $showingSignInAlert
+            )
+        }
+    }
+
+    // MARK: - Helper: Featured Card
+    @ViewBuilder
+    private func featuredCard(_ event: Event) -> some View {
+        NavigationLink(value: NavigationDestination.eventDetail(event)) {
+            FeaturedHeroCard(
+                event: event,
+                bookmarkManager: bookmarkManager,
+                showingSignInAlert: $showingSignInAlert
+            )
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    // MARK: - Helper: Nearby Section
+    private var nearbySection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Nearby")
+                    .appSectionHeader()
+                    .foregroundColor(.white)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+
+            LazyVStack(spacing: 0) {
+                ForEach(Array(nearbyEventsPreview.enumerated()), id: \.element.event.id) { _, item in
+                    NavigationLink(value: NavigationDestination.eventDetail(item.event)) {
+                        EventRow(
+                            event: item.event,
+                            bookmarkManager: bookmarkManager,
+                            distanceText: formatDistance(item.distance),
+                            showingSignInAlert: $showingSignInAlert
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+        }
+        .padding(.bottom, 40)
     }
 
 }
