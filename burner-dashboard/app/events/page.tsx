@@ -29,6 +29,8 @@ function EventsPageContent() {
     setStatusFilter,
     tagFilter,
     setTagFilter,
+    sortBy,
+    setSortBy,
     availableTags,
     filtered,
     onToggleFeatured,
@@ -80,6 +82,8 @@ function EventsPageContent() {
           setStatusFilter={setStatusFilter}
           tagFilter={tagFilter}
           setTagFilter={setTagFilter}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
           availableTags={availableTags}
           events={events}
         />

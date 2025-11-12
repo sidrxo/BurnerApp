@@ -146,6 +146,13 @@ export function AppNavbar() {
             <DropdownMenuItem asChild>
               <Link href="/account">Account Settings</Link>
             </DropdownMenuItem>
+            {user?.role === "siteAdmin" && (
+              <>
+                <DropdownMenuItem asChild>
+                  <Link href="/debug">Debug Tools</Link>
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-600 focus:text-red-600">
               <LogOut className="mr-2 h-4 w-4" />

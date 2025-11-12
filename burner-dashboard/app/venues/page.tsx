@@ -38,6 +38,8 @@ function VenuesPageContent() {
     setNewVenueWebsite,
     showCreateVenueDialog,
     setShowCreateVenueDialog,
+    sortBy,
+    setSortBy,
     handleCreateVenueWithAdmin,
     handleRemoveVenue,
     handleAddAdmin,
@@ -65,6 +67,8 @@ function VenuesPageContent() {
         <VenuesHeader
           user={user}
           setShowCreateVenueDialog={setShowCreateVenueDialog}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
         />
 
         <CreateVenueForm

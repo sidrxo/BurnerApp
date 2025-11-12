@@ -27,7 +27,9 @@ import {
   Clock, Users, AlertCircle
 } from "lucide-react";
 import { Event, Venue, useEventForm } from "@/hooks/useEventsData";
-import { EVENT_STATUS_OPTIONS, EVENT_TAG_OPTIONS } from "@/lib/constants";
+import { EVENT_STATUS_OPTIONS } from "@/lib/constants";
+import { CachedImage } from "@/components/CachedImage";
+import { DateTimeRangePicker } from "@/components/ui/datetime-picker";
 
 export function EventSkeleton() {
   return (
@@ -131,6 +133,8 @@ export function SearchAndStats({
   setStatusFilter,
   tagFilter,
   setTagFilter,
+  sortBy,
+  setSortBy,
   availableTags,
   events,
 }: {
@@ -140,10 +144,12 @@ export function SearchAndStats({
   setStatusFilter: (value: string) => void;
   tagFilter: string;
   setTagFilter: (value: string) => void;
+  sortBy: string;
+  setSortBy: (value: string) => void;
   availableTags: string[];
   events: Event[];
 }) {
-  const tagOptions = Array.from(new Set([...availableTags, ...EVENT_TAG_OPTIONS])).filter(Boolean);
+  const tagOptions = availableTags;
   const totalSoldOut = events.filter((event) => (event.ticketsSold ?? 0) >= (event.maxTickets ?? 0)).length;
   const totalActive = events.filter((event) => (event.status ?? "").toLowerCase() === "active").length;
 
@@ -185,6 +191,23 @@ export function SearchAndStats({
                   #{tag}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date-desc">Date (Newest First)</SelectItem>
+              <SelectItem value="date-asc">Date (Oldest First)</SelectItem>
+              <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+              <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+              <SelectItem value="price-asc">Price (Low to High)</SelectItem>
+              <SelectItem value="price-desc">Price (High to Low)</SelectItem>
+              <SelectItem value="tickets-asc">Tickets Sold (Low to High)</SelectItem>
+              <SelectItem value="tickets-desc">Tickets Sold (High to Low)</SelectItem>
+              <SelectItem value="featured">Featured First</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -309,20 +332,18 @@ export function EventCard({
     >
       {/* Image Header */}
       <div className="relative overflow-hidden">
-        {ev.imageUrl ? (
-          <div className="relative h-56 overflow-hidden">
-            <img 
-              src={ev.imageUrl} 
-              alt={ev.name} 
-              className="w-full h-full object-cover transition-transform duration-300" 
-            />
+        <div className="relative h-56 overflow-hidden">
+          <CachedImage
+            src={ev.imageUrl}
+            alt={ev.name}
+            className="w-full h-full object-cover transition-transform duration-300"
+            fill
+            priority={index < 3}
+          />
+          {ev.imageUrl && (
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-          </div>
-        ) : (
-          <div className="h-56 bg-gradient-to-br from-muted via-muted/50 to-muted/30 flex items-center justify-center">
-            <Calendar className="h-16 w-16 text-muted-foreground/30" />
-          </div>
-        )}
+          )}
+        </div>
         
         {/* Badges below image */}
         <div className="flex flex-wrap gap-2 p-4 pt-4 pb-0">
@@ -577,27 +598,12 @@ export function EventForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="start">Start *</Label>
-          <Input
-            id="start"
-            type="datetime-local"
-            value={form.startDateTime}
-            onChange={(e) => setForm((state) => ({ ...state, startDateTime: e.target.value }))}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="end">End</Label>
-          <Input
-            id="end"
-            type="datetime-local"
-            value={form.endDateTime}
-            onChange={(e) => setForm((state) => ({ ...state, endDateTime: e.target.value }))}
-          />
-        </div>
-      </div>
+      <DateTimeRangePicker
+        startValue={form.startDateTime}
+        endValue={form.endDateTime}
+        onStartChange={(value) => setForm((state) => ({ ...state, startDateTime: value }))}
+        onEndChange={(value) => setForm((state) => ({ ...state, endDateTime: value }))}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">

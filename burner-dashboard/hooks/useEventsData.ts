@@ -103,15 +103,35 @@ export function useEventsData() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("date-desc");
+  const [tagsFromCollection, setTagsFromCollection] = useState<string[]>([]);
 
   useEffect(() => {
     if (!authLoading && user) {
       loadEvents();
+      loadTagsFromCollection();
       if (user.role === "siteAdmin") {
         loadVenues();
       }
     }
   }, [user, authLoading]);
+
+  const loadTagsFromCollection = async () => {
+    try {
+      const tagsSnapshot = await getDocs(
+        query(collection(db, "tags"), where("active", "==", true), orderBy("order", "asc"))
+      );
+      const tags = tagsSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return data.nameLowercase || data.name?.toLowerCase() || "";
+      }).filter(Boolean);
+      setTagsFromCollection(tags);
+    } catch (error) {
+      console.error("Error loading tags:", error);
+      // Fallback to empty array if tags collection doesn't exist yet
+      setTagsFromCollection([]);
+    }
+  };
 
   const loadVenues = async () => {
     try {
@@ -189,7 +209,8 @@ export function useEventsData() {
   };
 
   const availableTags = useMemo(() => {
-    const tagSet = new Set<string>();
+    // Combine tags from collection with tags used in events
+    const tagSet = new Set<string>(tagsFromCollection);
     events.forEach((event) => {
       const tags = event.tags ?? [];
       if (tags.length) {
@@ -197,12 +218,12 @@ export function useEventsData() {
       }
     });
     return Array.from(tagSet).filter(Boolean);
-  }, [events]);
+  }, [events, tagsFromCollection]);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
 
-    return events.filter((event) => {
+    let result = events.filter((event) => {
       const matchesSearch =
         !s ||
         event.name?.toLowerCase().includes(s) ||
@@ -224,7 +245,41 @@ export function useEventsData() {
 
       return true;
     });
-  }, [events, search, statusFilter, tagFilter]);
+
+    // Apply sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "date-asc": {
+          const aDate = toDate(a.startTime) ?? toDate(a.date) ?? new Date(0);
+          const bDate = toDate(b.startTime) ?? toDate(b.date) ?? new Date(0);
+          return aDate.getTime() - bDate.getTime();
+        }
+        case "date-desc": {
+          const aDate = toDate(a.startTime) ?? toDate(a.date) ?? new Date(0);
+          const bDate = toDate(b.startTime) ?? toDate(b.date) ?? new Date(0);
+          return bDate.getTime() - aDate.getTime();
+        }
+        case "name-asc":
+          return (a.name || "").localeCompare(b.name || "");
+        case "name-desc":
+          return (b.name || "").localeCompare(a.name || "");
+        case "price-asc":
+          return (a.price || 0) - (b.price || 0);
+        case "price-desc":
+          return (b.price || 0) - (a.price || 0);
+        case "tickets-asc":
+          return (a.ticketsSold || 0) - (b.ticketsSold || 0);
+        case "tickets-desc":
+          return (b.ticketsSold || 0) - (a.ticketsSold || 0);
+        case "featured":
+          return Number(!!b.isFeatured) - Number(!!a.isFeatured);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [events, search, statusFilter, tagFilter, sortBy]);
 
   const onToggleFeatured = async (ev: Event) => {
     if (!user || user.role !== "siteAdmin") {
@@ -318,6 +373,8 @@ export function useEventsData() {
     setStatusFilter,
     tagFilter,
     setTagFilter,
+    sortBy,
+    setSortBy,
     availableTags,
     filtered,
     onToggleFeatured,
