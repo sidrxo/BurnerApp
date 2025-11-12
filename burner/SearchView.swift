@@ -123,9 +123,16 @@ struct SearchView: View {
     private var searchSection: some View {
         HStack(spacing: 12) {
             HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass")
-                    .font(.appIcon)
-                    .foregroundColor(.gray)
+                // Show loading indicator when searching, otherwise show magnifying glass
+                if viewModel.isLoading && !searchText.isEmpty {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .tint(.gray)
+                } else {
+                    Image(systemName: "magnifyingglass")
+                        .font(.appIcon)
+                        .foregroundColor(.gray)
+                }
 
                 TextField("Search events", text: $searchText)
                     .appBody()
@@ -163,7 +170,11 @@ struct SearchView: View {
                 title: "DATE",
                 isSelected: sortBy == .date
             ) {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                // Haptic feedback for filter change
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+
+                withAnimation(.easeInOut(duration: AppConstants.standardAnimationDuration)) {
                     sortBy = .date
                 }
             }
@@ -172,7 +183,11 @@ struct SearchView: View {
                 title: "PRICE",
                 isSelected: sortBy == .price
             ) {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                // Haptic feedback for filter change
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+
+                withAnimation(.easeInOut(duration: AppConstants.standardAnimationDuration)) {
                     sortBy = .price
                 }
             }
@@ -185,7 +200,11 @@ struct SearchView: View {
                 if sortBy == .nearby {
                     coordinator.activeModal = .SetLocation
                 } else {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    // Haptic feedback for filter change
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                    impactFeedback.impactOccurred()
+
+                    withAnimation(.easeInOut(duration: AppConstants.standardAnimationDuration)) {
                         sortBy = .nearby
                     }
                 }
@@ -215,7 +234,10 @@ struct SearchView: View {
                     if viewModel.isLoading && viewModel.events.isEmpty {
                         loadingView
                     } else if viewModel.events.isEmpty {
-                        EmptyEventsView(searchText: searchText)
+                        EmptyEventsView(
+                            searchText: searchText,
+                            isLoading: viewModel.isLoading
+                        )
                     } else {
                         ForEach(viewModel.events) { event in
                             NavigationLink(value: NavigationDestination.eventDetail(event)) {
@@ -230,6 +252,9 @@ struct SearchView: View {
                     }
                 }
                 .padding(.bottom, 100)
+            }
+            .refreshable {
+                await viewModel.refreshEvents(sortBy: sortBy.rawValue)
             }
             .scrollDismissesKeyboard(.interactively)
         }
@@ -261,8 +286,8 @@ class SearchViewModel: ObservableObject {
     private let searchSubject = PassthroughSubject<(String, String), Never>()
     private let locationManager = LocationManager()
 
-    // Cache TTL: 5 minutes
-    private let cacheTTL: TimeInterval = 300
+    // Cache TTL
+    private let cacheTTL: TimeInterval = AppConstants.searchCacheTTL
 
     init() {
         setupSearchDebouncing()
@@ -295,7 +320,7 @@ class SearchViewModel: ObservableObject {
     // MARK: - Setup Search Debouncing
     private func setupSearchDebouncing() {
         searchCancellable = searchSubject
-            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+            .debounce(for: .milliseconds(AppConstants.searchDebounceMilliseconds), scheduler: DispatchQueue.main)
             .sink { [weak self] (searchText, sortBy) in
                 Task {
                     await self?.performSearch(searchText: searchText, sortBy: sortBy)
@@ -417,8 +442,8 @@ class SearchViewModel: ObservableObject {
             return startTime > Date()
         }
 
-        // Calculate distances and filter by max distance (50km)
-        let maxDistance: CLLocationDistance = 50_000 // 50km
+        // Calculate distances and filter by max distance
+        let maxDistance: CLLocationDistance = AppConstants.maxNearbyDistanceMeters
         let eventsWithDistance = upcomingEvents.compactMap { event -> (Event, CLLocationDistance)? in
             guard let coordinates = event.coordinates else {
                 return nil
@@ -465,29 +490,39 @@ class SearchViewModel: ObservableObject {
 // MARK: - Empty Events View
 struct EmptyEventsView: View {
     let searchText: String
+    var isLoading: Bool = false
 
     var body: some View {
         VStack(spacing: 20) {
             Spacer()
                 .frame(height: 60)
 
-            Image(systemName: searchText.isEmpty ? "calendar.badge.exclamationmark" : "magnifyingglass")
-                .font(.system(size: 60))
-                .foregroundColor(.gray)
+            if isLoading {
+                ProgressView()
+                    .scaleEffect(1.2)
+                    .tint(.white)
+            } else {
+                Image(systemName: searchText.isEmpty ? "calendar.badge.exclamationmark" : "magnifyingglass")
+                    .font(.system(size: 60))
+                    .foregroundColor(.gray)
+            }
 
             VStack(spacing: 8) {
-                Text(searchText.isEmpty ? "No Upcoming Events" : "No Search Results")
+                Text(isLoading ? "Searching..." :
+                     searchText.isEmpty ? "No Upcoming Events" : "No Search Results")
                     .font(.appBody)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
 
-                Text(searchText.isEmpty ?
-                     "There are no upcoming events available at the moment." :
-                     "Try searching with different keywords.")
-                    .font(.appBody)
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+                if !isLoading {
+                    Text(searchText.isEmpty ?
+                         AppConstants.EmptyState.noUpcomingEvents :
+                         AppConstants.EmptyState.noSearchResults)
+                        .font(.appBody)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
             }
 
             Spacer()

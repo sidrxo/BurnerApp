@@ -14,8 +14,8 @@ struct ExploreView: View {
     @State private var searchText = ""
     @State private var showingSignInAlert = false
 
-    // ✅ Maximum distance for "nearby" events (in meters)
-    private let maxNearbyDistance: CLLocationDistance = 50_000 // ~31 miles
+    // Maximum distance for "nearby" events (in meters)
+    private let maxNearbyDistance: CLLocationDistance = AppConstants.maxNearbyDistanceMeters
 
     // MARK: - Dynamic Genres from Firestore
     private var displayGenres: [String] {
@@ -210,6 +210,9 @@ struct ExploreView: View {
                 }
             }
             .padding(.bottom, 100)
+        }
+        .refreshable {
+            eventViewModel.fetchEvents()
         }
         .navigationBarHidden(true)
         .background(Color.black)

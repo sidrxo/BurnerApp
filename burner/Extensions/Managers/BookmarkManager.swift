@@ -9,10 +9,19 @@ class BookmarkManager: ObservableObject {
     @Published var bookmarkedEvents: [Event] = []
     @Published var bookmarkStatus: [String: Bool] = [:]
     @Published var isLoading = false
+    @Published var isTogglingBookmark: [String: Bool] = [:]
+    @Published var bookmarkError: BookmarkError?
 
     private let bookmarkRepository: BookmarkRepository
     private let eventRepository: EventRepository
     private var isSimulatingEmptyData = false
+
+    struct BookmarkError: Identifiable {
+        let id = UUID()
+        let eventId: String
+        let eventName: String
+        let message: String
+    }
 
     init(
         bookmarkRepository: BookmarkRepository,
@@ -120,12 +129,20 @@ class BookmarkManager: ObservableObject {
               let eventId = event.id else {
             return
         }
-        
+
+        // Prevent multiple simultaneous toggles for the same event
+        guard isTogglingBookmark[eventId] != true else { return }
+
         let isCurrentlyBookmarked = bookmarkStatus[eventId] ?? false
-        
+
+        // Set loading state
+        await MainActor.run {
+            isTogglingBookmark[eventId] = true
+        }
+
         // Optimistic update
         bookmarkStatus[eventId] = !isCurrentlyBookmarked
-        
+
         do {
             if isCurrentlyBookmarked {
                 try await bookmarkRepository.removeBookmark(userId: userId, eventId: eventId)
@@ -141,19 +158,37 @@ class BookmarkManager: ObservableObject {
                 )
                 try await bookmarkRepository.addBookmark(userId: userId, bookmark: bookmark)
             }
-            
-            // Haptic feedback
+
+            // Haptic feedback on success
             await MainActor.run {
                 let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                 impactFeedback.impactOccurred()
+                isTogglingBookmark[eventId] = false
             }
-            
+
         } catch {
             // Revert optimistic update on error
             await MainActor.run {
                 self.bookmarkStatus[eventId] = isCurrentlyBookmarked
+                self.isTogglingBookmark[eventId] = false
+
+                // Show error with retry option
+                self.bookmarkError = BookmarkError(
+                    eventId: eventId,
+                    eventName: event.name,
+                    message: AppConstants.ErrorMessages.bookmarkFailed
+                )
+
+                #if DEBUG
+                print("❌ Bookmark Error: \(error.localizedDescription)")
+                #endif
             }
         }
+    }
+
+    // MARK: - Clear Error
+    func clearError() {
+        bookmarkError = nil
     }
     
     // MARK: - Helper Methods
@@ -173,6 +208,7 @@ class BookmarkManager: ObservableObject {
     }
 
     // MARK: - Debug helpers
+    #if DEBUG
     func simulateEmptyData() {
         isSimulatingEmptyData = true
         bookmarkRepository.stopObserving()
@@ -186,4 +222,5 @@ class BookmarkManager: ObservableObject {
         isSimulatingEmptyData = false
         setupBookmarkListener()
     }
+    #endif
 }
