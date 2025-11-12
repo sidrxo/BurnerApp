@@ -82,6 +82,7 @@ struct TicketPurchaseView: View {
                                         .accessibilityLabel("Buy with Apple Pay")
                                     }
                                     
+                                    
                                     Button(action: {
                                         withAnimation {
                                             if !paymentService.paymentMethods.isEmpty {
