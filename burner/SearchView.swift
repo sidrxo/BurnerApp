@@ -41,11 +41,20 @@ struct SearchView: View {
         .task {
             // Pass events from eventViewModel to searchViewModel
             viewModel.setSourceEvents(eventViewModel.events)
-            await viewModel.loadInitialEvents(sortBy: sortBy.rawValue)
+            // Only load if we have events, otherwise wait for onChange to trigger
+            if !eventViewModel.events.isEmpty {
+                await viewModel.loadInitialEvents(sortBy: sortBy.rawValue)
+            }
         }
         .onChange(of: eventViewModel.events) { oldValue, newValue in
             // Update search results when events change from real-time listener
             viewModel.setSourceEvents(newValue)
+            // Reload if this is the first time we're getting events
+            if oldValue.isEmpty && !newValue.isEmpty {
+                Task {
+                    await viewModel.loadInitialEvents(sortBy: sortBy.rawValue)
+                }
+            }
         }
         .onChange(of: searchText) { oldValue, newValue in
             viewModel.updateSearchText(newValue, sortBy: sortBy.rawValue)
