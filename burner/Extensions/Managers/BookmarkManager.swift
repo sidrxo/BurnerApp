@@ -56,36 +56,57 @@ class BookmarkManager: ObservableObject {
         }
     }
     
-    // MARK: - Fetch Bookmarked Events
+    // MARK: - Fetch Bookmarked Events (Optimized with Batch Fetching)
     private func fetchBookmarkedEvents(bookmarks: [BookmarkData]) async {
         let eventIds = bookmarks.map { $0.eventId }
-        
+
         guard !eventIds.isEmpty else {
             bookmarkedEvents = []
             return
         }
-        
-        // Fetch all events
+
+        // Fetch events in batches using whereIn (max 10 per query)
         var events: [Event] = []
-        for eventId in eventIds {
-            if let event = try? await eventRepository.fetchEvent(by: eventId) {
-                events.append(event)
-            }
+
+        // Split event IDs into batches of 10 (Firestore whereIn limit)
+        let batchSize = 10
+        let batches = stride(from: 0, to: eventIds.count, by: batchSize).map {
+            Array(eventIds[$0..<min($0 + batchSize, eventIds.count)])
         }
-        
+
+        // Fetch all batches in parallel
+        do {
+            events = try await withThrowingTaskGroup(of: [Event].self) { group in
+                for batch in batches {
+                    group.addTask {
+                        return try await self.eventRepository.fetchEvents(by: batch)
+                    }
+                }
+
+                var allEvents: [Event] = []
+                for try await batchEvents in group {
+                    allEvents.append(contentsOf: batchEvents)
+                }
+                return allEvents
+            }
+        } catch {
+            // Fallback to empty array on error
+            events = []
+        }
+
         // Sort by bookmark date (most recent first)
         let sortedEvents = events.sorted { event1, event2 in
             let bookmark1 = bookmarks.first { $0.eventId == event1.id }
             let bookmark2 = bookmarks.first { $0.eventId == event2.id }
-            
+
             guard let date1 = bookmark1?.bookmarkedAt,
                   let date2 = bookmark2?.bookmarkedAt else {
                 return false
             }
-            
+
             return date1 > date2
         }
-        
+
         await MainActor.run {
             self.bookmarkedEvents = sortedEvents
         }

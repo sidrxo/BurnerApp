@@ -1,13 +1,32 @@
 import SwiftUI
 import FirebaseCore
 import FirebaseAuth
+import FirebaseFirestore
 import GoogleSignIn
+import Kingfisher
 
 // MARK: - AppDelegate
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
+
+        // Enable Firestore offline persistence for better caching and reduced reads
+        let firestoreSettings = Firestore.firestore().settings
+        firestoreSettings.isPersistenceEnabled = true
+        firestoreSettings.cacheSizeBytes = FirestoreCacheSizeUnlimited
+        Firestore.firestore().settings = firestoreSettings
+
+        // Configure Kingfisher for optimized image loading
+        let cache = ImageCache.default
+        cache.memoryStorage.config.totalCostLimit = 100 * 1024 * 1024 // 100 MB memory cache
+        cache.diskStorage.config.sizeLimit = 300 * 1024 * 1024 // 300 MB disk cache
+        cache.diskStorage.config.expiration = .days(7) // 7 days expiration
+
+        // Configure downloader
+        let downloader = ImageDownloader.default
+        downloader.downloadTimeout = 15.0 // 15 seconds timeout
+
         return true
     }
     

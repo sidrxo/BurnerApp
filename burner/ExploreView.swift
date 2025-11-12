@@ -14,6 +14,17 @@ struct ExploreView: View {
     @State private var searchText = ""
     @State private var showingSignInAlert = false
 
+    // Cached computed properties for performance
+    @State private var cachedFeaturedEvents: [Event] = []
+    @State private var cachedThisWeekEvents: [Event] = []
+    @State private var cachedPopularEvents: [Event] = []
+    @State private var cachedNearbyEvents: [(event: Event, distance: CLLocationDistance)] = []
+    @State private var cachedAllEvents: [Event] = []
+
+    // Distance calculation cache
+    @State private var distanceCache: [String: CLLocationDistance] = [:]
+    @State private var lastUserLocation: CLLocation?
+
     // ✅ Maximum distance for "nearby" events (in meters)
     private let maxNearbyDistance: CLLocationDistance = 50_000 // ~31 miles
 
@@ -213,6 +224,25 @@ struct ExploreView: View {
         }
         .navigationBarHidden(true)
         .background(Color.black)
+        .task {
+            // Initial cache computation
+            updateAllCaches()
+        }
+        .onChange(of: eventViewModel.events) { _, _ in
+            // Update caches when events change
+            updateAllCaches()
+        }
+        .onChange(of: userLocationManager.currentCLLocation) { oldLocation, newLocation in
+            // Only recalculate distances if location changed significantly (> 1km)
+            if let old = oldLocation, let new = newLocation {
+                let distance = old.distance(from: new)
+                if distance > 1000 { // More than 1km
+                    updateNearbyCacheInBackground()
+                }
+            } else if newLocation != nil {
+                updateNearbyCacheInBackground()
+            }
+        }
         .onChange(of: coordinator.pendingDeepLink) { _, eventId in
             if let eventId = eventId {
                 coordinator.navigate(to: .eventById(eventId))
@@ -249,11 +279,26 @@ struct ExploreView: View {
         .frame(height: 300)
     }
     
+    // MARK: - Cache Update Methods
+    private func updateAllCaches() {
+        cachedFeaturedEvents = featuredEvents
+        cachedThisWeekEvents = thisWeekEvents
+        cachedPopularEvents = popularEvents
+        cachedAllEvents = allEvents
+        updateNearbyCacheInBackground()
+    }
+
+    private func updateNearbyCacheInBackground() {
+        Task {
+            cachedNearbyEvents = nearbyEvents
+        }
+    }
+
     // MARK: - Content View
     private var contentView: some View {
         VStack(spacing: 0) {
-            // 1st Featured Hero Card
-            if let featured = featuredEvents.first {
+            // 1st Featured Hero Card (Use Cached)
+            if let featured = cachedFeaturedEvents.first {
                 NavigationLink(value: NavigationDestination.eventDetail(featured)) {
                     FeaturedHeroCard(event: featured, bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
                         .padding(.horizontal, 20)
@@ -262,42 +307,42 @@ struct ExploreView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             
-            // Popular
-            if !popularEvents.isEmpty {
+            // Popular (Use Cached)
+            if !cachedPopularEvents.isEmpty {
                 EventSection(
                     title: "Popular",
-                    events: popularEventsPreview,
-                    allEvents: popularEvents,
+                    events: Array(cachedPopularEvents.prefix(5)),
+                    allEvents: cachedPopularEvents,
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: false,
                     showingSignInAlert: $showingSignInAlert
                 )
             }
 
-            // This Week
-            if !thisWeekEvents.isEmpty {
+            // This Week (Use Cached)
+            if !cachedThisWeekEvents.isEmpty {
                 EventSection(
                     title: "This Week",
-                    events: thisWeekEventsPreview,
-                    allEvents: thisWeekEvents,
+                    events: Array(cachedThisWeekEvents.prefix(5)),
+                    allEvents: cachedThisWeekEvents,
                     bookmarkManager: bookmarkManager,
                     showViewAllButton: false,
                     showingSignInAlert: $showingSignInAlert
                 )
             }
 
-            // 2nd Featured Card
-            if featuredEvents.count > 1 {
-                NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[1])) {
-                    FeaturedHeroCard(event: featuredEvents[1], bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
+            // 2nd Featured Card (Use Cached)
+            if cachedFeaturedEvents.count > 1 {
+                NavigationLink(value: NavigationDestination.eventDetail(cachedFeaturedEvents[1])) {
+                    FeaturedHeroCard(event: cachedFeaturedEvents[1], bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 40)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
 
-            // Nearby
-            if userLocationManager.savedLocation != nil && !nearbyEvents.isEmpty {
+            // Nearby (Use Cached)
+            if userLocationManager.savedLocation != nil && !cachedNearbyEvents.isEmpty {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
                         Text("Nearby")
@@ -308,7 +353,7 @@ struct ExploreView: View {
                     .padding(.horizontal, 20)
 
                     LazyVStack(spacing: 0) {
-                        ForEach(Array(nearbyEventsPreview.enumerated()), id: \.element.event.id) { _, item in
+                        ForEach(Array(cachedNearbyEvents.prefix(5).enumerated()), id: \.element.event.id) { _, item in
                             NavigationLink(value: NavigationDestination.eventDetail(item.event)) {
                                 EventRow(
                                     event: item.event,
@@ -325,24 +370,24 @@ struct ExploreView: View {
             }
 
             // 👉 Genre sections now handle: third featured + genre cards + remaining featured interleaves
-            genreSectionsWithFeaturedCards
+            genreSectionsWithFeaturedCardsView
 
-            // All Events
-            if !allEvents.isEmpty {
+            // All Events (Use Cached)
+            if !cachedAllEvents.isEmpty {
                 EventSection(
                     title: "All Events",
-                    events: allEventsPreview,
-                    allEvents: allEvents,
+                    events: Array(cachedAllEvents.prefix(6)),
+                    allEvents: cachedAllEvents,
                     bookmarkManager: bookmarkManager,
-                    showViewAllButton: allEvents.count > 6,
+                    showViewAllButton: cachedAllEvents.count > 6,
                     showingSignInAlert: $showingSignInAlert
                 )
             }
         }
     }
 
-    
-    private var genreSectionsWithFeaturedCards: some View {
+
+    private var genreSectionsWithFeaturedCardsView: some View {
         let genresWithEvents = displayGenres.filter { !allEventsForGenre($0).isEmpty }
 
         return ForEach(Array(genresWithEvents.enumerated()), id: \.offset) { index, genre in
@@ -350,12 +395,12 @@ struct ExploreView: View {
             let genrePreview = eventsForGenrePreview(genre)
 
             Group {
-                // --- Insert the "third" featured card right before the first genre section ---
+                // --- Insert the "third" featured card right before the first genre section (Use Cached) ---
                 if index == 0 {
-                    if featuredEvents.count > 2 {
+                    if cachedFeaturedEvents.count > 2 {
                         // 3rd featured card (index 2)
-                        NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[2])) {
-                            FeaturedHeroCard(event: featuredEvents[2], bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
+                        NavigationLink(value: NavigationDestination.eventDetail(cachedFeaturedEvents[2])) {
+                            FeaturedHeroCard(event: cachedFeaturedEvents[2], bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 40)
                         }
@@ -368,14 +413,14 @@ struct ExploreView: View {
                         allEventsForGenre: { g in allEventsForGenre(g) }
                     )
                 }
-                // --- For subsequent featured interleaves, continue your existing pattern ---
+                // --- For subsequent featured interleaves, continue your existing pattern (Use Cached) ---
                 else if index % 2 == 0 {
                     // Start from the 4th featured card onward:
                     // index 2 -> featuredIndex 3, index 4 -> 4, etc.
                     let featuredIndex = 2 + (index / 2)
-                    if featuredIndex < featuredEvents.count {
-                        NavigationLink(value: NavigationDestination.eventDetail(featuredEvents[featuredIndex])) {
-                            FeaturedHeroCard(event: featuredEvents[featuredIndex], bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
+                    if featuredIndex < cachedFeaturedEvents.count {
+                        NavigationLink(value: NavigationDestination.eventDetail(cachedFeaturedEvents[featuredIndex])) {
+                            FeaturedHeroCard(event: cachedFeaturedEvents[featuredIndex], bookmarkManager: bookmarkManager, showingSignInAlert: $showingSignInAlert)
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 40)
                         }
