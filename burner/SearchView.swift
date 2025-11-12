@@ -24,9 +24,9 @@ struct SearchView: View {
         _viewModel = StateObject(wrappedValue: SearchViewModel())
     }
 
-    // Helper to get authorizationStatus from userLocationManager
+    // Helper to get authorizationStatus
     private var locationAuthStatus: CLAuthorizationStatus {
-        return userLocationManager.locationManager.authorizationStatus
+        return CLLocationManager.authorizationStatus()
     }
 
     enum SortOption: String {
