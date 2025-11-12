@@ -70,10 +70,7 @@ struct FilteredEventsView: View {
     
     private var emptyStateView: some View {
         VStack(spacing: 20) {
-            Image(systemName: "calendar.badge.exclamationmark")
-                .font(.system(size: 60))
-                .foregroundColor(.gray)
-            
+
             VStack(spacing: 8) {
                 Text("No Events Found")
                     .appSectionHeader()

@@ -323,7 +323,7 @@ struct EventDetailView: View {
                 if showingSignInAlert {
                     CustomAlertView(
                         title: "Sign In Required",
-                        description: "You need to be signed in to bookmark events.",
+                        description: "You need to be signed in to purchase tickets.",
                         cancelAction: {
                             showingSignInAlert = false
                         },
