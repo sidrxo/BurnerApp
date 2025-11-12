@@ -232,6 +232,7 @@ class TicketsViewModel: ObservableObject {
         isLoading = false
         errorMessage = nil
     }
+    
 
     func resumeFromSimulation() {
         guard isSimulatingEmptyData else { return }
@@ -239,6 +240,26 @@ class TicketsViewModel: ObservableObject {
         fetchUserTickets()
     }
     
+    // MARK: - Debug Methods for Live Activity Testing
+    
+    /// Adds a debug ticket to the tickets list for testing purposes
+    func addDebugTicket(_ ticket: Ticket) {
+        // Add to the tickets array
+        self.tickets.append(ticket)
+        
+        // Sort by event start time to keep it organized
+        self.tickets.sort { ticket1, ticket2 in
+            ticket1.startTime < ticket2.startTime
+        }
+    }
+    
+    /// Removes all debug tickets (those with IDs starting with "debug_")
+    func removeDebugTickets() {
+        self.tickets.removeAll { ticket in
+            ticket.id?.hasPrefix("debug_ticket_") == true ||
+            ticket.eventId.hasPrefix("debug_event_")
+        }
+    }
 
     // MARK: - Cleanup
     func cleanup() {

@@ -7,6 +7,7 @@ struct DebugMenuView: View {
     @State private var showBurnerError = false
     @State private var burnerErrorMessage = ""
     @State private var showResetConfirmation = false
+    @State private var hasDebugEventActive = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -53,6 +54,21 @@ struct DebugMenuView: View {
                             MenuItemContent(
                                 title: appState.showingBurnerLockScreen ? "Disable Burner Mode" : "Enable Burner Mode",
                                 subtitle: appState.showingBurnerLockScreen ? "Currently active" : "Test Burner Mode"
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+
+                    MenuSection(title: "LIVE ACTIVITY") {
+                        Button(action: {
+                            toggleDebugEvent()
+                        }) {
+                            MenuItemContent(
+                                title: hasDebugEventActive ? "Clear Debug Event" : "Create Event Today",
+                                subtitle: hasDebugEventActive
+                                    ? "Remove test ticket and end Live Activity"
+                                    : "Add test ticket starting in 2 hours"
                             )
                             .contentShape(Rectangle())
                         }
@@ -110,6 +126,12 @@ struct DebugMenuView: View {
                 appState.navigationCoordinator.resetAllNavigation()
                 appState.navigationCoordinator.selectTab(.home)
             }
+            
+            // Clear debug event if active
+            if hasDebugEventActive {
+                appState.clearDebugEventToday()
+                hasDebugEventActive = false
+            }
         }
     }
 
@@ -151,6 +173,18 @@ struct DebugMenuView: View {
                 burnerErrorMessage = "Burner mode setup not valid"
                 showBurnerError = true
             }
+        }
+    }
+    
+    private func toggleDebugEvent() {
+        if hasDebugEventActive {
+            // Clear the debug event
+            appState.clearDebugEventToday()
+            hasDebugEventActive = false
+        } else {
+            // Create the debug event
+            appState.simulateEventToday()
+            hasDebugEventActive = true
         }
     }
 }

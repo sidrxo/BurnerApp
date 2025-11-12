@@ -1,6 +1,7 @@
 import SwiftUI
 import FirebaseAuth
 import Combine
+import ActivityKit
 
 // MARK: - App State (Single Source of Truth)
 @MainActor
@@ -276,5 +277,140 @@ class AppState: ObservableObject {
 
         // Notify SearchView to restore its results
         NotificationCenter.default.post(name: NSNotification.Name("EmptyStateDisabled"), object: nil)
+    }
+    
+    // MARK: - Live Activity Debug
+    func simulateEventToday() {
+        // Create a test event starting 2 hours from now
+        let calendar = Calendar.current
+        let now = Date()
+        let startTime = calendar.date(byAdding: .hour, value: 2, to: now)!
+        let endTime = calendar.date(byAdding: .hour, value: 5, to: now)!
+        
+        // Create a test ticket with all required fields
+        let testTicket = Ticket(
+            id: "debug_ticket_\(UUID().uuidString)",
+            eventId: "debug_event_\(UUID().uuidString)",
+            userId: authService.currentUser?.uid ?? "debug_user",
+            ticketNumber: "DEBUG-\(Int.random(in: 1000...9999))",
+            eventName: "Garage Classics",
+            venue: "Ministry of Sound",
+            startTime: startTime,
+            totalPrice: 0.00,
+            purchaseDate: now,
+            status: "confirmed",
+            qrCode: "DEBUG_QR_\(UUID().uuidString)",
+            venueId: nil,
+            usedAt: nil,
+            scannedBy: nil,
+            cancelledAt: nil,
+            cancelReason: nil,
+            refundedAt: nil,
+            refundAmount: nil,
+            transferredFrom: nil,
+            transferredAt: nil,
+            updatedAt: now
+        )
+        
+        // Add to tickets view model
+        ticketsViewModel.addDebugTicket(testTicket)
+        
+        // Start live activity
+        if #available(iOS 16.1, *) {
+            // Create attributes for Live Activity
+            let attributes = TicketActivityAttributes(
+                eventName: testTicket.eventName,
+                venue: testTicket.venue,
+                startTime: testTicket.startTime,
+                endTime: endTime
+            )
+            
+            // Calculate initial content state
+            let (timeString, hasStarted) = calculateTimeUntilEvent(
+                startTime: testTicket.startTime,
+                endTime: endTime
+            )
+            let contentState = TicketActivityAttributes.ContentState(
+                timeUntilEvent: timeString,
+                hasEventStarted: hasStarted
+            )
+            
+            // Start the Live Activity
+            do {
+                if #available(iOS 16.2, *) {
+                    _ = try Activity<TicketActivityAttributes>.request(
+                        attributes: attributes,
+                        content: .init(state: contentState, staleDate: nil),
+                        pushType: nil
+                    )
+                } else {
+                    _ = try Activity<TicketActivityAttributes>.request(
+                        attributes: attributes,
+                        contentState: contentState,
+                        pushType: nil
+                    )
+                }
+            } catch {
+                // Live activity start failed silently
+            }
+        }
+    }
+    
+    func clearDebugEventToday() {
+        // Remove debug tickets from view model
+        ticketsViewModel.removeDebugTickets()
+        
+        // End all live activities
+        if #available(iOS 16.1, *) {
+            TicketLiveActivityManager.endLiveActivity()
+        }
+    }
+    
+    // Helper method to calculate time until event (copied from TicketLiveActivityManager)
+    private func calculateTimeUntilEvent(startTime: Date, endTime: Date?) -> (String, Bool) {
+        let now = Date()
+        let calendar = Calendar.current
+
+        // Check if event has started
+        if startTime <= now {
+            // Event has started - show countdown to end
+            if let endTime = endTime, endTime > now {
+                let components = calendar.dateComponents([.hour, .minute], from: now, to: endTime)
+                if let hours = components.hour, let minutes = components.minute {
+                    if hours > 0 {
+                        return ("\(hours)h \(minutes)m", true)
+                    } else {
+                        return ("\(minutes)m", true)
+                    }
+                }
+            }
+            // Event has ended or no end time available
+            return ("Event Ended", true)
+        }
+
+        // Event hasn't started yet - show countdown to start
+        if calendar.isDate(startTime, inSameDayAs: now) {
+            let components = calendar.dateComponents([.hour, .minute], from: now, to: startTime)
+            if let hours = components.hour, let minutes = components.minute {
+                if hours > 0 {
+                    return ("\(hours)h \(minutes)m", false)
+                } else {
+                    return ("\(minutes)m", false)
+                }
+            }
+        }
+
+        let components = calendar.dateComponents([.day], from: now, to: startTime)
+        if let days = components.day {
+            if days == 0 {
+                return ("Today", false)
+            } else if days == 1 {
+                return ("Tomorrow", false)
+            } else {
+                return ("\(days) days", false)
+            }
+        }
+
+        return ("Soon", false)
     }
 }
