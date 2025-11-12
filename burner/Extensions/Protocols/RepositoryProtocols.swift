@@ -28,9 +28,10 @@ protocol BookmarkRepositoryProtocol {
 
 // MARK: - User Repository Protocol
 protocol UserRepositoryProtocol {
-    func fetchUserRole(userId: String) async throws -> String
-    func fetchScannerStatus(userId: String) async throws -> Bool
-    func fetchUserData(userId: String) async throws -> UserData?
+    func fetchUserProfile(userId: String) async throws -> UserProfile?
+    func updateUserProfile(userId: String, data: [String: Any]) async throws
+    func createUserProfile(userId: String, profile: UserProfile) async throws
+    func userExists(userId: String) async throws -> Bool
 }
 
 // MARK: - Make existing repositories conform to protocols
