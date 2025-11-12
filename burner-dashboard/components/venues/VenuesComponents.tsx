@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Building2, MapPin, Users, Mail, Globe, Trash2, Edit, UserPlus, X } from "lucide-react";
 import type { Venue } from "@/hooks/useVenuesData";
+import { AddressCoordinatesInput } from "@/components/AddressCoordinatesInput";
 
 export function AccessDenied() {
   return (
@@ -43,26 +45,50 @@ export function AccessDenied() {
 export function VenuesHeader({
   user,
   setShowCreateVenueDialog,
+  sortBy,
+  setSortBy,
 }: {
   user: any;
   setShowCreateVenueDialog: (show: boolean) => void;
+  sortBy?: string;
+  setSortBy?: (value: string) => void;
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          {user?.role === "siteAdmin" ? "Venues" : "My Venue"}
-        </h1>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {user?.role === "siteAdmin" ? "Venues" : "My Venue"}
+          </h1>
+        </div>
+        {user?.role === "siteAdmin" && (
+          <Button
+            onClick={() => setShowCreateVenueDialog(true)}
+            size="lg"
+            className="shadow-md"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Create Venue
+          </Button>
+        )}
       </div>
-      {user?.role === "siteAdmin" && (
-        <Button
-          onClick={() => setShowCreateVenueDialog(true)}
-          size="lg"
-          className="shadow-md"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Create Venue
-        </Button>
+      {user?.role === "siteAdmin" && sortBy && setSortBy && (
+        <div className="flex justify-end">
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[220px]">
+              <SelectValue placeholder="Sort venues" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+              <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+              <SelectItem value="capacity-asc">Capacity (Low to High)</SelectItem>
+              <SelectItem value="capacity-desc">Capacity (High to Low)</SelectItem>
+              <SelectItem value="events-asc">Events (Low to High)</SelectItem>
+              <SelectItem value="events-desc">Events (High to Low)</SelectItem>
+              <SelectItem value="city">City</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       )}
     </div>
   );
@@ -160,61 +186,16 @@ export function CreateVenueForm({
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="address">Address (Optional)</Label>
-                <Input
-                  id="address"
-                  placeholder="123 Main Street"
-                  value={newVenueAddress}
-                  onChange={(e) => setNewVenueAddress(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="city">City (Optional)</Label>
-                <Input
-                  id="city"
-                  placeholder="London"
-                  value={newVenueCity}
-                  onChange={(e) => setNewVenueCity(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="latitude">Latitude *</Label>
-                <Input
-                  id="latitude"
-                  type="number"
-                  step="any"
-                  placeholder="51.5074"
-                  value={newVenueLatitude}
-                  onChange={(e) => setNewVenueLatitude(e.target.value)}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Required for map display in the app
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="longitude">Longitude *</Label>
-                <Input
-                  id="longitude"
-                  type="number"
-                  step="any"
-                  placeholder="-0.1278"
-                  value={newVenueLongitude}
-                  onChange={(e) => setNewVenueLongitude(e.target.value)}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Required for map display in the app
-                </p>
-              </div>
-            </div>
+            <AddressCoordinatesInput
+              address={newVenueAddress}
+              onAddressChange={setNewVenueAddress}
+              city={newVenueCity}
+              onCityChange={setNewVenueCity}
+              latitude={newVenueLatitude}
+              onLatitudeChange={setNewVenueLatitude}
+              longitude={newVenueLongitude}
+              onLongitudeChange={setNewVenueLongitude}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="capacity">Capacity</Label>
@@ -478,51 +459,16 @@ export function VenueGridCard({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-address">Address (Optional)</Label>
-                  <Input
-                    id="edit-address"
-                    value={editForm.address}
-                    onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-city">City (Optional)</Label>
-                  <Input
-                    id="edit-city"
-                    value={editForm.city}
-                    onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-latitude">Latitude *</Label>
-                  <Input
-                    id="edit-latitude"
-                    type="number"
-                    step="any"
-                    value={editForm.latitude}
-                    onChange={(e) => setEditForm({ ...editForm, latitude: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-longitude">Longitude *</Label>
-                  <Input
-                    id="edit-longitude"
-                    type="number"
-                    step="any"
-                    value={editForm.longitude}
-                    onChange={(e) => setEditForm({ ...editForm, longitude: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
+              <AddressCoordinatesInput
+                address={editForm.address}
+                onAddressChange={(address) => setEditForm({ ...editForm, address })}
+                city={editForm.city}
+                onCityChange={(city) => setEditForm({ ...editForm, city })}
+                latitude={editForm.latitude}
+                onLatitudeChange={(latitude) => setEditForm({ ...editForm, latitude })}
+                longitude={editForm.longitude}
+                onLongitudeChange={(longitude) => setEditForm({ ...editForm, longitude })}
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="edit-capacity">Capacity</Label>

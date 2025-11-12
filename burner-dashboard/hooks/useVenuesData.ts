@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { collection, doc, getDocs, updateDoc, setDoc, addDoc, deleteDoc, arrayUnion, arrayRemove, query, where, GeoPoint } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/components/useAuth";
@@ -40,6 +40,7 @@ export function useVenuesData() {
   const [newVenueContactEmail, setNewVenueContactEmail] = useState("");
   const [newVenueWebsite, setNewVenueWebsite] = useState("");
   const [showCreateVenueDialog, setShowCreateVenueDialog] = useState(false);
+  const [sortBy, setSortBy] = useState<string>("name-asc");
 
   useEffect(() => {
     if (!loading && user) {
@@ -359,10 +360,35 @@ export function useVenuesData() {
     setNewVenueWebsite("");
   };
 
+  const sortedVenues = useMemo(() => {
+    const result = [...venues];
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "name-asc":
+          return (a.name || "").localeCompare(b.name || "");
+        case "name-desc":
+          return (b.name || "").localeCompare(a.name || "");
+        case "capacity-asc":
+          return (a.capacity || 0) - (b.capacity || 0);
+        case "capacity-desc":
+          return (b.capacity || 0) - (a.capacity || 0);
+        case "events-asc":
+          return (a.eventCount || 0) - (b.eventCount || 0);
+        case "events-desc":
+          return (b.eventCount || 0) - (a.eventCount || 0);
+        case "city":
+          return (a.city || "").localeCompare(b.city || "");
+        default:
+          return 0;
+      }
+    });
+    return result;
+  }, [venues, sortBy]);
+
   return {
     user,
     loading,
-    venues,
+    venues: sortedVenues,
     newAdminEmail,
     setNewAdminEmail,
     actionLoading,
@@ -386,6 +412,8 @@ export function useVenuesData() {
     setNewVenueWebsite,
     showCreateVenueDialog,
     setShowCreateVenueDialog,
+    sortBy,
+    setSortBy,
     fetchVenues,
     handleCreateVenueWithAdmin,
     handleRemoveVenue,

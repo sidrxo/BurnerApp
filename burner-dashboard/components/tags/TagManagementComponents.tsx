@@ -36,9 +36,6 @@ export function TagManagementHeader() {
     <div className="flex items-center space-x-4">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Tag Management</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage event tags that appear in the mobile app
-        </p>
       </div>
     </div>
   );
