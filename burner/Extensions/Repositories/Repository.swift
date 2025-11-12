@@ -20,15 +20,13 @@ class EventRepository: ObservableObject {
         eventsListener?.remove()
     }
     
-    // MARK: - Fetch Events with Real-time Updates (Optimized with Date Filtering)
+    // MARK: - Fetch Events with Real-time Updates
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void) {
-        // Filter events to only include upcoming events (startTime > now)
-        // This significantly reduces bandwidth and read costs
-        let now = Date()
-
+        // Note: We fetch all events here and filter in the view layer
+        // This ensures featured events (which may have nil startTime) are included
+        // The ExploreView filters by date client-side for upcoming events
+        
         eventsListener = db.collection("events")
-            .whereField("startTime", isGreaterThan: now)
-            .order(by: "startTime", descending: false)
             .addSnapshotListener { snapshot, error in
                 if let error = error {
                     completion(.failure(error))
@@ -312,4 +310,3 @@ struct UserPreferences: Codable, Sendable {
         self.pushNotifications = pushNotifications
     }
 }
-

@@ -13,8 +13,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
         // Enable Firestore offline persistence for better caching and reduced reads
         let firestoreSettings = Firestore.firestore().settings
-        firestoreSettings.isPersistenceEnabled = true
-        firestoreSettings.cacheSizeBytes = FirestoreCacheSizeUnlimited
+        firestoreSettings.cacheSettings = PersistentCacheSettings(
+            sizeBytes: FirestoreCacheSizeUnlimited as NSNumber
+        )
         Firestore.firestore().settings = firestoreSettings
 
         // Configure Kingfisher for optimized image loading

@@ -26,7 +26,7 @@ struct SearchView: View {
 
     // Helper to get authorizationStatus
     private var locationAuthStatus: CLAuthorizationStatus {
-        return CLLocationManager.authorizationStatus()
+        return CLLocationManager().authorizationStatus
     }
 
     enum SortOption: String {

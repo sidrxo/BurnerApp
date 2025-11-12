@@ -52,6 +52,8 @@ class UserLocationManager: NSObject, ObservableObject {
         }
     }
     
+    
+    
     // MARK: - Clear Location
     func clearLocation() {
         savedLocation = nil
@@ -133,6 +135,26 @@ class UserLocationManager: NSObject, ObservableObject {
                 self.saveLocation(updatedLocation)
             }
         }
+    }
+    
+    // MARK: - Reset Location
+    func resetLocation() {
+        // Clear all stored location data
+        savedLocation = nil
+        currentCLLocation = nil
+        
+        // Clear UserDefaults
+        UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+        
+        // Cancel any pending completion handlers
+        locationCompletion = nil
+        hasCalledCompletion = false
+        
+        // Stop any ongoing location updates
+        locationManager.stopUpdatingLocation()
+        
+        // Cancel any ongoing geocoding operations
+        geocoder.cancelGeocode()
     }
     
     // MARK: - Geocode City

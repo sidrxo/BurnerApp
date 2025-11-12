@@ -100,6 +100,11 @@ struct DebugMenuView: View {
                 }
             }
 
+            // Reset user location
+            await MainActor.run {
+                appState.userLocationManager.resetLocation()
+            }
+
             // Reset navigation
             await MainActor.run {
                 appState.navigationCoordinator.resetAllNavigation()

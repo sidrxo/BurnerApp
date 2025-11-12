@@ -65,7 +65,6 @@ struct ExploreView: View {
 
         let now = Date()
 
-        // Get all upcoming events with coordinates
         let eventsWithCoordinates = eventViewModel.events
             .filter { event in
                 guard let startTime = event.startTime,
@@ -75,7 +74,6 @@ struct ExploreView: View {
                 return !event.isFeatured && startTime > now
             }
 
-        // Calculate distance and filter by max distance
         let eventsWithDistance = eventsWithCoordinates.compactMap { event -> (Event, CLLocationDistance)? in
             guard let coordinates = event.coordinates else { return nil }
             let eventLocation = CLLocation(
@@ -91,7 +89,6 @@ struct ExploreView: View {
             return (event, distance)
         }
 
-        // Sort by distance (closest first)
         return eventsWithDistance
             .sorted { $0.1 < $1.1 }
             .map { (event: $0.0, distance: $0.1) }
@@ -185,10 +182,8 @@ struct ExploreView: View {
                             .foregroundColor(.white)
                             .padding(.bottom, 2)
 
-
                         Spacer()
 
-                        // Location Button - Top Right
                         Button(action: {
                             coordinator.activeModal = .SetLocation
                         }) {
@@ -234,8 +229,8 @@ struct ExploreView: View {
                         title: "Sign In Required",
                         description: "You need to be signed in to bookmark events.",
                         cancelAction: {
-                                showingSignInAlert = false
-                    },
+                            showingSignInAlert = false
+                        },
                         cancelActionTitle: "Cancel",
                         primaryAction: {
                             showingSignInAlert = false
@@ -263,20 +258,19 @@ struct ExploreView: View {
     // MARK: - Content View
     private var contentView: some View {
         VStack(spacing: 0) {
-            // Build content sections in order
             buildContentSections()
         }
     }
 
-    // MARK: - Build Content Sections (Simplified)
+    // MARK: - Build Content Sections (final order with genre sections)
     @ViewBuilder
     private func buildContentSections() -> some View {
-        // 1. All Featured Cards First
-        ForEach(featuredEvents) { event in
-            featuredCard(event)
+        // 1) featured card (index 0)
+        if let e0 = featuredEvents[safe: 0] {
+            featuredCard(e0)
         }
 
-        // 2. Popular Section
+        // 2) Popular
         if !popularEvents.isEmpty {
             EventSection(
                 title: "Popular",
@@ -288,7 +282,7 @@ struct ExploreView: View {
             )
         }
 
-        // 3. This Week Section
+        // 3) This Week
         if !thisWeekEvents.isEmpty {
             EventSection(
                 title: "This Week",
@@ -300,21 +294,34 @@ struct ExploreView: View {
             )
         }
 
-        // 4. Nearby Section (if location available)
+        // 4) featured card (index 1)
+        if let e1 = featuredEvents[safe: 1] {
+            featuredCard(e1)
+        }
+
+        // 5) Nearby (if available)
         if userLocationManager.savedLocation != nil && !nearbyEvents.isEmpty {
             nearbySection
         }
 
-        // 5. Genre Cards (horizontal scroll chips)
-        if !displayGenres.isEmpty {
-            GenreCardsSection(
-                genres: displayGenres,
-                allEventsForGenre: { g in allEventsForGenre(g) }
-            )
+        // 6) featured card (index 2)
+        if let e2 = featuredEvents[safe: 2] {
+            featuredCard(e2)
         }
 
-        // 6. Genre Sections
-        ForEach(displayGenres.filter { !allEventsForGenre($0).isEmpty }, id: \.self) { genre in
+        // 7) Genre cards (horizontal scroll)
+        if !displayGenres.isEmpty {
+            GenreCardsScrollRow(genres: displayGenres, allEventsForGenre: { g in allEventsForGenre(g) })
+        }
+
+        // featured card after genre cards
+        if let nextFeature = featuredEvents[safe: 3] {
+            featuredCard(nextFeature)
+        }
+
+        // 8) Genre Sections (like before)
+        let genresWithEvents = displayGenres.filter { !allEventsForGenre($0).isEmpty }
+        ForEach(genresWithEvents, id: \.self) { genre in
             EventSection(
                 title: genre,
                 events: eventsForGenrePreview(genre),
@@ -325,7 +332,7 @@ struct ExploreView: View {
             )
         }
 
-        // 7. All Events Section
+        // 9) All Events
         if !allEvents.isEmpty {
             EventSection(
                 title: "All Events",
@@ -380,7 +387,6 @@ struct ExploreView: View {
         }
         .padding(.bottom, 40)
     }
-
 }
 
 // MARK: - Event Section Destination
@@ -416,8 +422,8 @@ struct SeededRandomNumberGenerator: RandomNumberGenerator {
 // MARK: - Reusable Event Section Component
 struct EventSection: View {
     let title: String
-    let events: [Event]          // Preview events to display
-    let allEvents: [Event]        // All events for navigation
+    let events: [Event]
+    let allEvents: [Event]
     let bookmarkManager: BookmarkManager
     let showViewAllButton: Bool
     @Binding var showingSignInAlert: Bool
@@ -440,14 +446,11 @@ struct EventSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Section Header
             HStack {
                 Text(title)
                     .appSectionHeader()
                     .foregroundColor(.white)
-
                 Spacer()
-
                 if showViewAllButton {
                     NavigationLink(value: NavigationDestination.filteredEvents(
                         EventSectionDestination(title: title, events: allEvents)
@@ -464,7 +467,6 @@ struct EventSection: View {
             }
             .padding(.horizontal, 20)
 
-            // Event List
             LazyVStack(spacing: 0) {
                 ForEach(events) { event in
                     NavigationLink(value: NavigationDestination.eventDetail(event)) {
@@ -482,30 +484,30 @@ struct EventSection: View {
     }
 }
 
-// MARK: - Genre Cards Section
-struct GenreCardsSection: View {
+// MARK: - Genre Cards Horizontal Scroll
+struct GenreCardsScrollRow: View {
     let genres: [String]
     let allEventsForGenre: (String) -> [Event]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(genres, id: \.self) { genre in
-                        NavigationLink(value: NavigationDestination.filteredEvents(
-                            EventSectionDestination(title: genre, events: allEventsForGenre(genre))
-                        )) {
-                            GenreCard(genreName: genre)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(genres, id: \.self) { genre in
+                    NavigationLink(value: NavigationDestination.filteredEvents(
+                        EventSectionDestination(title: genre, events: allEventsForGenre(genre))
+                    )) {
+                        GenreCard(genreName: genre)
+                            .frame(width: 140, height: 120)
                     }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .padding(.horizontal, 20)
             }
+            .padding(.horizontal, 20)
         }
         .padding(.bottom, 40)
     }
 }
+
 
 // MARK: - Genre Card
 struct GenreCard: View {
@@ -513,7 +515,6 @@ struct GenreCard: View {
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            // Gradient background
             LinearGradient(
                 gradient: Gradient(colors: [
                     Color.white.opacity(0.15),
@@ -522,14 +523,12 @@ struct GenreCard: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            
-            // Text in bottom left
             Text(genreName)
                 .appCard()
                 .foregroundColor(.white)
                 .padding(16)
         }
-        .frame(width: 140, height: 120)
+        .frame(height: 120)
         .background(Color.white.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
@@ -556,5 +555,26 @@ extension Event: Hashable {
     }
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
+    }
+}
+
+// MARK: - Utilities
+extension Array {
+    /// Splits the array into chunks of a fixed size (e.g. 2)
+    func chunked(into size: Int) -> [[Element]] {
+        guard size > 0 else { return [] }
+        var result: [[Element]] = []
+        var i = 0
+        while i < count {
+            let end = Swift.min(i + size, count)
+            result.append(Array(self[i..<end]))
+            i = end
+        }
+        return result
+    }
+
+    /// Safe subscript to avoid out-of-bounds
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }

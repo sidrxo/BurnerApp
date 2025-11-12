@@ -671,7 +671,7 @@ class StripePaymentService: NSObject, ObservableObject {
         case ticketCreationFailed
         case eventSoldOut
 
-        var errorDescription: String? {
+      nonisolated var errorDescription: String? {
             switch self {
             case .notAuthenticated:
                 return "Please sign in to purchase tickets"
@@ -688,7 +688,7 @@ class StripePaymentService: NSObject, ObservableObject {
             case .expiredCard:
                 return "Card expired. Please update your payment method"
             case .networkError:
-                return AppConstants.ErrorMessages.networkError
+                return "Network error. Please check your connection and try again"
             case .invalidCard:
                 return "Invalid card details. Please check and try again"
             case .processingError:

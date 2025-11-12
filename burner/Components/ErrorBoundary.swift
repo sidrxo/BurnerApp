@@ -2,6 +2,7 @@
 // Implements error boundary pattern for SwiftUI views
 
 import SwiftUI
+import Combine
 
 /// Error Boundary View that catches and handles errors at feature boundaries
 /// Prevents app crashes and shows fallback UI with retry options
