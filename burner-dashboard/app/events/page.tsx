@@ -62,8 +62,7 @@ function EventsPageContent() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Events</h1>
+      <div className="flex items-center justify-end">
         <Button
           onClick={() => router.push("/events/create")}
           size="lg"

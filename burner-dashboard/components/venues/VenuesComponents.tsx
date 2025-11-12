@@ -374,38 +374,40 @@ export function VenueGridCard({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
-            {venue.capacity && (
-              <div>
-                <span className="text-muted-foreground">Capacity:</span>
-                <div className="font-medium">{venue.capacity}</div>
-              </div>
-            )}
+            <div>
+              <span className="text-muted-foreground">Capacity:</span>
+              <div className="font-medium">{venue.capacity || 'N/A'}</div>
+            </div>
             <div>
               <span className="text-muted-foreground">Events:</span>
               <div className="font-medium">{venue.eventCount || 0}</div>
             </div>
           </div>
 
-          <div>
+          <div className="min-h-[80px]">
             <div className="flex items-center gap-2 mb-2">
               <Users className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Administrators</span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {venue.admins.map((admin) => (
-                <Badge key={admin} variant="default">
-                  {admin}
-                </Badge>
-              ))}
-              {venue.subAdmins.map((admin) => (
-                <Badge key={admin} variant="secondary">
-                  {admin}
-                </Badge>
-              ))}
-            </div>
+            {(venue.admins.length > 0 || venue.subAdmins.length > 0) ? (
+              <div className="flex flex-wrap gap-2">
+                {venue.admins.map((admin) => (
+                  <Badge key={admin} variant="default">
+                    {admin}
+                  </Badge>
+                ))}
+                {venue.subAdmins.map((admin) => (
+                  <Badge key={admin} variant="secondary">
+                    {admin}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No administrators assigned</p>
+            )}
           </div>
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-2 border-t">
             <Button
               variant="outline"
               size="sm"

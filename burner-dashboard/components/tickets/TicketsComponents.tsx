@@ -77,24 +77,21 @@ export function AccessDenied() {
   );
 }
 
-export function TicketsHeader({ 
-  user, 
-  loading, 
-  loadTickets 
-}: { 
-  user: any; 
-  loading: boolean; 
-  loadTickets: () => void; 
+export function TicketsHeader({
+  user,
+  loading,
+  loadTickets
+}: {
+  user: any;
+  loading: boolean;
+  loadTickets: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <h1 className="text-3xl font-bold tracking-tight">Tickets</h1>
-      <div className="flex gap-2">
-        <Button onClick={loadTickets} disabled={loading} variant="outline">
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
+    <div className="flex items-center justify-end">
+      <Button onClick={loadTickets} disabled={loading} variant="outline">
+        <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        Refresh
+      </Button>
     </div>
   );
 }

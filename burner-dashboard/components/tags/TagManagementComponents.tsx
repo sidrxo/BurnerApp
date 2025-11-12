@@ -32,13 +32,7 @@ import { Tag, CreateTagData } from "@/hooks/useTagManagement";
 import { Textarea } from "@/components/ui/textarea";
 
 export function TagManagementHeader() {
-  return (
-    <div className="flex items-center space-x-4">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Tag Management</h1>
-      </div>
-    </div>
-  );
+  return null;
 }
 
 interface CreateTagFormProps {

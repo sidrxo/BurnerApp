@@ -328,7 +328,7 @@ export function EventCard({
   return (
     <Card
       key={`event-${ev.id}-${index}`}
-      className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-gradient-to-br from-background to-background/50"
+      className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-gradient-to-br from-background to-background/50 flex flex-col"
     >
       {/* Image Header */}
       <div className="relative overflow-hidden">
@@ -344,9 +344,9 @@ export function EventCard({
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
           )}
         </div>
-        
+
         {/* Badges below image */}
-        <div className="flex flex-wrap gap-2 p-4 pt-4 pb-0">
+        <div className="flex flex-wrap gap-2 p-4 pt-4 pb-0 min-h-[52px]">
           {ev.isFeatured && (
             <Badge className="bg-yellow-500/90 text-white border-0 shadow-lg backdrop-blur-sm">
               <Star className="h-3 w-3 mr-1 fill-current" />
@@ -362,7 +362,7 @@ export function EventCard({
             </Badge>
           )}
         </div>
-        
+
         {/* Price Badge */}
         <div className="absolute top-4 right-4">
           <Badge className="bg-background/90 text-foreground border shadow-lg backdrop-blur-sm text-lg font-bold px-3 py-1">
@@ -370,18 +370,16 @@ export function EventCard({
           </Badge>
         </div>
       </div>
-      
-      <CardContent className="p-6 space-y-4">
+
+      <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
         {/* Title & Description */}
-        <div className="space-y-2">
+        <div className="space-y-2 min-h-[120px]">
           <h3 className="text-xl font-bold leading-tight line-clamp-2 group-hover:text-primary transition-colors">
             {ev.name || "Untitled Event"}
           </h3>
-          {ev.description && (
-            <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
-              {ev.description}
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+            {ev.description || 'No description available'}
+          </p>
         </div>
 
         {/* Event Details */}
@@ -410,7 +408,7 @@ export function EventCard({
         </div>
 
         {/* Ticket Progress */}
-        <div className="space-y-2">
+        <div className="space-y-2 mt-auto">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -420,14 +418,14 @@ export function EventCard({
               {Math.round(ticketProgress)}% sold
             </div>
           </div>
-          
+
           <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-            <div 
+            <div
               className={`h-full rounded-full transition-all duration-500 ${
-                ticketProgress >= 100 
-                  ? 'bg-red-500' 
-                  : ticketProgress >= 80 
-                  ? 'bg-yellow-500' 
+                ticketProgress >= 100
+                  ? 'bg-red-500'
+                  : ticketProgress >= 80
+                  ? 'bg-yellow-500'
                   : 'bg-green-500'
               }`}
               style={{ width: `${ticketProgress}%` }}
@@ -566,20 +564,21 @@ export function EventForm({
         {user.role === "siteAdmin" && (
           <div className="space-y-2">
             <Label htmlFor="venue-select">Venue *</Label>
-            <select
-              id="venue-select"
-              className="w-full p-2 border border-input bg-background rounded-md"
+            <Select
               value={form.venueId}
-              onChange={(e) => setForm((state) => ({ ...state, venueId: e.target.value }))}
-              required
+              onValueChange={(value) => setForm((state) => ({ ...state, venueId: value }))}
             >
-              <option value="">Select a venue</option>
-              {venues.map((venue) => (
-                <option key={venue.id} value={venue.id}>
-                  {venue.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="venue-select">
+                <SelectValue placeholder="Select a venue" />
+              </SelectTrigger>
+              <SelectContent>
+                {venues.map((venue) => (
+                  <SelectItem key={venue.id} value={venue.id}>
+                    {venue.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>
@@ -631,7 +630,7 @@ export function EventForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="status">Status</Label>
           <Select
@@ -668,28 +667,29 @@ export function EventForm({
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-2">
-          <Label>Tag</Label>
-          <div className="flex flex-wrap gap-2">
-            {tagOptions.map((tag) => (
-              <Button
-                key={tag}
-                type="button"
-                size="sm"
-                variant={form.tag === tag ? "default" : "outline"}
-                onClick={() => setForm((state) => ({ ...state, tag }))}
-              >
-                #{tag}
-              </Button>
-            ))}
-          </div>
-          <Input
-            value={form.tag}
-            onChange={(e) => setForm((state) => ({ ...state, tag: e.target.value }))}
-            placeholder="Custom tag (one tag per event)"
-          />
-          <p className="text-xs text-muted-foreground">Only one tag can be associated with each event.</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Tag</Label>
+        <div className="flex flex-wrap gap-2">
+          {tagOptions.map((tag) => (
+            <Button
+              key={tag}
+              type="button"
+              size="sm"
+              variant={form.tag === tag ? "default" : "outline"}
+              onClick={() => setForm((state) => ({ ...state, tag }))}
+            >
+              #{tag}
+            </Button>
+          ))}
         </div>
+        <Input
+          value={form.tag}
+          onChange={(e) => setForm((state) => ({ ...state, tag: e.target.value }))}
+          placeholder="Custom tag (one tag per event)"
+        />
+        <p className="text-xs text-muted-foreground">Only one tag can be associated with each event.</p>
       </div>
 
       {/* Only show featured checkbox for site admins */}
@@ -730,7 +730,7 @@ export function EventForm({
       <Separator />
 
       <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="outline" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={onClose} className="min-w-[100px]">
           Cancel
         </Button>
         <Button
@@ -738,10 +738,11 @@ export function EventForm({
           variant="outline"
           onClick={resetForm}
           disabled={saving}
+          className="min-w-[100px]"
         >
           Reset
         </Button>
-        <Button type="submit" disabled={saving}>
+        <Button type="submit" disabled={saving} className="min-w-[120px]">
           {saving ? "Saving..." : (isEdit ? "Update Event" : "Create Event")}
         </Button>
       </div>
