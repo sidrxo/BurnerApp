@@ -71,7 +71,7 @@ class DependencyContainer {
     }
 
     // MARK: - Dependency Injection (for testing)
-    #if DEBUG
+    
     func setEventRepository(_ repository: EventRepositoryProtocol) {
         self.eventRepository = repository
     }
@@ -94,7 +94,7 @@ class DependencyContainer {
         self.bookmarkRepository = BookmarkRepository()
         self.userRepository = UserRepository()
     }
-    #endif
+    
 
     // MARK: - Factory Methods
     func makeEventViewModel() -> EventViewModel {
@@ -119,7 +119,7 @@ class DependencyContainer {
 }
 
 // MARK: - Mock Repositories (for testing)
-#if DEBUG
+
 
 class MockEventRepository: EventRepositoryProtocol {
     var mockEvents: [Event] = []
@@ -179,4 +179,4 @@ class MockBookmarkRepository: BookmarkRepositoryProtocol {
     func stopObserving() {}
 }
 
-#endif
+

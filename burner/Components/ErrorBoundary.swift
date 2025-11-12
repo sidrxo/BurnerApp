@@ -65,7 +65,7 @@ struct ErrorBoundary<Content: View>: View {
             }
 
             // Error Details (Debug Only)
-            #if DEBUG
+            
             if let details = errorDetails {
                 Text("Debug: \(details)")
                     .font(.caption)
@@ -73,7 +73,7 @@ struct ErrorBoundary<Content: View>: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
             }
-            #endif
+            
 
             // Retry Button
             Button(action: {
@@ -103,9 +103,9 @@ struct ErrorBoundary<Content: View>: View {
         hasError = true
         errorDetails = error.localizedDescription
 
-        #if DEBUG
+        
         print("❌ ErrorBoundary captured: \(error.localizedDescription)")
-        #endif
+        
     }
 
     /// Manually set error state with custom message
@@ -113,9 +113,9 @@ struct ErrorBoundary<Content: View>: View {
         hasError = true
         errorDetails = message
 
-        #if DEBUG
+        
         print("❌ ErrorBoundary captured: \(message)")
-        #endif
+        
     }
 }
 
@@ -156,9 +156,9 @@ class ErrorBoundaryState: ObservableObject {
         errorMessage = message ?? error.localizedDescription
         errorDetails = error.localizedDescription
 
-        #if DEBUG
+        
         print("❌ Error: \(error.localizedDescription)")
-        #endif
+        
     }
 
     func setError(
@@ -170,9 +170,9 @@ class ErrorBoundaryState: ObservableObject {
         errorMessage = message
         errorDetails = nil
 
-        #if DEBUG
+        
         print("❌ Error: \(message)")
-        #endif
+        
     }
 
     func clearError() {

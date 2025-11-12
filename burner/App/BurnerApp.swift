@@ -142,9 +142,9 @@ struct BurnerApp: App {
                 // Video splash - separate from error block
                 if showingVideoSplash {
                     VideoSplashView(videoName: "splash", loop: false) {
-                        withAnimation(.easeOut(duration: 0.25)) {
+                        
                             showingVideoSplash = false
-                        }
+                        
                     }
                     .zIndex(2000)
                 }

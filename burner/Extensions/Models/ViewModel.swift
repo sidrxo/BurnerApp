@@ -59,7 +59,7 @@ class EventViewModel: ObservableObject {
     }
 
     // MARK: - Debug helpers
-    #if DEBUG
+    
     func simulateEmptyData() {
         isSimulatingEmptyData = true
         eventRepository.stopObserving()
@@ -75,7 +75,7 @@ class EventViewModel: ObservableObject {
         isSimulatingEmptyData = false
         fetchEvents()
     }
-    #endif
+    
     
     func fetchEvent(byId eventId: String) async throws -> Event {
         let db = Firestore.firestore()
@@ -224,7 +224,7 @@ class TicketsViewModel: ObservableObject {
     }
 
     // MARK: - Debug helpers
-    #if DEBUG
+    
     func simulateEmptyData() {
         isSimulatingEmptyData = true
         ticketRepository.stopObserving()
@@ -238,7 +238,7 @@ class TicketsViewModel: ObservableObject {
         isSimulatingEmptyData = false
         fetchUserTickets()
     }
-    #endif
+    
 
     // MARK: - Cleanup
     func cleanup() {

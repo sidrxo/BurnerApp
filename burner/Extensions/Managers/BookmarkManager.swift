@@ -179,9 +179,9 @@ class BookmarkManager: ObservableObject {
                     message: AppConstants.ErrorMessages.bookmarkFailed
                 )
 
-                #if DEBUG
+                
                 print("❌ Bookmark Error: \(error.localizedDescription)")
-                #endif
+                
             }
         }
     }
@@ -208,7 +208,7 @@ class BookmarkManager: ObservableObject {
     }
 
     // MARK: - Debug helpers
-    #if DEBUG
+    
     func simulateEmptyData() {
         isSimulatingEmptyData = true
         bookmarkRepository.stopObserving()
@@ -222,5 +222,5 @@ class BookmarkManager: ObservableObject {
         isSimulatingEmptyData = false
         setupBookmarkListener()
     }
-    #endif
+    
 }

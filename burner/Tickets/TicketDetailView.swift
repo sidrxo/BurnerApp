@@ -532,7 +532,7 @@ struct TicketQRCodeView: View {
 
 // MARK: - Preview
 
-#if DEBUG
+
 struct TicketViews_Previews: PreviewProvider {
     static var sampleEvent: Event {
         Event(
@@ -583,4 +583,4 @@ struct TicketViews_Previews: PreviewProvider {
         .preferredColorScheme(.dark)
     }
 }
-#endif
+

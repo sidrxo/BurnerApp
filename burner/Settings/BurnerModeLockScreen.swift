@@ -1,37 +1,33 @@
 import SwiftUI
 import Combine
+import AVKit
+import AVFoundation
 
 struct BurnerModeLockScreen: View {
     @EnvironmentObject var appState: AppState
     @State private var currentTime = Date()
     @State private var showExitConfirmation = false
-    @State private var timerCountdown: Int = 600 // 10 minutes in seconds
+    @State private var timerCountdown: Int = 600
     @State private var timerIsActive = false
-    @State private var opacity: Double = 0 // For fade-in animation
+    @State private var lockScreenOpacity: Double = 0
     @State private var eventEndTime: Date = Date()
-
-    private var burnerManager: BurnerModeManager {
-        appState.burnerManager
-    }
-
-    // Timer to update current time and countdown every second
+    
+    // Terminal state
+    @State private var showTerminal: Bool = true
+    @State private var terminalOpacity: Double = 0
+    
+    private var burnerManager: BurnerModeManager { appState.burnerManager }
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    // Computed property for time remaining till event end
-    private var timeUntilEventEnd: TimeInterval {
-        max(0, eventEndTime.timeIntervalSince(currentTime))
-    }
+    private var timeUntilEventEnd: TimeInterval { max(0, eventEndTime.timeIntervalSince(currentTime)) }
 
     private var formattedCountdown: String {
         let hours = Int(timeUntilEventEnd) / 3600
         let minutes = Int(timeUntilEventEnd) / 60 % 60
         let seconds = Int(timeUntilEventEnd) % 60
-
-        if hours > 0 {
-            return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
-        } else {
-            return String(format: "%02d:%02d", minutes, seconds)
-        }
+        return hours > 0
+        ? String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        : String(format: "%02d:%02d", minutes, seconds)
     }
 
     private var formattedTimerCountdown: String {
@@ -42,30 +38,65 @@ struct BurnerModeLockScreen: View {
 
     var body: some View {
         ZStack {
+            // Base black screen so we can truly "fade to black"
+            Color.black.ignoresSafeArea()
+            
+            // LOCK SCREEN LAYER (behind terminal initially)
+            lockScreenLayer
+                .opacity(lockScreenOpacity)
+                .animation(.easeInOut(duration: 1.0), value: lockScreenOpacity)
+                .zIndex(1)
 
-            Color.black
-                .ignoresSafeArea()
+            // TERMINAL LAYER (shown first, then fades out)
+            if showTerminal {
+                TerminalLoadingView(onComplete: handleTerminalComplete)
+                    .opacity(terminalOpacity)
+                    .zIndex(2)
+            }
+        }
+        .statusBarHidden(true)
+        .preferredColorScheme(.dark)
+        .onReceive(timer) { input in
+            currentTime = input
+            if timerIsActive {
+                if timerCountdown > 0 {
+                    timerCountdown -= 1
+                } else {
+                    timerIsActive = false
+                    exitBurnerMode()
+                }
+            }
+        }
+        .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = true
+            setupEventEndTime()
+            
+            // Fade in terminal immediately
+            withAnimation(.easeIn(duration: 0.8)) {
+                terminalOpacity = 1.0
+            }
+        }
+        .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
+            timer.upstream.connect().cancel()
+        }
+    }
 
-            // Animated gradient background
+    // MARK: - Lock Screen Layer
+    private var lockScreenLayer: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
             LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.black,
-                    Color.gray.opacity(0.3),
-                    Color.black
-                ]),
+                gradient: Gradient(colors: [Color.black, Color.gray.opacity(0.3), Color.black]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
 
-            // Content
             VStack(spacing: 0) {
-                // Top bar with X button (for testing only)
                 HStack {
                     Spacer()
-                    Button(action: {
-                        exitBurnerModeImmediately()
-                    }) {
+                    Button(action: { exitBurnerModeImmediately() }) {
                         Image(systemName: "xmark")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.white.opacity(0.7))
@@ -74,13 +105,10 @@ struct BurnerModeLockScreen: View {
                     .padding(.trailing, 20)
                     .padding(.top, 20)
                 }
-                
-                Spacer()
-                    .frame(maxHeight: 150)
 
-                // Main content
-                VStack(spacing: 40) {
-                    // Main message
+                Spacer().frame(maxHeight: 150)
+
+                VStack(spacing: 0) {
                     VStack(spacing: 16) {
                         Text("YOU'RE IN.")
                             .appFont(size: 42, weight: .bold)
@@ -99,14 +127,12 @@ struct BurnerModeLockScreen: View {
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 40)
                     }
+                    .padding(.bottom, 40)
 
-                    // Event countdown display
                     VStack(spacing: 8) {
                         Text("TIME UNTIL EVENT ENDS")
-                            .appCaption()
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white.opacity(0.6))
-                            .tracking(1)
+                            .appCaption().fontWeight(.semibold)
+                            .foregroundColor(.white.opacity(0.6)).tracking(1)
 
                         Text(formattedCountdown)
                             .appFont(size: 28, weight: .medium)
@@ -123,15 +149,12 @@ struct BurnerModeLockScreen: View {
                                     .stroke(Color.white.opacity(0.2), lineWidth: 1)
                             )
                     )
-                    
-                    // Exit timer countdown (only show when active)
+
                     if timerIsActive {
                         VStack(spacing: 8) {
                             Text("UNLOCKING IN")
-                                .appCaption()
-                                .fontWeight(.semibold)
-                                .foregroundColor(.red.opacity(0.8))
-                                .tracking(1)
+                                .appCaption().fontWeight(.semibold)
+                                .foregroundColor(.red.opacity(0.8)).tracking(1)
 
                             Text(formattedTimerCountdown)
                                 .appFont(size: 32, weight: .bold)
@@ -149,27 +172,24 @@ struct BurnerModeLockScreen: View {
                                 )
                         )
                         .transition(.scale.combined(with: .opacity))
+                        .padding(.top, 24)
                     }
 
-                    // Exit button to start timer (only show when timer is not active)
                     if !timerIsActive {
-                        Button(action: {
-                            showExitConfirmation = true
-                        }) {
+                        Button(action: { showExitConfirmation = true }) {
                             Text("Need your phone?\nTap here to go back.")
-                                .appCaption()
-                                .fontWeight(.semibold)
+                                .appCaption().fontWeight(.semibold)
                                 .foregroundColor(.white.opacity(0.6))
                                 .multilineTextAlignment(.center)
-                                .lineLimit(nil)                           // allow multiple lines
-                                .fixedSize(horizontal: false, vertical: true) // expand vertically if needed
-                                .padding(.vertical, 22)                   // a touch more vertical padding
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.vertical, 22)
                                 .padding(.horizontal, 20)
                                 .tracking(1)
-
                         }
                         .buttonStyle(PlainButtonStyle())
                         .transition(.opacity)
+                        .padding(.top, 24)
                     }
                 }
 
@@ -177,15 +197,12 @@ struct BurnerModeLockScreen: View {
             }
             .frame(maxWidth: .infinity)
 
-            // Exit confirmation alert
             if showExitConfirmation {
                 CustomAlertView(
                     title: "Exit Burner Mode?",
                     description: "Are you sure? A 10-minute timer will start before your phone unlocks.",
                     cancelAction: {
-                        withAnimation {
-                            showExitConfirmation = false
-                        }
+                        withAnimation { showExitConfirmation = false }
                     },
                     cancelActionTitle: "Cancel",
                     primaryAction: {
@@ -200,48 +217,33 @@ struct BurnerModeLockScreen: View {
                 .transition(.opacity)
             }
         }
-        .opacity(opacity) // Apply fade-in effect
-        .statusBarHidden(true)
-        .preferredColorScheme(.dark) // Force dark mode for the alert
-        .onReceive(timer) { input in
-            currentTime = input
+    }
 
-            // Handle exit timer countdown
-            if timerIsActive {
-                if timerCountdown > 0 {
-                    timerCountdown -= 1
-                } else {
-                    // Timer completed - exit burner mode
-                    timerIsActive = false
-                    exitBurnerMode()
-                }
-            }
+    // MARK: - Terminal Completion / Transitions
+    private func handleTerminalComplete() {
+        // 1. Fade terminal to black
+        withAnimation(.easeInOut(duration: 0.6)) {
+            terminalOpacity = 0.0
         }
-        .onAppear {
-            // Prevent screen from dimming
-            UIApplication.shared.isIdleTimerDisabled = true
 
-            // Set random event end time if not set
-            setupEventEndTime()
-
-            // Fade in animation
-            withAnimation(.easeIn(duration: 0.5)) {
-                opacity = 1.0
+        // 2. After terminal fade finishes, fade in lockscreen
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            withAnimation(.easeInOut(duration: 0.8)) {
+                lockScreenOpacity = 1.0
             }
-        }
-        .onDisappear {
-            // Re-enable screen dimming
-            UIApplication.shared.isIdleTimerDisabled = false
-            timer.upstream.connect().cancel()
+
+            // 3. Remove terminal after lockscreen fade-in is done
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                showTerminal = false
+            }
         }
     }
 
+    // MARK: - Helper Functions
     private func setupEventEndTime() {
-        // Check if there's a stored event end time
-        if let storedEndTime = UserDefaults.standard.object(forKey: "burnerModeEventEndTime") as? Date {
-            eventEndTime = storedEndTime
+        if let stored = UserDefaults.standard.object(forKey: "burnerModeEventEndTime") as? Date {
+            eventEndTime = stored
         } else {
-            // Generate random end time between 2-4 hours from now
             let randomHours = Double.random(in: 2...4)
             eventEndTime = Date().addingTimeInterval(randomHours * 3600)
             UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
@@ -250,24 +252,16 @@ struct BurnerModeLockScreen: View {
 
     private func startExitTimer() {
         timerIsActive = true
-        timerCountdown = 600 // Reset to 10 minutes
+        timerCountdown = 600
     }
 
     private func exitBurnerModeImmediately() {
-        // For testing - immediate exit without timer
         exitBurnerMode()
     }
 
     private func exitBurnerMode() {
-        // Clear stored event end time
         UserDefaults.standard.removeObject(forKey: "burnerModeEventEndTime")
-
-        // Fade out before dismissing
-        withAnimation(.easeOut(duration: 0.3)) {
-            opacity = 0
-        }
-
-        // Wait for fade out to complete
+        withAnimation(.easeOut(duration: 0.3)) { lockScreenOpacity = 0 }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             burnerManager.disable()
             appState.showingBurnerLockScreen = false
@@ -275,8 +269,80 @@ struct BurnerModeLockScreen: View {
     }
 }
 
-#Preview {
-    BurnerModeLockScreen()
-        .environmentObject(AppState())
-        .preferredColorScheme(.dark)
+// MARK: - Terminal Loading View
+struct TerminalLoadingView: View {
+    @State private var messages: [String] = []
+    
+    let allMessages = [
+        "> CONNECTING TO SERVER...",
+        "> AUTHENTICATING USER...",
+        "> LOADING EVENTS DATABASE...",
+        "> INITIALIZING BURNER PHONE...",
+        "> PREPARING INTERFACE...",
+        "> READY"
+    ]
+    
+    var onComplete: (() -> Void)? = nil
+    var stepDelay: Double = 0.5
+    var finalHold: Double = 0.6
+    
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(messages, id: \.self) { message in
+                    HStack(spacing: 4) {
+                        Text(message)
+                            .font(.system(size: 14, weight: .medium, design: .monospaced))
+                            .foregroundColor(.white)
+                        
+                        if message == messages.last && message != allMessages.last {
+                            BlinkingCursor()
+                        }
+                    }
+                    .transition(.opacity)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+        }
+        .onAppear {
+            displayMessages()
+        }
+    }
+    
+    private func displayMessages() {
+        for (index, message) in allMessages.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * stepDelay) {
+                withAnimation(.easeIn(duration: 0.2)) {
+                    messages.append(message)
+                }
+                
+                // Trigger completion after final message
+                if index == allMessages.count - 1 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + finalHold) {
+                        onComplete?()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Blinking Cursor
+struct BlinkingCursor: View {
+    @State private var isVisible = true
+    
+    var body: some View {
+        Text("_")
+            .font(.system(size: 14, weight: .bold, design: .monospaced))
+            .foregroundColor(.teal)
+            .opacity(isVisible ? 1 : 0)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
+                    isVisible.toggle()
+                }
+            }
+    }
 }

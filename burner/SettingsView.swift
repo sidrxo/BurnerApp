@@ -142,7 +142,7 @@ struct SettingsView: View {
                             }
 
                             // DEBUG Section
-#if DEBUG
+
                             MenuSection(title: "DEBUG") {
                                 Button(action: {
                                     coordinator.navigate(to: .debugMenu)
@@ -155,7 +155,7 @@ struct SettingsView: View {
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
-#endif
+
                         }
                         .padding(.horizontal, 20)
                         .padding(.bottom, 100)

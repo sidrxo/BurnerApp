@@ -209,11 +209,11 @@ struct NavigationDestinationBuilder: View {
                 SupportView()
 
             case .debugMenu:
-                #if DEBUG
+                
                 DebugMenuView(appState: appState, burnerManager: appState.burnerManager)
-                #else
+                
                 EmptyView()
-                #endif
+                
             }
         }
         // REMOVED: Manual tab bar management - let MainTabView handle it
