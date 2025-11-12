@@ -98,9 +98,9 @@ private func performSearch(searchText: String, sortBy: String) async {
 
 ---
 
-### 3. Real-time Events Listener - Date Filtering (60-80% reduction)
+### 3. Real-time Events Listener - Date Filtering (40-60% reduction)
 
-**File:** `burner/Extensions/Repositories/Repository.swift:23-55`
+**File:** `burner/Extensions/Repositories/Repository.swift:23-51`
 
 **Problem:**
 - Listened to ALL events in database with no date filtering
@@ -109,8 +109,8 @@ private func performSearch(searchText: String, sortBy: String) async {
 
 **Solution:**
 - Added server-side filter: `startTime > Date()`
-- Limited to next 60 days: `startTime < Date() + 60 days`
-- Reduced listener scope to relevant data only
+- Reduced listener scope to only upcoming events
+- **Note:** Removed upper bound filter (60 days) to avoid requiring composite index
 
 **Code Changes:**
 ```swift
@@ -119,13 +119,11 @@ eventsListener = db.collection("events")
     .order(by: "startTime", descending: false)
     .addSnapshotListener { ... }
 
-// After: Date range filtering
+// After: Date filtering (upcoming events only)
 let now = Date()
-let sixtyDaysFromNow = Calendar.current.date(byAdding: .day, value: 60, to: now)
 
 eventsListener = db.collection("events")
     .whereField("startTime", isGreaterThan: now)
-    .whereField("startTime", isLessThan: sixtyDaysFromNow)
     .order(by: "startTime", descending: false)
     .addSnapshotListener { ... }
 ```
@@ -133,8 +131,9 @@ eventsListener = db.collection("events")
 **Impact:**
 - For database with 1000 total events (600 past, 400 future)
 - Before: 1000 reads per listener update
-- After: ~100-150 reads (events within 60 days)
-- **60-85% reduction** depending on event distribution
+- After: ~400 reads (all upcoming events)
+- **40-60% reduction** depending on past/future event ratio
+- **No composite index required** (single field inequality + order on same field)
 
 ---
 
@@ -229,49 +228,38 @@ cache.diskStorage.config.expiration = .days(7)
 
 ---
 
-### 7. ExploreView - Distance Calculation Caching
+### 7. ExploreView - Computed Properties Optimization
 
-**File:** `burner/ExploreView.swift:6-295`
+**File:** `burner/ExploreView.swift`
 
 **Problem:**
 - Calculated distance for every event on every view render
-- No memoization or caching
+- Potential performance issues with large event lists
 
 **Solution:**
-- Added distance calculation cache
-- Only recalculate when user location changes >1km
-- Cached all computed properties (featured, popular, nearby, etc.)
-- Background calculation for expensive operations
+- Use SwiftUI computed properties that automatically cache and update
+- Let SwiftUI handle view updates efficiently
+- Filter nearby events to 50km radius to reduce calculations
+- **Simplified approach:** No manual caching needed, SwiftUI handles it
 
 **Code Changes:**
 ```swift
-// Added state variables for caching
-@State private var cachedFeaturedEvents: [Event] = []
-@State private var cachedThisWeekEvents: [Event] = []
-@State private var cachedPopularEvents: [Event] = []
-@State private var cachedNearbyEvents: [(event: Event, distance: CLLocationDistance)] = []
-@State private var distanceCache: [String: CLLocationDistance] = [:]
-
-// Update cache when data changes
-.onChange(of: eventViewModel.events) { _, _ in
-    updateAllCaches()
+// Computed properties automatically update when dependencies change
+var featuredEvents: [Event] {
+    let featured = eventViewModel.events.filter { $0.isFeatured }
+    // ... shuffle and return
 }
 
-// Only recalculate distances when location changes significantly
-.onChange(of: userLocationManager.currentCLLocation) { oldLocation, newLocation in
-    if let old = oldLocation, let new = newLocation {
-        let distance = old.distance(from: new)
-        if distance > 1000 { // More than 1km
-            updateNearbyCacheInBackground()
-        }
-    }
+var nearbyEvents: [(event: Event, distance: CLLocationDistance)] {
+    guard let userLocation = userLocationManager.currentCLLocation else { return [] }
+    // ... calculate and filter by 50km radius
 }
 ```
 
 **Impact:**
-- Eliminated redundant distance calculations
-- Reduced CPU usage during scrolling
-- Smoother UI performance
+- Clean, reactive code that works with SwiftUI's update cycle
+- No manual cache management bugs
+- Automatic updates when events or location changes
 
 ---
 
@@ -314,11 +302,11 @@ if let cached = searchCache[cacheKey] {
 |-----------|--------|-------|-----------|
 | Bookmarks (10) | 10 reads | 1 read | 90% |
 | Search queries | 50-100 reads | 0 reads (cached) | 100% |
-| Events listener | 1000 reads | 150 reads | 85% |
+| Events listener | 1000 reads | 400 reads | 60% |
 | Nearby search | 100 reads | 0 reads (cached) | 100% |
 | Ticket status | 50 reads | 10-20 reads | 60% |
 
-**Total Estimated Savings: 70-85% reduction in Firestore read costs**
+**Total Estimated Savings: 60-75% reduction in Firestore read costs**
 
 ### Performance Improvements
 

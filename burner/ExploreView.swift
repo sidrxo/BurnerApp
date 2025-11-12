@@ -14,9 +14,6 @@ struct ExploreView: View {
     @State private var searchText = ""
     @State private var showingSignInAlert = false
 
-    // Distance calculation cache (only cache expensive nearby event calculations)
-    @State private var cachedNearbyEvents: [(event: Event, distance: CLLocationDistance)] = []
-
     // ✅ Maximum distance for "nearby" events (in meters)
     private let maxNearbyDistance: CLLocationDistance = 50_000 // ~31 miles
 
@@ -216,25 +213,6 @@ struct ExploreView: View {
         }
         .navigationBarHidden(true)
         .background(Color.black)
-        .task {
-            // Initial nearby cache computation
-            updateNearbyCacheInBackground()
-        }
-        .onChange(of: eventViewModel.events) { _, _ in
-            // Update nearby cache when events change
-            updateNearbyCacheInBackground()
-        }
-        .onChange(of: userLocationManager.currentCLLocation) { oldLocation, newLocation in
-            // Only recalculate distances if location changed significantly (> 1km)
-            if let old = oldLocation, let new = newLocation {
-                let distance = old.distance(from: new)
-                if distance > 1000 { // More than 1km
-                    updateNearbyCacheInBackground()
-                }
-            } else if newLocation != nil {
-                updateNearbyCacheInBackground()
-            }
-        }
         .onChange(of: coordinator.pendingDeepLink) { _, eventId in
             if let eventId = eventId {
                 coordinator.navigate(to: .eventById(eventId))
@@ -271,13 +249,6 @@ struct ExploreView: View {
         .frame(height: 300)
     }
     
-    // MARK: - Cache Update Methods (Only for expensive operations)
-    private func updateNearbyCacheInBackground() {
-        Task {
-            cachedNearbyEvents = nearbyEvents
-        }
-    }
-
     // MARK: - Content View
     private var contentView: some View {
         VStack(spacing: 0) {
@@ -325,8 +296,8 @@ struct ExploreView: View {
                 .buttonStyle(PlainButtonStyle())
             }
 
-            // Nearby (Use Cached - expensive distance calculations)
-            if userLocationManager.savedLocation != nil && !cachedNearbyEvents.isEmpty {
+            // Nearby
+            if userLocationManager.savedLocation != nil && !nearbyEvents.isEmpty {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
                         Text("Nearby")
@@ -337,7 +308,7 @@ struct ExploreView: View {
                     .padding(.horizontal, 20)
 
                     LazyVStack(spacing: 0) {
-                        ForEach(Array(cachedNearbyEvents.prefix(5).enumerated()), id: \.element.event.id) { _, item in
+                        ForEach(Array(nearbyEventsPreview.enumerated()), id: \.element.event.id) { _, item in
                             NavigationLink(value: NavigationDestination.eventDetail(item.event)) {
                                 EventRow(
                                     event: item.event,
