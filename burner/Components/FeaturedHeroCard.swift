@@ -19,11 +19,9 @@ struct FeaturedHeroCard: View {
             ZStack {
                 KFImage(URL(string: event.imageUrl))
                     .placeholder {
-                        ShimmerView()
-                            .frame(width: geometry.size.width, height: 400)
-                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
                     }
-                    .fade(duration: 0.3)
                     .resizable()
                     .scaledToFill()
                     .frame(width: geometry.size.width, height: 400)
@@ -105,39 +103,5 @@ struct FeaturedHeroCard: View {
             }
         }
         .frame(height: 400)
-    }
-}
-
-// MARK: - Shimmer Effect for Loading Images
-struct ShimmerView: View {
-    @State private var phase: CGFloat = 0
-
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Base gray background
-                Color.gray.opacity(0.2)
-
-                // Shimmer gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.clear,
-                        Color.white.opacity(0.3),
-                        Color.clear
-                    ]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .offset(x: phase * geometry.size.width)
-            }
-        }
-        .onAppear {
-            withAnimation(
-                Animation.linear(duration: 1.5)
-                    .repeatForever(autoreverses: false)
-            ) {
-                phase = 1
-            }
-        }
     }
 }

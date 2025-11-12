@@ -66,9 +66,8 @@ struct EventRow: View {
             if let url = URL(string: event.imageUrl), !event.imageUrl.isEmpty {
                 KFImage(url)
                     .placeholder {
-                        shimmerPlaceholder
+                        imagePlaceholder
                     }
-                    .fade(duration: 0.3)
                     .resizable()
                     .scaledToFill()
                     .frame(width: 60, height: 60)
@@ -77,12 +76,6 @@ struct EventRow: View {
                 imagePlaceholder
             }
         }
-    }
-
-    private var shimmerPlaceholder: some View {
-        ShimmerView()
-            .frame(width: 60, height: 60)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     private var imagePlaceholder: some View {
@@ -357,39 +350,5 @@ struct TicketWithEventData: Codable, Identifiable {
     let event: Event
     var id: String {
         ticket.id ?? UUID().uuidString
-    }
-}
-
-// MARK: - Shimmer Effect for Loading Images
-struct ShimmerView: View {
-    @State private var phase: CGFloat = 0
-
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Base gray background
-                Color.gray.opacity(0.2)
-
-                // Shimmer gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.clear,
-                        Color.white.opacity(0.3),
-                        Color.clear
-                    ]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .offset(x: phase * geometry.size.width)
-            }
-        }
-        .onAppear {
-            withAnimation(
-                Animation.linear(duration: 1.5)
-                    .repeatForever(autoreverses: false)
-            ) {
-                phase = 1
-            }
-        }
     }
 }

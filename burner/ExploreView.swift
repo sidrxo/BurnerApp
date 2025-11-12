@@ -268,17 +268,15 @@ struct ExploreView: View {
         }
     }
 
-    // MARK: - Build Content Sections (Simplified & Clean)
+    // MARK: - Build Content Sections (Simplified)
     @ViewBuilder
     private func buildContentSections() -> some View {
-        let genresWithEvents = displayGenres.filter { !allEventsForGenre($0).isEmpty }
-
-        // 1. First featured card
-        if featuredEvents.count > 0 {
-            featuredCard(featuredEvents[0])
+        // 1. All Featured Cards First
+        ForEach(featuredEvents) { event in
+            featuredCard(event)
         }
 
-        // 2. Popular section
+        // 2. Popular Section
         if !popularEvents.isEmpty {
             EventSection(
                 title: "Popular",
@@ -290,12 +288,7 @@ struct ExploreView: View {
             )
         }
 
-        // 3. Second featured card
-        if featuredEvents.count > 1 {
-            featuredCard(featuredEvents[1])
-        }
-
-        // 4. This Week section
+        // 3. This Week Section
         if !thisWeekEvents.isEmpty {
             EventSection(
                 title: "This Week",
@@ -307,17 +300,12 @@ struct ExploreView: View {
             )
         }
 
-        // 5. Third featured card
-        if featuredEvents.count > 2 {
-            featuredCard(featuredEvents[2])
-        }
-
-        // 6. Nearby section (if location available)
+        // 4. Nearby Section (if location available)
         if userLocationManager.savedLocation != nil && !nearbyEvents.isEmpty {
             nearbySection
         }
 
-        // 7. Genre Cards (horizontal scroll of genre chips)
+        // 5. Genre Cards (horizontal scroll chips)
         if !displayGenres.isEmpty {
             GenreCardsSection(
                 genres: displayGenres,
@@ -325,15 +313,8 @@ struct ExploreView: View {
             )
         }
 
-        // 8. Interleave remaining featured cards (4+) with genre sections
-        ForEach(Array(genresWithEvents.enumerated()), id: \.offset) { index, genre in
-            // Insert a featured card every 2 genre sections, starting from featured[3]
-            let featuredIndex = 3 + (index / 2)
-            if index % 2 == 0 && featuredIndex < featuredEvents.count {
-                featuredCard(featuredEvents[featuredIndex])
-            }
-
-            // Genre section
+        // 6. Genre Sections
+        ForEach(displayGenres.filter { !allEventsForGenre($0).isEmpty }, id: \.self) { genre in
             EventSection(
                 title: genre,
                 events: eventsForGenrePreview(genre),
@@ -344,15 +325,7 @@ struct ExploreView: View {
             )
         }
 
-        // 9. Any remaining featured cards after all genres
-        let featuredAfterGenres = 3 + ((genresWithEvents.count + 1) / 2)
-        if featuredAfterGenres < featuredEvents.count {
-            ForEach(featuredAfterGenres..<featuredEvents.count, id: \.self) { index in
-                featuredCard(featuredEvents[index])
-            }
-        }
-
-        // 10. All Events section
+        // 7. All Events Section
         if !allEvents.isEmpty {
             EventSection(
                 title: "All Events",
