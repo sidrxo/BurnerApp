@@ -9,6 +9,7 @@ struct SearchView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var coordinator: NavigationCoordinator
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var userLocationManager: UserLocationManager
     @StateObject private var viewModel: SearchViewModel
 
@@ -19,8 +20,7 @@ struct SearchView: View {
     @FocusState private var isSearchFocused: Bool
 
     init() {
-        let repository = OptimizedEventRepository()
-        _viewModel = StateObject(wrappedValue: SearchViewModel(eventRepository: repository))
+        _viewModel = StateObject(wrappedValue: SearchViewModel())
     }
 
     enum SortOption: String {
@@ -39,7 +39,13 @@ struct SearchView: View {
         .navigationBarHidden(true)
         .background(Color.black)
         .task {
+            // Pass events from eventViewModel to searchViewModel
+            viewModel.setSourceEvents(eventViewModel.events)
             await viewModel.loadInitialEvents(sortBy: sortBy.rawValue)
+        }
+        .onChange(of: eventViewModel.events) { oldValue, newValue in
+            // Update search results when events change from real-time listener
+            viewModel.setSourceEvents(newValue)
         }
         .onChange(of: searchText) { oldValue, newValue in
             viewModel.updateSearchText(newValue, sortBy: sortBy.rawValue)
@@ -238,24 +244,31 @@ class SearchViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var userLocation: CLLocation?
 
-    private var hasMoreEvents = true
-    private var lastDocument: Date?
+    private var sourceEvents: [Event] = [] // Events from AppState
     private var currentSearchText = ""
-    private var searchCache: [String: [Event]] = [:]
+    private var searchCache: [String: (events: [Event], timestamp: Date)] = [:]
 
-    private let eventRepository: OptimizedEventRepository
     private var searchCancellable: AnyCancellable?
     private let searchSubject = PassthroughSubject<(String, String), Never>()
     private let locationManager = LocationManager()
 
-    // ADD THIS: Constant for initial load limit
-    private let initialLoadLimit = 6
-    private let paginationLimit = 10
+    // Cache TTL: 5 minutes
+    private let cacheTTL: TimeInterval = 300
 
-    init(eventRepository: OptimizedEventRepository) {
-        self.eventRepository = eventRepository
+    init() {
         setupSearchDebouncing()
         setupLocationObserver()
+    }
+
+    // MARK: - Set Source Events from AppState
+    func setSourceEvents(_ events: [Event]) {
+        self.sourceEvents = events
+        // Re-filter if there's an active search
+        if !currentSearchText.isEmpty {
+            Task {
+                await performSearch(searchText: currentSearchText, sortBy: "startTime")
+            }
+        }
     }
 
     private func setupLocationObserver() {
@@ -286,59 +299,41 @@ class SearchViewModel: ObservableObject {
         searchSubject.send((text, sortBy))
     }
     
-    // MARK: - Load Initial Events
+    // MARK: - Load Initial Events (From Cache)
     func loadInitialEvents(sortBy: String) async {
         guard !isLoading else { return }
 
         isLoading = true
-        hasMoreEvents = true
-        lastDocument = nil
 
-        do {
-            // CHANGED: Use initialLoadLimit (5) instead of 20
-            let fetchedEvents = try await eventRepository.fetchUpcomingEvents(
-                sortBy: sortBy,
-                limit: initialLoadLimit
-            )
-
-            events = fetchedEvents
-            lastDocument = fetchedEvents.last?.startTime
-            // CHANGED: Check against initialLoadLimit
-            hasMoreEvents = fetchedEvents.count >= initialLoadLimit
-
-        } catch {
-            errorMessage = "Failed to load events: \(error.localizedDescription)"
+        // Filter upcoming events from source
+        let upcomingEvents = sourceEvents.filter { event in
+            guard let startTime = event.startTime else { return false }
+            return startTime > Date()
         }
+
+        // Sort locally
+        events = sortEvents(upcomingEvents, by: sortBy)
 
         isLoading = false
     }
 
-    // MARK: - Load More Events (Pagination)
-    func loadMoreEvents(sortBy: String, searchText: String) async {
-        guard !isLoadingMore && hasMoreEvents && searchText.isEmpty else { return }
-        
-        isLoadingMore = true
-        
-        do {
-            // Use paginationLimit (20) for subsequent loads
-            let fetchedEvents = try await eventRepository.fetchUpcomingEvents(
-                sortBy: sortBy,
-                limit: paginationLimit,
-                startAfter: lastDocument
-            )
-            
-            events.append(contentsOf: fetchedEvents)
-            lastDocument = fetchedEvents.last?.startTime
-            hasMoreEvents = fetchedEvents.count >= paginationLimit
-            
-        } catch {
-            errorMessage = "Failed to load more events: \(error.localizedDescription)"
+    // MARK: - Sort Events Locally
+    private func sortEvents(_ events: [Event], by sortBy: String) -> [Event] {
+        switch sortBy {
+        case "price":
+            return events.sorted { $0.price < $1.price }
+        case "date":
+            return events.sorted {
+                ($0.createdAt ?? Date.distantPast) < ($1.createdAt ?? Date.distantPast)
+            }
+        default: // startTime
+            return events.sorted {
+                ($0.startTime ?? Date.distantPast) < ($1.startTime ?? Date.distantPast)
+            }
         }
-        
-        isLoadingMore = false
     }
     
-    // MARK: - Perform Search
+    // MARK: - Perform Search (Local Filtering with Cache TTL)
     private func performSearch(searchText: String, sortBy: String) async {
         currentSearchText = searchText
 
@@ -348,29 +343,41 @@ class SearchViewModel: ObservableObject {
             return
         }
 
-        // Check cache first
+        // Check cache first with TTL validation
         let cacheKey = "\(searchText)_\(sortBy)"
         if let cached = searchCache[cacheKey] {
-            events = cached
-            return
+            let cacheAge = Date().timeIntervalSince(cached.timestamp)
+            if cacheAge < cacheTTL {
+                events = cached.events
+                return
+            } else {
+                // Cache expired, remove it
+                searchCache.removeValue(forKey: cacheKey)
+            }
         }
 
         isLoading = true
 
-        do {
-            let searchResults = try await eventRepository.searchEvents(
-                searchText: searchText,
-                sortBy: sortBy,
-                limit: 50
-            )
-
-            events = searchResults
-            searchCache[cacheKey] = searchResults
-            hasMoreEvents = false // Disable pagination for search results
-
-        } catch {
-            errorMessage = "Search failed: \(error.localizedDescription)"
+        // Filter upcoming events from source
+        let upcomingEvents = sourceEvents.filter { event in
+            guard let startTime = event.startTime else { return false }
+            return startTime > Date()
         }
+
+        // Perform local text search
+        let searchLower = searchText.lowercased()
+        let searchResults = upcomingEvents.filter { event in
+            event.name.lowercased().contains(searchLower) ||
+            event.venue.lowercased().contains(searchLower) ||
+            (event.description?.lowercased().contains(searchLower) ?? false) ||
+            (event.tags?.contains(where: { $0.lowercased().contains(searchLower) }) ?? false)
+        }
+
+        // Sort results
+        let sortedResults = sortEvents(searchResults, by: sortBy)
+
+        events = sortedResults
+        searchCache[cacheKey] = (events: sortedResults, timestamp: Date())
 
         isLoading = false
     }
@@ -386,7 +393,7 @@ class SearchViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Sort Events by Distance
+    // MARK: - Sort Events by Distance (Local Filtering - Optimized)
     private func sortEventsByDistance() async {
         guard let userLocation = userLocation else {
             errorMessage = "Location not available. Please enable location services."
@@ -395,31 +402,38 @@ class SearchViewModel: ObservableObject {
 
         isLoading = true
 
-        do {
-            let allEvents = try await eventRepository.fetchUpcomingEvents(sortBy: "startTime", limit: 100)
+        // Filter upcoming events from cached source
+        let upcomingEvents = sourceEvents.filter { event in
+            guard let startTime = event.startTime else { return false }
+            return startTime > Date()
+        }
 
-            let eventsWithDistance = allEvents.compactMap { event -> (Event, CLLocationDistance)? in
-                guard let coordinates = event.coordinates else {
-                    return nil
-                }
-                let eventLocation = CLLocation(
-                    latitude: coordinates.latitude,
-                    longitude: coordinates.longitude
-                )
-                let distance = userLocation.distance(from: eventLocation)
-                return (event, distance)
+        // Calculate distances and filter by max distance (50km)
+        let maxDistance: CLLocationDistance = 50_000 // 50km
+        let eventsWithDistance = upcomingEvents.compactMap { event -> (Event, CLLocationDistance)? in
+            guard let coordinates = event.coordinates else {
+                return nil
+            }
+            let eventLocation = CLLocation(
+                latitude: coordinates.latitude,
+                longitude: coordinates.longitude
+            )
+            let distance = userLocation.distance(from: eventLocation)
+
+            // Only include events within 50km
+            guard distance <= maxDistance else {
+                return nil
             }
 
-            let sortedEvents = eventsWithDistance
-                .sorted { $0.1 < $1.1 }
-                .map { $0.0 }
-
-            events = sortedEvents
-            hasMoreEvents = false
-
-        } catch {
-            errorMessage = "Failed to sort events by distance: \(error.localizedDescription)"
+            return (event, distance)
         }
+
+        // Sort by distance (closest first)
+        let sortedEvents = eventsWithDistance
+            .sorted { $0.1 < $1.1 }
+            .map { $0.0 }
+
+        events = sortedEvents
 
         isLoading = false
     }
@@ -434,108 +448,9 @@ class SearchViewModel: ObservableObject {
     func clearAllResults() {
         events = []
         searchCache.removeAll()
-        hasMoreEvents = false
         isLoading = false
         isLoadingMore = false
         errorMessage = nil
-    }
-}
-
-// MARK: - Optimized Event Repository
-@MainActor
-class OptimizedEventRepository {
-    private let db = Firestore.firestore()
-    
-    // MARK: - Fetch Upcoming Events (Paginated)
-    func fetchUpcomingEvents(
-        sortBy: String = "startTime",
-        limit: Int = 20,
-        startAfter: Date? = nil
-    ) async throws -> [Event] {
-        // Build base query with ordering by createdAt for date sort
-        var query = db.collection("events")
-            .order(by: sortBy == "date" ? "createdAt" : "startTime")
-            .limit(to: limit * 2)
-
-        if let startAfter = startAfter {
-            query = query.start(after: [startAfter])
-        }
-
-        let snapshot = try await query.getDocuments()
-
-        let allEvents = snapshot.documents.compactMap { doc -> Event? in
-            var event = try? doc.data(as: Event.self)
-            event?.id = doc.documentID
-            return event
-        }
-
-        // Filter client-side for events with startTime > now
-        let filteredEvents = allEvents.filter { event in
-            guard let startTime = event.startTime else { return false }
-            return startTime > Date()
-        }
-
-        // Sort client-side if needed
-        let sortedEvents: [Event]
-        if sortBy == "price" {
-            sortedEvents = filteredEvents.sorted { $0.price < $1.price }
-        } else if sortBy == "date" {
-            // Sort by createdAt ascending (oldest first)
-            sortedEvents = filteredEvents.sorted {
-                ($0.createdAt ?? Date.distantPast) < ($1.createdAt ?? Date.distantPast)
-            }
-        } else {
-            // Already sorted by startTime from Firestore query
-            sortedEvents = filteredEvents
-        }
-
-        return Array(sortedEvents.prefix(limit))
-    }
-
-    func searchEvents(
-        searchText: String,
-        sortBy: String = "startTime",
-        limit: Int = 50
-    ) async throws -> [Event] {
-        // Fetch all events without date filtering
-        let snapshot = try await db.collection("events")
-            .limit(to: limit * 2)
-            .getDocuments()
-
-        let allEvents = snapshot.documents.compactMap { doc -> Event? in
-            var event = try? doc.data(as: Event.self)
-            event?.id = doc.documentID
-            return event
-        }
-
-        // Filter for upcoming events with startTime
-        let upcomingEvents = allEvents.filter { event in
-            guard let startTime = event.startTime else { return false }
-            return startTime > Date()
-        }
-
-        // Filter by search text
-        let searchLower = searchText.lowercased()
-        let searchResults = upcomingEvents.filter { event in
-            event.name.lowercased().contains(searchLower) ||
-            event.venue.lowercased().contains(searchLower) ||
-            (event.description?.lowercased().contains(searchLower) ?? false) ||
-            (event.tags?.contains(where: { $0.lowercased().contains(searchLower) }) ?? false)
-        }
-
-        // Sort client-side
-        let sortedResults = searchResults.sorted { event1, event2 in
-            if sortBy == "price" {
-                return event1.price < event2.price
-            } else if sortBy == "date" {
-                // Sort by createdAt ascending (oldest first)
-                return (event1.createdAt ?? Date.distantPast) < (event2.createdAt ?? Date.distantPast)
-            } else {
-                return (event1.startTime ?? Date.distantFuture) < (event2.startTime ?? Date.distantFuture)
-            }
-        }
-
-        return Array(sortedResults.prefix(limit))
     }
 }
 // MARK: - Empty Events View

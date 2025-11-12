@@ -20,27 +20,36 @@ class EventRepository: ObservableObject {
         eventsListener?.remove()
     }
     
-    // MARK: - Fetch Events with Real-time Updates
+    // MARK: - Fetch Events with Real-time Updates (Optimized with Date Filtering)
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void) {
+        // Filter events to only include upcoming events (startTime > now)
+        // This significantly reduces bandwidth and read costs
+        let now = Date()
+
+        // Optional: Also limit to events within next 60 days to further reduce scope
+        let sixtyDaysFromNow = Calendar.current.date(byAdding: .day, value: 60, to: now) ?? Date.distantFuture
+
         eventsListener = db.collection("events")
+            .whereField("startTime", isGreaterThan: now)
+            .whereField("startTime", isLessThan: sixtyDaysFromNow)
             .order(by: "startTime", descending: false)
             .addSnapshotListener { snapshot, error in
                 if let error = error {
                     completion(.failure(error))
                     return
                 }
-                
+
                 guard let documents = snapshot?.documents else {
                     completion(.success([]))
                     return
                 }
-                
+
                 let events = documents.compactMap { doc -> Event? in
                     var event = try? doc.data(as: Event.self)
                     event?.id = doc.documentID
                     return event
                 }
-                
+
                 completion(.success(events))
             }
     }
@@ -52,7 +61,29 @@ class EventRepository: ObservableObject {
         event?.id = document.documentID
         return event
     }
-    
+
+    // MARK: - Fetch Multiple Events (Batch with whereIn)
+    func fetchEvents(by ids: [String]) async throws -> [Event] {
+        guard !ids.isEmpty else { return [] }
+
+        // Firestore whereIn supports max 10 values
+        guard ids.count <= 10 else {
+            throw NSError(domain: "EventRepository", code: 400, userInfo: [
+                NSLocalizedDescriptionKey: "Cannot fetch more than 10 events at once with whereIn"
+            ])
+        }
+
+        let snapshot = try await db.collection("events")
+            .whereField(FieldPath.documentID(), in: ids)
+            .getDocuments()
+
+        return snapshot.documents.compactMap { doc -> Event? in
+            var event = try? doc.data(as: Event.self)
+            event?.id = doc.documentID
+            return event
+        }
+    }
+
     // MARK: - Stop Observing
     func stopObserving() {
         eventsListener?.remove()
@@ -107,21 +138,43 @@ class TicketRepository: ObservableObject {
         return !snapshot.documents.isEmpty
     }
     
-    // MARK: - Fetch User Ticket Status for Multiple Events
+    // MARK: - Fetch User Ticket Status for Multiple Events (Optimized with whereIn Batching)
     func fetchUserTicketStatus(userId: String, eventIds: [String]) async throws -> [String: Bool] {
-        let snapshot = try await db.collection("tickets")
-            .whereField("userId", isEqualTo: userId)
-            .whereField("status", isEqualTo: "confirmed")
-            .getDocuments()
-        
-        let eventIdsWithTickets = Set(snapshot.documents.compactMap { doc -> String? in
-            doc.data()["eventId"] as? String
-        })
-        
+        guard !eventIds.isEmpty else { return [:] }
+
         var status: [String: Bool] = [:]
+
+        // Initialize all as false
         for eventId in eventIds {
-            status[eventId] = eventIdsWithTickets.contains(eventId)
+            status[eventId] = false
         }
+
+        // Split into batches of 10 (Firestore whereIn limit)
+        let batchSize = 10
+        let batches = stride(from: 0, to: eventIds.count, by: batchSize).map {
+            Array(eventIds[$0..<min($0 + batchSize, eventIds.count)])
+        }
+
+        // Fetch each batch and merge results
+        for batch in batches {
+            let snapshot = try await db.collection("tickets")
+                .whereField("userId", isEqualTo: userId)
+                .whereField("eventId", in: batch)
+                .whereField("status", isEqualTo: "confirmed")
+                .getDocuments()
+
+            let eventIdsWithTickets = Set(snapshot.documents.compactMap { doc -> String? in
+                doc.data()["eventId"] as? String
+            })
+
+            // Update status for this batch
+            for eventId in batch {
+                if eventIdsWithTickets.contains(eventId) {
+                    status[eventId] = true
+                }
+            }
+        }
+
         return status
     }
     
