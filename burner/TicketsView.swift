@@ -111,21 +111,21 @@ struct TicketsView: View {
                     .padding(.bottom, 30)
                 
                 VStack(spacing: 8) {
-                    Text("MEET ME IN THE MOMENT")
+                    Text(AppConstants.EmptyState.meetMeInTheMoment)
                         .appSectionHeader()
                         .foregroundColor(.white)
-                    Text("The best night of your life is one click away.")
+                    Text(AppConstants.EmptyState.noTickets)
                         .appBody()
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
                 }
-                
+
                 Button {
                     // Navigate to Home tab using coordinator
                     coordinator.selectTab(.home)
                 } label: {
-                    Text("BROWSE EVENTS")
+                    Text(AppConstants.EmptyState.noTicketsButton)
                         .font(.appFont(size: 17))
                         .frame(maxWidth: 200)
                         .secondaryButtonStyle(
@@ -187,7 +187,11 @@ struct TicketsView: View {
         HStack(spacing: 12) {
             ForEach(TicketsFilter.allCases, id: \.self) { filter in
                 FilterButton(title: filter.displayName, isSelected: selectedFilter == filter) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    // Haptic feedback for filter change
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                    impactFeedback.impactOccurred()
+
+                    withAnimation(.easeInOut(duration: AppConstants.standardAnimationDuration)) {
                         selectedFilter = filter
                     }
                 }
@@ -253,7 +257,7 @@ struct TicketsView: View {
                         }
                     }
                 }
-                
+
                 // Past Events Section
                 if !pastTickets.isEmpty {
                     VStack(alignment: .leading, spacing: 16) {
@@ -277,6 +281,9 @@ struct TicketsView: View {
                 }
             }
             .padding(.bottom, 100)
+        }
+        .refreshable {
+            ticketsViewModel.fetchUserTickets()
         }
         .scrollDismissesKeyboard(.interactively)
         .background(Color.black)

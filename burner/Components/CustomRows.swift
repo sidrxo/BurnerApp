@@ -307,23 +307,40 @@ struct BookmarkButton: View {
                     showingSignInAlert = true
                 }
             } else {
-                // Toggle bookmark if authenticated
-                Task {
-                    await bookmarkManager.toggleBookmark(for: event)
+                // Toggle bookmark if authenticated and not already toggling
+                if !isToggling {
+                    Task {
+                        await bookmarkManager.toggleBookmark(for: event)
+                    }
                 }
             }
         }) {
-            Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                .font(.appIcon)
-                .foregroundColor(isBookmarked ? .white : .gray)
-                .scaleEffect(isBookmarked ? 1.1 : 1.0)
-                .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: isBookmarked)
+            ZStack {
+                if isToggling {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                        .tint(.white)
+                } else {
+                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                        .font(.appIcon)
+                        .foregroundColor(isBookmarked ? .white : .gray)
+                        .scaleEffect(isBookmarked ? 1.1 : 1.0)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: isBookmarked)
+                }
+            }
         }
+        .disabled(isToggling)
+        .opacity(isToggling ? 0.6 : 1.0)
     }
 
     private var isBookmarked: Bool {
         guard let eventId = event.id else { return false }
         return bookmarkManager.isBookmarked(eventId)
+    }
+
+    private var isToggling: Bool {
+        guard let eventId = event.id else { return false }
+        return bookmarkManager.isTogglingBookmark[eventId] ?? false
     }
 }
 

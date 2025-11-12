@@ -99,8 +99,8 @@ struct BookmarksView: View {
                 Text("No Bookmarks Yet")
                     .appSectionHeader()
                     .foregroundColor(.white)
-                
-                Text("Bookmark events you're interested in to see them here")
+
+                Text(AppConstants.EmptyState.noBookmarks)
                     .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
