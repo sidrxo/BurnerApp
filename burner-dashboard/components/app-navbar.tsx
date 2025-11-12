@@ -63,33 +63,18 @@ export function AppNavbar() {
     { title: "Overview", url: "/overview", icon: Home },
     { title: "Events", url: "/events", icon: Calendar },
     { title: "Tickets", url: "/tickets", icon: Ticket },
-    { title: "Account", url: "/account", icon: Settings },
   ];
 
   if (user?.role === "scanner") {
     navigationItems = [
       { title: "Tickets", url: "/tickets", icon: Ticket },
-      { title: "Account", url: "/account", icon: Settings },
     ];
   } else {
     if (user && (user.role === "siteAdmin" || user.role === "venueAdmin")) {
-      navigationItems.splice(3, 0, {
+      navigationItems.push({
         title: "Venues",
         url: "/venues",
         icon: MapPin,
-      });
-    }
-
-    if (user && user.role === "siteAdmin") {
-      navigationItems.splice(4, 0, {
-        title: "Admin Management",
-        url: "/admin-management",
-        icon: Shield,
-      });
-      navigationItems.splice(5, 0, {
-        title: "Tag Management",
-        url: "/tag-management",
-        icon: Tag,
       });
     }
   }
@@ -144,10 +129,26 @@ export function AppNavbar() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/account">Account Settings</Link>
+              <Link href="/account">
+                <Settings className="mr-2 h-4 w-4" />
+                Account Settings
+              </Link>
             </DropdownMenuItem>
             {user?.role === "siteAdmin" && (
               <>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin-management">
+                    <Shield className="mr-2 h-4 w-4" />
+                    Admin Management
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/tag-management">
+                    <Tag className="mr-2 h-4 w-4" />
+                    Tag Management
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/debug">Debug Tools</Link>
                 </DropdownMenuItem>

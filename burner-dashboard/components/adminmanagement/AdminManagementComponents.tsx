@@ -23,13 +23,7 @@ import { Admin, Venue, CreateAdminData, Scanner, CreateScannerData } from "@/hoo
 import { formatDateSafe } from "@/lib/utils";
 
 export function AdminManagementHeader() {
-  return (
-    <div className="flex items-center space-x-4">
-        <div>
-        <h1 className="text-3xl font-bold tracking-tight">Admin Management</h1>
-      </div>
-    </div>
-  );
+  return null;
 }
 
 interface CreateAdminFormProps {
@@ -78,11 +72,10 @@ export function UnifiedCreateForm({
   onCreateScanner,
   actionLoading
 }: UnifiedCreateFormProps) {
-  const [userType, setUserType] = useState<'admin' | 'scanner'>('admin');
   const [formData, setFormData] = useState({
     email: '',
     name: '',
-    role: 'venueAdmin' as 'venueAdmin' | 'subAdmin' | 'siteAdmin',
+    role: 'venueAdmin' as 'venueAdmin' | 'subAdmin' | 'siteAdmin' | 'scanner',
     venueId: currentUserRole === 'siteAdmin' ? '' : defaultVenueId || ''
   });
   const [loading, setLoading] = useState(false);
@@ -92,21 +85,21 @@ export function UnifiedCreateForm({
     setLoading(true);
 
     let result;
-    if (userType === 'admin') {
-      const adminData: CreateAdminData = {
-        email: formData.email,
-        name: formData.name,
-        role: formData.role,
-        venueId: (formData.role === 'venueAdmin' || formData.role === 'subAdmin') ? formData.venueId : undefined
-      };
-      result = await onCreateAdmin(adminData);
-    } else {
+    if (formData.role === 'scanner') {
       const scannerData: CreateScannerData = {
         email: formData.email,
         name: formData.name,
         venueId: currentUserRole === 'siteAdmin' ? (formData.venueId || null) : defaultVenueId || null
       };
       result = await onCreateScanner(scannerData);
+    } else {
+      const adminData: CreateAdminData = {
+        email: formData.email,
+        name: formData.name,
+        role: formData.role as 'venueAdmin' | 'subAdmin' | 'siteAdmin',
+        venueId: (formData.role === 'venueAdmin' || formData.role === 'subAdmin') ? formData.venueId : undefined
+      };
+      result = await onCreateAdmin(adminData);
     }
 
     if (result.success) {
@@ -134,30 +127,6 @@ export function UnifiedCreateForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* User Type Selector */}
-          <div>
-            <Label>User Type</Label>
-            <div className="grid grid-cols-2 gap-3 mt-2">
-              <Button
-                type="button"
-                variant={userType === 'admin' ? 'default' : 'outline'}
-                onClick={() => setUserType('admin')}
-                className="w-full"
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                Admin
-              </Button>
-              <Button
-                type="button"
-                variant={userType === 'scanner' ? 'default' : 'outline'}
-                onClick={() => setUserType('scanner')}
-                className="w-full"
-              >
-                <Scan className="h-4 w-4 mr-2" />
-                Scanner
-              </Button>
-            </div>
-          </div>
           <div>
             <Label htmlFor="email">Email</Label>
             <Input
@@ -179,36 +148,33 @@ export function UnifiedCreateForm({
             />
           </div>
 
-          {/* Admin-specific fields */}
-          {userType === 'admin' && (
-            <div>
-              <Label htmlFor="role">Role</Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value: 'venueAdmin' | 'subAdmin' | 'siteAdmin') =>
-                  setFormData(prev => ({ ...prev, role: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {currentUserRole === 'siteAdmin' && (
-                    <SelectItem value="siteAdmin">Site Admin</SelectItem>
-                  )}
-                  <SelectItem value="venueAdmin">Venue Admin</SelectItem>
-                  <SelectItem value="subAdmin">Sub Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div>
+            <Label htmlFor="role">Role</Label>
+            <Select
+              value={formData.role}
+              onValueChange={(value: 'venueAdmin' | 'subAdmin' | 'siteAdmin' | 'scanner') =>
+                setFormData(prev => ({ ...prev, role: value }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {currentUserRole === 'siteAdmin' && (
+                  <SelectItem value="siteAdmin">Site Admin</SelectItem>
+                )}
+                <SelectItem value="venueAdmin">Venue Admin</SelectItem>
+                <SelectItem value="subAdmin">Sub Admin</SelectItem>
+                <SelectItem value="scanner">Scanner</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Venue selection */}
-          {((userType === 'admin' && (formData.role === 'venueAdmin' || formData.role === 'subAdmin')) ||
-            (userType === 'scanner' && currentUserRole === 'siteAdmin')) && (
+          {((formData.role === 'venueAdmin' || formData.role === 'subAdmin' || formData.role === 'scanner') && currentUserRole === 'siteAdmin') && (
             <div>
               <Label htmlFor="venue">
-                {userType === 'admin' ? 'Venue' : 'Assign Venue'}
+                {formData.role === 'scanner' ? 'Assign Venue' : 'Venue'}
               </Label>
               <Select
                 value={formData.venueId || ''}
@@ -231,14 +197,14 @@ export function UnifiedCreateForm({
           )}
 
           {/* Info message for non-site admins creating scanners */}
-          {userType === 'scanner' && currentUserRole !== 'siteAdmin' && (
+          {formData.role === 'scanner' && currentUserRole !== 'siteAdmin' && (
             <div className="p-3 bg-muted/50 rounded-md text-sm text-muted-foreground">
               Scanners created from your account are automatically linked to your venue.
             </div>
           )}
 
-          <Button type="submit" disabled={loading || actionLoading} className="w-full">
-            {loading || actionLoading ? "Creating..." : `Create ${userType === 'admin' ? 'Admin' : 'Scanner'}`}
+          <Button type="submit" disabled={loading || actionLoading} className="max-w-xs">
+            {loading || actionLoading ? "Creating..." : `Create ${formData.role === 'scanner' ? 'Scanner' : 'Admin'}`}
           </Button>
         </form>
       </CardContent>

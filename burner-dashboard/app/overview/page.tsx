@@ -41,8 +41,6 @@ function OverviewPageContent() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
-
       <MetricsCards metrics={metrics} userRole={user.role} />
 
       <SalesChart dailySales={dailySales} userRole={user.role} />
