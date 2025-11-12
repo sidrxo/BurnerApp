@@ -15,21 +15,13 @@ Without proper indexes, queries will be slower and may fail entirely.
 
 ### 1. Events Collection
 
-#### Index 1: Upcoming Events with Date Range Filter
-**Collection:** `events`
-**Fields:**
-- `startTime` (Ascending)
-- `startTime` (Ascending)
-
-**Query Pattern:**
+**Note:** The events listener uses a simple query that doesn't require a composite index:
 ```swift
 db.collection("events")
     .whereField("startTime", isGreaterThan: now)
-    .whereField("startTime", isLessThan: sixtyDaysFromNow)
     .order(by: "startTime", descending: false)
 ```
-
-**Used in:** `Repository.swift:32-35` - Real-time events listener
+This works without an index because it's a single field inequality with order on the same field.
 
 ---
 

@@ -26,12 +26,8 @@ class EventRepository: ObservableObject {
         // This significantly reduces bandwidth and read costs
         let now = Date()
 
-        // Optional: Also limit to events within next 60 days to further reduce scope
-        let sixtyDaysFromNow = Calendar.current.date(byAdding: .day, value: 60, to: now) ?? Date.distantFuture
-
         eventsListener = db.collection("events")
             .whereField("startTime", isGreaterThan: now)
-            .whereField("startTime", isLessThan: sixtyDaysFromNow)
             .order(by: "startTime", descending: false)
             .addSnapshotListener { snapshot, error in
                 if let error = error {
