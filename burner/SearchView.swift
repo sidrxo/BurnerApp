@@ -17,10 +17,16 @@ struct SearchView: View {
     @State private var sortBy: SortOption = .date
     @State private var pendingNearbySortRequest = false
     @State private var showingSignInAlert = false
+    @State private var showingLocationPermissionAlert = false
     @FocusState private var isSearchFocused: Bool
 
     init() {
         _viewModel = StateObject(wrappedValue: SearchViewModel())
+    }
+
+    // Helper to get authorizationStatus from userLocationManager
+    private var locationAuthStatus: CLAuthorizationStatus {
+        return userLocationManager.locationManager.authorizationStatus
     }
 
     enum SortOption: String {
@@ -39,6 +45,8 @@ struct SearchView: View {
         .navigationBarHidden(true)
         .background(Color.black)
         .task {
+            // Set location manager reference
+            viewModel.setLocationManager(userLocationManager)
             // Pass events from eventViewModel to searchViewModel
             viewModel.setSourceEvents(eventViewModel.events)
             // Only load if we have events, otherwise wait for onChange to trigger
@@ -68,9 +76,20 @@ struct SearchView: View {
                         await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
                     }
                 } else {
-                    // Need to request location
-                    viewModel.requestLocationPermission()
-                    pendingNearbySortRequest = true
+                    // Check if we need to show pre-permission alert
+                    let authStatus = locationAuthStatus
+                    if authStatus == .notDetermined {
+                        // Show pre-permission alert
+                        showingLocationPermissionAlert = true
+                        pendingNearbySortRequest = true
+                    } else if authStatus == .authorizedWhenInUse || authStatus == .authorizedAlways {
+                        // Already authorized, just request location
+                        viewModel.requestLocationPermission()
+                        pendingNearbySortRequest = true
+                    } else {
+                        // Permission denied, revert sort option
+                        sortBy = oldValue
+                    }
                 }
             } else {
                 Task {
@@ -104,6 +123,28 @@ struct SearchView: View {
                         appState.isSignInSheetPresented = true
                     },
                     primaryActionTitle: "Sign In",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(999)
+            }
+
+            if showingLocationPermissionAlert {
+                CustomAlertView(
+                    title: "Find Events Near You",
+                    description: "We'll show you events within 30 miles of your location. Your location is only used for finding nearby events and is never shared.",
+                    cancelAction: {
+                        showingLocationPermissionAlert = false
+                        pendingNearbySortRequest = false
+                        // Revert to previous sort option
+                        sortBy = .date
+                    },
+                    cancelActionTitle: "Not Now",
+                    primaryAction: {
+                        showingLocationPermissionAlert = false
+                        viewModel.requestLocationPermission()
+                    },
+                    primaryActionTitle: "Allow",
                     customContent: EmptyView()
                 )
                 .transition(.opacity)
@@ -284,14 +325,14 @@ class SearchViewModel: ObservableObject {
 
     private var searchCancellable: AnyCancellable?
     private let searchSubject = PassthroughSubject<(String, String), Never>()
-    private let locationManager = LocationManager()
+    private weak var userLocationManager: UserLocationManager?
 
     // Cache TTL
     private let cacheTTL: TimeInterval = AppConstants.searchCacheTTL
 
-    init() {
+    init(userLocationManager: UserLocationManager? = nil) {
+        self.userLocationManager = userLocationManager
         setupSearchDebouncing()
-        setupLocationObserver()
     }
 
     // MARK: - Set Source Events from AppState
@@ -305,16 +346,29 @@ class SearchViewModel: ObservableObject {
         }
     }
 
-    private func setupLocationObserver() {
-        locationManager.onLocationUpdate = { [weak self] location in
-            Task { @MainActor in
-                self?.userLocation = location
-            }
+    func setLocationManager(_ manager: UserLocationManager) {
+        self.userLocationManager = manager
+        // Update userLocation from saved location
+        if let savedLocation = manager.currentCLLocation {
+            self.userLocation = savedLocation
         }
     }
 
     func requestLocationPermission() {
-        locationManager.requestLocation()
+        guard let userLocationManager = userLocationManager else { return }
+        userLocationManager.requestCurrentLocation { [weak self] result in
+            switch result {
+            case .success(let location):
+                Task { @MainActor in
+                    self?.userLocation = CLLocation(
+                        latitude: location.latitude,
+                        longitude: location.longitude
+                    )
+                }
+            case .failure:
+                break
+            }
+        }
     }
     
     // MARK: - Setup Search Debouncing
@@ -528,48 +582,6 @@ struct EmptyEventsView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, minHeight: 300)
-    }
-}
-
-// MARK: - Location Manager
-class LocationManager: NSObject, CLLocationManagerDelegate {
-    private let manager = CLLocationManager()
-    var onLocationUpdate: ((CLLocation) -> Void)?
-
-    override init() {
-        super.init()
-        manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyBest
-    }
-
-    func requestLocation() {
-        let status = manager.authorizationStatus
-
-        switch status {
-        case .notDetermined:
-            manager.requestWhenInUseAuthorization()
-        case .authorizedWhenInUse, .authorizedAlways:
-            manager.requestLocation()
-        case .denied, .restricted:
-            break
-        @unknown default:
-            break
-        }
-    }
-
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let location = locations.last else { return }
-        onLocationUpdate?(location)
-    }
-
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-    }
-
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        if manager.authorizationStatus == .authorizedWhenInUse ||
-           manager.authorizationStatus == .authorizedAlways {
-            manager.requestLocation()
-        }
     }
 }
 
