@@ -22,6 +22,10 @@ struct ScannerView: View {
     @State private var showManualEntry = false
     @State private var isScannerActive = false
     @State private var isCheckingScanner = true
+    @State private var selectedEvent: Event?
+    @State private var showingEventSelection = false
+    @State private var todaysEvents: [Event] = []
+    @State private var isLoadingEvents = false
 
     @Environment(\.presentationMode) var presentationMode
     private let db = Firestore.firestore()
@@ -98,6 +102,10 @@ struct ScannerView: View {
         .onAppear {
             fetchUserRoleFromClaims()
             checkScannerAccessFromClaims()
+            fetchTodaysEvents()
+        }
+        .sheet(isPresented: $showingEventSelection) {
+            eventSelectionSheet
         }
         .sheet(isPresented: $isShowingScanner) {
             scannerSheet
@@ -172,24 +180,40 @@ struct ScannerView: View {
                                 .appSectionHeader()
                                 .foregroundColor(.white)
 
-                            Text("Scan a ticket")
-                                .appBody()
-                                .foregroundColor(.gray)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 40)
+                            if let selectedEvent = selectedEvent {
+                                VStack(spacing: 4) {
+                                    Text("Scanning for:")
+                                        .appSecondary()
+                                        .foregroundColor(.gray)
+
+                                    Text(selectedEvent.name)
+                                        .appBody()
+                                        .foregroundColor(.white)
+
+                                    Text(selectedEvent.venue)
+                                        .appSecondary()
+                                        .foregroundColor(.gray)
+                                }
+                            } else {
+                                Text("Select an event to scan tickets")
+                                    .appBody()
+                                    .foregroundColor(.gray)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 40)
+                            }
                         }
                     }
                     .padding(.top, 20)
-                    
-                    // Scan button
+
+                    // Event selection button
                     Button(action: {
-                        isShowingScanner = true
+                        showingEventSelection = true
                     }) {
                         HStack(spacing: 12) {
-                            Image(systemName: "camera")
+                            Image(systemName: "calendar")
                                 .font(.appIcon)
-                            
-                            Text("Start Scanning")
+
+                            Text(selectedEvent == nil ? "Select Event" : "Change Event")
                                 .appBody()
                         }
                         .foregroundColor(.black)
@@ -198,6 +222,26 @@ struct ScannerView: View {
                         .background(Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
+                    .padding(.horizontal, 20)
+
+                    // Scan button (only enabled if event selected)
+                    Button(action: {
+                        isShowingScanner = true
+                    }) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "camera")
+                                .font(.appIcon)
+
+                            Text("Start Scanning")
+                                .appBody()
+                        }
+                        .foregroundColor(selectedEvent != nil ? .black : .gray)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(selectedEvent != nil ? Color.white : Color.white.opacity(0.3))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .disabled(selectedEvent == nil)
                     .padding(.horizontal, 20)
                     
                     // Toggle for manual entry
@@ -274,6 +318,102 @@ struct ScannerView: View {
         .background(Color.black)
     }
     
+    // MARK: - Event Selection Sheet
+    private var eventSelectionSheet: some View {
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    if isLoadingEvents {
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                                .tint(.white)
+                            Text("Loading events...")
+                                .appBody()
+                                .foregroundColor(.gray)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if todaysEvents.isEmpty {
+                        VStack(spacing: 16) {
+                            Image(systemName: "calendar.badge.exclamationmark")
+                                .font(.system(size: 50))
+                                .foregroundColor(.gray)
+
+                            Text("No Events Today")
+                                .appSectionHeader()
+                                .foregroundColor(.white)
+
+                            Text("There are no events scheduled for today")
+                                .appBody()
+                                .foregroundColor(.gray)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 40)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 16) {
+                                ForEach(todaysEvents) { event in
+                                    Button(action: {
+                                        selectedEvent = event
+                                        showingEventSelection = false
+                                    }) {
+                                        HStack(spacing: 16) {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(event.name)
+                                                    .appBody()
+                                                    .foregroundColor(.white)
+                                                    .multilineTextAlignment(.leading)
+
+                                                Text(event.venue)
+                                                    .appSecondary()
+                                                    .foregroundColor(.gray)
+                                                    .multilineTextAlignment(.leading)
+
+                                                if let startTime = event.startTime {
+                                                    Text(formatEventTime(startTime))
+                                                        .appSecondary()
+                                                        .foregroundColor(.gray)
+                                                }
+                                            }
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                                            if selectedEvent?.id == event.id {
+                                                Image(systemName: "checkmark.circle.fill")
+                                                    .font(.appBody)
+                                                    .foregroundColor(.white)
+                                            }
+                                        }
+                                        .padding(16)
+                                        .background(Color.white.opacity(0.1))
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    }
+                                }
+                            }
+                            .padding(20)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Select Event")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.black, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        showingEventSelection = false
+                    }
+                    .appBody()
+                    .foregroundColor(.white)
+                }
+            }
+        }
+    }
+
     // MARK: - Scanner Sheet
     private var scannerSheet: some View {
         NavigationStack {
@@ -415,23 +555,35 @@ struct ScannerView: View {
 
         let finalTicketId: String
 
+        // 🔍 DEBUG: Log raw inputs
+        print("🔍 [SCANNER DEBUG] ===== TICKET PROCESSING START =====")
+        print("🔍 [SCANNER DEBUG] Raw QR Data: \(qrCodeData ?? "nil")")
+        print("🔍 [SCANNER DEBUG] Manual Ticket ID: \(ticketId ?? "nil")")
+
         if let ticketId = ticketId {
             finalTicketId = ticketId
+            print("🔍 [SCANNER DEBUG] Using manual ticket ID: \(finalTicketId)")
         } else if let qrData = qrCodeData, let extracted = extractTicketId(from: qrData) {
             finalTicketId = extracted
+            print("🔍 [SCANNER DEBUG] Extracted ticket ID from QR: \(finalTicketId)")
         } else if let qrData = qrCodeData {
             finalTicketId = qrData
+            print("🔍 [SCANNER DEBUG] Using raw QR data as ticket ID: \(finalTicketId)")
         } else {
+            print("🔍 [SCANNER DEBUG] ❌ No valid ticket data provided")
             errorMessage = "Invalid ticket data"
             showingError = true
             return
         }
 
         guard !finalTicketId.isEmpty else {
+            print("🔍 [SCANNER DEBUG] ❌ Final ticket ID is empty")
             errorMessage = "Invalid ticket ID"
             showingError = true
             return
         }
+
+        print("🔍 [SCANNER DEBUG] Final Ticket ID: \(finalTicketId)")
 
         isProcessing = true
 
@@ -442,12 +594,21 @@ struct ScannerView: View {
             "qrCodeData": qrCodeData as Any
         ]
 
+        print("🔍 [SCANNER DEBUG] Calling cloud function with data: \(data)")
+
         scanFunction.call(data) { result, error in
             DispatchQueue.main.async {
                 self.isProcessing = false
                 self.manualTicketNumber = ""
 
                 if let error = error as NSError? {
+                    // 🔍 DEBUG: Log error details
+                    print("🔍 [SCANNER DEBUG] ❌ ERROR RECEIVED")
+                    print("🔍 [SCANNER DEBUG] Error code: \(error.code)")
+                    print("🔍 [SCANNER DEBUG] Error domain: \(error.domain)")
+                    print("🔍 [SCANNER DEBUG] Error description: \(error.localizedDescription)")
+                    print("🔍 [SCANNER DEBUG] Error userInfo: \(error.userInfo)")
+
                     // Parse error message for better user feedback
                     var errorMsg = error.localizedDescription
 
@@ -460,20 +621,28 @@ struct ScannerView: View {
                         errorMsg = "Invalid ticket format. Please check and try again."
                     }
 
+                    print("🔍 [SCANNER DEBUG] Displaying error to user: \(errorMsg)")
                     self.errorMessage = errorMsg
                     self.showingError = true
                     return
                 }
 
                 guard let data = result?.data as? [String: Any] else {
+                    print("🔍 [SCANNER DEBUG] ❌ Invalid response format from server")
                     self.errorMessage = "Invalid response from server"
                     self.showingError = true
                     return
                 }
 
+                print("🔍 [SCANNER DEBUG] ✅ Response received: \(data)")
+
                 let success = data["success"] as? Bool ?? false
                 let message = data["message"] as? String ?? ""
                 let ticketStatus = data["ticketStatus"] as? String ?? ""
+
+                print("🔍 [SCANNER DEBUG] Success: \(success)")
+                print("🔍 [SCANNER DEBUG] Message: \(message)")
+                print("🔍 [SCANNER DEBUG] Ticket Status: \(ticketStatus)")
 
                 if success {
                     // Ticket successfully scanned
@@ -532,11 +701,60 @@ struct ScannerView: View {
         guard let date = formatter.date(from: isoString) else {
             return isoString
         }
-        
+
         let displayFormatter = DateFormatter()
         displayFormatter.dateStyle = .medium
         displayFormatter.timeStyle = .short
         return displayFormatter.string(from: date)
+    }
+
+    private func formatEventTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter.string(from: date)
+    }
+
+    private func fetchTodaysEvents() {
+        isLoadingEvents = true
+
+        // Get today's date range
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+
+        print("🔍 [SCANNER DEBUG] Fetching events for today...")
+
+        db.collection("events")
+            .whereField("startTime", isGreaterThanOrEqualTo: today)
+            .whereField("startTime", isLessThan: tomorrow)
+            .whereField("status", isEqualTo: "active")
+            .getDocuments { snapshot, error in
+                DispatchQueue.main.async {
+                    self.isLoadingEvents = false
+
+                    if let error = error {
+                        print("🔍 [SCANNER DEBUG] ❌ Error fetching events: \(error.localizedDescription)")
+                        return
+                    }
+
+                    guard let documents = snapshot?.documents else {
+                        print("🔍 [SCANNER DEBUG] No events found for today")
+                        return
+                    }
+
+                    self.todaysEvents = documents.compactMap { doc in
+                        try? doc.data(as: Event.self)
+                    }.sorted { (event1, event2) in
+                        guard let start1 = event1.startTime, let start2 = event2.startTime else {
+                            return false
+                        }
+                        return start1 < start2
+                    }
+
+                    print("🔍 [SCANNER DEBUG] Found \(self.todaysEvents.count) events for today")
+                }
+            }
     }
 }
 
