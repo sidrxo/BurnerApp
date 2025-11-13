@@ -367,7 +367,7 @@ class AppState: ObservableObject {
             // Calculate initial content state with progress
             let now = Date()
             let hasStarted = now >= testTicket.startTime
-            let hasEnded = endTime != nil ? now >= endTime! : false
+            let hasEnded = now >= endTime
             let progress = calculateProgress(
                 startTime: testTicket.startTime,
                 endTime: endTime
