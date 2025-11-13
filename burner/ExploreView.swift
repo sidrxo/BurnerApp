@@ -59,9 +59,13 @@ struct ExploreView: View {
     
     // MARK: - Nearby Events (Filtered by Distance)
     var nearbyEvents: [(event: Event, distance: CLLocationDistance)] {
-        guard let userLocation = userLocationManager.currentCLLocation else {
+        guard let savedLocation = userLocationManager.savedLocation else {
             return []
         }
+        let userLocation = userLocationManager.currentCLLocation ?? CLLocation(
+            latitude: savedLocation.latitude,
+            longitude: savedLocation.longitude
+        )
 
         let now = Date()
 
@@ -415,18 +419,23 @@ struct ExploreView: View {
 
             HStack {
                 Spacer()
-                VStack(spacing: 8) {
+                VStack(spacing: 12) {
                     Image(systemName: "mappin.slash")
                         .font(.system(size: 32))
                         .foregroundColor(.gray)
 
                     Text("No events nearby")
-                        .font(.system(size: 16, weight: .medium))
+                        .appBody()
                         .foregroundColor(.gray)
 
-                    Text("Try expanding your search area")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray.opacity(0.7))
+                    NavigationLink(value: NavigationDestination.filteredEvents(
+                        EventSectionDestination(title: "All Events", events: allEvents)
+                    )) {
+                        Text("Click here to view all events")
+                            .appSecondary()
+                            .foregroundColor(.gray)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.vertical, 32)
                 Spacer()

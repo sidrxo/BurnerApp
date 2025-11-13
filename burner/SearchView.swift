@@ -14,7 +14,7 @@ struct SearchView: View {
     @StateObject private var viewModel: SearchViewModel
 
     @State private var searchText = ""
-    @State private var sortBy: SortOption = .date
+    @State private var sortBy: SortOption? = nil
     @State private var pendingNearbySortRequest = false
     @State private var showingSignInAlert = false
     @State private var showingLocationPermissionAlert = false
@@ -49,25 +49,19 @@ struct SearchView: View {
             viewModel.setLocationManager(userLocationManager)
             // Pass events from eventViewModel to searchViewModel
             viewModel.setSourceEvents(eventViewModel.events)
-            // Only load if we have events, otherwise wait for onChange to trigger
-            if !eventViewModel.events.isEmpty {
-                await viewModel.loadInitialEvents(sortBy: sortBy.rawValue)
-            }
         }
         .onChange(of: eventViewModel.events) { oldValue, newValue in
             // Update search results when events change from real-time listener
             viewModel.setSourceEvents(newValue)
-            // Reload if this is the first time we're getting events
-            if oldValue.isEmpty && !newValue.isEmpty {
-                Task {
-                    await viewModel.loadInitialEvents(sortBy: sortBy.rawValue)
-                }
-            }
         }
         .onChange(of: searchText) { oldValue, newValue in
-            viewModel.updateSearchText(newValue, sortBy: sortBy.rawValue)
+            if let currentSort = sortBy {
+                viewModel.updateSearchText(newValue, sortBy: currentSort.rawValue)
+            }
         }
         .onChange(of: sortBy) { oldValue, newValue in
+            guard let newValue = newValue else { return }
+            
             if newValue == .nearby {
                 // Use shared location manager
                 if userLocationManager.savedLocation != nil {
@@ -97,15 +91,24 @@ struct SearchView: View {
                 }
             }
         }
-        .onChange(of: (viewModel.userLocation.map { "\($0.coordinate.latitude),\($0.coordinate.longitude)" })) { _, newKey in
-            if pendingNearbySortRequest, newKey != nil {
-                pendingNearbySortRequest = false
-                Task { await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText) }
+        .onChange(of: viewModel.userLocation?.coordinate.latitude) { _, _ in
+            handleLocationUpdate()
+        }
+        .onChange(of: viewModel.userLocation?.coordinate.longitude) { _, _ in
+            handleLocationUpdate()
+        }
+        .onChange(of: userLocationManager.savedLocation) { _, newLocation in
+            if sortBy == .nearby, let location = newLocation {
+                viewModel.userLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
+                Task { await viewModel.changeSort(to: "nearby", searchText: searchText) }
             }
         }
-        .onChange(of: userLocationManager.savedLocation?.name) { _, newName in
-            if sortBy == .nearby, newName != nil {
-                Task { await viewModel.changeSort(to: sortBy.rawValue, searchText: searchText) }
+        .onAppear {
+            // Reset to the current sort when returning to view
+            if let currentSort = sortBy {
+                Task {
+                    await viewModel.changeSort(to: currentSort.rawValue, searchText: searchText)
+                }
             }
         }
         .overlay {
@@ -137,7 +140,7 @@ struct SearchView: View {
                         showingLocationPermissionAlert = false
                         pendingNearbySortRequest = false
                         // Revert to previous sort option
-                        sortBy = .date
+                        sortBy = nil
                     },
                     cancelActionTitle: "Not Now",
                     primaryAction: {
@@ -155,8 +158,20 @@ struct SearchView: View {
             viewModel.clearAllResults()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("EmptyStateDisabled"))) { _ in
+            if let currentSort = sortBy {
+                Task {
+                    await viewModel.changeSort(to: currentSort.rawValue, searchText: searchText)
+                }
+            }
+        }
+    }
+    
+    // Helper function to handle location updates
+    private func handleLocationUpdate() {
+        if pendingNearbySortRequest, viewModel.userLocation != nil {
+            pendingNearbySortRequest = false
             Task {
-                await viewModel.loadInitialEvents(sortBy: sortBy.rawValue)
+                await viewModel.changeSort(to: sortBy?.rawValue ?? "date", searchText: searchText)
             }
         }
     }
@@ -275,10 +290,7 @@ struct SearchView: View {
                     if viewModel.isLoading && viewModel.events.isEmpty {
                         loadingView
                     } else if viewModel.events.isEmpty {
-                        EmptyEventsView(
-                            searchText: searchText,
-                            isLoading: viewModel.isLoading
-                        )
+                   
                     } else {
                         ForEach(viewModel.events) { event in
                             NavigationLink(value: NavigationDestination.eventDetail(event)) {
@@ -295,7 +307,9 @@ struct SearchView: View {
                 .padding(.bottom, 100)
             }
             .refreshable {
-                await viewModel.refreshEvents(sortBy: sortBy.rawValue)
+                if let currentSort = sortBy {
+                    await viewModel.refreshEvents(sortBy: currentSort.rawValue, searchText: searchText)
+                }
             }
             .scrollDismissesKeyboard(.interactively)
         }
@@ -321,6 +335,7 @@ class SearchViewModel: ObservableObject {
 
     private var sourceEvents: [Event] = [] // Events from AppState
     private var currentSearchText = ""
+    private var currentSortBy = ""
     private var searchCache: [String: (events: [Event], timestamp: Date)] = [:]
 
     private var searchCancellable: AnyCancellable?
@@ -329,6 +344,7 @@ class SearchViewModel: ObservableObject {
 
     // Cache TTL
     private let cacheTTL: TimeInterval = AppConstants.searchCacheTTL
+    private let maxResultsPerFilter = 10
 
     init(userLocationManager: UserLocationManager? = nil) {
         self.userLocationManager = userLocationManager
@@ -338,10 +354,14 @@ class SearchViewModel: ObservableObject {
     // MARK: - Set Source Events from AppState
     func setSourceEvents(_ events: [Event]) {
         self.sourceEvents = events
-        // Re-filter if there's an active search
-        if !currentSearchText.isEmpty {
+        // Re-filter if there's an active sort
+        if !currentSortBy.isEmpty {
             Task {
-                await performSearch(searchText: currentSearchText, sortBy: "startTime")
+                if !currentSearchText.isEmpty {
+                    await performSearch(searchText: currentSearchText, sortBy: currentSortBy)
+                } else {
+                    await loadFilteredEvents(sortBy: currentSortBy)
+                }
             }
         }
     }
@@ -384,14 +404,25 @@ class SearchViewModel: ObservableObject {
     
     // MARK: - Update Search Text (Debounced)
     func updateSearchText(_ text: String, sortBy: String) {
-        searchSubject.send((text, sortBy))
+        currentSearchText = text
+        currentSortBy = sortBy
+        
+        if text.isEmpty {
+            // If search is cleared, reload filtered results
+            Task {
+                await loadFilteredEvents(sortBy: sortBy)
+            }
+        } else {
+            searchSubject.send((text, sortBy))
+        }
     }
     
-    // MARK: - Load Initial Events (From Cache)
-    func loadInitialEvents(sortBy: String) async {
+    // MARK: - Load Filtered Events (Top 10 by filter type)
+    func loadFilteredEvents(sortBy: String) async {
         guard !isLoading else { return }
 
         isLoading = true
+        currentSortBy = sortBy
 
         // Filter upcoming events from source
         let upcomingEvents = sourceEvents.filter { event in
@@ -399,8 +430,9 @@ class SearchViewModel: ObservableObject {
             return startTime > Date()
         }
 
-        // Sort locally
-        events = sortEvents(upcomingEvents, by: sortBy)
+        // Sort and take top 10
+        let sorted = sortEvents(upcomingEvents, by: sortBy)
+        events = Array(sorted.prefix(maxResultsPerFilter))
 
         isLoading = false
     }
@@ -410,11 +442,12 @@ class SearchViewModel: ObservableObject {
         switch sortBy {
         case "price":
             return events.sorted { $0.price < $1.price }
-        case "date":
+        case "nearby":
+            // This shouldn't be called directly for nearby - use sortEventsByDistance instead
             return events.sorted {
-                ($0.createdAt ?? Date.distantPast) < ($1.createdAt ?? Date.distantPast)
+                ($0.startTime ?? Date.distantPast) < ($1.startTime ?? Date.distantPast)
             }
-        default: // startTime
+        default: // "date" or startTime
             return events.sorted {
                 ($0.startTime ?? Date.distantPast) < ($1.startTime ?? Date.distantPast)
             }
@@ -424,12 +457,7 @@ class SearchViewModel: ObservableObject {
     // MARK: - Perform Search (Local Filtering with Cache TTL)
     private func performSearch(searchText: String, sortBy: String) async {
         currentSearchText = searchText
-
-        // Empty search - load regular events
-        if searchText.isEmpty {
-            await loadInitialEvents(sortBy: sortBy)
-            return
-        }
+        currentSortBy = sortBy
 
         // Check cache first with TTL validation
         let cacheKey = "\(searchText)_\(sortBy)"
@@ -461,8 +489,13 @@ class SearchViewModel: ObservableObject {
             (event.tags?.contains(where: { $0.lowercased().contains(searchLower) }) ?? false)
         }
 
-        // Sort results
-        let sortedResults = sortEvents(searchResults, by: sortBy)
+        // Sort results based on current filter
+        let sortedResults: [Event]
+        if sortBy == "nearby" {
+            sortedResults = await sortSearchResultsByDistance(searchResults)
+        } else {
+            sortedResults = sortEvents(searchResults, by: sortBy)
+        }
 
         events = sortedResults
         searchCache[cacheKey] = (events: sortedResults, timestamp: Date())
@@ -472,10 +505,17 @@ class SearchViewModel: ObservableObject {
     
     // MARK: - Change Sort
     func changeSort(to sortBy: String, searchText: String) async {
+        currentSortBy = sortBy
+        currentSearchText = searchText
+        
         if sortBy == "nearby" {
-            await sortEventsByDistance()
+            if searchText.isEmpty {
+                await sortEventsByDistance()
+            } else {
+                await performSearch(searchText: searchText, sortBy: sortBy)
+            }
         } else if searchText.isEmpty {
-            await loadInitialEvents(sortBy: sortBy)
+            await loadFilteredEvents(sortBy: sortBy)
         } else {
             await performSearch(searchText: searchText, sortBy: sortBy)
         }
@@ -485,6 +525,7 @@ class SearchViewModel: ObservableObject {
     private func sortEventsByDistance() async {
         guard let userLocation = userLocation else {
             errorMessage = "Location not available. Please enable location services."
+            isLoading = false
             return
         }
 
@@ -508,7 +549,7 @@ class SearchViewModel: ObservableObject {
             )
             let distance = userLocation.distance(from: eventLocation)
 
-            // Only include events within 50km
+            // Only include events within max distance
             guard distance <= maxDistance else {
                 return nil
             }
@@ -516,80 +557,70 @@ class SearchViewModel: ObservableObject {
             return (event, distance)
         }
 
-        // Sort by distance (closest first)
+        // Sort by distance (closest first) and take top 10
         let sortedEvents = eventsWithDistance
             .sorted { $0.1 < $1.1 }
             .map { $0.0 }
 
-        events = sortedEvents
+        events = Array(sortedEvents.prefix(maxResultsPerFilter))
 
         isLoading = false
     }
 
+    // MARK: - Sort Search Results by Distance (for when searching with nearby filter)
+    private func sortSearchResultsByDistance(_ searchResults: [Event]) async -> [Event] {
+        guard let userLocation = userLocation else {
+            return searchResults
+        }
+
+        let maxDistance: CLLocationDistance = AppConstants.maxNearbyDistanceMeters
+        let eventsWithDistance = searchResults.compactMap { event -> (Event, CLLocationDistance)? in
+            guard let coordinates = event.coordinates else {
+                return nil
+            }
+            let eventLocation = CLLocation(
+                latitude: coordinates.latitude,
+                longitude: coordinates.longitude
+            )
+            let distance = userLocation.distance(from: eventLocation)
+
+            guard distance <= maxDistance else {
+                return nil
+            }
+
+            return (event, distance)
+        }
+
+        return eventsWithDistance
+            .sorted { $0.1 < $1.1 }
+            .map { $0.0 }
+    }
+
     // MARK: - Refresh Events
-    func refreshEvents(sortBy: String) async {
+    func refreshEvents(sortBy: String, searchText: String) async {
         searchCache.removeAll()
-        await loadInitialEvents(sortBy: sortBy)
+        currentSortBy = sortBy
+        currentSearchText = searchText
+        
+        if searchText.isEmpty {
+            if sortBy == "nearby" {
+                await sortEventsByDistance()
+            } else {
+                await loadFilteredEvents(sortBy: sortBy)
+            }
+        } else {
+            await performSearch(searchText: searchText, sortBy: sortBy)
+        }
     }
 
     // MARK: - Clear All Results (for Debug Empty State)
     func clearAllResults() {
         events = []
         searchCache.removeAll()
+        currentSearchText = ""
+        currentSortBy = ""
         isLoading = false
         isLoadingMore = false
         errorMessage = nil
-    }
-}
-// MARK: - Empty Events View
-struct EmptyEventsView: View {
-    let searchText: String
-    var isLoading: Bool = false
-
-    var body: some View {
-        VStack(spacing: 20) {
-            Spacer()
-                .frame(height: 60)
-
-            if isLoading {
-                ProgressView()
-                    .scaleEffect(1.2)
-                    .tint(.white)
-            } else {
-                Image(systemName: searchText.isEmpty ? "calendar.badge.exclamationmark" : "magnifyingglass")
-                    .font(.system(size: 60))
-                    .foregroundColor(.gray)
-            }
-
-            VStack(spacing: 8) {
-                Text(isLoading ? "Searching..." :
-                     searchText.isEmpty ? "No Upcoming Events" : "No Search Results")
-                    .font(.appBody)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-
-                if !isLoading {
-                    Text(searchText.isEmpty ?
-                         AppConstants.EmptyState.noUpcomingEvents :
-                         AppConstants.EmptyState.noSearchResults)
-                        .font(.appBody)
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                }
-            }
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, minHeight: 300)
-    }
-}
-
-// MARK: - Preview
-struct SearchView_Previews: PreviewProvider {
-    static var previews: some View {
-        SearchView()
-            .environmentObject(AppState().bookmarkManager)
-            .preferredColorScheme(.dark)
     }
 }
