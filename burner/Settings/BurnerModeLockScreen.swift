@@ -28,7 +28,7 @@ struct BurnerModeLockScreen: View {
 
     private var formattedCountdown: String {
         let hours = Int(timeUntilEventEnd) / 3600
-        let minutes = Int(timeUntilEventEnd) / 60 % 60
+        let minutes = (Int(timeUntilEventEnd) % 3600) / 60
         let seconds = Int(timeUntilEventEnd) % 60
         return hours > 0
         ? String(format: "%02d:%02d:%02d", hours, minutes, seconds)
