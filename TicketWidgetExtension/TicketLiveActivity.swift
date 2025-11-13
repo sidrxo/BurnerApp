@@ -16,20 +16,29 @@ struct TicketLiveActivity: Widget {
                     if hasStarted {
                         // DURING EVENT: Time until end + progress bar + event info
                         VStack(spacing: 8) {
-                            // Time countdown (large, italic)
-                            Text(context.state.timeUntilEvent)
-                                .font(.custom("Avenir Next", size: 52).italic().weight(.heavy))
-                                .foregroundColor(.black)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                            
+                            // Time countdown (large, italic) - automatic timer
+                            if let eventEndTime = context.state.eventEndTime, !context.state.hasEventEnded {
+                                Text(eventEndTime, style: .timer)
+                                    .font(.custom("Avenir Next", size: 52).italic().weight(.heavy))
+                                    .foregroundColor(.black)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                                    .monospacedDigit()
+                            } else {
+                                Text("ENDED")
+                                    .font(.custom("Avenir Next", size: 52).italic().weight(.heavy))
+                                    .foregroundColor(.black)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                            }
+
                             // Event name
                             Text(context.attributes.eventName)
                                 .font(.custom("Avenir Next", size: 14).weight(.semibold))
                                 .foregroundColor(.black)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.7)
-                            
+
                             // Venue
                             Text(context.attributes.venue)
                                 .font(.custom("Avenir Next", size: 11).weight(.regular))
@@ -104,14 +113,15 @@ struct TicketLiveActivity: Widget {
                             Image(systemName: "qrcode")
                                 .font(.system(size: 28, weight: .regular))
                                 .foregroundColor(.black)
-                            
-                            // Countdown (large, italic)
-                            Text(context.state.timeUntilEvent)
+
+                            // Countdown (large, italic) - automatic timer
+                            Text(context.state.eventStartTime, style: .timer)
                                 .font(.custom("Avenir Next", size: 52).italic().weight(.heavy))
                                 .foregroundColor(.black)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
-                            
+                                .monospacedDigit()
+
                             // "DOORS OPEN" text
                             Text("DOORS OPEN")
                                 .font(.custom("Avenir Next", size: 11).weight(.medium))
@@ -151,12 +161,32 @@ struct TicketLiveActivity: Widget {
                 
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(spacing: 4) {
-                        Text(context.state.timeUntilEvent)
-                            .font(.custom("Avenir Next", size: 20).italic().weight(.bold))
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                            .minimumScaleFactor(0.8)
-                            .lineLimit(1)
+                        // Show timer based on event state
+                        if context.state.hasEventStarted {
+                            // During event: countdown to end
+                            if let eventEndTime = context.state.eventEndTime, !context.state.hasEventEnded {
+                                Text(eventEndTime, style: .timer)
+                                    .font(.custom("Avenir Next", size: 20).italic().weight(.bold))
+                                    .foregroundColor(.white)
+                                    .multilineTextAlignment(.center)
+                                    .minimumScaleFactor(0.8)
+                                    .lineLimit(1)
+                                    .monospacedDigit()
+                            } else {
+                                Text("ENDED")
+                                    .font(.custom("Avenir Next", size: 16).italic().weight(.bold))
+                                    .foregroundColor(.white)
+                            }
+                        } else {
+                            // Before event: countdown to start
+                            Text(context.state.eventStartTime, style: .timer)
+                                .font(.custom("Avenir Next", size: 20).italic().weight(.bold))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .minimumScaleFactor(0.8)
+                                .lineLimit(1)
+                                .monospacedDigit()
+                        }
 
                         Text("DOORS OPEN")
                             .font(.custom("Avenir Next", size: 9).weight(.medium))
@@ -173,12 +203,27 @@ struct TicketLiveActivity: Widget {
                     Image(systemName: "clock.fill")
                         .font(.system(size: 10))
                         .foregroundColor(.white)
-                    
-                    Text(context.state.timeUntilEvent)
-                        .font(.custom("Avenir Next", size: 12).italic().weight(.semibold))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+
+                    // Show timer based on event state
+                    if context.state.hasEventStarted {
+                        // During event: countdown to end
+                        if let eventEndTime = context.state.eventEndTime, !context.state.hasEventEnded {
+                            Text(eventEndTime, style: .timer)
+                                .font(.custom("Avenir Next", size: 12).italic().weight(.semibold))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .monospacedDigit()
+                        }
+                    } else {
+                        // Before event: countdown to start
+                        Text(context.state.eventStartTime, style: .timer)
+                            .font(.custom("Avenir Next", size: 12).italic().weight(.semibold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                            .monospacedDigit()
+                    }
                 }
             } compactTrailing: {
                 Image(systemName: "qrcode")
@@ -226,20 +271,26 @@ struct TicketLiveActivity_Previews: PreviewProvider {
     )
 
     static let contentStateMoreThanOneHour = TicketActivityAttributes.ContentState(
-        timeUntilEvent: "3h 15m",
+        eventStartTime: Calendar.current.date(byAdding: .hour, value: 3, to: Date()) ?? Date(),
+        eventEndTime: Calendar.current.date(byAdding: .hour, value: 8, to: Date()) ?? Date(),
         hasEventStarted: false,
+        hasEventEnded: false,
         progress: 0.0
     )
-    
+
     static let contentStateLessThanOneHour = TicketActivityAttributes.ContentState(
-        timeUntilEvent: "45m",
+        eventStartTime: Calendar.current.date(byAdding: .minute, value: 45, to: Date()) ?? Date(),
+        eventEndTime: Calendar.current.date(byAdding: .hour, value: 5, to: Date()) ?? Date(),
         hasEventStarted: false,
+        hasEventEnded: false,
         progress: 0.0
     )
 
     static let contentStateDuringEvent = TicketActivityAttributes.ContentState(
-        timeUntilEvent: "3h 45m",
+        eventStartTime: Calendar.current.date(byAdding: .hour, value: -1, to: Date()) ?? Date(),
+        eventEndTime: Calendar.current.date(byAdding: .hour, value: 3, to: Date()) ?? Date(),
         hasEventStarted: true,
+        hasEventEnded: false,
         progress: 0.35
     )
 
