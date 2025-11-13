@@ -193,11 +193,11 @@ struct AccountDetailsView: View {
             if let data = snapshot?.data() {
                 self.displayName = data["displayName"] as? String ?? ""
                 self.email = data["email"] as? String ?? ""
-                self.userRole = data["role"] as? String ?? "user"
+                // Don't read role from Firestore - only use custom claims
             }
         }
 
-        // Also fetch custom claims from Firebase Auth
+        // Fetch role from custom claims (the authoritative source)
         Task {
             do {
                 let result = try await user.getIDTokenResult(forcingRefresh: false)
@@ -205,9 +205,18 @@ struct AccountDetailsView: View {
                     await MainActor.run {
                         self.userRole = role
                     }
+                } else {
+                    // No custom claim set, default to "user"
+                    await MainActor.run {
+                        self.userRole = "user"
+                    }
                 }
             } catch {
                 print("Error fetching custom claims: \(error)")
+                // On error, default to "user"
+                await MainActor.run {
+                    self.userRole = "user"
+                }
             }
         }
     }
