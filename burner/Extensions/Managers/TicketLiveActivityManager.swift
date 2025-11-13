@@ -13,26 +13,30 @@ class TicketLiveActivityManager {
             endTime: ticketWithEvent.event.endTime
         )
 
-        // Create content state with progress
-        let (timeString, hasStarted) = calculateTimeUntilEvent(
-            startTime: ticketWithEvent.event.startTime ?? Date(),
-            endTime: ticketWithEvent.event.endTime
-        )
-        let progress = calculateProgress(
-            startTime: ticketWithEvent.event.startTime ?? Date(),
-            endTime: ticketWithEvent.event.endTime
-        )
+        // Create content state with dates and progress
+        let startTime = ticketWithEvent.event.startTime ?? Date()
+        let endTime = ticketWithEvent.event.endTime
+        let now = Date()
+        let hasStarted = now >= startTime
+        let hasEnded = endTime != nil ? now >= endTime! : false
+        let progress = calculateProgress(startTime: startTime, endTime: endTime)
+
         let contentState = TicketActivityAttributes.ContentState(
-            timeUntilEvent: timeString,
+            eventStartTime: startTime,
+            eventEndTime: endTime,
             hasEventStarted: hasStarted,
+            hasEventEnded: hasEnded,
             progress: progress
         )
 
         do {
+            // Set stale date for automatic updates
+            let staleDate = calculateNextStaleDate(startTime: startTime, endTime: endTime)
+
             if #available(iOS 16.2, *) {
                 _ = try Activity<TicketActivityAttributes>.request(
                     attributes: attributes,
-                    content: .init(state: contentState, staleDate: nil),
+                    content: .init(state: contentState, staleDate: staleDate),
                     pushType: nil
                 )
             } else {
@@ -51,23 +55,27 @@ class TicketLiveActivityManager {
         let activities = Activity<TicketActivityAttributes>.activities
 
         for activity in activities {
-            let (timeString, hasStarted) = calculateTimeUntilEvent(
-                startTime: activity.attributes.startTime,
-                endTime: activity.attributes.endTime
-            )
-            let progress = calculateProgress(
-                startTime: activity.attributes.startTime,
-                endTime: activity.attributes.endTime
-            )
+            let startTime = activity.attributes.startTime
+            let endTime = activity.attributes.endTime
+            let now = Date()
+            let hasStarted = now >= startTime
+            let hasEnded = endTime != nil ? now >= endTime! : false
+            let progress = calculateProgress(startTime: startTime, endTime: endTime)
+
             let newContentState = TicketActivityAttributes.ContentState(
-                timeUntilEvent: timeString,
+                eventStartTime: startTime,
+                eventEndTime: endTime,
                 hasEventStarted: hasStarted,
+                hasEventEnded: hasEnded,
                 progress: progress
             )
 
             Task {
+                // Set stale date for next automatic update
+                let staleDate = calculateNextStaleDate(startTime: startTime, endTime: endTime)
+
                 if #available(iOS 16.2, *) {
-                    await activity.update(.init(state: newContentState, staleDate: nil))
+                    await activity.update(.init(state: newContentState, staleDate: staleDate))
                 } else {
                     await activity.update(using: newContentState)
                 }
@@ -116,50 +124,27 @@ class TicketLiveActivityManager {
         }
     }
     
-    private static func calculateTimeUntilEvent(startTime: Date, endTime: Date?) -> (String, Bool) {
+    // Calculate when the activity should be marked as stale for iOS to update it
+    private static func calculateNextStaleDate(startTime: Date, endTime: Date?) -> Date? {
         let now = Date()
-        let calendar = Calendar.current
+        let oneHourBeforeStart = Calendar.current.date(byAdding: .hour, value: -1, to: startTime) ?? startTime
 
-        // Check if event has started
-        if startTime <= now {
-            // Event has started - show countdown to end
-            if let endTime = endTime, endTime > now {
-                let components = calendar.dateComponents([.hour, .minute], from: now, to: endTime)
-                if let hours = components.hour, let minutes = components.minute {
-                    if hours > 0 {
-                        return ("\(hours)h \(minutes)m", true)
-                    } else {
-                        return ("\(minutes)m", true)
-                    }
-                }
-            }
-            // Event has ended or no end time available
-            return ("Event Ended", true)
+        // If we're more than 1 hour away, mark stale when we hit the 1-hour mark
+        if now < oneHourBeforeStart {
+            return oneHourBeforeStart
         }
 
-        // Event hasn't started yet - show countdown to start
-        if calendar.isDate(startTime, inSameDayAs: now) {
-            let components = calendar.dateComponents([.hour, .minute], from: now, to: startTime)
-            if let hours = components.hour, let minutes = components.minute {
-                if hours > 0 {
-                    return ("\(hours)h \(minutes)m", false)
-                } else {
-                    return ("\(minutes)m", false)
-                }
-            }
+        // If we're less than 1 hour away but event hasn't started, mark stale at event start
+        if now < startTime {
+            return startTime
         }
 
-        let components = calendar.dateComponents([.day], from: now, to: startTime)
-        if let days = components.day {
-            if days == 0 {
-                return ("Today", false)
-            } else if days == 1 {
-                return ("Tomorrow", false)
-            } else {
-                return ("\(days) days", false)
-            }
+        // If event has started and we have an end time, mark stale at end time
+        if let endTime = endTime, now < endTime {
+            return endTime
         }
 
-        return ("Soon", false)
+        // Event has ended or no end time - no more updates needed
+        return nil
     }
 }
