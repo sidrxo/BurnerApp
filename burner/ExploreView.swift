@@ -300,7 +300,7 @@ struct ExploreView: View {
         }
 
         // 5) Nearby (if available)
-        if userLocationManager.savedLocation != nil && !nearbyEvents.isEmpty {
+        if !nearbyEvents.isEmpty {
             nearbySection
         }
 
