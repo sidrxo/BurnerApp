@@ -183,6 +183,9 @@ struct NavigationDestinationBuilder: View {
             case .ticketDetail(let ticket):
                 TicketDetailDestination(ticket: ticket)
 
+            case .ticketById(let ticketId):
+                TicketDetailByIdDestination(ticketId: ticketId)
+
             case .ticketPurchase(let event):
                 TicketPurchaseDestination(event: event)
 
@@ -263,6 +266,59 @@ struct TicketDetailDestination: View {
                         description: nil
                     )
                 ))
+            }
+        }
+    }
+}
+
+// MARK: - Ticket Detail By ID Destination Wrapper
+
+struct TicketDetailByIdDestination: View {
+    let ticketId: String
+
+    @EnvironmentObject var ticketsViewModel: TicketsViewModel
+    @EnvironmentObject var eventViewModel: EventViewModel
+
+    var body: some View {
+        Group {
+            if let ticket = ticketsViewModel.tickets.first(where: { $0.id == ticketId }) {
+                if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
+                    TicketDetailView(ticketWithEvent: TicketWithEventData(ticket: ticket, event: event))
+                } else {
+                    // Create placeholder event if event data is missing
+                    TicketDetailView(ticketWithEvent: TicketWithEventData(
+                        ticket: ticket,
+                        event: Event(
+                            id: ticket.eventId,
+                            name: ticket.eventName,
+                            venue: ticket.venue,
+                            startTime: ticket.startTime,
+                            price: ticket.totalPrice,
+                            maxTickets: 100,
+                            ticketsSold: 0,
+                            imageUrl: "",
+                            isFeatured: false,
+                            description: nil
+                        )
+                    ))
+                }
+            } else {
+                // Ticket not found
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        Image(systemName: "ticket.fill")
+                            .font(.system(size: 48))
+                            .foregroundColor(.gray)
+                        Text("Ticket Not Found")
+                            .foregroundColor(.white)
+                            .font(.headline)
+                        Text("The ticket you're looking for doesn't exist or has been removed.")
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
+                }
             }
         }
     }

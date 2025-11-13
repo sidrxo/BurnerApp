@@ -14,4 +14,5 @@ struct TicketActivityAttributes: ActivityAttributes {
     var venue: String
     var startTime: Date
     var endTime: Date?
+    var ticketId: String
 }

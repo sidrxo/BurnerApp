@@ -15,6 +15,11 @@ struct BurnerModeLockScreen: View {
     // Terminal state
     @State private var showTerminal: Bool = true
     @State private var terminalOpacity: Double = 0
+
+    // Check if terminal has already been shown for this burner mode session
+    private var hasShownTerminalThisSession: Bool {
+        UserDefaults.standard.bool(forKey: "burnerModeTerminalShown")
+    }
     
     private var burnerManager: BurnerModeManager { appState.burnerManager }
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -70,10 +75,17 @@ struct BurnerModeLockScreen: View {
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
             setupEventEndTime()
-            
-            // Fade in terminal immediately
-            withAnimation(.easeIn(duration: 0.8)) {
-                terminalOpacity = 1.0
+
+            // Check if terminal has already been shown this session
+            if hasShownTerminalThisSession {
+                // Skip terminal and go straight to lock screen
+                showTerminal = false
+                lockScreenOpacity = 1.0
+            } else {
+                // Fade in terminal immediately
+                withAnimation(.easeIn(duration: 0.8)) {
+                    terminalOpacity = 1.0
+                }
             }
         }
         .onDisappear {
@@ -221,6 +233,9 @@ struct BurnerModeLockScreen: View {
 
     // MARK: - Terminal Completion / Transitions
     private func handleTerminalComplete() {
+        // Mark terminal as shown for this session
+        UserDefaults.standard.set(true, forKey: "burnerModeTerminalShown")
+
         // 1. Fade terminal to black
         withAnimation(.easeInOut(duration: 0.6)) {
             terminalOpacity = 0.0
@@ -261,6 +276,7 @@ struct BurnerModeLockScreen: View {
 
     private func exitBurnerMode() {
         UserDefaults.standard.removeObject(forKey: "burnerModeEventEndTime")
+        UserDefaults.standard.removeObject(forKey: "burnerModeTerminalShown")
         withAnimation(.easeOut(duration: 0.3)) { lockScreenOpacity = 0 }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             burnerManager.disable()

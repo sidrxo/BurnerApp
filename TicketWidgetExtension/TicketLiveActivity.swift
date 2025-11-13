@@ -130,6 +130,7 @@ struct TicketLiveActivity: Widget {
             .background(Color.white)
             .activityBackgroundTint(Color.white)
             .activitySystemActionForegroundColor(Color.black)
+            .widgetURL(URL(string: "burner://ticket/\(context.attributes.ticketId)"))
 
         } dynamicIsland: { context in
             // DYNAMIC ISLAND: clock icon + time only
@@ -205,14 +206,16 @@ struct TicketLiveActivity_Previews: PreviewProvider {
         eventName: "Garage Classics",
         venue: "Ministry of Sound",
         startTime: Calendar.current.date(byAdding: .hour, value: 3, to: Date()) ?? Date(),
-        endTime: Calendar.current.date(byAdding: .hour, value: 8, to: Date()) ?? Date()
+        endTime: Calendar.current.date(byAdding: .hour, value: 8, to: Date()) ?? Date(),
+        ticketId: "preview-ticket-id"
     )
-    
+
     static let attributesDuringEvent = TicketActivityAttributes(
         eventName: "Garage Classics",
         venue: "Ministry of Sound",
         startTime: Calendar.current.date(byAdding: .hour, value: -1, to: Date()) ?? Date(),
-        endTime: Calendar.current.date(byAdding: .hour, value: 3, to: Date()) ?? Date()
+        endTime: Calendar.current.date(byAdding: .hour, value: 3, to: Date()) ?? Date(),
+        ticketId: "preview-ticket-id"
     )
 
     static let contentStateMoreThanOneHour = TicketActivityAttributes.ContentState(

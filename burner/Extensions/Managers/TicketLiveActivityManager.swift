@@ -10,7 +10,8 @@ class TicketLiveActivityManager {
             eventName: ticketWithEvent.event.name,
             venue: ticketWithEvent.event.venue,
             startTime: ticketWithEvent.event.startTime ?? Date(),
-            endTime: ticketWithEvent.event.endTime
+            endTime: ticketWithEvent.event.endTime,
+            ticketId: ticketWithEvent.ticket.id ?? ""
         )
 
         // Create content state with dates (no need for progress - ProgressView handles it)
