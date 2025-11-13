@@ -4,6 +4,88 @@ import Combine
 import FirebaseFirestore
 import CoreLocation
 
+// MARK: - Event Handlers ViewModifier
+struct SearchEventHandlers: ViewModifier {
+    @ObservedObject var eventViewModel: EventViewModel
+    @Binding var searchText: String
+    @Binding var sortBy: SearchView.SortOption?
+    @ObservedObject var viewModel: SearchViewModel
+    @ObservedObject var userLocationManager: UserLocationManager
+    let locationAuthStatus: CLAuthorizationStatus
+    @Binding var showingLocationPermissionAlert: Bool
+    @Binding var pendingNearbySortRequest: Bool
+    let handleLocationUpdate: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: eventViewModel.events) { oldValue, newValue in
+                viewModel.setSourceEvents(newValue)
+            }
+            .onChange(of: searchText) { oldValue, newValue in
+                if let currentSort = sortBy {
+                    viewModel.updateSearchText(newValue, sortBy: currentSort.rawValue)
+                }
+            }
+            .onChange(of: sortBy) { oldValue, newValue in
+                handleSortChange(oldValue: oldValue, newValue: newValue)
+            }
+            .onChange(of: viewModel.userLocation?.coordinate.latitude) { _, _ in
+                handleLocationUpdate()
+            }
+            .onChange(of: viewModel.userLocation?.coordinate.longitude) { _, _ in
+                handleLocationUpdate()
+            }
+            .onChange(of: userLocationManager.savedLocation) { _, newLocation in
+                handleSavedLocationChange(newLocation: newLocation)
+            }
+            .onAppear {
+                handleOnAppear()
+            }
+    }
+
+    private func handleSortChange(oldValue: SearchView.SortOption?, newValue: SearchView.SortOption?) {
+        guard let newValue = newValue else { return }
+
+        if newValue == .nearby {
+            if userLocationManager.savedLocation != nil {
+                Task {
+                    await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
+                }
+            } else {
+                let authStatus = locationAuthStatus
+                if authStatus == .notDetermined {
+                    showingLocationPermissionAlert = true
+                    pendingNearbySortRequest = true
+                } else if authStatus == .authorizedWhenInUse || authStatus == .authorizedAlways {
+                    viewModel.requestLocationPermission()
+                    pendingNearbySortRequest = true
+                } else {
+                    sortBy = oldValue
+                }
+            }
+        } else {
+            Task {
+                await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
+            }
+        }
+    }
+
+    private func handleSavedLocationChange(newLocation: SavedLocation?) {
+        if sortBy == .nearby, let location = newLocation {
+            viewModel.userLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
+            Task { await viewModel.changeSort(to: "nearby", searchText: searchText) }
+        }
+    }
+
+    private func handleOnAppear() {
+        if let currentSort = sortBy {
+            Task {
+                await viewModel.changeSort(to: currentSort.rawValue, searchText: searchText)
+            }
+        }
+    }
+}
+
 // MARK: - Optimized SearchView
 struct SearchView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
@@ -36,132 +118,104 @@ struct SearchView: View {
     }
 
     var body: some View {
+        mainContent
+            .navigationBarHidden(true)
+            .background(Color.black)
+            .task {
+                setupInitialState()
+            }
+            .modifier(SearchEventHandlers(
+                eventViewModel: eventViewModel,
+                searchText: $searchText,
+                sortBy: $sortBy,
+                viewModel: viewModel,
+                userLocationManager: userLocationManager,
+                locationAuthStatus: locationAuthStatus,
+                showingLocationPermissionAlert: $showingLocationPermissionAlert,
+                pendingNearbySortRequest: $pendingNearbySortRequest,
+                handleLocationUpdate: handleLocationUpdate
+            ))
+            .overlay {
+                alertsOverlay
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("EmptyStateEnabled"))) { _ in
+                viewModel.clearAllResults()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("EmptyStateDisabled"))) { _ in
+                handleEmptyStateDisabled()
+            }
+    }
+
+    private var mainContent: some View {
         VStack(spacing: 0) {
             HeaderSection(title: "Search")
             searchSection
             filtersSection
             contentSection
         }
-        .navigationBarHidden(true)
-        .background(Color.black)
-        .task {
-            // Set location manager reference
-            viewModel.setLocationManager(userLocationManager)
-            // Pass events from eventViewModel to searchViewModel
-            viewModel.setSourceEvents(eventViewModel.events)
-        }
-        .onChange(of: eventViewModel.events) { oldValue, newValue in
-            // Update search results when events change from real-time listener
-            viewModel.setSourceEvents(newValue)
-        }
-        .onChange(of: searchText) { oldValue, newValue in
-            if let currentSort = sortBy {
-                viewModel.updateSearchText(newValue, sortBy: currentSort.rawValue)
-            }
-        }
-        .onChange(of: sortBy) { oldValue, newValue in
-            guard let newValue = newValue else { return }
-            
-            if newValue == .nearby {
-                // Use shared location manager
-                if userLocationManager.savedLocation != nil {
-                    // Already have location, sort immediately
-                    Task {
-                        await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
-                    }
-                } else {
-                    // Check if we need to show pre-permission alert
-                    let authStatus = locationAuthStatus
-                    if authStatus == .notDetermined {
-                        // Show pre-permission alert
-                        showingLocationPermissionAlert = true
-                        pendingNearbySortRequest = true
-                    } else if authStatus == .authorizedWhenInUse || authStatus == .authorizedAlways {
-                        // Already authorized, just request location
-                        viewModel.requestLocationPermission()
-                        pendingNearbySortRequest = true
-                    } else {
-                        // Permission denied, revert sort option
-                        sortBy = oldValue
-                    }
-                }
-            } else {
-                Task {
-                    await viewModel.changeSort(to: newValue.rawValue, searchText: searchText)
-                }
-            }
-        }
-        .onChange(of: viewModel.userLocation?.coordinate.latitude) { _, _ in
-            handleLocationUpdate()
-        }
-        .onChange(of: viewModel.userLocation?.coordinate.longitude) { _, _ in
-            handleLocationUpdate()
-        }
-        .onChange(of: userLocationManager.savedLocation) { _, newLocation in
-            if sortBy == .nearby, let location = newLocation {
-                viewModel.userLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
-                Task { await viewModel.changeSort(to: "nearby", searchText: searchText) }
-            }
-        }
-        .onAppear {
-            // Reset to the current sort when returning to view
-            if let currentSort = sortBy {
-                Task {
-                    await viewModel.changeSort(to: currentSort.rawValue, searchText: searchText)
-                }
-            }
-        }
-        .overlay {
-            if showingSignInAlert {
-                CustomAlertView(
-                    title: "Sign In Required",
-                    description: "You need to be signed in to bookmark events.",
-                    cancelAction: {
-                            showingSignInAlert = false
-                    },
-                    cancelActionTitle: "Cancel",
-                    primaryAction: {
+    }
 
-                            showingSignInAlert = false
-                        appState.isSignInSheetPresented = true
-                    },
-                    primaryActionTitle: "Sign In",
-                    customContent: EmptyView()
-                )
-                .transition(.opacity)
-                .zIndex(999)
+    private var alertsOverlay: some View {
+        Group {
+            if showingSignInAlert {
+                signInAlertView
             }
 
             if showingLocationPermissionAlert {
-                CustomAlertView(
-                    title: "Find Events Near You",
-                    description: "We'll show you events within 30 miles of your location. Your location is only used for finding nearby events and is never shared.",
-                    cancelAction: {
-                        showingLocationPermissionAlert = false
-                        pendingNearbySortRequest = false
-                        // Revert to previous sort option
-                        sortBy = nil
-                    },
-                    cancelActionTitle: "Not Now",
-                    primaryAction: {
-                        showingLocationPermissionAlert = false
-                        viewModel.requestLocationPermission()
-                    },
-                    primaryActionTitle: "Allow",
-                    customContent: EmptyView()
-                )
-                .transition(.opacity)
-                .zIndex(999)
+                locationPermissionAlertView
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("EmptyStateEnabled"))) { _ in
-            viewModel.clearAllResults()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("EmptyStateDisabled"))) { _ in
-            if let currentSort = sortBy {
-                Task {
-                    await viewModel.changeSort(to: currentSort.rawValue, searchText: searchText)
-                }
+    }
+
+    private var signInAlertView: some View {
+        CustomAlertView(
+            title: "Sign In Required",
+            description: "You need to be signed in to bookmark events.",
+            cancelAction: {
+                showingSignInAlert = false
+            },
+            cancelActionTitle: "Cancel",
+            primaryAction: {
+                showingSignInAlert = false
+                appState.isSignInSheetPresented = true
+            },
+            primaryActionTitle: "Sign In",
+            customContent: EmptyView()
+        )
+        .transition(.opacity)
+        .zIndex(999)
+    }
+
+    private var locationPermissionAlertView: some View {
+        CustomAlertView(
+            title: "Find Events Near You",
+            description: "We'll show you events within 30 miles of your location. Your location is only used for finding nearby events and is never shared.",
+            cancelAction: {
+                showingLocationPermissionAlert = false
+                pendingNearbySortRequest = false
+                sortBy = nil
+            },
+            cancelActionTitle: "Not Now",
+            primaryAction: {
+                showingLocationPermissionAlert = false
+                viewModel.requestLocationPermission()
+            },
+            primaryActionTitle: "Allow",
+            customContent: EmptyView()
+        )
+        .transition(.opacity)
+        .zIndex(999)
+    }
+
+    private func setupInitialState() {
+        viewModel.setLocationManager(userLocationManager)
+        viewModel.setSourceEvents(eventViewModel.events)
+    }
+
+    private func handleEmptyStateDisabled() {
+        if let currentSort = sortBy {
+            Task {
+                await viewModel.changeSort(to: currentSort.rawValue, searchText: searchText)
             }
         }
     }
