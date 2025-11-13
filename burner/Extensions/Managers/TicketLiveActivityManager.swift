@@ -60,6 +60,19 @@ class TicketLiveActivityManager {
             let now = Date()
             let hasStarted = now >= startTime
             let hasEnded = endTime != nil ? now >= endTime! : false
+
+            // End the activity if the event has ended
+            if hasEnded {
+                Task {
+                    if #available(iOS 16.2, *) {
+                        await activity.end(nil, dismissalPolicy: .immediate)
+                    } else {
+                        await activity.end(dismissalPolicy: .immediate)
+                    }
+                }
+                continue
+            }
+
             let progress = calculateProgress(startTime: startTime, endTime: endTime)
 
             let newContentState = TicketActivityAttributes.ContentState(
