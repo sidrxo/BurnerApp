@@ -7,9 +7,10 @@ import AVFoundation
 
 struct ScannerView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var ticketsViewModel: TicketsViewModel
+    @EnvironmentObject var eventViewModel: EventViewModel
     
     @State private var scannedValue: String = ""
-    @State private var isShowingScanner = false
     @State private var showingError = false
     @State private var errorMessage = ""
     @State private var showingSuccess = false
@@ -23,13 +24,15 @@ struct ScannerView: View {
     @State private var isScannerActive = false
     @State private var isCheckingScanner = true
     @State private var selectedEvent: Event?
-    @State private var showingEventSelection = false
     @State private var todaysEvents: [Event] = []
     @State private var isLoadingEvents = false
 
     @Environment(\.presentationMode) var presentationMode
     private let db = Firestore.firestore()
     private let functions = Functions.functions(region: "europe-west2")
+    
+    // UserDefaults key for persistent event selection
+    private let selectedEventIdKey = "selectedScannerEventId"
     
     struct AlreadyUsedTicket {
         let ticketNumber: String
@@ -48,8 +51,10 @@ struct ScannerView: View {
                 loadingView
             } else if !canScanTickets {
                 accessDeniedView
+            } else if selectedEvent == nil {
+                eventSelectionView
             } else {
-                mainScannerView
+                scannerViewFinder
             }
 
             // Custom Alerts
@@ -98,18 +103,91 @@ struct ScannerView: View {
                 .transition(.opacity)
                 .zIndex(1001)
             }
+            
+            // Manual Entry Sheet
+            if showManualEntry {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        showManualEntry = false
+                        manualTicketNumber = ""
+                    }
+                
+                VStack(spacing: 20) {
+                    Text("Enter Ticket Number")
+                        .appSectionHeader()
+                        .foregroundColor(.white)
+                    
+                    TextField("Ticket Number", text: $manualTicketNumber)
+                        .padding(12)
+                        .background(Color.black)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                        .padding(.horizontal)
+                    
+                    HStack(spacing: 12) {
+                        Button("CANCEL") {
+                            showManualEntry = false
+                            manualTicketNumber = ""
+                        }
+                        .appBody()
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.gray.opacity(0.3))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        
+                        Button("SUBMIT") {
+                            if !manualTicketNumber.isEmpty {
+                                showManualEntry = false
+                                validateAndScanTicket(ticketId: manualTicketNumber)
+                            }
+                        }
+                        .appBody()
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .disabled(manualTicketNumber.isEmpty)
+                        .opacity(manualTicketNumber.isEmpty ? 0.5 : 1.0)
+                    }
+                    .padding(.horizontal)
+                }
+                .padding(24)
+                .background(Color(white: 0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .padding(.horizontal, 40)
+                .transition(.scale.combined(with: .opacity))
+            }
         }
         .onAppear {
             fetchUserRoleFromClaims()
             checkScannerAccessFromClaims()
             fetchTodaysEvents()
+            loadPersistedEventSelection()
         }
-        .sheet(isPresented: $showingEventSelection) {
-            eventSelectionSheet
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showManualEntry)
+    }
+    
+    // MARK: - Loading View
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.2)
+                .tint(.white)
+            Text("Loading...")
+                .appBody()
+                .foregroundColor(.gray)
         }
-        .sheet(isPresented: $isShowingScanner) {
-            scannerSheet
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
     }
     
     // MARK: - Access Denied View
@@ -143,7 +221,7 @@ struct ScannerView: View {
                     .foregroundColor(.gray.opacity(0.6))
             }
 
-            Button("Go Back") {
+            Button("GO BACK") {
                 presentationMode.wrappedValue.dismiss()
             }
             .appBody()
@@ -159,406 +237,275 @@ struct ScannerView: View {
         .background(Color.black)
     }
     
-    // MARK: - Main Scanner View
-    private var mainScannerView: some View {
+    // MARK: - Event Selection View
+    private var eventSelectionView: some View {
         VStack(spacing: 0) {
-            SettingsHeaderSection(title: "Scanner")
+            SettingsHeaderSection(title: "Select Event")
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
             
-            ScrollView {
-                VStack(spacing: 32) {
-                    // Scanner icon and description
-                    VStack(spacing: 16) {
-                        Image(systemName: "qrcode.viewfinder")
-                            .font(.system(size: 60))
-                            .foregroundColor(.white)
-                            .padding(.top, 40)
-
-                        VStack(spacing: 8) {
-                            Text("QR Code Scanner")
-                                .appSectionHeader()
-                                .foregroundColor(.white)
-
-                            if let selectedEvent = selectedEvent {
-                                VStack(spacing: 4) {
-                                    Text("Scanning for:")
-                                        .appSecondary()
-                                        .foregroundColor(.gray)
-
-                                    Text(selectedEvent.name)
-                                        .appBody()
-                                        .foregroundColor(.white)
-
-                                    Text(selectedEvent.venue)
-                                        .appSecondary()
-                                        .foregroundColor(.gray)
-                                }
-                            } else {
-                                Text("Select an event to scan tickets")
-                                    .appBody()
-                                    .foregroundColor(.gray)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 40)
-                            }
-                        }
-                    }
-                    .padding(.top, 20)
-
-                    // Event selection button
-                    Button(action: {
-                        showingEventSelection = true
-                    }) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "calendar")
-                                .font(.appIcon)
-
-                            Text(selectedEvent == nil ? "Select Event" : "Change Event")
-                                .appBody()
-                        }
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    .padding(.horizontal, 20)
-
-                    // Scan button (only enabled if event selected)
-                    Button(action: {
-                        isShowingScanner = true
-                    }) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "camera")
-                                .font(.appIcon)
-
-                            Text("Start Scanning")
-                                .appBody()
-                        }
-                        .foregroundColor(selectedEvent != nil ? .black : .gray)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(selectedEvent != nil ? Color.white : Color.white.opacity(0.3))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    .disabled(selectedEvent == nil)
-                    .padding(.horizontal, 20)
-                    
-                    // Toggle for manual entry
-                    Button(action: {
-                        withAnimation {
-                            showManualEntry.toggle()
-                        }
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: showManualEntry ? "chevron.up" : "chevron.down")
-                                .font(.appCaption)
-                            
-                            Text(showManualEntry ? "Hide Manual Entry" : "Manual Entry")
-                                .appBody()
-                        }
+            if isLoadingEvents {
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .scaleEffect(1.2)
+                        .tint(.white)
+                    Text("Loading events...")
+                        .appBody()
                         .foregroundColor(.gray)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                    }
-                    .padding(.horizontal, 20)
-                    
-                    // Manual entry section - collapsible
-                    if showManualEntry {
-                        VStack(spacing: 16) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Manual Entry")
-                                    .appBody()
-                                    .foregroundColor(.white)
-                                
-                                Text("Enter ticket number manually")
-                                    .appSecondary()
-                                    .foregroundColor(.gray)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            
-                            TextField("Ticket Number", text: $manualTicketNumber)
-                                .appBody()
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 14)
-                                .background(Color.gray.opacity(0.1))
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .autocorrectionDisabled()
-                                .textInputAutocapitalization(.characters)
-                            
-                            Button(action: {
-                                processManualTicket()
-                            }) {
-                                HStack(spacing: 8) {
-                                    if isProcessing {
-                                        ProgressView()
-                                            .scaleEffect(0.8)
-                                            .tint(.black)
-                                    }
-                                    
-                                    Text(isProcessing ? "Processing..." : "Verify Ticket")
-                                        .appBody()
-                                }
-                                .foregroundColor(canProcessTicket ? .black : .gray)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(canProcessTicket ? Color.white : Color.gray.opacity(0.3))
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                            }
-                            .disabled(!canProcessTicket)
-                        }
-                        .padding(.horizontal, 20)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if todaysEvents.isEmpty {
+                VStack(spacing: 20) {
+                    Image(systemName: "calendar.badge.exclamationmark")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray)
+                        .padding(.top, 60)
+
+                    VStack(spacing: 8) {
+                        Text("No Events Today")
+                            .appSectionHeader()
+                            .foregroundColor(.white)
+
+                        Text("There are no events scheduled for today")
+                            .appBody()
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
                     }
                 }
-                .padding(.bottom, 100)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(todaysEvents, id: \.id) { event in
+                            Button(action: {
+                                selectEvent(event)
+                            }) {
+                                EventRow(
+                                    event: event,
+                                    bookmarkManager: nil,
+                                    configuration: .eventList
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(.top, 12)
+                    .padding(.bottom, 100)
+                }
             }
         }
         .background(Color.black)
     }
     
-    // MARK: - Event Selection Sheet
-    private var eventSelectionSheet: some View {
-        NavigationStack {
-            ZStack {
-                Color.black.ignoresSafeArea()
-
-                VStack(spacing: 0) {
-                    if isLoadingEvents {
-                        VStack(spacing: 16) {
-                            ProgressView()
-                                .scaleEffect(1.2)
-                                .tint(.white)
-                            Text("Loading events...")
-                                .appBody()
-                                .foregroundColor(.gray)
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else if todaysEvents.isEmpty {
-                        VStack(spacing: 16) {
-                            Image(systemName: "calendar.badge.exclamationmark")
-                                .font(.system(size: 50))
-                                .foregroundColor(.gray)
-
-                            Text("No Events Today")
-                                .appSectionHeader()
-                                .foregroundColor(.white)
-
-                            Text("There are no events scheduled for today")
-                                .appBody()
-                                .foregroundColor(.gray)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 40)
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else {
-                        ScrollView {
-                            VStack(spacing: 16) {
-                                ForEach(todaysEvents) { event in
-                                    Button(action: {
-                                        selectedEvent = event
-                                        showingEventSelection = false
-                                    }) {
-                                        HStack(spacing: 16) {
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(event.name)
-                                                    .appBody()
-                                                    .foregroundColor(.white)
-                                                    .multilineTextAlignment(.leading)
-
-                                                Text(event.venue)
-                                                    .appSecondary()
-                                                    .foregroundColor(.gray)
-                                                    .multilineTextAlignment(.leading)
-
-                                                if let startTime = event.startTime {
-                                                    Text(formatEventTime(startTime))
-                                                        .appSecondary()
-                                                        .foregroundColor(.gray)
-                                                }
-                                            }
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                                            if selectedEvent?.id == event.id {
-                                                Image(systemName: "checkmark.circle.fill")
-                                                    .font(.appBody)
-                                                    .foregroundColor(.white)
-                                            }
-                                        }
-                                        .padding(16)
-                                        .background(Color.white.opacity(0.1))
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    }
-                                }
-                            }
-                            .padding(20)
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Select Event")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color.black, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        showingEventSelection = false
-                    }
-                    .appBody()
-                    .foregroundColor(.white)
-                }
-            }
-        }
-    }
-
-    // MARK: - Scanner Sheet
-    private var scannerSheet: some View {
-        NavigationStack {
+    // MARK: - Scanner ViewFinder
+    private var scannerViewFinder: some View {
+        ZStack {
+            // Camera ViewFinder
             CodeScannerView(
                 codeTypes: [.qr],
                 scanMode: .once,
-                manualSelect: false,
                 showViewfinder: true,
+                simulatedData: "TEST_TICKET_123",
                 completion: handleScan
             )
-            .navigationTitle("Scan QR Code")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color.black, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        isShowingScanner = false
+            .ignoresSafeArea()
+            
+            // Overlay with manual entry and event info
+            VStack {
+                // Top section with manual entry pill
+                VStack(spacing: 16) {
+                    // Manual Entry Pill
+                    Button(action: {
+                        withAnimation {
+                            showManualEntry = true
+                        }
+                    }) {
+                        Text("MANUAL ENTRY")
+                            .appBody()
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(Color.white)
+                            .clipShape(Capsule())
                     }
-                    .appBody()
-                    .foregroundColor(.white)
+                    .padding(.top, 60)
+                }
+                
+                Spacer()
+                
+                // Event info card below viewfinder
+                if let selectedEvent = selectedEvent {
+                    VStack(spacing: 8) {
+                        Text(selectedEvent.name)
+                            .appBody()
+                            .foregroundColor(.white)
+                            .fontWeight(.semibold)
+                        
+                        Text(selectedEvent.venue)
+                            .appSecondary()
+                            .foregroundColor(.white.opacity(0.7))
+                        
+                        Button(action: {
+                            clearEventSelection()
+                        }) {
+                            Text("CHANGE EVENT")
+                                .appSecondary()
+                                .foregroundColor(.white.opacity(0.6))
+                                .underline()
+                        }
+                        .padding(.top, 4)
+                    }
+                    .padding(16)
+                    .background(Color.black.opacity(0.7))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 100)
+                }
+                
+                // Processing indicator
+                if isProcessing {
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(.white)
+                        Text("Processing...")
+                            .appBody()
+                            .foregroundColor(.white)
+                    }
+                    .padding(24)
+                    .background(Color.black.opacity(0.8))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .padding(.bottom, 100)
                 }
             }
         }
     }
     
-    // MARK: - Computed Properties
-    private var canProcessTicket: Bool {
-        !isProcessing && !manualTicketNumber.isEmpty
-    }
-
-    private var canScanTickets: Bool {
-        let hasValidRole = ["scanner", "siteAdmin", "venueAdmin", "subAdmin"].contains(userRole)
-        let canScan = hasValidRole && (isScannerActive || userRole != "scanner")
-
-        return canScan
-    }
-
-    // MARK: - Loading View
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.2)
-                .tint(.white)
-            Text("Loading scanner...")
-                .appBody()
-                .foregroundColor(.gray)
+    // MARK: - Helper Functions
+    private func loadPersistedEventSelection() {
+        guard let eventId = UserDefaults.standard.string(forKey: selectedEventIdKey) else { return }
+        
+        // Find the event in today's events once they're loaded
+        if let event = todaysEvents.first(where: { $0.id == eventId }) {
+            selectedEvent = event
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
     }
     
-    // MARK: - Helper Functions (Using Custom Claims)
+    private func selectEvent(_ event: Event) {
+        selectedEvent = event
+        if let eventId = event.id {
+            UserDefaults.standard.set(eventId, forKey: selectedEventIdKey)
+        }
+    }
+    
+    private func clearEventSelection() {
+        selectedEvent = nil
+        UserDefaults.standard.removeObject(forKey: selectedEventIdKey)
+    }
+    
+    private var canScanTickets: Bool {
+        return userRole == "scanner" || userRole == "venueAdmin" || userRole == "siteAdmin"
+    }
+    
+    private func checkScannerAccessFromClaims() {
+        guard let user = Auth.auth().currentUser else {
+            print("🔍 [SCANNER DEBUG] ❌ No user authenticated")
+            DispatchQueue.main.async {
+                self.isCheckingScanner = false
+                self.isScannerActive = false
+            }
+            return
+        }
+        
+        print("🔍 [SCANNER DEBUG] Checking scanner access for user: \(user.uid)")
+        
+        user.getIDTokenResult { result, error in
+            DispatchQueue.main.async {
+                self.isCheckingScanner = false
+                
+                if let error = error {
+                    print("🔍 [SCANNER DEBUG] ❌ Error getting token: \(error.localizedDescription)")
+                    self.isScannerActive = false
+                    return
+                }
+                
+                if let claims = result?.claims,
+                   let role = claims["role"] as? String {
+                    print("🔍 [SCANNER DEBUG] ✅ User role from claims: \(role)")
+                    self.userRole = role
+                    self.isScannerActive = (role == "scanner" || role == "admin" || role == "siteadmin")
+                    print("🔍 [SCANNER DEBUG] Scanner active: \(self.isScannerActive)")
+                } else {
+                    print("🔍 [SCANNER DEBUG] ⚠️ No role claim found")
+                    self.isScannerActive = false
+                }
+            }
+        }
+    }
     
     private func fetchUserRoleFromClaims() {
-        guard Auth.auth().currentUser != nil else {
-            return
-        }
-
-        Task {
-            do {
-                if let role = try await appState.authService.getUserRole() {
-                    await MainActor.run {
-                        self.userRole = role
-                    }
-                } else {
-                    await MainActor.run {
-                        self.userRole = "user"
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    self.userRole = "user"
-                }
-            }
-        }
-    }
-
-    private func checkScannerAccessFromClaims() {
-        guard Auth.auth().currentUser != nil else {
-            isCheckingScanner = false
-            return
-        }
-
-        Task {
-            do {
-                let active = try await appState.authService.isScannerActive()
-                await MainActor.run {
-                    self.isScannerActive = active
-                    self.isCheckingScanner = false
-                }
-            } catch {
-                await MainActor.run {
-                    self.isScannerActive = false
-                    self.isCheckingScanner = false
+        guard let user = Auth.auth().currentUser else { return }
+        
+        user.getIDTokenResult { result, error in
+            if let claims = result?.claims,
+               let role = claims["role"] as? String {
+                DispatchQueue.main.async {
+                    self.userRole = role
                 }
             }
         }
     }
     
     private func handleScan(result: Result<ScanResult, ScanError>) {
-        isShowingScanner = false
         switch result {
-        case .success(let result):
-            scannedValue = result.string
-            processTicket(qrCodeData: scannedValue)
+        case .success(let scanResult):
+            print("🔍 [SCANNER DEBUG] QR Code scanned: \(scanResult.string)")
+            validateAndScanTicket(qrCodeData: scanResult.string)
+            
         case .failure(let error):
+            print("🔍 [SCANNER DEBUG] ❌ Scan failed: \(error.localizedDescription)")
             errorMessage = "Scanning failed: \(error.localizedDescription)"
             showingError = true
         }
     }
     
-    private func processManualTicket() {
-        let ticketId = manualTicketNumber.trimmingCharacters(in: .whitespacesAndNewlines)
-        processTicket(qrCodeData: nil, ticketId: ticketId)
-    }
-    
     private func extractTicketId(from qrData: String) -> String? {
-        // JSON format
-        if let data = qrData.data(using: .utf8),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let ticketId = json["ticketId"] as? String {
-            return ticketId
+        print("🔍 [SCANNER DEBUG] Attempting to extract ticket ID from: \(qrData)")
+        
+        if let url = URL(string: qrData),
+           url.scheme == "https",
+           url.host == "partypass.com" || url.host == "www.partypass.com",
+           url.pathComponents.contains("ticket") {
+            
+            if let ticketId = url.pathComponents.last {
+                print("🔍 [SCANNER DEBUG] ✅ Extracted ticket ID from URL: \(ticketId)")
+                return ticketId
+            }
         }
-        // Legacy format
-        let components = qrData.components(separatedBy: ":")
-        if let ticketIdIndex = components.firstIndex(of: "TICKET"), ticketIdIndex + 1 < components.count {
-            let ticketId = components[ticketIdIndex + 1]
-            return ticketId
-        }
+        
+        print("🔍 [SCANNER DEBUG] ⚠️ Could not extract ticket ID, using raw data")
         return nil
     }
     
-    private func processTicket(qrCodeData: String? = nil, ticketId: String? = nil) {
+    private func validateAndScanTicket(qrCodeData: String? = nil, ticketId: String? = nil) {
+        print("🔍 [SCANNER DEBUG] === SCAN INITIATED ===")
+        print("🔍 [SCANNER DEBUG] QR Data: \(qrCodeData ?? "nil")")
+        print("🔍 [SCANNER DEBUG] Manual Ticket ID: \(ticketId ?? "nil")")
+        
         guard !isProcessing else {
+            print("🔍 [SCANNER DEBUG] ⚠️ Already processing a scan")
+            return
+        }
+        
+        guard let selectedEvent = selectedEvent, let eventId = selectedEvent.id else {
+            print("🔍 [SCANNER DEBUG] ❌ No event selected")
+            errorMessage = "Please select an event first"
+            showingError = true
             return
         }
 
-        let finalTicketId: String
-
-        // 🔍 DEBUG: Log raw inputs
-        print("🔍 [SCANNER DEBUG] ===== TICKET PROCESSING START =====")
-        print("🔍 [SCANNER DEBUG] Raw QR Data: \(qrCodeData ?? "nil")")
-        print("🔍 [SCANNER DEBUG] Manual Ticket ID: \(ticketId ?? "nil")")
+        var finalTicketId: String = ""
 
         if let ticketId = ticketId {
             finalTicketId = ticketId
@@ -584,13 +531,15 @@ struct ScannerView: View {
         }
 
         print("🔍 [SCANNER DEBUG] Final Ticket ID: \(finalTicketId)")
+        print("🔍 [SCANNER DEBUG] Selected Event ID: \(eventId)")
 
         isProcessing = true
 
-        // Call Cloud Function
+        // Call Cloud Function with event verification
         let scanFunction = functions.httpsCallable("scanTicket")
         let data: [String: Any] = [
             "ticketId": finalTicketId,
+            "eventId": eventId,
             "qrCodeData": qrCodeData as Any
         ]
 
@@ -602,19 +551,18 @@ struct ScannerView: View {
                 self.manualTicketNumber = ""
 
                 if let error = error as NSError? {
-                    // 🔍 DEBUG: Log error details
                     print("🔍 [SCANNER DEBUG] ❌ ERROR RECEIVED")
                     print("🔍 [SCANNER DEBUG] Error code: \(error.code)")
                     print("🔍 [SCANNER DEBUG] Error domain: \(error.domain)")
                     print("🔍 [SCANNER DEBUG] Error description: \(error.localizedDescription)")
                     print("🔍 [SCANNER DEBUG] Error userInfo: \(error.userInfo)")
 
-                    // Parse error message for better user feedback
                     var errorMsg = error.localizedDescription
 
-                    // Check for specific error messages
                     if errorMsg.contains("not-found") || errorMsg.contains("Ticket not found") {
                         errorMsg = "Ticket not found. Please check the ticket ID and try again."
+                    } else if errorMsg.contains("wrong-event") || errorMsg.contains("different event") {
+                        errorMsg = "This ticket is for a different event."
                     } else if errorMsg.contains("permission-denied") || errorMsg.contains("Scanner role required") {
                         errorMsg = "You don't have permission to scan tickets at this venue."
                     } else if errorMsg.contains("invalid-argument") {
@@ -645,15 +593,12 @@ struct ScannerView: View {
                 print("🔍 [SCANNER DEBUG] Ticket Status: \(ticketStatus)")
 
                 if success {
-                    // Ticket successfully scanned
                     self.successMessage = message
                     self.showingSuccess = true
 
-                    // Haptic feedback
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.success)
                 } else if ticketStatus == "used" {
-                    // Ticket already used - show detailed alert
                     if let ticketData = data["ticket"] as? [String: Any],
                        let scannedAt = data["usedAt"] as? String,
                        let scannedByName = data["scannedByName"] as? String {
@@ -663,7 +608,6 @@ struct ScannerView: View {
                         let ticketNumber = ticketData["ticketNumber"] as? String ?? "N/A"
                         let scannedByEmail = data["scannedByEmail"] as? String
 
-                        // Format the scanned time
                         let formattedTime = self.formatScanTime(scannedAt)
 
                         self.alreadyUsedDetails = AlreadyUsedTicket(
@@ -676,7 +620,6 @@ struct ScannerView: View {
                         )
                         self.showingAlreadyUsed = true
 
-                        // Haptic feedback for error
                         let generator = UINotificationFeedbackGenerator()
                         generator.notificationOccurred(.error)
                     } else {
@@ -684,11 +627,9 @@ struct ScannerView: View {
                         self.showingError = true
                     }
                 } else {
-                    // Other error
                     self.errorMessage = message
                     self.showingError = true
 
-                    // Haptic feedback
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.error)
                 }
@@ -718,7 +659,6 @@ struct ScannerView: View {
     private func fetchTodaysEvents() {
         isLoadingEvents = true
 
-        // Get today's date range
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
@@ -753,14 +693,10 @@ struct ScannerView: View {
                     }
 
                     print("🔍 [SCANNER DEBUG] Found \(self.todaysEvents.count) events for today")
+                    
+                    // Restore persisted event selection after events are loaded
+                    self.loadPersistedEventSelection()
                 }
             }
     }
-}
-
-// MARK: - Preview
-#Preview {
-    ScannerView()
-        .environmentObject(AppState())
-        .preferredColorScheme(.dark)
 }

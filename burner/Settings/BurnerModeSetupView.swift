@@ -256,13 +256,13 @@ struct WelcomeSlideContent: View {
                 InfoBox(
                     icon: "lock.shield.fill",
                     text: "Block all apps except essentials during events",
-                    color: .blue
+                    color: .white
                 )
                 
                 InfoBox(
                     icon: "clock.fill",
                     text: "Automatically activates when you attend ticketed events",
-                    color: .blue
+                    color: .white
                 )
             }
             .padding(.horizontal, 40)
@@ -282,7 +282,7 @@ struct FeatureRow: View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: icon)
                 .appSectionHeader()
-                .foregroundColor(.blue)
+                .foregroundColor(.white)
                 .frame(width: 32)
             
             VStack(alignment: .leading, spacing: 4) {
@@ -335,7 +335,7 @@ struct PermissionSlideContent: View {
                     InfoBox(
                         icon: "info.circle.fill",
                         text: "This permission allows the app to manage which apps are accessible during Burner Mode.",
-                        color: .blue
+                        color: .white
                     )
                     
                     InfoBox(
@@ -421,10 +421,10 @@ struct CategorySelectionSlideContent: View {
                             Text("Open Category Selector")
                                 .appBody()
                         }
-                        .foregroundColor(.blue)
+                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color.blue.opacity(0.1))
+                        .background(Color.white.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 } else {
@@ -436,10 +436,10 @@ struct CategorySelectionSlideContent: View {
                             Text("Modify Selection")
                                 .appBody()
                         }
-                        .foregroundColor(.blue)
+                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color.blue.opacity(0.1))
+                        .background(Color.white.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }

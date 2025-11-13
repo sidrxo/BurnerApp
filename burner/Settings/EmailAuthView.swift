@@ -193,7 +193,7 @@ struct EmailAuthView: View {
                     } label: {
                         Text("Change")
                             .appCaption()
-                            .foregroundColor(.blue)
+                            .foregroundColor(.white)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -266,7 +266,7 @@ struct EmailAuthView: View {
                     } label: {
                         Text("Forgot password?")
                             .appCaption()
-                            .foregroundColor(.blue)
+                            .foregroundColor(.white)
                     }
                 }
             }
