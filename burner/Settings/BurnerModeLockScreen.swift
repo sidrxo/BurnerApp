@@ -11,6 +11,7 @@ struct BurnerModeLockScreen: View {
     @State private var timerIsActive = false
     @State private var lockScreenOpacity: Double = 0
     @State private var eventEndTime: Date = Date()
+    @State private var isLoadingEventEndTime = false
     
     // Terminal state
     @State private var showTerminal: Bool = true
@@ -65,7 +66,8 @@ struct BurnerModeLockScreen: View {
             currentTime = input
 
             // Auto-end burner mode when event end time is reached
-            if currentTime >= eventEndTime {
+            // Skip this check if we're still loading the event end time
+            if !isLoadingEventEndTime && currentTime >= eventEndTime {
                 exitBurnerMode()
                 return
             }
@@ -284,6 +286,9 @@ struct BurnerModeLockScreen: View {
 
         // If we found a scanned ticket, fetch the event to get the end time
         if let ticket = todayScannedTicket {
+            // Set loading flag to pause timer checks
+            isLoadingEventEndTime = true
+
             Task {
                 do {
                     let event = try await appState.eventViewModel.fetchEvent(byId: ticket.eventId)
@@ -298,6 +303,8 @@ struct BurnerModeLockScreen: View {
                             eventEndTime = fallbackEndTime
                             UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
                         }
+                        // Clear loading flag once we have the end time
+                        isLoadingEventEndTime = false
                     }
                 } catch {
                     // If fetching event fails, use ticket start time + 4 hours as fallback
@@ -305,6 +312,8 @@ struct BurnerModeLockScreen: View {
                         let fallbackEndTime = ticket.startTime.addingTimeInterval(4 * 3600)
                         eventEndTime = fallbackEndTime
                         UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
+                        // Clear loading flag even on error
+                        isLoadingEventEndTime = false
                     }
                 }
             }
