@@ -24,7 +24,15 @@ struct ExploreView: View {
 
     // MARK: - Featured Events
     var featuredEvents: [Event] {
-        let featured = eventViewModel.events.filter { $0.isFeatured }
+        let now = Date()
+        let featured = eventViewModel.events.filter { event in
+            // Only show featured events that haven't started yet
+            guard event.isFeatured else { return false }
+            if let startTime = event.startTime {
+                return startTime > now
+            }
+            return true // If no startTime, include it
+        }
         let calendar = Calendar.current
         let dayOfYear = calendar.ordinality(of: .day, in: .year, for: Date()) ?? 0
         var rng = SeededRandomNumberGenerator(seed: UInt64(dayOfYear))

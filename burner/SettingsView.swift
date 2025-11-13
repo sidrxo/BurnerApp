@@ -141,19 +141,20 @@ struct SettingsView: View {
                                 .buttonStyle(PlainButtonStyle())
                             }
 
-                            // DEBUG Section
-
-                            MenuSection(title: "DEBUG") {
-                                Button(action: {
-                                    coordinator.navigate(to: .debugMenu)
-                                }) {
-                                    MenuItemContent(
-                                        title: "Debug Menu",
-                                        subtitle: "Development tools"
-                                    )
-                                    .contentShape(Rectangle())
+                            // DEBUG Section - Only for siteadmin
+                            if userRole == "siteAdmin" {
+                                MenuSection(title: "DEBUG") {
+                                    Button(action: {
+                                        coordinator.navigate(to: .debugMenu)
+                                    }) {
+                                        MenuItemContent(
+                                            title: "Debug Menu",
+                                            subtitle: "Development tools"
+                                        )
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
-                                .buttonStyle(PlainButtonStyle())
                             }
 
                         }

@@ -114,9 +114,13 @@ class TicketRepository: ObservableObject {
                 let tickets = documents.compactMap { doc -> Ticket? in
                     var ticket = try? doc.data(as: Ticket.self)
                     ticket?.id = doc.documentID
+                    // Filter out deleted tickets
+                    if ticket?.status == "deleted" {
+                        return nil
+                    }
                     return ticket
                 }
-                
+
                 completion(.success(tickets))
             }
     }
@@ -172,9 +176,13 @@ class TicketRepository: ObservableObject {
         return status
     }
     
-    // MARK: - Delete Ticket
+    // MARK: - Delete Ticket (Soft Delete)
     func deleteTicket(ticketId: String) async throws {
-        try await db.collection("tickets").document(ticketId).delete()
+        try await db.collection("tickets").document(ticketId).updateData([
+            "status": "deleted",
+            "deletedAt": FieldValue.serverTimestamp(),
+            "updatedAt": FieldValue.serverTimestamp()
+        ])
     }
 
     // MARK: - Stop Observing

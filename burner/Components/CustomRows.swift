@@ -181,8 +181,8 @@ struct EventRow: View {
     // MARK: - Context Menu
     @ViewBuilder
     private var contextMenuContent: some View {
-        // Show delete option only for tickets
-        if let ticket = ticket, let ticketId = ticket.id, let onDelete = onDelete {
+        // Show delete option only for past tickets
+        if let ticket = ticket, let ticketId = ticket.id, let onDelete = onDelete, isPastEvent {
             Button(role: .destructive) {
                 Task {
                     await onDelete(ticketId)

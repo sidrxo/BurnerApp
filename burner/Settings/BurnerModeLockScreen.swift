@@ -63,6 +63,13 @@ struct BurnerModeLockScreen: View {
         .preferredColorScheme(.dark)
         .onReceive(timer) { input in
             currentTime = input
+
+            // Auto-end burner mode when event end time is reached
+            if currentTime >= eventEndTime {
+                exitBurnerMode()
+                return
+            }
+
             if timerIsActive {
                 if timerCountdown > 0 {
                     timerCountdown -= 1
