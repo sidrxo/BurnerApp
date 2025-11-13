@@ -2,11 +2,17 @@ import Foundation
 import CoreLocation
 import Combine
 
-struct UserLocation: Codable {
+struct UserLocation: Codable, Equatable {
     let latitude: Double
     let longitude: Double
     let name: String
     let timestamp: Date
+
+    static func == (lhs: UserLocation, rhs: UserLocation) -> Bool {
+        return lhs.latitude == rhs.latitude &&
+               lhs.longitude == rhs.longitude &&
+               lhs.name == rhs.name
+    }
 }
 
 @MainActor

@@ -35,6 +35,9 @@ struct SearchEventHandlers: ViewModifier {
             .onChange(of: viewModel.userLocation?.coordinate.longitude) { _, _ in
                 handleLocationUpdate()
             }
+            .onChange(of: userLocationManager.savedLocation) { oldValue, newValue in
+                handleSavedLocationChange(oldValue: oldValue, newValue: newValue)
+            }
             .onAppear {
                 handleOnAppear()
             }
@@ -67,7 +70,33 @@ struct SearchEventHandlers: ViewModifier {
         }
     }
 
+    private func handleSavedLocationChange(oldValue: UserLocation?, newValue: UserLocation?) {
+        // Update viewModel's userLocation
+        if let newLocation = newValue {
+            viewModel.userLocation = CLLocation(
+                latitude: newLocation.latitude,
+                longitude: newLocation.longitude
+            )
+        }
+
+        // If nearby sort is active, refresh the results with the new location
+        if sortBy == .nearby, newValue != nil {
+            Task {
+                await viewModel.changeSort(to: "nearby", searchText: searchText)
+            }
+        }
+    }
+
     private func handleOnAppear() {
+        // Sync location from userLocationManager to viewModel
+        if let savedLocation = userLocationManager.savedLocation {
+            viewModel.userLocation = CLLocation(
+                latitude: savedLocation.latitude,
+                longitude: savedLocation.longitude
+            )
+        }
+
+        // Refresh current sort
         if let currentSort = sortBy {
             Task {
                 await viewModel.changeSort(to: currentSort.rawValue, searchText: searchText)
