@@ -16,20 +16,14 @@ struct TicketLiveActivity: Widget {
                     if hasStarted {
                         // DURING EVENT: Time until end + progress bar + event info
                         VStack(spacing: 8) {
-                            // Time countdown (large, italic) - automatic timer
-                            if let eventEndTime = context.state.eventEndTime, !context.state.hasEventEnded {
-                                Text(eventEndTime, style: .timer)
+                            // Time countdown (large, italic) - automatic timer (updates every minute)
+                            if let eventEndTime = context.state.eventEndTime {
+                                Text(eventEndTime, style: .relative)
                                     .font(.custom("Avenir Next", size: 52).italic().weight(.heavy))
                                     .foregroundColor(.black)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.8)
                                     .monospacedDigit()
-                            } else {
-                                Text("ENDED")
-                                    .font(.custom("Avenir Next", size: 52).italic().weight(.heavy))
-                                    .foregroundColor(.black)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.8)
                             }
 
                             // Event name
@@ -114,8 +108,8 @@ struct TicketLiveActivity: Widget {
                                 .font(.system(size: 28, weight: .regular))
                                 .foregroundColor(.black)
 
-                            // Countdown (large, italic) - automatic timer
-                            Text(context.state.eventStartTime, style: .timer)
+                            // Countdown (large, italic) - automatic timer (updates every minute)
+                            Text(context.state.eventStartTime, style: .relative)
                                 .font(.custom("Avenir Next", size: 52).italic().weight(.heavy))
                                 .foregroundColor(.black)
                                 .lineLimit(1)
@@ -137,102 +131,23 @@ struct TicketLiveActivity: Widget {
             .background(Color.white)
             .activityBackgroundTint(Color.white)
             .activitySystemActionForegroundColor(Color.black)
-            
+
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(context.attributes.eventName)
-                            .font(.custom("Avenir Next", size: 14).weight(.semibold))
-                            .foregroundColor(.white)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.85)
-                            .fixedSize(horizontal: false, vertical: true)
-                        
-                        Text(context.attributes.venue)
-                            .font(.custom("Avenir Next", size: 11).weight(.regular))
-                            .foregroundColor(.white.opacity(0.7))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-                    }
-                    .padding(.leading, 4)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                    EmptyView()
                 }
-                
+
                 DynamicIslandExpandedRegion(.trailing) {
-                    VStack(spacing: 4) {
-                        // Show timer based on event state
-                        if context.state.hasEventStarted {
-                            // During event: countdown to end
-                            if let eventEndTime = context.state.eventEndTime, !context.state.hasEventEnded {
-                                Text(eventEndTime, style: .timer)
-                                    .font(.custom("Avenir Next", size: 20).italic().weight(.bold))
-                                    .foregroundColor(.white)
-                                    .multilineTextAlignment(.center)
-                                    .minimumScaleFactor(0.8)
-                                    .lineLimit(1)
-                                    .monospacedDigit()
-                            } else {
-                                Text("ENDED")
-                                    .font(.custom("Avenir Next", size: 16).italic().weight(.bold))
-                                    .foregroundColor(.white)
-                            }
-                        } else {
-                            // Before event: countdown to start
-                            Text(context.state.eventStartTime, style: .timer)
-                                .font(.custom("Avenir Next", size: 20).italic().weight(.bold))
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.center)
-                                .minimumScaleFactor(0.8)
-                                .lineLimit(1)
-                                .monospacedDigit()
-                        }
-
-                        Text("DOORS OPEN")
-                            .font(.custom("Avenir Next", size: 9).weight(.medium))
-                            .foregroundColor(.white.opacity(0.7))
-                            .tracking(0.5)
-                            .lineLimit(1)
-                    }
-                    .padding(.trailing, 4)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    EmptyView()
                 }
-                
+
             } compactLeading: {
-                HStack(spacing: 4) {
-                    Image(systemName: "clock.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(.white)
-
-                    // Show timer based on event state
-                    if context.state.hasEventStarted {
-                        // During event: countdown to end
-                        if let eventEndTime = context.state.eventEndTime, !context.state.hasEventEnded {
-                            Text(eventEndTime, style: .timer)
-                                .font(.custom("Avenir Next", size: 12).italic().weight(.semibold))
-                                .foregroundColor(.white)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                                .monospacedDigit()
-                        }
-                    } else {
-                        // Before event: countdown to start
-                        Text(context.state.eventStartTime, style: .timer)
-                            .font(.custom("Avenir Next", size: 12).italic().weight(.semibold))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                            .monospacedDigit()
-                    }
-                }
+                EmptyView()
             } compactTrailing: {
-                Image(systemName: "qrcode")
-                    .font(.system(size: 10))
-                    .foregroundColor(.white)
+                EmptyView()
             } minimal: {
-                Image(systemName: "clock.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(.white)
+                EmptyView()
             }
         }
     }

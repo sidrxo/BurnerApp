@@ -365,17 +365,18 @@ class AppState: ObservableObject {
             )
             
             // Calculate initial content state with progress
-            let (timeString, hasStarted) = calculateTimeUntilEvent(
-                startTime: testTicket.startTime,
-                endTime: endTime
-            )
+            let now = Date()
+            let hasStarted = now >= testTicket.startTime
+            let hasEnded = endTime != nil ? now >= endTime! : false
             let progress = calculateProgress(
                 startTime: testTicket.startTime,
                 endTime: endTime
             )
             let contentState = TicketActivityAttributes.ContentState(
-                timeUntilEvent: timeString,
+                eventStartTime: testTicket.startTime,
+                eventEndTime: endTime,
                 hasEventStarted: hasStarted,
+                hasEventEnded: hasEnded,
                 progress: progress
             )
             
@@ -435,53 +436,5 @@ class AppState: ObservableObject {
             // No end time - no progress
             return 0.0
         }
-    }
-    
-    // Helper method to calculate time until event
-    private func calculateTimeUntilEvent(startTime: Date, endTime: Date?) -> (String, Bool) {
-        let now = Date()
-        let calendar = Calendar.current
-
-        // Check if event has started
-        if startTime <= now {
-            // Event has started - show countdown to end
-            if let endTime = endTime, endTime > now {
-                let components = calendar.dateComponents([.hour, .minute], from: now, to: endTime)
-                if let hours = components.hour, let minutes = components.minute {
-                    if hours > 0 {
-                        return ("\(hours)h \(minutes)m", true)
-                    } else {
-                        return ("\(minutes)m", true)
-                    }
-                }
-            }
-            // Event has ended or no end time available
-            return ("Event Ended", true)
-        }
-
-        // Event hasn't started yet - show countdown to start
-        if calendar.isDate(startTime, inSameDayAs: now) {
-            let components = calendar.dateComponents([.hour, .minute], from: now, to: startTime)
-            if let hours = components.hour, let minutes = components.minute {
-                if hours > 0 {
-                    return ("\(hours)h \(minutes)m", false)
-                } else {
-                    return ("\(minutes)m", false)
-                }
-            }
-        }
-
-        let components = calendar.dateComponents([.day], from: now, to: startTime)
-        if let days = components.day {
-            if days == 0 {
-                return ("Today", false)
-            } else if days == 1 {
-                return ("Tomorrow", false)
-            } else {
-                return ("\(days) days", false)
-            }
-        }
-
-        return ("Soon", false)
     }
 }
