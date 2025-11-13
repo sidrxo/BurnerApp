@@ -341,7 +341,8 @@ class AppState: ObservableObject {
                 eventName: testTicket.eventName,
                 venue: testTicket.venue,
                 startTime: testTicket.startTime,
-                endTime: endTime
+                endTime: endTime,
+                ticketId: testTicket.id ?? "test-ticket-id"
             )
             
             // Calculate initial content state (no need for progress - ProgressView handles it)
