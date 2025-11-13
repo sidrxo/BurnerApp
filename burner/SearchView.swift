@@ -483,6 +483,12 @@ class SearchViewModel: ObservableObject {
         isLoading = true
         currentSortBy = sortBy
 
+        // Special handling for nearby sort
+        if sortBy == "nearby" {
+            await sortEventsByDistance()
+            return
+        }
+
         // Filter upcoming events from source
         let upcomingEvents = sourceEvents.filter { event in
             guard let startTime = event.startTime else { return false }
@@ -502,7 +508,7 @@ class SearchViewModel: ObservableObject {
         case "price":
             return events.sorted { $0.price < $1.price }
         case "nearby":
-            // This shouldn't be called directly for nearby - use sortEventsByDistance instead
+            // Fallback to date sorting - loadFilteredEvents should handle nearby with sortEventsByDistance
             return events.sorted {
                 ($0.startTime ?? Date.distantPast) < ($1.startTime ?? Date.distantPast)
             }
