@@ -72,31 +72,27 @@ function validateVenueAccess(userClaims, targetVenueId) {
  * @returns {Promise<Object>} Scanner claims if valid
  */
 async function verifyScannerPermission(uid, venueId = null) {
-  try {
-    const user = await auth.getUser(uid);
-    const customClaims = user.customClaims || {};
-    
-    if (customClaims.role !== 'scanner') {
-      throw new HttpsError("permission-denied", "Scanner role required");
-    }
-
-    if (!customClaims.active) {
-      throw new HttpsError("permission-denied", "Scanner account is inactive");
-    }
-
-    // If venueId specified, validate access
-    if (venueId && !validateVenueAccess(customClaims, venueId)) {
-      throw new HttpsError(
-        "permission-denied", 
-        "Scanner does not have access to this venue"
-      );
-    }
-
-    return customClaims;
-  } catch (error) {
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Failed to verify scanner permissions");
+  const user = await auth.getUser(uid);
+  const customClaims = user.customClaims || {};
+  
+  // Allow site admins OR scanners
+  if (!['siteAdmin', 'scanner'].includes(customClaims.role)) {
+    throw new HttpsError("permission-denied", "Scanner or admin role required");
   }
+
+  if (!customClaims.active && customClaims.role === 'scanner') {
+    throw new HttpsError("permission-denied", "Scanner account is inactive");
+  }
+
+  // If venueId specified, validate access (site admins bypass this)
+  if (venueId && !validateVenueAccess(customClaims, venueId)) {
+    throw new HttpsError(
+      "permission-denied", 
+      "Scanner does not have access to this venue"
+    );
+  }
+
+  return customClaims;
 }
 
 /**

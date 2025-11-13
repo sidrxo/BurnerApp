@@ -29,7 +29,7 @@ struct ScannerView: View {
 
     @Environment(\.presentationMode) var presentationMode
     private let db = Firestore.firestore()
-    private let functions = Functions.functions()
+    private let functions = Functions.functions(region: "europe-west2")
     
     struct AlreadyUsedTicket {
         let ticketNumber: String
