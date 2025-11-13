@@ -9,6 +9,7 @@ struct AccountDetailsView: View {
 
     @State private var displayName = ""
     @State private var email = ""
+    @State private var userRole = ""
     @State private var showingSignOut = false
     @State private var showingDeleteAccount = false
     @State private var showingDeleteAccountFinal = false
@@ -44,6 +45,20 @@ struct AccountDetailsView: View {
                                 .appBody()
                                 .foregroundColor(.white)
                             Text(email.isEmpty ? "(No Email Set)" : email)
+                                .appSecondary()
+                                .foregroundColor(.gray)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Role")
+                                .appBody()
+                                .foregroundColor(.white)
+                            Text(userRole.isEmpty ? "user" : userRole)
                                 .appSecondary()
                                 .foregroundColor(.gray)
                         }
@@ -178,6 +193,21 @@ struct AccountDetailsView: View {
             if let data = snapshot?.data() {
                 self.displayName = data["displayName"] as? String ?? ""
                 self.email = data["email"] as? String ?? ""
+                self.userRole = data["role"] as? String ?? "user"
+            }
+        }
+
+        // Also fetch custom claims from Firebase Auth
+        Task {
+            do {
+                let result = try await user.getIDTokenResult(forcingRefresh: false)
+                if let role = result.claims["role"] as? String {
+                    await MainActor.run {
+                        self.userRole = role
+                    }
+                }
+            } catch {
+                print("Error fetching custom claims: \(error)")
             }
         }
     }

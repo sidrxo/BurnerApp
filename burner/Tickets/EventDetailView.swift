@@ -45,8 +45,29 @@ struct EventDetailView: View {
         return ticketsViewModel.tickets.first { $0.eventId == eventId }
     }
 
+    // Check if event has started
+    private var hasEventStarted: Bool {
+        guard let startTime = event.startTime else { return false }
+        return Date() >= startTime
+    }
+
+    // Check if event is past (event ended)
+    private var isEventPast: Bool {
+        guard let endTime = event.endTime else {
+            // If no end time, check if event started more than 6 hours ago
+            guard let startTime = event.startTime else { return false }
+            let sixHoursAfterStart = Calendar.current.date(byAdding: .hour, value: 6, to: startTime) ?? startTime
+            return Date() > sixHoursAfterStart
+        }
+        return Date() > endTime
+    }
+
     var buttonText: String {
-        if userHasTicket {
+        if isEventPast {
+            return "EVENT PAST"
+        } else if hasEventStarted {
+            return "EVENT STARTED"
+        } else if userHasTicket {
             return "TICKET PURCHASED"
         } else if availableTickets > 0 {
             return "GET TICKET"
@@ -54,9 +75,11 @@ struct EventDetailView: View {
             return "SOLD OUT"
         }
     }
-    
+
     var buttonColor: Color {
-        if userHasTicket {
+        if isEventPast || hasEventStarted {
+            return .gray
+        } else if userHasTicket {
             return .gray
         } else if availableTickets > 0 {
             return .white
@@ -66,7 +89,9 @@ struct EventDetailView: View {
     }
 
     var buttonTextColor: Color {
-        if userHasTicket {
+        if isEventPast || hasEventStarted {
+            return .white
+        } else if userHasTicket {
             return .white
         } else if availableTickets > 0 {
             return .black
@@ -76,7 +101,7 @@ struct EventDetailView: View {
     }
 
     var isButtonDisabled: Bool {
-        userHasTicket || availableTickets == 0
+        isEventPast || hasEventStarted || userHasTicket || availableTickets == 0
     }
     
     var body: some View {
