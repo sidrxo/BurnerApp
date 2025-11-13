@@ -263,11 +263,55 @@ struct BurnerModeLockScreen: View {
 
     // MARK: - Helper Functions
     private func setupEventEndTime() {
+        // Check if we already have a stored end time for this session
         if let stored = UserDefaults.standard.object(forKey: "burnerModeEventEndTime") as? Date {
             eventEndTime = stored
+            return
+        }
+
+        // Find today's scanned ticket
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
+        let todayScannedTicket = appState.ticketsViewModel.tickets.first { ticket in
+            guard ticket.status == "used",
+                  let usedAt = ticket.usedAt else {
+                return false
+            }
+            let scannedDay = calendar.startOfDay(for: usedAt)
+            return scannedDay == today
+        }
+
+        // If we found a scanned ticket, fetch the event to get the end time
+        if let ticket = todayScannedTicket {
+            Task {
+                do {
+                    let event = try await appState.eventViewModel.fetchEvent(byId: ticket.eventId)
+
+                    await MainActor.run {
+                        if let endTime = event.endTime {
+                            eventEndTime = endTime
+                            UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
+                        } else {
+                            // Fallback: Use start time + 4 hours if no end time
+                            let fallbackEndTime = ticket.startTime.addingTimeInterval(4 * 3600)
+                            eventEndTime = fallbackEndTime
+                            UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
+                        }
+                    }
+                } catch {
+                    // If fetching event fails, use ticket start time + 4 hours as fallback
+                    await MainActor.run {
+                        let fallbackEndTime = ticket.startTime.addingTimeInterval(4 * 3600)
+                        eventEndTime = fallbackEndTime
+                        UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
+                    }
+                }
+            }
         } else {
-            let randomHours = Double.random(in: 2...4)
-            eventEndTime = Date().addingTimeInterval(randomHours * 3600)
+            // If no scanned ticket found, use a default fallback
+            let fallbackEndTime = Date().addingTimeInterval(4 * 3600)
+            eventEndTime = fallbackEndTime
             UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
         }
     }
