@@ -5,160 +5,271 @@ import SwiftUI
 struct TicketLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: TicketActivityAttributes.self) { context in
-            // Compact lock screen view
-            if context.state.hasEventStarted {
-                // Centered countdown when event has started
-                VStack(spacing: 4) {
-                    Text(context.state.timeUntilEvent)
-                        .font(.custom("HelveticaNeue", size: 28).weight(.bold))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-
-                    Text("until event ends")
-                        .font(.custom("HelveticaNeue", size: 12).weight(.regular))
-                        .foregroundColor(.gray)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .background(Color.black)
-                .activityBackgroundTint(Color.black)
-                .activitySystemActionForegroundColor(Color.white)
-            } else {
-                // Standard layout before event starts
-                HStack(spacing: 12) {
-                    // Left side - Event info
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(context.attributes.eventName)
-                            .font(.custom("HelveticaNeue", size: 13).weight(.semibold))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-
-                        Text(context.attributes.venue)
-                            .font(.custom("HelveticaNeue", size: 11).weight(.regular))
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
+            // Compact lock screen view - Nike run tracker style
+            ZStack(alignment: .center) {
+                VStack(spacing: 0) {
+                    // Determine which layout to show
+                    let oneHourBeforeStart = Calendar.current.date(byAdding: .hour, value: -1, to: context.attributes.startTime) ?? context.attributes.startTime
+                    let isMoreThanOneHourAway = Date() < oneHourBeforeStart
+                    let hasStarted = context.state.hasEventStarted
+                    
+                    if hasStarted {
+                        // DURING EVENT: Time until end + progress bar + event info
+                        VStack(spacing: 8) {
+                            // Time countdown (large, italic)
+                            Text(context.state.timeUntilEvent)
+                                .font(.custom("Avenir Next", size: 52).italic().weight(.heavy))
+                                .foregroundColor(.black)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                            
+                            // Event name
+                            Text(context.attributes.eventName)
+                                .font(.custom("Avenir Next", size: 14).weight(.semibold))
+                                .foregroundColor(.black)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                            
+                            // Venue
+                            Text(context.attributes.venue)
+                                .font(.custom("Avenir Next", size: 11).weight(.regular))
+                                .foregroundColor(.black.opacity(0.6))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        
+                        // Progress bar section
+                        VStack(spacing: 0) {
+                            GeometryReader { geometry in
+                                ZStack(alignment: .leading) {
+                                    // Background bar
+                                    Rectangle()
+                                        .fill(Color.black.opacity(0.15))
+                                        .frame(height: 6)
+                                    
+                                    // Filled progress bar
+                                    Rectangle()
+                                        .fill(Color.black)
+                                        .frame(width: geometry.size.width * context.state.progress, height: 6)
+                                    
+                                    // Progress circle indicator
+                                    Circle()
+                                        .fill(Color.black)
+                                        .frame(width: 14, height: 14)
+                                        .offset(x: (geometry.size.width * context.state.progress) - 7)
+                                }
+                            }
+                            .frame(height: 14)
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 16)
+                        }
+                    } else if isMoreThanOneHourAway {
+                        // MORE THAN 1 HOUR AWAY: Show event time + event info
+                        VStack(spacing: 8) {
+                            // Event time (large, italic)
+                            Text(formatEventTime(context.attributes.startTime))
+                                .font(.custom("Avenir Next", size: 52).italic().weight(.heavy))
+                                .foregroundColor(.black)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                            
+                            // "DOORS OPEN" text
+                            Text("DOORS OPEN")
+                                .font(.custom("Avenir Next", size: 11).weight(.medium))
+                                .foregroundColor(.black.opacity(0.6))
+                                .tracking(1)
+                            
+                            // Event name
+                            Text(context.attributes.eventName)
+                                .font(.custom("Avenir Next", size: 14).weight(.semibold))
+                                .foregroundColor(.black)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                            
+                            // Venue
+                            Text(context.attributes.venue)
+                                .font(.custom("Avenir Next", size: 11).weight(.regular))
+                                .foregroundColor(.black.opacity(0.6))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                    } else {
+                        // LESS THAN 1 HOUR AWAY: Show countdown + QR code icon (no event info)
+                        VStack(spacing: 8) {
+                            // QR code icon above
+                            Image(systemName: "qrcode")
+                                .font(.system(size: 28, weight: .regular))
+                                .foregroundColor(.black)
+                            
+                            // Countdown (large, italic)
+                            Text(context.state.timeUntilEvent)
+                                .font(.custom("Avenir Next", size: 52).italic().weight(.heavy))
+                                .foregroundColor(.black)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                            
+                            // "DOORS OPEN" text
+                            Text("DOORS OPEN")
+                                .font(.custom("Avenir Next", size: 11).weight(.medium))
+                                .foregroundColor(.black.opacity(0.6))
+                                .tracking(1)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 20)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    // Divider
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 1)
-                        .padding(.vertical, 4)
-
-                    // Right side - Timer
-                    Text(context.state.timeUntilEvent)
-                        .font(.custom("HelveticaNeue", size: 16).weight(.bold))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                        .frame(minWidth: 60)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .frame(maxWidth: .infinity)
-                .background(Color.black)
-                .activityBackgroundTint(Color.black)
-                .activitySystemActionForegroundColor(Color.white)
             }
+            .frame(maxWidth: .infinity)
+            .background(Color.white)
+            .activityBackgroundTint(Color.white)
+            .activitySystemActionForegroundColor(Color.black)
             
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text(context.attributes.eventName)
-                            .font(.custom("HelveticaNeue", size: 15).weight(.heavy))
+                            .font(.custom("Avenir Next", size: 14).weight(.semibold))
                             .foregroundColor(.white)
-                            .lineLimit(3)
-                            .minimumScaleFactor(0.8)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.85)
+                            .fixedSize(horizontal: false, vertical: true)
                         
                         Text(context.attributes.venue)
-                            .font(.custom("HelveticaNeue", size: 12).weight(.regular))
-                            .foregroundColor(.secondary)
+                            .font(.custom("Avenir Next", size: 11).weight(.regular))
+                            .foregroundColor(.white.opacity(0.7))
                             .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                     }
-                    .frame(maxHeight: .infinity, alignment: .center)
+                    .padding(.leading, 4)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 }
                 
                 DynamicIslandExpandedRegion(.trailing) {
-                    VStack(spacing: 2) {
+                    VStack(spacing: 4) {
                         Text(context.state.timeUntilEvent)
-                            .font(.custom("HelveticaNeue", size: 22).weight(.bold))
+                            .font(.custom("Avenir Next", size: 20).italic().weight(.bold))
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
                             .minimumScaleFactor(0.8)
+                            .lineLimit(1)
 
-                        Text(context.state.hasEventStarted ? "until end" : "remaining")
-                            .font(.custom("HelveticaNeue", size: 12).weight(.regular))
-                            .foregroundColor(.secondary)
+                        Text("DOORS OPEN")
+                            .font(.custom("Avenir Next", size: 9).weight(.medium))
+                            .foregroundColor(.white.opacity(0.7))
+                            .tracking(0.5)
+                            .lineLimit(1)
                     }
+                    .padding(.trailing, 4)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 
             } compactLeading: {
-                Text(context.state.timeUntilEvent)
-                    .font(.custom("HelveticaNeue", size: 14).weight(.bold))
-                    .foregroundColor(.white)
+                HStack(spacing: 4) {
+                    Image(systemName: "clock.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.white)
+                    
+                    Text(context.state.timeUntilEvent)
+                        .font(.custom("Avenir Next", size: 12).italic().weight(.semibold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
             } compactTrailing: {
-                Image(systemName: "clock")
-                    .font(.system(size: 12))
+                Image(systemName: "qrcode")
+                    .font(.system(size: 10))
                     .foregroundColor(.white)
             } minimal: {
-                Image(systemName: "clock")
-                    .font(.system(size: 11))
+                Image(systemName: "clock.fill")
+                    .font(.system(size: 10))
                     .foregroundColor(.white)
             }
         }
     }
 }
 
+// MARK: - Helper Functions
+func formatEventTime(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.timeStyle = .short
+    formatter.dateStyle = .none
+    return formatter.string(from: date)
+}
+
 // MARK: - Preview Support
 @available(iOS 16.1, *)
 struct TicketLiveActivity_Previews: PreviewProvider {
-    static let attributesBeforeStart = TicketActivityAttributes(
-        eventName: "RESISTANCE LONDON SATURDAY",
-        venue: "DRUMSHEDS",
-        startTime: Calendar.current.date(byAdding: .hour, value: 2, to: Date()) ?? Date(),
+    static let attributesMoreThanOneHour = TicketActivityAttributes(
+        eventName: "Garage Classics",
+        venue: "Ministry of Sound",
+        startTime: Calendar.current.date(byAdding: .hour, value: 3, to: Date()) ?? Date(),
         endTime: Calendar.current.date(byAdding: .hour, value: 8, to: Date()) ?? Date()
     )
+    
+    static let attributesLessThanOneHour = TicketActivityAttributes(
+        eventName: "Garage Classics",
+        venue: "Ministry of Sound",
+        startTime: Calendar.current.date(byAdding: .minute, value: 45, to: Date()) ?? Date(),
+        endTime: Calendar.current.date(byAdding: .hour, value: 5, to: Date()) ?? Date()
+    )
 
-    static let attributesAfterStart = TicketActivityAttributes(
-        eventName: "RESISTANCE LONDON SATURDAY",
-        venue: "DRUMSHEDS",
+    static let attributesDuringEvent = TicketActivityAttributes(
+        eventName: "Garage Classics",
+        venue: "Ministry of Sound",
         startTime: Calendar.current.date(byAdding: .hour, value: -1, to: Date()) ?? Date(),
         endTime: Calendar.current.date(byAdding: .hour, value: 3, to: Date()) ?? Date()
     )
 
-    static let contentStateBeforeStart = TicketActivityAttributes.ContentState(
-        timeUntilEvent: "2h 15m",
-        hasEventStarted: false
+    static let contentStateMoreThanOneHour = TicketActivityAttributes.ContentState(
+        timeUntilEvent: "3h 15m",
+        hasEventStarted: false,
+        progress: 0.0
+    )
+    
+    static let contentStateLessThanOneHour = TicketActivityAttributes.ContentState(
+        timeUntilEvent: "45m",
+        hasEventStarted: false,
+        progress: 0.0
     )
 
-    static let contentStateAfterStart = TicketActivityAttributes.ContentState(
+    static let contentStateDuringEvent = TicketActivityAttributes.ContentState(
         timeUntilEvent: "3h 45m",
-        hasEventStarted: true
+        hasEventStarted: true,
+        progress: 0.35
     )
 
     static var previews: some View {
         Group {
-            attributesBeforeStart
-                .previewContext(contentStateBeforeStart, viewKind: .content)
-                .previewDisplayName("Lock Screen - Before Start")
+            // State 1: More than 1 hour away - Show event time
+            attributesMoreThanOneHour
+                .previewContext(contentStateMoreThanOneHour, viewKind: .content)
+                .previewDisplayName("Lock Screen - Event Time (>1hr)")
 
-            attributesAfterStart
-                .previewContext(contentStateAfterStart, viewKind: .content)
+            // State 2: Less than 1 hour away - Show countdown with QR code
+            attributesLessThanOneHour
+                .previewContext(contentStateLessThanOneHour, viewKind: .content)
+                .previewDisplayName("Lock Screen - Countdown + QR (<1hr)")
+
+            // State 3: Event started - Show countdown with progress
+            attributesDuringEvent
+                .previewContext(contentStateDuringEvent, viewKind: .content)
                 .previewDisplayName("Lock Screen - Event Started")
 
-            attributesBeforeStart
-                .previewContext(contentStateBeforeStart, viewKind: .dynamicIsland(.expanded))
-                .previewDisplayName("Dynamic Island - Expanded")
+            attributesMoreThanOneHour
+                .previewContext(contentStateMoreThanOneHour, viewKind: .dynamicIsland(.expanded))
+                .previewDisplayName("Dynamic Island - Expanded (Before)")
 
-            attributesBeforeStart
-                .previewContext(contentStateBeforeStart, viewKind: .dynamicIsland(.compact))
+            attributesDuringEvent
+                .previewContext(contentStateDuringEvent, viewKind: .dynamicIsland(.expanded))
+                .previewDisplayName("Dynamic Island - Expanded (During)")
+
+            attributesLessThanOneHour
+                .previewContext(contentStateLessThanOneHour, viewKind: .dynamicIsland(.compact))
                 .previewDisplayName("Dynamic Island - Compact")
         }
     }

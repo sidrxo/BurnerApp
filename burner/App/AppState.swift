@@ -279,13 +279,52 @@ class AppState: ObservableObject {
         NotificationCenter.default.post(name: NSNotification.Name("EmptyStateDisabled"), object: nil)
     }
     
-    // MARK: - Live Activity Debug
-    func simulateEventToday() {
-        // Create a test event starting 2 hours from now
+    // MARK: - Live Activity Debug Methods
+    
+    // Simulate event more than 1 hour away (shows event time)
+    func simulateEventMoreThanOneHour() {
+        let calendar = Calendar.current
+        let now = Date()
+        let startTime = calendar.date(byAdding: .hour, value: 3, to: now)!
+        let endTime = calendar.date(byAdding: .hour, value: 8, to: now)!
+        
+        createDebugEvent(startTime: startTime, endTime: endTime)
+    }
+    
+    // Simulate event within one hour (shows countdown + QR code)
+    func simulateEventWithinOneHour() {
+        let calendar = Calendar.current
+        let now = Date()
+        let startTime = calendar.date(byAdding: .minute, value: 45, to: now)!
+        let endTime = calendar.date(byAdding: .hour, value: 5, to: now)!
+        
+        createDebugEvent(startTime: startTime, endTime: endTime)
+    }
+    
+    // Simulate event that hasn't started yet (no progress bar)
+    func simulateEventBeforeStart() {
         let calendar = Calendar.current
         let now = Date()
         let startTime = calendar.date(byAdding: .hour, value: 2, to: now)!
-        let endTime = calendar.date(byAdding: .hour, value: 5, to: now)!
+        let endTime = calendar.date(byAdding: .hour, value: 6, to: now)!
+        
+        createDebugEvent(startTime: startTime, endTime: endTime)
+    }
+    
+    // Simulate event that's already started (with progress bar)
+    func simulateEventDuringEvent() {
+        let calendar = Calendar.current
+        let now = Date()
+        // Event started 1 hour ago
+        let startTime = calendar.date(byAdding: .hour, value: -1, to: now)!
+        // Event ends in 3 hours
+        let endTime = calendar.date(byAdding: .hour, value: 3, to: now)!
+        
+        createDebugEvent(startTime: startTime, endTime: endTime)
+    }
+    
+    private func createDebugEvent(startTime: Date, endTime: Date) {
+        let now = Date()
         
         // Create a test ticket with all required fields
         let testTicket = Ticket(
@@ -325,14 +364,19 @@ class AppState: ObservableObject {
                 endTime: endTime
             )
             
-            // Calculate initial content state
+            // Calculate initial content state with progress
             let (timeString, hasStarted) = calculateTimeUntilEvent(
+                startTime: testTicket.startTime,
+                endTime: endTime
+            )
+            let progress = calculateProgress(
                 startTime: testTicket.startTime,
                 endTime: endTime
             )
             let contentState = TicketActivityAttributes.ContentState(
                 timeUntilEvent: timeString,
-                hasEventStarted: hasStarted
+                hasEventStarted: hasStarted,
+                progress: progress
             )
             
             // Start the Live Activity
@@ -366,7 +410,34 @@ class AppState: ObservableObject {
         }
     }
     
-    // Helper method to calculate time until event (copied from TicketLiveActivityManager)
+    // Helper method to calculate progress (0.0 to 1.0)
+    private func calculateProgress(startTime: Date, endTime: Date?) -> Double {
+        let now = Date()
+        
+        // If we have an end time, calculate progress from start to end
+        if let endTime = endTime {
+            // Before event starts: no progress bar
+            if now < startTime {
+                return 0.0
+            }
+            // During event: progress from start to end
+            else if now >= startTime && now <= endTime {
+                let totalDuration = endTime.timeIntervalSince(startTime)
+                let elapsed = now.timeIntervalSince(startTime)
+                let eventProgress = elapsed / totalDuration
+                return eventProgress // Full 0.0-1.0 range
+            }
+            // After event: full progress
+            else {
+                return 1.0
+            }
+        } else {
+            // No end time - no progress
+            return 0.0
+        }
+    }
+    
+    // Helper method to calculate time until event
     private func calculateTimeUntilEvent(startTime: Date, endTime: Date?) -> (String, Bool) {
         let now = Date()
         let calendar = Calendar.current

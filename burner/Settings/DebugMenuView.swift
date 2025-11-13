@@ -7,7 +7,15 @@ struct DebugMenuView: View {
     @State private var showBurnerError = false
     @State private var burnerErrorMessage = ""
     @State private var showResetConfirmation = false
-    @State private var hasDebugEventActive = false
+    
+    // Four states: no event, more than 1hr, within 1hr, during event
+    enum EventState {
+        case noEvent
+        case moreThanOneHour
+        case withinOneHour
+        case duringEvent
+    }
+    @State private var eventState: EventState = .noEvent
     
     var body: some View {
         VStack(spacing: 0) {
@@ -62,13 +70,11 @@ struct DebugMenuView: View {
 
                     MenuSection(title: "LIVE ACTIVITY") {
                         Button(action: {
-                            toggleDebugEvent()
+                            cycleEventState()
                         }) {
                             MenuItemContent(
-                                title: hasDebugEventActive ? "Clear Debug Event" : "Create Event Today",
-                                subtitle: hasDebugEventActive
-                                    ? "Remove test ticket and end Live Activity"
-                                    : "Add test ticket starting in 2 hours"
+                                title: eventStateTitle,
+                                subtitle: eventStateSubtitle
                             )
                             .contentShape(Rectangle())
                         }
@@ -93,6 +99,32 @@ struct DebugMenuView: View {
             }
         } message: {
             Text("This will clear all app data, sign you out, and reset the app to its first install state. This action cannot be undone.")
+        }
+    }
+    
+    private var eventStateTitle: String {
+        switch eventState {
+        case .noEvent:
+            return "Create Event Later Today"
+        case .moreThanOneHour:
+            return "Show Within One Hour"
+        case .withinOneHour:
+            return "Start Event Now"
+        case .duringEvent:
+            return "Clear Debug Event"
+        }
+    }
+    
+    private var eventStateSubtitle: String {
+        switch eventState {
+        case .noEvent:
+            return "Shows event time (>1 hour away)"
+        case .moreThanOneHour:
+            return "Event time shown with event info"
+        case .withinOneHour:
+            return "Countdown + QR code (<1 hour)"
+        case .duringEvent:
+            return "Event in progress with progress bar"
         }
     }
 
@@ -128,9 +160,9 @@ struct DebugMenuView: View {
             }
             
             // Clear debug event if active
-            if hasDebugEventActive {
+            if eventState != .noEvent {
                 appState.clearDebugEventToday()
-                hasDebugEventActive = false
+                eventState = .noEvent
             }
         }
     }
@@ -176,15 +208,29 @@ struct DebugMenuView: View {
         }
     }
     
-    private func toggleDebugEvent() {
-        if hasDebugEventActive {
-            // Clear the debug event
+    private func cycleEventState() {
+        switch eventState {
+        case .noEvent:
+            // Create event more than 1 hour away (3 hours from now)
+            appState.simulateEventMoreThanOneHour()
+            eventState = .moreThanOneHour
+            
+        case .moreThanOneHour:
+            // Clear previous and create event within one hour (45 min from now)
             appState.clearDebugEventToday()
-            hasDebugEventActive = false
-        } else {
-            // Create the debug event
-            appState.simulateEventToday()
-            hasDebugEventActive = true
+            appState.simulateEventWithinOneHour()
+            eventState = .withinOneHour
+            
+        case .withinOneHour:
+            // Clear previous and create event that's already started
+            appState.clearDebugEventToday()
+            appState.simulateEventDuringEvent()
+            eventState = .duringEvent
+            
+        case .duringEvent:
+            // Clear the event
+            appState.clearDebugEventToday()
+            eventState = .noEvent
         }
     }
 }

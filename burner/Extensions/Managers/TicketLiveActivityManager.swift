@@ -13,14 +13,19 @@ class TicketLiveActivityManager {
             endTime: ticketWithEvent.event.endTime
         )
 
-        // Create content state
+        // Create content state with progress
         let (timeString, hasStarted) = calculateTimeUntilEvent(
+            startTime: ticketWithEvent.event.startTime ?? Date(),
+            endTime: ticketWithEvent.event.endTime
+        )
+        let progress = calculateProgress(
             startTime: ticketWithEvent.event.startTime ?? Date(),
             endTime: ticketWithEvent.event.endTime
         )
         let contentState = TicketActivityAttributes.ContentState(
             timeUntilEvent: timeString,
-            hasEventStarted: hasStarted
+            hasEventStarted: hasStarted,
+            progress: progress
         )
 
         do {
@@ -50,9 +55,14 @@ class TicketLiveActivityManager {
                 startTime: activity.attributes.startTime,
                 endTime: activity.attributes.endTime
             )
+            let progress = calculateProgress(
+                startTime: activity.attributes.startTime,
+                endTime: activity.attributes.endTime
+            )
             let newContentState = TicketActivityAttributes.ContentState(
                 timeUntilEvent: timeString,
-                hasEventStarted: hasStarted
+                hasEventStarted: hasStarted,
+                progress: progress
             )
 
             Task {
@@ -76,6 +86,33 @@ class TicketLiveActivityManager {
                     await activity.end(dismissalPolicy: .immediate)
                 }
             }
+        }
+    }
+    
+    // Calculate progress from 0.0 to 1.0 based on time
+    private static func calculateProgress(startTime: Date, endTime: Date?) -> Double {
+        let now = Date()
+        
+        // If we have an end time, calculate progress from start to end
+        if let endTime = endTime {
+            // Before event starts: no progress bar
+            if now < startTime {
+                return 0.0
+            }
+            // During event: progress from start to end
+            else if now >= startTime && now <= endTime {
+                let totalDuration = endTime.timeIntervalSince(startTime)
+                let elapsed = now.timeIntervalSince(startTime)
+                let eventProgress = elapsed / totalDuration
+                return eventProgress // Full 0.0-1.0 range
+            }
+            // After event: full progress
+            else {
+                return 1.0
+            }
+        } else {
+            // No end time - no progress
+            return 0.0
         }
     }
     

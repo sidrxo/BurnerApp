@@ -6,6 +6,7 @@ struct TicketActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var timeUntilEvent: String
         var hasEventStarted: Bool
+        var progress: Double // 0.0 to 1.0
 
         // Helper to format seconds as HH:MM:SS
         static func formatTime(seconds: Int) -> String {
