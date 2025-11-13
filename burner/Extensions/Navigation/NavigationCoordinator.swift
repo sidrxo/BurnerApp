@@ -45,6 +45,7 @@ enum NavigationDestination: Hashable {
 
     // Ticket Navigation
     case ticketDetail(Ticket)
+    case ticketById(String)
     case ticketPurchase(Event)
     case transferTicket(Ticket)
     case transferTicketsList
@@ -71,6 +72,9 @@ enum NavigationDestination: Hashable {
         case .ticketDetail(let ticket):
             hasher.combine("ticketDetail")
             hasher.combine(ticket.id)
+        case .ticketById(let id):
+            hasher.combine("ticketById")
+            hasher.combine(id)
         case .ticketPurchase(let event):
             hasher.combine("ticketPurchase")
             hasher.combine(event.id)
@@ -104,6 +108,8 @@ enum NavigationDestination: Hashable {
             return lDest == rDest
         case (.ticketDetail(let lTicket), .ticketDetail(let rTicket)):
             return lTicket.id == rTicket.id
+        case (.ticketById(let lId), .ticketById(let rId)):
+            return lId == rId
         case (.ticketPurchase(let lEvent), .ticketPurchase(let rEvent)):
             return lEvent.id == rEvent.id
         case (.transferTicket(let lTicket), .transferTicket(let rTicket)):
@@ -339,6 +345,19 @@ class NavigationCoordinator: ObservableObject {
         // Small delay to ensure state is stable
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             self?.navigate(to: .eventById(eventId), in: .explore)
+        }
+    }
+
+    func handleTicketDeepLink(ticketId: String) {
+        // Switch to tickets tab
+        selectedTab = .tickets
+
+        // Clear any existing navigation
+        ticketsPath.removeLast(ticketsPath.count)
+
+        // Small delay to ensure state is stable
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.navigate(to: .ticketById(ticketId), in: .tickets)
         }
     }
 

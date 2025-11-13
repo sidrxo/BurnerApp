@@ -185,6 +185,8 @@ struct BurnerApp: App {
             switch deeplink {
             case .event(let id):
                 navigateToEvent(eventId: id)
+            case .ticket(let id):
+                navigateToTicket(ticketId: id)
             case .auth(let link):
                 // Handle the passwordless auth link
                 if let linkUrl = URL(string: link) {
@@ -196,6 +198,7 @@ struct BurnerApp: App {
 
     private enum BurnerDeepLink {
         case event(String)
+        case ticket(String)
         case auth(String)
     }
 
@@ -218,12 +221,23 @@ struct BurnerApp: App {
             return id.isEmpty ? nil : .event(id)
         }
 
-        // Case C: burner:///event/12345 (path-based)
+        // Case B2: burner://ticket/12345 (host-based)
+        if comps.host == "ticket" {
+            let id = url.lastPathComponent
+            return id.isEmpty ? nil : .ticket(id)
+        }
+
+        // Case C: burner:///event/12345 or burner:///ticket/12345 (path-based)
         let parts = url.pathComponents.filter { $0 != "/" }
 
-        if parts.count >= 2, parts[0] == "event" {
-            let id = parts[1]
-            return id.isEmpty ? nil : .event(id)
+        if parts.count >= 2 {
+            if parts[0] == "event" {
+                let id = parts[1]
+                return id.isEmpty ? nil : .event(id)
+            } else if parts[0] == "ticket" {
+                let id = parts[1]
+                return id.isEmpty ? nil : .ticket(id)
+            }
         }
 
         return nil
@@ -232,6 +246,11 @@ struct BurnerApp: App {
     private func navigateToEvent(eventId: String) {
         // Use NavigationCoordinator for deep linking
         appState.navigationCoordinator.handleDeepLink(eventId: eventId)
+    }
+
+    private func navigateToTicket(ticketId: String) {
+        // Use NavigationCoordinator for ticket deep linking
+        appState.navigationCoordinator.handleTicketDeepLink(ticketId: ticketId)
     }
 
     private func setupResetObserver() {
