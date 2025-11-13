@@ -73,7 +73,10 @@ struct TicketsView: View {
     }
 
     private var pastTickets: [TicketWithEventData] {
-        filteredTickets.filter { isEventPast($0.event) }
+        filteredTickets.filter { ticketWithEvent in
+            isEventPast(ticketWithEvent.event) &&
+            ticketWithEvent.ticket.status != "cancelled"
+        }
     }
 
     var body: some View {
@@ -250,6 +253,13 @@ struct TicketsView: View {
                                     isPast: false,
                                     onCancel: {
                                         // Handle ticket cancellation
+                                    },
+                                    onDelete: { ticketId in
+                                        do {
+                                            try await ticketsViewModel.deleteTicket(ticketId: ticketId)
+                                        } catch {
+                                            print("Error deleting ticket: \(error)")
+                                        }
                                     }
                                 )
                             }
@@ -271,6 +281,13 @@ struct TicketsView: View {
                                         isPast: true,
                                         onCancel: {
                                             // No longer used
+                                        },
+                                        onDelete: { ticketId in
+                                            do {
+                                                try await ticketsViewModel.deleteTicket(ticketId: ticketId)
+                                            } catch {
+                                                print("Error deleting ticket: \(error)")
+                                            }
                                         }
                                     )
                                 }

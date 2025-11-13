@@ -17,6 +17,7 @@ struct EventRow: View {
     let bookmarkManager: BookmarkManager?
     let configuration: Configuration
     let onCancel: (() -> Void)?
+    let onDelete: ((String) async -> Void)?
     let distanceText: String?
     @Binding var showingSignInAlert: Bool
 
@@ -26,6 +27,7 @@ struct EventRow: View {
         bookmarkManager: BookmarkManager? = nil,
         configuration: Configuration = .eventList,
         onCancel: (() -> Void)? = nil,
+        onDelete: ((String) async -> Void)? = nil,
         distanceText: String? = nil,
         showingSignInAlert: Binding<Bool> = .constant(false)
     ) {
@@ -34,6 +36,7 @@ struct EventRow: View {
         self.bookmarkManager = bookmarkManager
         self.configuration = configuration
         self.onCancel = onCancel
+        self.onDelete = onDelete
         self.distanceText = distanceText
         self._showingSignInAlert = showingSignInAlert
     }
@@ -178,8 +181,16 @@ struct EventRow: View {
     // MARK: - Context Menu
     @ViewBuilder
     private var contextMenuContent: some View {
-        // Context menu removed - using swipe actions instead
-        EmptyView()
+        // Show delete option only for tickets
+        if let ticket = ticket, let ticketId = ticket.id, let onDelete = onDelete {
+            Button(role: .destructive) {
+                Task {
+                    await onDelete(ticketId)
+                }
+            } label: {
+                Label("Delete Ticket", systemImage: "trash")
+            }
+        }
     }
     
     // MARK: - Helper Properties
@@ -253,30 +264,33 @@ extension EventRow {
             bookmarkManager: bookmarkManager,
             configuration: .eventList,
             onCancel: nil,
+            onDelete: nil,
             distanceText: nil,
             showingSignInAlert: showingSignInAlert
         )
     }
 
-    init(ticketWithEvent: TicketWithEventData, isPast: Bool, onCancel: @escaping () -> Void) {
+    init(ticketWithEvent: TicketWithEventData, isPast: Bool, onCancel: @escaping () -> Void, onDelete: ((String) async -> Void)? = nil) {
         self.init(
             event: ticketWithEvent.event,
             ticket: ticketWithEvent.ticket,
             bookmarkManager: nil,
             configuration: .ticketRow,
             onCancel: onCancel,
+            onDelete: onDelete,
             distanceText: nil,
             showingSignInAlert: .constant(false)
         )
     }
 
-    init(ticketWithEvent: TicketWithEventData, isPast: Bool, bookmarkManager: BookmarkManager, onCancel: @escaping () -> Void) {
+    init(ticketWithEvent: TicketWithEventData, isPast: Bool, bookmarkManager: BookmarkManager, onCancel: @escaping () -> Void, onDelete: ((String) async -> Void)? = nil) {
         self.init(
             event: ticketWithEvent.event,
             ticket: ticketWithEvent.ticket,
             bookmarkManager: bookmarkManager,
             configuration: .ticketRowWithBookmark,
             onCancel: onCancel,
+            onDelete: onDelete,
             distanceText: nil,
             showingSignInAlert: .constant(false)
         )

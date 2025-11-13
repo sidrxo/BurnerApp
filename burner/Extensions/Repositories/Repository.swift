@@ -172,6 +172,11 @@ class TicketRepository: ObservableObject {
         return status
     }
     
+    // MARK: - Delete Ticket
+    func deleteTicket(ticketId: String) async throws {
+        try await db.collection("tickets").document(ticketId).delete()
+    }
+
     // MARK: - Stop Observing
     func stopObserving() {
         ticketsListener?.remove()
