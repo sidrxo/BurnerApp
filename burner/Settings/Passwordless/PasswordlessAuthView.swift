@@ -200,6 +200,12 @@ struct PasswordlessAuthView: View {
         .onDisappear {
             stopCountdown()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
+            // Dismiss this view when user successfully signs in
+            dismiss()
+            // Also dismiss the parent sign-in sheet
+            showingSignIn = false
+        }
     }
     
     // MARK: - Instruction Row
