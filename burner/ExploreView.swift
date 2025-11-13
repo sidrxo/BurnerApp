@@ -265,7 +265,7 @@ struct ExploreView: View {
     // MARK: - Build Content Sections (final order with genre sections)
     @ViewBuilder
     private func buildContentSections() -> some View {
-        // 1) featured card (index 0)
+        // 1) Featured card (index 0)
         if let e0 = featuredEvents[safe: 0] {
             featuredCard(e0)
         }
@@ -294,45 +294,33 @@ struct ExploreView: View {
             )
         }
 
-        // 4) featured card (index 1)
+        // 4) Featured card (index 1)
         if let e1 = featuredEvents[safe: 1] {
             featuredCard(e1)
         }
 
-        // 5) Nearby (if available)
+        // 5) Nearby section + Featured card (linked together - only show if nearby events exist)
         if !nearbyEvents.isEmpty {
             nearbySection
+
+            // Featured card (index 2) - only shows when nearby section shows
+            if let e2 = featuredEvents[safe: 2] {
+                featuredCard(e2)
+            }
+        } else if userLocationManager.currentCLLocation != nil {
+            // Show "no events nearby" message when user has location but no nearby events
+            noNearbyEventsMessage
         }
 
-        // 6) featured card (index 2)
-        if let e2 = featuredEvents[safe: 2] {
-            featuredCard(e2)
-        }
-
-        // 7) Genre cards (horizontal scroll)
+        // 6) Genre cards (horizontal scroll)
         if !displayGenres.isEmpty {
             GenreCardsScrollRow(genres: displayGenres, allEventsForGenre: { g in allEventsForGenre(g) })
         }
 
-        // featured card after genre cards
-        if let nextFeature = featuredEvents[safe: 3] {
-            featuredCard(nextFeature)
-        }
+        // 7) Genre sections with featured cards interspersed every 2 sections
+        buildGenreSectionsWithFeaturedCards()
 
-        // 8) Genre Sections (like before)
-        let genresWithEvents = displayGenres.filter { !allEventsForGenre($0).isEmpty }
-        ForEach(genresWithEvents, id: \.self) { genre in
-            EventSection(
-                title: genre,
-                events: eventsForGenrePreview(genre),
-                allEvents: allEventsForGenre(genre),
-                bookmarkManager: bookmarkManager,
-                showViewAllButton: true,
-                showingSignInAlert: $showingSignInAlert
-            )
-        }
-
-        // 9) All Events
+        // 8) All Events
         if !allEvents.isEmpty {
             EventSection(
                 title: "All Events",
@@ -342,6 +330,32 @@ struct ExploreView: View {
                 showViewAllButton: allEvents.count > 6,
                 showingSignInAlert: $showingSignInAlert
             )
+        }
+    }
+
+    // MARK: - Helper: Build Genre Sections with Featured Cards
+    @ViewBuilder
+    private func buildGenreSectionsWithFeaturedCards() -> some View {
+        let genresWithEvents = displayGenres.filter { !allEventsForGenre($0).isEmpty }
+
+        ForEach(Array(genresWithEvents.enumerated()), id: \.element) { index, genre in
+            EventSection(
+                title: genre,
+                events: eventsForGenrePreview(genre),
+                allEvents: allEventsForGenre(genre),
+                bookmarkManager: bookmarkManager,
+                showViewAllButton: true,
+                showingSignInAlert: $showingSignInAlert
+            )
+
+            // Add featured card after every 2 genre sections
+            // Featured cards start at index 3 (since 0, 1, 2 are used above)
+            if (index + 1) % 2 == 0 {
+                let featuredIndex = 3 + (index + 1) / 2 - 1
+                if let featured = featuredEvents[safe: featuredIndex] {
+                    featuredCard(featured)
+                }
+            }
         }
     }
 
@@ -384,6 +398,42 @@ struct ExploreView: View {
                     .buttonStyle(PlainButtonStyle())
                 }
             }
+        }
+        .padding(.bottom, 40)
+    }
+
+    // MARK: - Helper: No Nearby Events Message
+    private var noNearbyEventsMessage: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Nearby")
+                    .appSectionHeader()
+                    .foregroundColor(.white)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+
+            HStack {
+                Spacer()
+                VStack(spacing: 8) {
+                    Image(systemName: "mappin.slash")
+                        .font(.system(size: 32))
+                        .foregroundColor(.gray)
+
+                    Text("No events nearby")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.gray)
+
+                    Text("Try expanding your search area")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray.opacity(0.7))
+                }
+                .padding(.vertical, 32)
+                Spacer()
+            }
+            .background(Color.white.opacity(0.05))
+            .cornerRadius(12)
+            .padding(.horizontal, 20)
         }
         .padding(.bottom, 40)
     }
