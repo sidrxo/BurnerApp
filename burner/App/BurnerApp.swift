@@ -4,6 +4,7 @@ import FirebaseAuth
 import FirebaseFirestore
 import GoogleSignIn
 import Kingfisher
+import ActivityKit
 
 // MARK: - AppDelegate
 class AppDelegate: NSObject, UIApplicationDelegate {
@@ -153,6 +154,13 @@ struct BurnerApp: App {
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             configureGlobalAppearance()
+
+            // Update live activities when app becomes active
+            if newPhase == .active {
+                if #available(iOS 16.1, *) {
+                    TicketLiveActivityManager.updateLiveActivity()
+                }
+            }
         }
     }
 

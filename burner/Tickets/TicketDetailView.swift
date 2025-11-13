@@ -99,6 +99,7 @@ struct TicketDetailView: View {
     @State private var hasStartedLiveActivity = false
     @State private var isLiveActivityActive = false
     @State private var showTransferSuccess = false
+    @State private var liveActivityUpdateTimer: Timer?
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
 
@@ -146,6 +147,17 @@ struct TicketDetailView: View {
         .onAppear {
             autoStartLiveActivityForEventDay()
             checkLiveActivityStatus()
+            updateLiveActivityIfNeeded()
+
+            // Start periodic updates every minute to catch state transitions
+            liveActivityUpdateTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { _ in
+                updateLiveActivityIfNeeded()
+            }
+        }
+        .onDisappear {
+            // Clean up timer when view disappears
+            liveActivityUpdateTimer?.invalidate()
+            liveActivityUpdateTimer = nil
         }
     }
 
