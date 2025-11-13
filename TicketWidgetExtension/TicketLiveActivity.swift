@@ -12,20 +12,20 @@ struct TicketLiveActivity: Widget {
                     let hasStarted = context.state.hasEventStarted
                     
                     if hasStarted {
-                        // DURING EVENT: Time until end + event info + progress bar
+                        // DURING EVENT: Time until end + event info + progress bar (INVERTED COLORS)
                         VStack(spacing: 0) {
                             // Time countdown (large, italic) - updates every minute
                             if let eventEndTime = context.state.eventEndTime {
                                 TimelineView(.periodic(from: Date(), by: 60)) { timeContext in
                                     Text(formatTimeRemaining(until: eventEndTime, at: timeContext.date))
                                         .font(.custom("Avenir Next", size: 52).italic().weight(.heavy))
-                                        .foregroundColor(.black)
+                                        .foregroundColor(.white)
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.8)
                                         .monospacedDigit()
                                 }
                             }
-                            
+
                             // Progress bar section - auto-updating with ProgressView
                             if let eventEndTime = context.state.eventEndTime {
                                 ProgressView(
@@ -37,25 +37,25 @@ struct TicketLiveActivity: Widget {
                                     EmptyView()
                                 }
                                 .progressViewStyle(.linear)
-                                .tint(.black)
+                                .tint(.white)
                                 .frame(height: 6)
                                 .padding(.horizontal, 20)
                                 .padding(.top, -8)
                                 .padding(.bottom, 10)
                             }
-                        
+
                             HStack(spacing: 0) {
                                 // Event name
                                 Text(context.attributes.eventName)
                                     .font(.custom("Avenir Next", size: 16))
-                                    .foregroundColor(.black)
+                                    .foregroundColor(.white)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.7)
 
                                 // Separator dot (centered)
                                 HStack {
                                     Circle()
-                                        .fill(Color.black.opacity(0.4))
+                                        .fill(Color.white.opacity(0.4))
                                         .frame(width: 4, height: 4)
                                 }
                                 .frame(width: 16)
@@ -63,7 +63,7 @@ struct TicketLiveActivity: Widget {
                                 // Venue
                                 Text(context.attributes.venue)
                                     .font(.custom("Avenir Next", size: 16))
-                                    .foregroundColor(.black)
+                                    .foregroundColor(.white)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.7)
                             }
@@ -127,9 +127,9 @@ struct TicketLiveActivity: Widget {
                 .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            .background(Color.white)
-            .activityBackgroundTint(Color.white)
-            .activitySystemActionForegroundColor(Color.black)
+            .background(context.state.hasEventStarted ? Color.black : Color.white)
+            .activityBackgroundTint(context.state.hasEventStarted ? Color.black : Color.white)
+            .activitySystemActionForegroundColor(context.state.hasEventStarted ? Color.white : Color.black)
             .widgetURL(URL(string: "burner://ticket/\(context.attributes.ticketId)"))
 
         } dynamicIsland: { context in
