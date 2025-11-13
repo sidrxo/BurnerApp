@@ -8,11 +8,10 @@ struct DebugMenuView: View {
     @State private var burnerErrorMessage = ""
     @State private var showResetConfirmation = false
     
-    // Four states: no event, more than 1hr, within 1hr, during event
+    // Three states: no event, before event starts, during event
     enum EventState {
         case noEvent
-        case moreThanOneHour
-        case withinOneHour
+        case beforeEvent
         case duringEvent
     }
     @State private var eventState: EventState = .noEvent
@@ -106,9 +105,7 @@ struct DebugMenuView: View {
         switch eventState {
         case .noEvent:
             return "Create Event Later Today"
-        case .moreThanOneHour:
-            return "Show Within One Hour"
-        case .withinOneHour:
+        case .beforeEvent:
             return "Start Event Now"
         case .duringEvent:
             return "Clear Debug Event"
@@ -118,11 +115,9 @@ struct DebugMenuView: View {
     private var eventStateSubtitle: String {
         switch eventState {
         case .noEvent:
-            return "Shows event time (>1 hour away)"
-        case .moreThanOneHour:
+            return "Shows event time before start"
+        case .beforeEvent:
             return "Event time shown with event info"
-        case .withinOneHour:
-            return "Countdown + QR code (<1 hour)"
         case .duringEvent:
             return "Event in progress with progress bar"
         }
@@ -211,17 +206,11 @@ struct DebugMenuView: View {
     private func cycleEventState() {
         switch eventState {
         case .noEvent:
-            // Create event more than 1 hour away (3 hours from now)
-            appState.simulateEventMoreThanOneHour()
-            eventState = .moreThanOneHour
+            // Create event that hasn't started yet (2 hours from now)
+            appState.simulateEventBeforeStart()
+            eventState = .beforeEvent
             
-        case .moreThanOneHour:
-            // Clear previous and create event within one hour (45 min from now)
-            appState.clearDebugEventToday()
-            appState.simulateEventWithinOneHour()
-            eventState = .withinOneHour
-            
-        case .withinOneHour:
+        case .beforeEvent:
             // Clear previous and create event that's already started
             appState.clearDebugEventToday()
             appState.simulateEventDuringEvent()

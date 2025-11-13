@@ -8,7 +8,6 @@ struct TicketActivityAttributes: ActivityAttributes {
         var eventEndTime: Date?
         var hasEventStarted: Bool
         var hasEventEnded: Bool
-        var progress: Double // 0.0 to 1.0
     }
 
     var eventName: String

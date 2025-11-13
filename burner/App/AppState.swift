@@ -281,26 +281,6 @@ class AppState: ObservableObject {
     
     // MARK: - Live Activity Debug Methods
     
-    // Simulate event more than 1 hour away (shows event time)
-    func simulateEventMoreThanOneHour() {
-        let calendar = Calendar.current
-        let now = Date()
-        let startTime = calendar.date(byAdding: .hour, value: 3, to: now)!
-        let endTime = calendar.date(byAdding: .hour, value: 8, to: now)!
-        
-        createDebugEvent(startTime: startTime, endTime: endTime)
-    }
-    
-    // Simulate event within one hour (shows countdown + QR code)
-    func simulateEventWithinOneHour() {
-        let calendar = Calendar.current
-        let now = Date()
-        let startTime = calendar.date(byAdding: .minute, value: 45, to: now)!
-        let endTime = calendar.date(byAdding: .hour, value: 5, to: now)!
-        
-        createDebugEvent(startTime: startTime, endTime: endTime)
-    }
-    
     // Simulate event that hasn't started yet (no progress bar)
     func simulateEventBeforeStart() {
         let calendar = Calendar.current
@@ -364,20 +344,15 @@ class AppState: ObservableObject {
                 endTime: endTime
             )
             
-            // Calculate initial content state with progress
+            // Calculate initial content state (no need for progress - ProgressView handles it)
             let now = Date()
             let hasStarted = now >= testTicket.startTime
             let hasEnded = now >= endTime
-            let progress = calculateProgress(
-                startTime: testTicket.startTime,
-                endTime: endTime
-            )
             let contentState = TicketActivityAttributes.ContentState(
                 eventStartTime: testTicket.startTime,
                 eventEndTime: endTime,
                 hasEventStarted: hasStarted,
-                hasEventEnded: hasEnded,
-                progress: progress
+                hasEventEnded: hasEnded
             )
             
             // Start the Live Activity
@@ -408,33 +383,6 @@ class AppState: ObservableObject {
         // End all live activities
         if #available(iOS 16.1, *) {
             TicketLiveActivityManager.endLiveActivity()
-        }
-    }
-    
-    // Helper method to calculate progress (0.0 to 1.0)
-    private func calculateProgress(startTime: Date, endTime: Date?) -> Double {
-        let now = Date()
-        
-        // If we have an end time, calculate progress from start to end
-        if let endTime = endTime {
-            // Before event starts: no progress bar
-            if now < startTime {
-                return 0.0
-            }
-            // During event: progress from start to end
-            else if now >= startTime && now <= endTime {
-                let totalDuration = endTime.timeIntervalSince(startTime)
-                let elapsed = now.timeIntervalSince(startTime)
-                let eventProgress = elapsed / totalDuration
-                return eventProgress // Full 0.0-1.0 range
-            }
-            // After event: full progress
-            else {
-                return 1.0
-            }
-        } else {
-            // No end time - no progress
-            return 0.0
         }
     }
 }
