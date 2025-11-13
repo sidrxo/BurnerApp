@@ -35,9 +35,6 @@ struct SearchEventHandlers: ViewModifier {
             .onChange(of: viewModel.userLocation?.coordinate.longitude) { _, _ in
                 handleLocationUpdate()
             }
-            .onChange(of: userLocationManager.savedLocation) { _, newLocation in
-                handleSavedLocationChange(newLocation: newLocation)
-            }
             .onAppear {
                 handleOnAppear()
             }
@@ -70,13 +67,6 @@ struct SearchEventHandlers: ViewModifier {
         }
     }
 
-    private func handleSavedLocationChange(newLocation: SavedLocation?) {
-        if sortBy == .nearby, let location = newLocation {
-            viewModel.userLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
-            Task { await viewModel.changeSort(to: "nearby", searchText: searchText) }
-        }
-    }
-
     private func handleOnAppear() {
         if let currentSort = sortBy {
             Task {
@@ -96,7 +86,7 @@ struct SearchView: View {
     @StateObject private var viewModel: SearchViewModel
 
     @State private var searchText = ""
-    @State private var sortBy: SortOption? = nil
+    @State private var sortBy: SortOption? = .date
     @State private var pendingNearbySortRequest = false
     @State private var showingSignInAlert = false
     @State private var showingLocationPermissionAlert = false
@@ -137,12 +127,6 @@ struct SearchView: View {
             ))
             .overlay {
                 alertsOverlay
-            }
-            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("EmptyStateEnabled"))) { _ in
-                viewModel.clearAllResults()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("EmptyStateDisabled"))) { _ in
-                handleEmptyStateDisabled()
             }
     }
 
@@ -210,14 +194,6 @@ struct SearchView: View {
     private func setupInitialState() {
         viewModel.setLocationManager(userLocationManager)
         viewModel.setSourceEvents(eventViewModel.events)
-    }
-
-    private func handleEmptyStateDisabled() {
-        if let currentSort = sortBy {
-            Task {
-                await viewModel.changeSort(to: currentSort.rawValue, searchText: searchText)
-            }
-        }
     }
     
     // Helper function to handle location updates
@@ -655,7 +631,7 @@ class SearchViewModel: ObservableObject {
         searchCache.removeAll()
         currentSortBy = sortBy
         currentSearchText = searchText
-        
+
         if searchText.isEmpty {
             if sortBy == "nearby" {
                 await sortEventsByDistance()
@@ -665,16 +641,5 @@ class SearchViewModel: ObservableObject {
         } else {
             await performSearch(searchText: searchText, sortBy: sortBy)
         }
-    }
-
-    // MARK: - Clear All Results (for Debug Empty State)
-    func clearAllResults() {
-        events = []
-        searchCache.removeAll()
-        currentSearchText = ""
-        currentSortBy = ""
-        isLoading = false
-        isLoadingMore = false
-        errorMessage = nil
     }
 }
