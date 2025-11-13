@@ -19,6 +19,7 @@ struct EventDetailView: View {
     @State private var userHasTicket = false
     @State private var showingSignInAlert = false // ✅ NEW
     @State private var showingMapsSheet = false
+    @State private var isDescriptionExpanded = false
     
     // Get screen height for responsive sizing
     private let screenHeight = UIScreen.main.bounds.height
@@ -141,18 +142,34 @@ struct EventDetailView: View {
                         // Content Section - More compact spacing
                         VStack(spacing: 16) {
                            
-                            // Description - more compact
+                            // Description - more compact with read more
                             if let description = event.description, !description.isEmpty {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("About")
                                         .appBody()
                                         .foregroundColor(.white)
 
-                                    Text(description)
-                                        .appBody()
-                                        .foregroundColor(.gray)
-                                        .lineSpacing(2)
-                                        .lineLimit(6)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(description)
+                                            .appBody()
+                                            .foregroundColor(.gray)
+                                            .lineSpacing(2)
+                                            .lineLimit(isDescriptionExpanded ? nil : 6)
+                                            .animation(.easeInOut, value: isDescriptionExpanded)
+
+                                        if description.count > 200 {
+                                            Button(action: {
+                                                withAnimation {
+                                                    isDescriptionExpanded.toggle()
+                                                }
+                                            }) {
+                                                Text(isDescriptionExpanded ? "Read Less" : "Read More")
+                                                    .appCaption()
+                                                    .foregroundColor(.blue)
+                                                    .padding(.top, 4)
+                                            }
+                                        }
+                                    }
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 20)

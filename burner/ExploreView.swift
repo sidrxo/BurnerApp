@@ -218,7 +218,7 @@ struct ExploreView: View {
                 .padding(.bottom, 100)
             }
             .refreshable {
-                eventViewModel.fetchEvents()
+                await eventViewModel.refreshEvents()
             }
             .navigationBarHidden(true)
             .background(Color.black)

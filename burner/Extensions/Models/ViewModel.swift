@@ -50,12 +50,26 @@ class EventViewModel: ObservableObject {
                 case .success(let events):
                     self.events = events
                     await self.refreshUserTicketStatus()
-                    
+
                 case .failure(let error):
                     self.errorMessage = "Failed to load events: \(error.localizedDescription)"
                 }
             }
         }
+    }
+
+    // MARK: - Refresh Events (Force refresh by restarting listener)
+    func refreshEvents() async {
+        guard !isSimulatingEmptyData else { return }
+
+        // Stop the existing listener
+        eventRepository.stopObserving()
+
+        // Small delay to ensure clean restart
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+
+        // Restart the listener
+        fetchEvents()
     }
 
     // MARK: - Debug helpers
@@ -221,6 +235,12 @@ class TicketsViewModel: ObservableObject {
     func clearTickets() {
         tickets = []
         errorMessage = nil
+    }
+
+    // MARK: - Delete Ticket
+    func deleteTicket(ticketId: String) async throws {
+        try await ticketRepository.deleteTicket(ticketId: ticketId)
+        // The real-time listener will automatically update the tickets array
     }
 
     // MARK: - Debug helpers
