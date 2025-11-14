@@ -201,17 +201,42 @@ class StripePaymentService: NSObject, ObservableObject {
     }
 
     // -------------------------
-    // Confirm Purchase (Create Ticket)
+    // Confirm Purchase (Create Ticket) with Retry Logic
     // -------------------------
-    private func confirmPurchase(paymentIntentId: String) async throws -> PaymentResult {
-        let result = try await functions.httpsCallable("confirmPurchase").call(["paymentIntentId": paymentIntentId])
-        guard let data = result.data as? [String: Any],
-              let success = data["success"] as? Bool else {
-            throw PaymentError.invalidResponse
+    private func confirmPurchase(paymentIntentId: String, retryCount: Int = 0) async throws -> PaymentResult {
+        let maxRetries = 3
+        let baseDelay: UInt64 = 1_000_000_000 // 1 second in nanoseconds
+
+        do {
+            let result = try await functions.httpsCallable("confirmPurchase").call(["paymentIntentId": paymentIntentId])
+            guard let data = result.data as? [String: Any],
+                  let success = data["success"] as? Bool else {
+                throw PaymentError.invalidResponse
+            }
+            let message = data["message"] as? String ?? "Purchase completed"
+            let ticketId = data["ticketId"] as? String
+            return PaymentResult(success: success, message: message, ticketId: ticketId)
+
+        } catch {
+            // Check if error is network-related and retryable
+            let nsError = error as NSError
+            let isNetworkError = nsError.domain == NSURLErrorDomain ||
+                                nsError.code == NSURLErrorNotConnectedToInternet ||
+                                nsError.code == NSURLErrorTimedOut ||
+                                nsError.code == NSURLErrorNetworkConnectionLost
+
+            if isNetworkError && retryCount < maxRetries {
+                // Exponential backoff: 1s, 2s, 4s
+                let delay = baseDelay * UInt64(pow(2.0, Double(retryCount)))
+                print("⚠️ [Payment] Network error, retrying (\(retryCount + 1)/\(maxRetries)) after \(delay / 1_000_000_000)s...")
+
+                try await Task.sleep(nanoseconds: delay)
+                return try await confirmPurchase(paymentIntentId: paymentIntentId, retryCount: retryCount + 1)
+            } else {
+                // Not retryable or max retries reached
+                throw error
+            }
         }
-        let message = data["message"] as? String ?? "Purchase completed"
-        let ticketId = data["ticketId"] as? String
-        return PaymentResult(success: success, message: message, ticketId: ticketId)
     }
 
     // -------------------------

@@ -42,16 +42,40 @@ class AppState: ObservableObject {
     private var hasCompletedInitialAuthCheck = false
     
     private var cancellables = Set<AnyCancellable>()
-    
-    
+
+    // NotificationCenter observers (need cleanup)
+    private var burnerModeObserver: NSObjectProtocol?
+    private var resetObserver: NSObjectProtocol?
+    private var emptyStateEnabledObserver: NSObjectProtocol?
+    private var emptyStateDisabledObserver: NSObjectProtocol?
+
     // Shared repository instances
     private let eventRepository: EventRepository
     private let ticketRepository: TicketRepository
     private let bookmarkRepository: BookmarkRepository
     private let userRepository: UserRepository
-    
+
     // Burner Mode Manager (shared)
     let burnerManager: BurnerModeManager
+
+    deinit {
+        // Remove all NotificationCenter observers
+        if let observer = burnerModeObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = resetObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = emptyStateEnabledObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = emptyStateDisabledObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+
+        // Cancel all Combine subscriptions
+        cancellables.removeAll()
+    }
     
     init() {
         // Initialize repositories (shared instances)
@@ -152,8 +176,8 @@ class AppState: ObservableObject {
 
     // MARK: - Burner Mode Observer
     private func setupBurnerModeObserver() {
-        // Listen for Burner Mode auto-enabled notification
-        NotificationCenter.default.addObserver(
+        // Listen for Burner Mode auto-enabled notification and store observer
+        burnerModeObserver = NotificationCenter.default.addObserver(
             forName: NSNotification.Name("BurnerModeAutoEnabled"),
             object: nil,
             queue: .main
@@ -266,6 +290,17 @@ class AppState: ObservableObject {
 
         // Notify SearchView to clear its results
         NotificationCenter.default.post(name: NSNotification.Name("EmptyStateEnabled"), object: nil)
+
+        // Set up observer for empty state (if not already set)
+        if emptyStateEnabledObserver == nil {
+            emptyStateEnabledObserver = NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("EmptyStateEnabled"),
+                object: nil,
+                queue: .main
+            ) { _ in
+                // Handle empty state enabled if needed
+            }
+        }
     }
 
     func disableEmptyFirestoreSimulation() {
@@ -277,6 +312,17 @@ class AppState: ObservableObject {
 
         // Notify SearchView to restore its results
         NotificationCenter.default.post(name: NSNotification.Name("EmptyStateDisabled"), object: nil)
+
+        // Set up observer for empty state (if not already set)
+        if emptyStateDisabledObserver == nil {
+            emptyStateDisabledObserver = NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("EmptyStateDisabled"),
+                object: nil,
+                queue: .main
+            ) { _ in
+                // Handle empty state disabled if needed
+            }
+        }
     }
     
     // MARK: - Live Activity Debug Methods

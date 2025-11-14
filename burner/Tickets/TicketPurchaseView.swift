@@ -18,7 +18,8 @@ struct TicketPurchaseView: View {
     @State private var cardParams: STPPaymentMethodCardParams?
     @State private var isCardValid = false
     @State private var selectedSavedCard: StripePaymentService.PaymentMethodInfo?
-    
+    @State private var hasInitiatedPurchase = false // ✅ Prevent duplicate purchases
+
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var coordinator: NavigationCoordinator
     
@@ -403,36 +404,47 @@ struct TicketPurchaseView: View {
     }
     
     private func handleApplePayPayment() {
+        // ✅ Prevent duplicate purchase attempts
+        guard !hasInitiatedPurchase else {
+            print("⚠️ Purchase already in progress, ignoring duplicate tap")
+            return
+        }
+
         guard let eventId = event.id else {
             alertMessage = "Invalid event"
             isSuccess = false
             showingAlert = true
             return
         }
-        
+
         guard Auth.auth().currentUser != nil else {
             alertMessage = "Please log in to purchase a ticket"
             isSuccess = false
             showingAlert = true
             return
         }
-        
+
         guard ApplePayHandler.canMakePayments() else {
             alertMessage = "Apple Pay is not available on this device"
             isSuccess = false
             showingAlert = true
             return
         }
-        
+
+        // ✅ Mark purchase as initiated
+        hasInitiatedPurchase = true
+
         paymentService.processApplePayPayment(
             eventName: event.name,
             amount: event.price,
-            eventId: eventId,
+            eventId: eventId
         ) { result in
             DispatchQueue.main.async {
                 self.alertMessage = result.message
                 self.isSuccess = result.success
                 self.showingAlert = true
+                // ✅ Reset flag after completion
+                self.hasInitiatedPurchase = false
                 if result.success {
                     self.viewModel.fetchEvents()
                 }
@@ -441,17 +453,26 @@ struct TicketPurchaseView: View {
     }
     
     private func handleCardPayment() {
+        // ✅ Prevent duplicate purchase attempts
+        guard !hasInitiatedPurchase else {
+            print("⚠️ Purchase already in progress, ignoring duplicate tap")
+            return
+        }
+
         guard let eventId = event.id,
               let cardParams = cardParams,
               isCardValid else { return }
-        
+
         guard Auth.auth().currentUser != nil else {
             alertMessage = "Please log in to purchase a ticket"
             isSuccess = false
             showingAlert = true
             return
         }
-        
+
+        // ✅ Mark purchase as initiated
+        hasInitiatedPurchase = true
+
         paymentService.processCardPayment(
             cardParams: cardParams,
             eventName: event.name,
@@ -462,6 +483,8 @@ struct TicketPurchaseView: View {
                 self.alertMessage = result.message
                 self.isSuccess = result.success
                 self.showingAlert = true
+                // ✅ Reset flag after completion
+                self.hasInitiatedPurchase = false
                 if result.success {
                     self.viewModel.fetchEvents()
                 }
@@ -470,16 +493,25 @@ struct TicketPurchaseView: View {
     }
     
     private func handleSavedCardPayment() {
+        // ✅ Prevent duplicate purchase attempts
+        guard !hasInitiatedPurchase else {
+            print("⚠️ Purchase already in progress, ignoring duplicate tap")
+            return
+        }
+
         guard let eventId = event.id,
               let savedCard = selectedSavedCard else { return }
-        
+
         guard Auth.auth().currentUser != nil else {
             alertMessage = "Please log in to purchase a ticket"
             isSuccess = false
             showingAlert = true
             return
         }
-        
+
+        // ✅ Mark purchase as initiated
+        hasInitiatedPurchase = true
+
         paymentService.processSavedCardPayment(
             paymentMethodId: savedCard.id,
             eventName: event.name,
@@ -490,6 +522,8 @@ struct TicketPurchaseView: View {
                 self.alertMessage = result.message
                 self.isSuccess = result.success
                 self.showingAlert = true
+                // ✅ Reset flag after completion
+                self.hasInitiatedPurchase = false
                 if result.success {
                     self.viewModel.fetchEvents()
                 }

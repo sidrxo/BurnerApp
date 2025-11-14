@@ -207,9 +207,24 @@ struct BurnerApp: App {
             return nil
         }
 
+        // ✅ SECURITY: Validate URL scheme strictly
+        guard url.scheme?.lowercased() == "burner" else {
+            print("⚠️ [DeepLink] Invalid scheme: \(url.scheme ?? "nil")")
+            return nil
+        }
+
         // Case A: burner://auth?link=<url> (passwordless auth)
         if comps.host == "auth" {
             if let linkParam = comps.queryItems?.first(where: { $0.name == "link" })?.value {
+                // ✅ SECURITY: Validate auth link URL
+                guard let authURL = URL(string: linkParam),
+                      let authScheme = authURL.scheme?.lowercased(),
+                      (authScheme == "https" || authScheme == "http"),
+                      let host = authURL.host,
+                      (host.hasSuffix("firebaseapp.com") || host.hasSuffix("burnerapp.com")) else {
+                    print("⚠️ [DeepLink] Invalid auth link: \(linkParam)")
+                    return nil
+                }
                 return .auth(linkParam)
             }
             return nil
@@ -218,13 +233,23 @@ struct BurnerApp: App {
         // Case B: burner://event/12345 (host-based)
         if comps.host == "event" {
             let id = url.lastPathComponent
-            return id.isEmpty ? nil : .event(id)
+            // ✅ SECURITY: Validate ID format (alphanumeric + hyphens/underscores only)
+            guard !id.isEmpty, isValidID(id) else {
+                print("⚠️ [DeepLink] Invalid event ID: \(id)")
+                return nil
+            }
+            return .event(id)
         }
 
         // Case B2: burner://ticket/12345 (host-based)
         if comps.host == "ticket" {
             let id = url.lastPathComponent
-            return id.isEmpty ? nil : .ticket(id)
+            // ✅ SECURITY: Validate ID format
+            guard !id.isEmpty, isValidID(id) else {
+                print("⚠️ [DeepLink] Invalid ticket ID: \(id)")
+                return nil
+            }
+            return .ticket(id)
         }
 
         // Case C: burner:///event/12345 or burner:///ticket/12345 (path-based)
@@ -233,14 +258,36 @@ struct BurnerApp: App {
         if parts.count >= 2 {
             if parts[0] == "event" {
                 let id = parts[1]
-                return id.isEmpty ? nil : .event(id)
+                guard !id.isEmpty, isValidID(id) else {
+                    print("⚠️ [DeepLink] Invalid event ID: \(id)")
+                    return nil
+                }
+                return .event(id)
             } else if parts[0] == "ticket" {
                 let id = parts[1]
-                return id.isEmpty ? nil : .ticket(id)
+                guard !id.isEmpty, isValidID(id) else {
+                    print("⚠️ [DeepLink] Invalid ticket ID: \(id)")
+                    return nil
+                }
+                return .ticket(id)
             }
         }
 
         return nil
+    }
+
+    // ✅ SECURITY: Validate ID format to prevent injection
+    private func isValidID(_ id: String) -> Bool {
+        // Allow alphanumeric characters, hyphens, and underscores only
+        // Typical Firestore IDs are 20-28 characters
+        let allowedCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
+        let idCharacterSet = CharacterSet(charactersIn: id)
+        guard allowedCharacters.isSuperset(of: idCharacterSet),
+              id.count >= 1,
+              id.count <= 100 else { // Reasonable length limit
+            return false
+        }
+        return true
     }
     
     private func navigateToEvent(eventId: String) {
