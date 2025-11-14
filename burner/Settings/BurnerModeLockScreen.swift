@@ -11,7 +11,9 @@ struct BurnerModeLockScreen: View {
     @State private var timerIsActive = false
     @State private var lockScreenOpacity: Double = 0
     @State private var eventEndTime: Date = Date()
-    
+    @State private var isExiting = false // Prevent race condition in exit
+    @State private var isSettingUpEventTime = false // Prevent concurrent setup calls
+
     // Terminal state
     @State private var showTerminal: Bool = true
     @State private var terminalOpacity: Double = 0
@@ -20,7 +22,7 @@ struct BurnerModeLockScreen: View {
     private var hasShownTerminalThisSession: Bool {
         UserDefaults.standard.bool(forKey: "burnerModeTerminalShown")
     }
-    
+
     private var burnerManager: BurnerModeManager { appState.burnerManager }
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -62,10 +64,12 @@ struct BurnerModeLockScreen: View {
         .statusBarHidden(true)
         .preferredColorScheme(.dark)
         .onReceive(timer) { input in
+            guard !isExiting else { return }
+
             currentTime = input
 
             // Auto-end burner mode when event end time is reached
-            if currentTime >= eventEndTime {
+            if currentTime >= eventEndTime && eventEndTime != Date() {
                 exitBurnerMode()
                 return
             }
@@ -263,9 +267,14 @@ struct BurnerModeLockScreen: View {
 
     // MARK: - Helper Functions
     private func setupEventEndTime() {
+        // Prevent concurrent setup calls
+        guard !isSettingUpEventTime else { return }
+        isSettingUpEventTime = true
+
         // Check if we already have a stored end time for this session
         if let stored = UserDefaults.standard.object(forKey: "burnerModeEventEndTime") as? Date {
             eventEndTime = stored
+            isSettingUpEventTime = false
             return
         }
 
@@ -284,28 +293,34 @@ struct BurnerModeLockScreen: View {
 
         // If we found a scanned ticket, fetch the event to get the end time
         if let ticket = todayScannedTicket {
-            Task {
+            Task { @MainActor in
                 do {
                     let event = try await appState.eventViewModel.fetchEvent(byId: ticket.eventId)
 
-                    await MainActor.run {
-                        if let endTime = event.endTime {
-                            eventEndTime = endTime
-                            UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
+                    if let endTime = event.endTime {
+                        // Use actual event end time with timezone awareness
+                        let calendar = Calendar.current
+                        let timeZone = calendar.timeZone
+                        let components = calendar.dateComponents(in: timeZone, from: endTime)
+                        if let adjustedEndTime = calendar.date(from: components) {
+                            eventEndTime = adjustedEndTime
                         } else {
-                            // Fallback: Use start time + 4 hours if no end time
-                            let fallbackEndTime = ticket.startTime.addingTimeInterval(4 * 3600)
-                            eventEndTime = fallbackEndTime
-                            UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
+                            eventEndTime = endTime
                         }
-                    }
-                } catch {
-                    // If fetching event fails, use ticket start time + 4 hours as fallback
-                    await MainActor.run {
+                        UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
+                    } else {
+                        // Fallback: Use start time + 4 hours if no end time
                         let fallbackEndTime = ticket.startTime.addingTimeInterval(4 * 3600)
                         eventEndTime = fallbackEndTime
                         UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
                     }
+                    isSettingUpEventTime = false
+                } catch {
+                    // If fetching event fails, use ticket start time + 4 hours as fallback
+                    let fallbackEndTime = ticket.startTime.addingTimeInterval(4 * 3600)
+                    eventEndTime = fallbackEndTime
+                    UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
+                    isSettingUpEventTime = false
                 }
             }
         } else {
@@ -313,6 +328,7 @@ struct BurnerModeLockScreen: View {
             let fallbackEndTime = Date().addingTimeInterval(4 * 3600)
             eventEndTime = fallbackEndTime
             UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
+            isSettingUpEventTime = false
         }
     }
 
@@ -326,6 +342,10 @@ struct BurnerModeLockScreen: View {
     }
 
     private func exitBurnerMode() {
+        // Prevent multiple concurrent exit calls
+        guard !isExiting else { return }
+        isExiting = true
+
         UserDefaults.standard.removeObject(forKey: "burnerModeEventEndTime")
         UserDefaults.standard.removeObject(forKey: "burnerModeTerminalShown")
         withAnimation(.easeOut(duration: 0.3)) { lockScreenOpacity = 0 }

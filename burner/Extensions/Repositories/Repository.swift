@@ -24,17 +24,21 @@ class EventRepository: ObservableObject {
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void) {
         // Remove existing listener first to prevent duplicates
         eventsListener?.remove()
-        
+
         print("🔥 [EventRepository] Setting up events listener...")
-        
-        // Note: We fetch all events here and filter in the view layer
-        // This ensures featured events (which may have nil startTime) are included
-        // The ExploreView filters by date client-side for upcoming events
-        
+
+        // Calculate date for filtering (7 days ago to include recent past events)
+        let calendar = Calendar.current
+        let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+
+        // ✅ OPTIMIZED: Add server-side filtering to reduce data transfer
+        // Fetch events with startTime >= 7 days ago OR featured events (startTime may be nil)
+        // This significantly reduces the amount of data fetched from Firestore
         eventsListener = db.collection("events")
+            .whereField("startTime", isGreaterThanOrEqualTo: Timestamp(date: sevenDaysAgo))
             .addSnapshotListener { snapshot, error in
                 print("🔥 [EventRepository] Snapshot listener triggered")
-                
+
                 if let error = error {
                     print("❌ [EventRepository] Error: \(error.localizedDescription)")
                     completion(.failure(error))
@@ -47,8 +51,8 @@ class EventRepository: ObservableObject {
                     return
                 }
 
-                print("✅ [EventRepository] Received \(documents.count) events")
-                
+                print("✅ [EventRepository] Received \(documents.count) events (filtered server-side)")
+
                 let events = documents.compactMap { doc -> Event? in
                     var event = try? doc.data(as: Event.self)
                     event?.id = doc.documentID
@@ -57,6 +61,30 @@ class EventRepository: ObservableObject {
 
                 print("✅ [EventRepository] Parsed \(events.count) events successfully")
                 completion(.success(events))
+            }
+
+        // Also fetch featured events separately (they might have nil startTime)
+        // This ensures featured events are not missed by the date filter
+        db.collection("events")
+            .whereField("isFeatured", isEqualTo: true)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("⚠️ [EventRepository] Featured events fetch error: \(error.localizedDescription)")
+                    return
+                }
+
+                guard let documents = snapshot?.documents else { return }
+
+                let featuredEvents = documents.compactMap { doc -> Event? in
+                    var event = try? doc.data(as: Event.self)
+                    event?.id = doc.documentID
+                    return event
+                }
+
+                if !featuredEvents.isEmpty {
+                    print("✅ [EventRepository] Fetched \(featuredEvents.count) featured events")
+                    completion(.success(featuredEvents))
+                }
             }
     }
     
