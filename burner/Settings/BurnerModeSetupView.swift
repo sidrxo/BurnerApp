@@ -341,7 +341,7 @@ struct PermissionSlideContent: View {
                     InfoBox(
                         icon: "hand.raised.fill",
                         text: "Your privacy is protected. Burner does not read or collect any data about your Screen Time usage.",
-                        color: .orange
+                        color: .white
                     )
                 }
                 .padding(.horizontal, 40)

@@ -22,28 +22,40 @@ class EventRepository: ObservableObject {
     
     // MARK: - Fetch Events with Real-time Updates
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void) {
+        // Remove existing listener first to prevent duplicates
+        eventsListener?.remove()
+        
+        print("🔥 [EventRepository] Setting up events listener...")
+        
         // Note: We fetch all events here and filter in the view layer
         // This ensures featured events (which may have nil startTime) are included
         // The ExploreView filters by date client-side for upcoming events
         
         eventsListener = db.collection("events")
             .addSnapshotListener { snapshot, error in
+                print("🔥 [EventRepository] Snapshot listener triggered")
+                
                 if let error = error {
+                    print("❌ [EventRepository] Error: \(error.localizedDescription)")
                     completion(.failure(error))
                     return
                 }
 
                 guard let documents = snapshot?.documents else {
+                    print("⚠️ [EventRepository] No documents found")
                     completion(.success([]))
                     return
                 }
 
+                print("✅ [EventRepository] Received \(documents.count) events")
+                
                 let events = documents.compactMap { doc -> Event? in
                     var event = try? doc.data(as: Event.self)
                     event?.id = doc.documentID
                     return event
                 }
 
+                print("✅ [EventRepository] Parsed \(events.count) events successfully")
                 completion(.success(events))
             }
     }
@@ -80,6 +92,7 @@ class EventRepository: ObservableObject {
 
     // MARK: - Stop Observing
     func stopObserving() {
+        print("🛑 [EventRepository] Stopping events listener")
         eventsListener?.remove()
         eventsListener = nil
     }
@@ -97,19 +110,30 @@ class TicketRepository: ObservableObject {
     
     // MARK: - Observe User Tickets
     func observeUserTickets(userId: String, completion: @escaping (Result<[Ticket], Error>) -> Void) {
+        // Remove existing listener first to prevent duplicates
+        ticketsListener?.remove()
+        
+        print("🎫 [TicketRepository] Setting up tickets listener for user: \(userId)")
+        
         ticketsListener = db.collection("tickets")
             .whereField("userId", isEqualTo: userId)
             .order(by: "purchaseDate", descending: true)
             .addSnapshotListener { snapshot, error in
+                print("🎫 [TicketRepository] Snapshot listener triggered")
+                
                 if let error = error {
+                    print("❌ [TicketRepository] Error: \(error.localizedDescription)")
                     completion(.failure(error))
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
+                    print("⚠️ [TicketRepository] No documents found")
                     completion(.success([]))
                     return
                 }
+                
+                print("✅ [TicketRepository] Received \(documents.count) tickets")
                 
                 let tickets = documents.compactMap { doc -> Ticket? in
                     var ticket = try? doc.data(as: Ticket.self)
@@ -121,6 +145,7 @@ class TicketRepository: ObservableObject {
                     return ticket
                 }
 
+                print("✅ [TicketRepository] Parsed \(tickets.count) valid tickets")
                 completion(.success(tickets))
             }
     }
@@ -187,6 +212,7 @@ class TicketRepository: ObservableObject {
 
     // MARK: - Stop Observing
     func stopObserving() {
+        print("🛑 [TicketRepository] Stopping tickets listener")
         ticketsListener?.remove()
         ticketsListener = nil
     }
@@ -216,19 +242,30 @@ class BookmarkRepository: ObservableObject {
     
     // MARK: - Observe Bookmarks
     func observeBookmarks(userId: String, completion: @escaping (Result<[BookmarkData], Error>) -> Void) {
+        // Remove existing listener first to prevent duplicates
+        bookmarksListener?.remove()
+        
+        print("🔖 [BookmarkRepository] Setting up bookmarks listener for user: \(userId)")
+        
         bookmarksListener = db.collection("users")
             .document(userId)
             .collection("bookmarks")
             .addSnapshotListener { snapshot, error in
+                print("🔖 [BookmarkRepository] Snapshot listener triggered")
+                
                 if let error = error {
+                    print("❌ [BookmarkRepository] Error: \(error.localizedDescription)")
                     completion(.failure(error))
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
+                    print("⚠️ [BookmarkRepository] No documents found")
                     completion(.success([]))
                     return
                 }
+                
+                print("✅ [BookmarkRepository] Received \(documents.count) bookmarks")
                 
                 let bookmarks = documents.compactMap { doc in
                     try? doc.data(as: BookmarkData.self)
@@ -260,6 +297,7 @@ class BookmarkRepository: ObservableObject {
     
     // MARK: - Stop Observing
     func stopObserving() {
+        print("🛑 [BookmarkRepository] Stopping bookmarks listener")
         bookmarksListener?.remove()
         bookmarksListener = nil
     }
