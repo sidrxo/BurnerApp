@@ -2,21 +2,25 @@ import SwiftUI
 import FamilyControls
 import ManagedSettings
 
-struct PointOffset: Equatable {
-    let x: Float
-    let y: Float
-}
-
 struct BurnerModeSetupView: View {
     @Environment(\.dismiss) var dismiss
     @State private var currentStep = 0
     @State private var authorizationGranted = false
     @State private var showingAppPicker = false
-    @State private var randomOffsets: [PointOffset] = Array(repeating: PointOffset(x: 0, y: 0), count: 16)
     @ObservedObject var burnerManager: BurnerModeManager
     var onSkip: (() -> Void)? = nil
     
     private let totalSteps = 3
+    
+    // Track completion state of current step
+    private var isCurrentStepCompleted: Bool {
+        switch currentStep {
+        case 0: return true  // Welcome is always "complete" when viewing
+        case 1: return authorizationGranted
+        case 2: return burnerManager.isSetupValid
+        default: return false
+        }
+    }
     
     var body: some View {
         ZStack {
@@ -37,106 +41,112 @@ struct BurnerModeSetupView: View {
                     .padding(.top, 16)
                 }
                 
-                // Fixed animated gradient circle at the top
                 Spacer()
-                    .frame(height: 80)
                 
-                AnimatedGradientCircle(randomOffsets: $randomOffsets)
-                    .padding(.bottom, 32)
-                
-                // Sliding content area
-                TabView(selection: $currentStep) {
-                    // Step 1: Welcome
-                    WelcomeSlideContent()
-                        .tag(0)
-                    
-                    // Step 2: Grant Permission
-                    PermissionSlideContent(
-                        authorizationGranted: $authorizationGranted,
-                        onGrantPermission: requestAuthorization
+                // Main content container - centered vertically
+                VStack(spacing: 40) {
+                    // Fixed PNG circle at the top with radial wipe
+                    RadialWipeCircleView(
+                        currentStep: currentStep,
+                        totalSteps: totalSteps,
+                        isStepCompleted: isCurrentStepCompleted
                     )
-                    .tag(1)
                     
-                    // Step 3: Select Categories
-                    CategorySelectionSlideContent(
-                        burnerManager: burnerManager,
-                        showingAppPicker: $showingAppPicker
-                    )
-                    .tag(2)
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                
-                // Progress indicator
-                HStack(spacing: 8) {
-                    ForEach(0..<totalSteps, id: \.self) { index in
-                        Circle()
-                            .fill(currentStep == index ? Color.blue : Color.gray.opacity(0.3))
-                            .frame(width: 8, height: 8)
+                    // Sliding content area
+                    TabView(selection: $currentStep) {
+                        // Step 1: Welcome
+                        WelcomeSlideContent()
+                            .tag(0)
+                        
+                        // Step 2: Grant Permission
+                        PermissionSlideContent(
+                            authorizationGranted: $authorizationGranted,
+                            onGrantPermission: requestAuthorization
+                        )
+                        .tag(1)
+                        
+                        // Step 3: Select Categories
+                        CategorySelectionSlideContent(
+                            burnerManager: burnerManager,
+                            showingAppPicker: $showingAppPicker
+                        )
+                        .tag(2)
                     }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .frame(height: 200)
                 }
-                .padding(.bottom, 20)
+                .padding(.vertical, 40)
                 
-                // Navigation buttons
-                HStack(spacing: 16) {
-                    if currentStep > 0 {
-                        Button(action: {
-                            withAnimation {
-                                currentStep -= 1
-                            }
-                        }) {
-                            Text("Back")
-                                .appBody()
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(Color.white.opacity(0.05))
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                Spacer()
+                
+                VStack(spacing: 12) {
+                    
+                    // Progress indicator
+                    HStack(spacing: 8) {
+                        ForEach(0..<totalSteps, id: \.self) { index in
+                            Circle()
+                                .fill(currentStep == index ? Color.white : Color.gray.opacity(0.3))
+                                .frame(width: 8, height: 8)
                         }
                     }
                     
-                    Button(action: {
-                        handleNextButton()
-                    }) {
-                        Text(getNextButtonText())
-                            .appBody()
-                            .foregroundColor(canProceed() ? .black : .gray)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(canProceed() ? Color.white : Color.gray.opacity(0.3))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    // Navigation buttons - fixed at bottom
+                    HStack(spacing: 16) {
+                        if currentStep > 0 {
+                            Button(action: {
+                                withAnimation {
+                                    currentStep -= 1
+                                }
+                            }) {
+                                Text("BACK")
+                                    .font(.appFont(size: 17))
+                                    .foregroundColor(.white)
+                                    .frame(height: 50)
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.black.opacity(0.7))
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                    )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        
+                        Button(action: {
+                            handleNextButton()
+                        }) {
+                            Text(getNextButtonText().uppercased())
+                                .font(.appFont(size: 17))
+                                .foregroundColor(canProceed() ? .black : .gray)
+                                .frame(height: 50)
+                                .frame(maxWidth: .infinity)
+                                .background(canProceed() ? Color.white : Color.gray.opacity(0.3))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(!canProceed())
                     }
-                    .disabled(!canProceed())
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 40)
             }
         }
         .familyActivityPicker(
             isPresented: $showingAppPicker,
             selection: $burnerManager.selectedApps
         )
-        .onChange(of: currentStep) { _, _ in
-            animateGradient()
-        }
-    }
-    
-    private func animateGradient() {
-        randomOffsets = (0..<16).map { index in
-            if index == 5 || index == 6 || index == 9 || index == 10 {
-                return PointOffset(
-                    x: Float.random(in: -0.2...0.2),
-                    y: Float.random(in: -0.2...0.2)
-                )
-            }
-            return PointOffset(x: 0, y: 0)
-        }
     }
     
     private func getNextButtonText() -> String {
         switch currentStep {
         case 0: return "Get Started"
-        case 1: return authorizationGranted ? "Continue" : "Grant Permission"
-        case 2: return burnerManager.isSetupValid ? "Complete Setup" : "Select Categories"
+        case 1: return authorizationGranted ? "Continue" : "Grant Access"
+        case 2: return burnerManager.isSetupValid ? "Complete" : "Continue"
         default: return "Next"
         }
     }
@@ -187,169 +197,137 @@ struct BurnerModeSetupView: View {
     }
 }
 
-// MARK: - Animated Gradient Circle Component
-struct AnimatedGradientCircle: View {
-    @Binding var randomOffsets: [PointOffset]
-    var size: CGFloat = 120
+// MARK: - Radial Wipe Circle with Glow (ENHANCED)
+struct RadialWipeCircleView: View {
+    let currentStep: Int
+    let totalSteps: Int
+    let isStepCompleted: Bool
+    let circleSize: CGFloat = 80
+    let lineWidth: CGFloat = 12
+    
+    @State private var animatedProgress: Double = 0
+    
+    // Each step has 2 segments: arrival (50%) + completion (50%)
+    private var targetProgress: Double {
+        guard totalSteps > 0 else { return 0 }
+        let totalSegments = totalSteps * 2
+        let baseSegments = currentStep * 2  // Completed previous steps
+        let currentSegments = isStepCompleted ? 2 : 1  // Current step progress
+        return Double(baseSegments + currentSegments) / Double(totalSegments)
+    }
     
     var body: some View {
-        MeshGradient(
-            width: 4,
-            height: 4,
-            points: [
-                [0.0, 0.0],
-                [0.3, 0.0],
-                [0.7, 0.0],
-                [1.0, 0.0],
-
-                [0.0, 0.3],
-                [0.2 + randomOffsets[5].x, 0.4 + randomOffsets[5].y],
-                [0.7 + randomOffsets[6].x, 0.2 + randomOffsets[6].y],
-                [1.0, 0.3],
-
-                [0.0, 0.7],
-                [0.3 + randomOffsets[9].x, 0.8 + randomOffsets[9].y],
-                [0.7 + randomOffsets[10].x, 0.6 + randomOffsets[10].y],
-                [1.0, 0.7],
-
-                [0.0, 1.0],
-                [0.3, 1.0],
-                [0.7, 1.0],
-                [1.0, 1.0]
-            ],
-            colors: [
-                .purple, .indigo, .purple, .yellow,
-                .pink, .purple, .pink, .yellow,
-                .orange, .pink, .yellow, .orange,
-                .yellow, .orange, .pink, .purple
-            ]
-        )
-        .frame(width: size, height: size)
-        .clipShape(Circle())
-        .shadow(radius: 20)
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: randomOffsets)
+        ZStack {
+            // Background donut (unfilled track)
+            Circle()
+                .stroke(Color.white.opacity(0.2), lineWidth: lineWidth)
+                .frame(width: circleSize, height: circleSize)
+            
+            // Glowing filled donut with radial progress
+            Circle()
+                .trim(from: 0, to: animatedProgress)
+                .stroke(
+                    Color.white,
+                    style: StrokeStyle(
+                        lineWidth: lineWidth,
+                        lineCap: .round
+                    )
+                )
+                .frame(width: circleSize, height: circleSize)
+                .rotationEffect(.degrees(-90)) // Start from top
+                .shadow(color: .white.opacity(0.6), radius: 8, x: 0, y: 0)
+                .shadow(color: .white.opacity(0.4), radius: 16, x: 0, y: 0)
+                .shadow(color: .white.opacity(0.2), radius: 24, x: 0, y: 0)
+        }
+        .onChange(of: currentStep) { oldValue, newValue in
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.75)) {
+                animatedProgress = targetProgress
+            }
+        }
+        .onChange(of: isStepCompleted) { oldValue, newValue in
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                animatedProgress = targetProgress
+            }
+        }
+        .onAppear {
+            animatedProgress = 0
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.75).delay(0.2)) {
+                animatedProgress = targetProgress
+            }
+        }
     }
 }
 
-// MARK: - Welcome Slide Content (no circle)
+// MARK: - Welcome Slide Content (ENHANCED COPY)
 struct WelcomeSlideContent: View {
     var body: some View {
-        VStack(spacing: 0) {
-            // Header text
+        VStack(spacing: 20) {
             VStack(spacing: 12) {
-                Text("Welcome to Burner.")
+                Text("Welcome to BURNER")
                     .appPageHeader()
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                 
-                Text("Block all distractions and stay focused by restricting access to apps during events.")
+                Text("Lock distracting apps during events. Your ticket won't unlock until you complete setup.")
                     .appBody()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 40)
-            .padding(.bottom, 40)
             
-            // Info boxes
             VStack(spacing: 16) {
                 InfoBox(
-                    icon: "lock.shield.fill",
-                    text: "Block all apps except essentials during events",
-                    color: .white
-                )
-                
-                InfoBox(
                     icon: "clock.fill",
-                    text: "Automatically activates when you attend ticketed events",
+                    text: "BURNER will automatically activate once events start.",
                     color: .white
                 )
             }
-            .padding(.horizontal, 40)
-            
-            Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 20)
     }
 }
 
-struct FeatureRow: View {
-    let icon: String
-    let title: String
-    let description: String
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            Image(systemName: icon)
-                .appSectionHeader()
-                .foregroundColor(.white)
-                .frame(width: 32)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .appBody()
-                    .foregroundColor(.white)
-                Text(description)
-                    .appSecondary()
-                    .foregroundColor(.gray)
-            }
-        }
-    }
-}
-
-// MARK: - Permission Slide Content (no circle)
+// MARK: - Permission Slide Content (ENHANCED COPY)
 struct PermissionSlideContent: View {
     @Binding var authorizationGranted: Bool
     let onGrantPermission: () -> Void
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header text
+        VStack(spacing: 20) {
             VStack(spacing: 12) {
-                Text(authorizationGranted ? "Permission Granted" : "Grant Permission")
+                Text(authorizationGranted ? "Access Granted" : "Enable Screen Time")
                     .appPageHeader()
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                 
                 Text(authorizationGranted
-                    ? "You're all set! Screen Time permissions have been granted."
-                    : "Burner Mode needs Screen Time permissions to block apps. This is required.")
-                    .appBody()
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
+                     ? "All set. Burner Mode can now protect your focus during events."
+                     : "Required to block apps during events. Tap below to grant access in Settings.")
+                .appBody()
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 40)
-            .padding(.bottom, 40)
             
-            // Info boxes
             if authorizationGranted {
                 InfoBox(
                     icon: "checkmark.circle.fill",
-                    text: "Screen Time access enabled successfully",
+                    text: "Screen Time access enabled",
                     color: .green
                 )
-                .padding(.horizontal, 40)
             } else {
                 VStack(spacing: 16) {
                     InfoBox(
-                        icon: "info.circle.fill",
-                        text: "This permission allows the app to manage which apps are accessible during Burner Mode.",
-                        color: .white
-                    )
-                    
-                    InfoBox(
-                        icon: "hand.raised.fill",
-                        text: "Your privacy is protected. Burner does not read or collect any data about your Screen Time usage.",
+                        icon: "lock.shield.fill",
+                        text: "Your data stays private. BURNER never reads or stores Screen Time usage.",
                         color: .white
                     )
                 }
-                .padding(.horizontal, 40)
             }
-            
-            Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 20)
     }
 }
 
@@ -371,83 +349,69 @@ struct InfoBox: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 30)
         .padding(16)
         .background(Color.white.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
-// MARK: - Category Selection Slide Content (no circle)
+// MARK: - Category Selection Slide Content (ENHANCED COPY)
 struct CategorySelectionSlideContent: View {
     @ObservedObject var burnerManager: BurnerModeManager
     @Binding var showingAppPicker: Bool
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header text
+        VStack(spacing: 20) {
             VStack(spacing: 12) {
-                Text(burnerManager.isSetupValid ? "Categories Selected" : "Select App Categories")
+                Text(burnerManager.isSetupValid ? "You're All Set" : "Choose Distractions")
                     .appPageHeader()
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                 
                 Text(burnerManager.isSetupValid
-                    ? "You've selected enough categories. You're ready to use Burner Mode."
-                    : "Select all app categories to enable Burner Mode blocking.")
-                    .appBody()
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
+                     ? "Categories selected. Burner Mode is ready to protect your focus."
+                     : "Select all app categories that distract you. These will be blocked during events.")
+                .appBody()
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 40)
-            .padding(.bottom, 40)
             
-            // Info boxes
             VStack(spacing: 16) {
                 InfoBox(
-                    icon: burnerManager.isSetupValid ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
+                    icon: burnerManager.isSetupValid ? "checkmark.circle.fill" : "square.grid.3x3.fill",
                     text: burnerManager.isSetupValid
-                        ? "Ready for Burner Mode - \(burnerManager.selectedApps.categoryTokens.count) categories selected"
-                        : "Select more categories - \(burnerManager.selectedApps.categoryTokens.count) of \(burnerManager.minimumCategoriesRequired) required",
-                    color: burnerManager.isSetupValid ? .green : .orange
+                    ? "\(burnerManager.selectedApps.categoryTokens.count) categories ready to block"
+                    : "Tap below to select all distracting app categories",
+                    color: burnerManager.isSetupValid ? .green : .white
                 )
                 
                 if !burnerManager.isSetupValid {
                     Button(action: {
                         showingAppPicker = true
                     }) {
-                        HStack {
-                            Image(systemName: "square.grid.3x3.fill")
-                            Text("Open Category Selector")
-                                .appBody()
+                        HStack(spacing: 12) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.appIcon)
+                            Text("CHOOSE APPS")
+                                .font(.appFont(size: 17))
                         }
                         .foregroundColor(.white)
+                        .frame(height: 50)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.white.opacity(0.1))
+                        .background(Color.black.opacity(0.7))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        )
                     }
-                } else {
-                    Button(action: {
-                        showingAppPicker = true
-                    }) {
-                        HStack {
-                            Image(systemName: "pencil")
-                            Text("Modify Selection")
-                                .appBody()
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding(.horizontal, 40)
-            
-            Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 20)
     }
 }

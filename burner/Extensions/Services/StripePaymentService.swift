@@ -120,7 +120,7 @@ class StripePaymentService: NSObject, ObservableObject {
                 await MainActor.run { self.currentPaymentIntentId = intentId }
                 
                 var configuration = PaymentSheet.Configuration()
-                configuration.merchantDisplayName = "Burner"
+                configuration.merchantDisplayName = "BURNER"
                 configuration.applePay = .init(
                     merchantId: "merchant.BurnerTickets",
                     merchantCountryCode: "GB"

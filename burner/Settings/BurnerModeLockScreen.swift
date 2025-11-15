@@ -221,7 +221,7 @@ struct BurnerModeLockScreen: View {
 
             if showExitConfirmation {
                 CustomAlertView(
-                    title: "Exit Burner Mode?",
+                    title: "Exit BURNER?",
                     description: "Are you sure? A 10-minute timer will start before your phone unlocks.",
                     cancelAction: {
                         withAnimation { showExitConfirmation = false }
