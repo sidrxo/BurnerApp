@@ -9,11 +9,11 @@ struct TicketsView: View {
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var coordinator: NavigationCoordinator
-
+    
     @State private var searchText = ""
     @State private var selectedFilter: TicketsFilter = .upcoming
     @FocusState private var isSearchFocused: Bool
-
+    
     private var ticketsWithEvents: [TicketWithEventData] {
         var result: [TicketWithEventData] = []
         for ticket in ticketsViewModel.tickets {
@@ -39,7 +39,7 @@ struct TicketsView: View {
         }
         return result
     }
-
+    
     // Helper function to determine if an event should be considered "past"
     private func isEventPast(_ event: Event) -> Bool {
         guard let startTime = event.startTime else { return true }
@@ -48,7 +48,7 @@ struct TicketsView: View {
         let nextDay6AM = calendar.date(byAdding: .hour, value: 6, to: nextDayEnd) ?? startTime
         return Date() > nextDay6AM
     }
-
+    
     private var filteredTickets: [TicketWithEventData] {
         var result = ticketsWithEvents
         switch selectedFilter {
@@ -67,18 +67,18 @@ struct TicketsView: View {
             ($0.event.startTime ?? Date.distantFuture) < ($1.event.startTime ?? Date.distantFuture)
         }
     }
-
+    
     private var upcomingTickets: [TicketWithEventData] {
         filteredTickets.filter { !isEventPast($0.event) }
     }
-
+    
     private var pastTickets: [TicketWithEventData] {
         filteredTickets.filter { ticketWithEvent in
             isEventPast(ticketWithEvent.event) &&
             ticketWithEvent.ticket.status != "cancelled"
         }
     }
-
+    
     var body: some View {
         // ❌ Removed NavigationView - now handled by MainTabView
         VStack(spacing: 0) {
@@ -101,7 +101,7 @@ struct TicketsView: View {
         .background(Color.black)
         .navigationBarHidden(true)
     }
-
+    
     private var emptyStateView: some View {
         GeometryReader { geometry in
             VStack(spacing: 20) {
@@ -123,7 +123,7 @@ struct TicketsView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
                 }
-
+                
                 Button {
                     // Navigate to Home tab using coordinator
                     coordinator.selectTab(.home)
@@ -145,7 +145,7 @@ struct TicketsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
     }
-
+    
     // MARK: - Search Bar
     private var searchSection: some View {
         VStack(spacing: 16) {
@@ -153,14 +153,14 @@ struct TicketsView: View {
                 Image(systemName: "magnifyingglass")
                     .appBody()
                     .foregroundColor(.gray)
-
+                
                 TextField("Search tickets", text: $searchText)
                     .appBody()
                     .foregroundColor(.white)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .focused($isSearchFocused)
-
+                
                 // Clear button
                 if !searchText.isEmpty {
                     Button(action: {
@@ -184,7 +184,7 @@ struct TicketsView: View {
         }
         .background(Color.black)
     }
-
+    
     // MARK: - Filters Section
     private var filtersSection: some View {
         HStack(spacing: 12) {
@@ -193,20 +193,20 @@ struct TicketsView: View {
                     // Haptic feedback for filter change
                     let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                     impactFeedback.impactOccurred()
-
+                    
                     withAnimation(.easeInOut(duration: AppConstants.standardAnimationDuration)) {
                         selectedFilter = filter
                     }
                 }
             }
-
+            
             Spacer()
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
         .padding(.bottom, 16)
     }
-
+    
     private var loadingView: some View {
         VStack(spacing: 16) {
             ProgressView()
@@ -219,7 +219,7 @@ struct TicketsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
     }
-
+    
     private var emptyFilteredView: some View {
         VStack(spacing: 16) {
             VStack(spacing: 8) {
@@ -237,7 +237,7 @@ struct TicketsView: View {
         .background(Color.black)
         .padding(.bottom, 16)
     }
-
+    
     private var ticketsList: some View {
         ScrollView {
             LazyVStack(spacing: 20) {
@@ -253,13 +253,6 @@ struct TicketsView: View {
                                     isPast: false,
                                     onCancel: {
                                         // Handle ticket cancellation
-                                    },
-                                    onDelete: { ticketId in
-                                        do {
-                                            try await ticketsViewModel.deleteTicket(ticketId: ticketId)
-                                        } catch {
-                                            print("Error deleting ticket: \(error)")
-                                        }
                                     }
                                 )
                             }
@@ -267,7 +260,7 @@ struct TicketsView: View {
                         }
                     }
                 }
-
+                
                 // Past Events Section
                 if !pastTickets.isEmpty {
                     VStack(alignment: .leading, spacing: 16) {
@@ -281,13 +274,6 @@ struct TicketsView: View {
                                         isPast: true,
                                         onCancel: {
                                             // No longer used
-                                        },
-                                        onDelete: { ticketId in
-                                            do {
-                                                try await ticketsViewModel.deleteTicket(ticketId: ticketId)
-                                            } catch {
-                                                print("Error deleting ticket: \(error)")
-                                            }
                                         }
                                     )
                                 }

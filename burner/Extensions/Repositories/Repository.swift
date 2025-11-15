@@ -22,69 +22,31 @@ class EventRepository: ObservableObject {
     
     // MARK: - Fetch Events with Real-time Updates
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void) {
-        // Remove existing listener first to prevent duplicates
         eventsListener?.remove()
-
-        print("🔥 [EventRepository] Setting up events listener...")
-
-        // Calculate date for filtering (7 days ago to include recent past events)
+        
         let calendar = Calendar.current
         let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-
-        // ✅ OPTIMIZED: Add server-side filtering to reduce data transfer
-        // Fetch events with startTime >= 7 days ago OR featured events (startTime may be nil)
-        // This significantly reduces the amount of data fetched from Firestore
+        
         eventsListener = db.collection("events")
             .whereField("startTime", isGreaterThanOrEqualTo: Timestamp(date: sevenDaysAgo))
             .addSnapshotListener { snapshot, error in
-                print("🔥 [EventRepository] Snapshot listener triggered")
-
                 if let error = error {
-                    print("❌ [EventRepository] Error: \(error.localizedDescription)")
                     completion(.failure(error))
                     return
                 }
 
                 guard let documents = snapshot?.documents else {
-                    print("⚠️ [EventRepository] No documents found")
                     completion(.success([]))
                     return
                 }
-
-                print("✅ [EventRepository] Received \(documents.count) events (filtered server-side)")
-
+                
                 let events = documents.compactMap { doc -> Event? in
                     var event = try? doc.data(as: Event.self)
                     event?.id = doc.documentID
                     return event
                 }
 
-                print("✅ [EventRepository] Parsed \(events.count) events successfully")
                 completion(.success(events))
-            }
-
-        // Also fetch featured events separately (they might have nil startTime)
-        // This ensures featured events are not missed by the date filter
-        db.collection("events")
-            .whereField("isFeatured", isEqualTo: true)
-            .getDocuments { snapshot, error in
-                if let error = error {
-                    print("⚠️ [EventRepository] Featured events fetch error: \(error.localizedDescription)")
-                    return
-                }
-
-                guard let documents = snapshot?.documents else { return }
-
-                let featuredEvents = documents.compactMap { doc -> Event? in
-                    var event = try? doc.data(as: Event.self)
-                    event?.id = doc.documentID
-                    return event
-                }
-
-                if !featuredEvents.isEmpty {
-                    print("✅ [EventRepository] Fetched \(featuredEvents.count) featured events")
-                    completion(.success(featuredEvents))
-                }
             }
     }
     
@@ -100,7 +62,6 @@ class EventRepository: ObservableObject {
     func fetchEvents(by ids: [String]) async throws -> [Event] {
         guard !ids.isEmpty else { return [] }
 
-        // Firestore whereIn supports max 10 values
         guard ids.count <= 10 else {
             throw NSError(domain: "EventRepository", code: 400, userInfo: [
                 NSLocalizedDescriptionKey: "Cannot fetch more than 10 events at once with whereIn"
@@ -120,7 +81,6 @@ class EventRepository: ObservableObject {
 
     // MARK: - Stop Observing
     func stopObserving() {
-        print("🛑 [EventRepository] Stopping events listener")
         eventsListener?.remove()
         eventsListener = nil
     }
@@ -138,42 +98,31 @@ class TicketRepository: ObservableObject {
     
     // MARK: - Observe User Tickets
     func observeUserTickets(userId: String, completion: @escaping (Result<[Ticket], Error>) -> Void) {
-        // Remove existing listener first to prevent duplicates
         ticketsListener?.remove()
-        
-        print("🎫 [TicketRepository] Setting up tickets listener for user: \(userId)")
         
         ticketsListener = db.collection("tickets")
             .whereField("userId", isEqualTo: userId)
             .order(by: "purchaseDate", descending: true)
             .addSnapshotListener { snapshot, error in
-                print("🎫 [TicketRepository] Snapshot listener triggered")
-                
                 if let error = error {
-                    print("❌ [TicketRepository] Error: \(error.localizedDescription)")
                     completion(.failure(error))
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
-                    print("⚠️ [TicketRepository] No documents found")
                     completion(.success([]))
                     return
                 }
                 
-                print("✅ [TicketRepository] Received \(documents.count) tickets")
-                
                 let tickets = documents.compactMap { doc -> Ticket? in
                     var ticket = try? doc.data(as: Ticket.self)
                     ticket?.id = doc.documentID
-                    // Filter out deleted tickets
                     if ticket?.status == "deleted" {
                         return nil
                     }
                     return ticket
                 }
 
-                print("✅ [TicketRepository] Parsed \(tickets.count) valid tickets")
                 completion(.success(tickets))
             }
     }
@@ -195,18 +144,15 @@ class TicketRepository: ObservableObject {
 
         var status: [String: Bool] = [:]
 
-        // Initialize all as false
         for eventId in eventIds {
             status[eventId] = false
         }
 
-        // Split into batches of 10 (Firestore whereIn limit)
         let batchSize = 10
         let batches = stride(from: 0, to: eventIds.count, by: batchSize).map {
             Array(eventIds[$0..<min($0 + batchSize, eventIds.count)])
         }
 
-        // Fetch each batch and merge results
         for batch in batches {
             let snapshot = try await db.collection("tickets")
                 .whereField("userId", isEqualTo: userId)
@@ -218,7 +164,6 @@ class TicketRepository: ObservableObject {
                 doc.data()["eventId"] as? String
             })
 
-            // Update status for this batch
             for eventId in batch {
                 if eventIdsWithTickets.contains(eventId) {
                     status[eventId] = true
@@ -228,25 +173,15 @@ class TicketRepository: ObservableObject {
 
         return status
     }
-    
-    // MARK: - Delete Ticket (Soft Delete)
-    func deleteTicket(ticketId: String) async throws {
-        try await db.collection("tickets").document(ticketId).updateData([
-            "status": "deleted",
-            "deletedAt": FieldValue.serverTimestamp(),
-            "updatedAt": FieldValue.serverTimestamp()
-        ])
-    }
 
     // MARK: - Stop Observing
     func stopObserving() {
-        print("🛑 [TicketRepository] Stopping tickets listener")
         ticketsListener?.remove()
         ticketsListener = nil
     }
 }
 
-// MARK: - BookmarkData Model (moved here so it's accessible)
+// MARK: - BookmarkData Model
 struct BookmarkData: Identifiable, Codable, Sendable {
     @DocumentID var id: String?
     let eventId: String
@@ -270,30 +205,21 @@ class BookmarkRepository: ObservableObject {
     
     // MARK: - Observe Bookmarks
     func observeBookmarks(userId: String, completion: @escaping (Result<[BookmarkData], Error>) -> Void) {
-        // Remove existing listener first to prevent duplicates
         bookmarksListener?.remove()
-        
-        print("🔖 [BookmarkRepository] Setting up bookmarks listener for user: \(userId)")
         
         bookmarksListener = db.collection("users")
             .document(userId)
             .collection("bookmarks")
             .addSnapshotListener { snapshot, error in
-                print("🔖 [BookmarkRepository] Snapshot listener triggered")
-                
                 if let error = error {
-                    print("❌ [BookmarkRepository] Error: \(error.localizedDescription)")
                     completion(.failure(error))
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
-                    print("⚠️ [BookmarkRepository] No documents found")
                     completion(.success([]))
                     return
                 }
-                
-                print("✅ [BookmarkRepository] Received \(documents.count) bookmarks")
                 
                 let bookmarks = documents.compactMap { doc in
                     try? doc.data(as: BookmarkData.self)
@@ -305,12 +231,12 @@ class BookmarkRepository: ObservableObject {
     
     // MARK: - Add Bookmark
     func addBookmark(userId: String, bookmark: BookmarkData) async throws {
-        let eventId = bookmark.eventId  // ✅ Changed from bookmark.id to bookmark.eventId
+        let eventId = bookmark.eventId
         
         try db.collection("users")
             .document(userId)
             .collection("bookmarks")
-            .document(eventId)  // Use eventId as the document ID
+            .document(eventId)
             .setData(from: bookmark)
     }
     
@@ -325,7 +251,6 @@ class BookmarkRepository: ObservableObject {
     
     // MARK: - Stop Observing
     func stopObserving() {
-        print("🛑 [BookmarkRepository] Stopping bookmarks listener")
         bookmarksListener?.remove()
         bookmarksListener = nil
     }
@@ -368,21 +293,18 @@ struct UserProfile: Codable, Sendable {
     var venuePermissions: [String]
     var createdAt: Date?
     var lastLoginAt: Date?
-    
-    // NEW: Additional fields from Phase 4
     var phoneNumber: String?
     var stripeCustomerId: String?
     var profileImageUrl: String?
     var preferences: UserPreferences?
 }
 
-// NEW: Preferences struct
+// MARK: - Preferences struct
 struct UserPreferences: Codable, Sendable {
     var notifications: Bool
     var emailMarketing: Bool
     var pushNotifications: Bool
     
-    // Default values
     init(notifications: Bool = true, emailMarketing: Bool = false, pushNotifications: Bool = true) {
         self.notifications = notifications
         self.emailMarketing = emailMarketing

@@ -19,7 +19,7 @@ struct MenuSection<Content: View>: View {
             VStack(spacing: 0) {
                 content
             }
-            .background(Color.gray.opacity(0.1))
+            .background(Color.white.opacity(0.05))
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .padding(.bottom, 24)

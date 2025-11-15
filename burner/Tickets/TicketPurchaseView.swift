@@ -43,7 +43,7 @@ struct TicketPurchaseView: View {
                     eventHeader
                     
                     Divider()
-                        .background(Color.gray.opacity(0.3))
+                        .background(Color.white.opacity(0.05))
                     
                     Group {
                         if currentStep == .paymentMethod {
@@ -52,37 +52,67 @@ struct TicketPurchaseView: View {
                                 priceSummary
                                 
                                 Divider()
-                                    .background(Color.gray.opacity(0.3))
+                                    .background(Color.white.opacity(0.05))
                                     .padding(.horizontal, 20)
                                 
                                 Spacer(minLength: 0)
                                 
-                                // ✅ Buttons section
+                                // ✅ UPDATED: Single line terms with clickable links
+                                VStack(spacing: 8) {
+                                    HStack(spacing: 4) {
+                                        Text("By continuing, you agree to our")
+                                            .appCaption()
+                                            .foregroundColor(.white.opacity(0.7))
+                                        
+                                        NavigationLink(destination: TermsOfServiceView()) {
+                                            Text("Terms of Service")
+                                                .appCaption()
+                                                .foregroundColor(.white)
+                                                .underline()
+                                        }
+                                        
+                                        Text("&")
+                                            .appCaption()
+                                            .foregroundColor(.white.opacity(0.7))
+                                        
+                                        NavigationLink(destination: PrivacyPolicyView()) {
+                                            Text("Privacy Policy")
+                                                .appCaption()
+                                                .foregroundColor(.white)
+                                                .underline()
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 16)
+                                
+                                // ✅ UPDATED: Matching button styles
                                 VStack(spacing: 12) {
                                     if ApplePayHandler.canMakePayments() {
                                         Button(action: {
                                             handleApplePayPayment()
                                         }) {
-                                            HStack(spacing: 6) {
-                                                Text("Buy with")
+                                            HStack(spacing: 12) {
                                                 Image(systemName: "applelogo")
-                                                    .font(.system(size: 24, weight: .semibold))
-                                                    .baselineOffset(-1)
+                                                    .font(.appIcon)
+                                                
+                                                Text("BUY WITH APPLE PAY")
+                                                    .font(.appFont(size: 17))
                                             }
-                                            .appSectionHeader()
-                                            .foregroundColor(.white)
-                                            .frame(maxWidth: .infinity, minHeight: 50)
-                                            .background(Color.black)
-                                            .clipShape(Capsule())
+                                            .foregroundColor(.black)
+                                            .frame(height: 50)
+                                            .frame(maxWidth: .infinity)
+                                            .background(Color.white)
+                                            .clipShape(RoundedRectangle(cornerRadius: 12))
                                             .overlay(
-                                                Capsule()
-                                                    .stroke(Color.white, lineWidth: 2)
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
                                             )
                                         }
                                         .buttonStyle(PlainButtonStyle())
                                         .accessibilityLabel("Buy with Apple Pay")
+                                        .disabled(hasInitiatedPurchase)
                                     }
-                                    
                                     
                                     Button(action: {
                                         withAnimation {
@@ -93,59 +123,97 @@ struct TicketPurchaseView: View {
                                             }
                                         }
                                     }) {
-                                        HStack(spacing: 6) {
-                                            Text("Buy with")
+                                        HStack(spacing: 12) {
                                             Image(systemName: "creditcard.fill")
+                                                .font(.appIcon)
+                                            
+                                            Text("BUY WITH CARD")
+                                                .font(.appFont(size: 17))
                                         }
-                                        .appSectionHeader()
-                                        .foregroundColor(.black)
-                                        .frame(maxWidth: .infinity, minHeight: 50)
-                                        .background(Color.white)
-                                        .clipShape(Capsule())
+                                        .foregroundColor(.white)
+                                        .frame(height: 50)
+                                        .frame(maxWidth: .infinity)
+                                        .background(Color.black.opacity(0.7))
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
                                         .overlay(
-                                            Capsule()
-                                                .stroke(Color.white, lineWidth: 2)
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
                                         )
                                     }
                                     .buttonStyle(PlainButtonStyle())
+                                    .disabled(hasInitiatedPurchase)
                                 }
                                 .padding(.horizontal, 20)
-                                
-                                // Terms
-                                Text("By continuing, you agree to our\nTerms of Service and Privacy Policy.")
-                                    .appCaption()
-                                    .foregroundColor(.gray)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 20)
-                                    .padding(.top, 8)
-                                    .padding(.bottom, 20)
+                                .padding(.bottom, 20)
                             }
                             .padding(.vertical, 20)
                             .frame(maxHeight: .infinity, alignment: .top)
                         } else {
-                            ScrollView {
-                                VStack(spacing: 20) {
-                                    priceSummary
-                                    
-                                    Divider()
-                                        .background(Color.gray.opacity(0.3))
-                                        .padding(.horizontal, 20)
-                                    
-                                    Group {
-                                        switch currentStep {
-                                        case .paymentMethod:
-                                            EmptyView()
-                                        case .cardInput:
+                            VStack(alignment: .leading, spacing: 0) {
+                                // Price summary
+                                priceSummary
+
+                                Divider()
+                                    .background(Color.white.opacity(0.05))
+                                    .padding(.horizontal, 20)
+
+                                Spacer()
+                                
+                                // PAY BUTTON - Fixed at bottom with card input directly above
+                                if currentStep == .cardInput || currentStep == .savedCards {
+                                    VStack(spacing: 20) {
+                                        // ✅ UPDATED: Card input placed directly above the pay button
+                                        if currentStep == .cardInput {
                                             cardInputSection
-                                        case .savedCards:
+                                        } else if currentStep == .savedCards {
                                             savedCardsSection
                                         }
+                                        
+                                        VStack(spacing: 12) {
+                                            if currentStep == .cardInput {
+                                                Button(action: { handleCardPayment() }) {
+                                                    HStack(spacing: 12) {
+                                                        Image(systemName: "creditcard.fill").font(.appIcon)
+                                                        Text("PAY £\(String(format: "%.2f", event.price))")
+                                                            .font(.appFont(size: 17))
+                                                    }
+                                                    .foregroundColor(isCardValid ? .black : .gray)
+                                                    .frame(height: 50)
+                                                    .frame(maxWidth: .infinity)
+                                                    .background(isCardValid ? .white : Color.gray.opacity(0.5))
+                                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 12)
+                                                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                                    )
+                                                }
+                                                .disabled(!isCardValid || hasInitiatedPurchase)
+                                            } else if currentStep == .savedCards {
+                                                Button(action: { handleSavedCardPayment() }) {
+                                                    HStack(spacing: 12) {
+                                                        Image(systemName: "creditcard.fill").font(.appIcon)
+                                                        Text("PAY £\(String(format: "%.2f", event.price))")
+                                                            .font(.appFont(size: 17))
+                                                    }
+                                                    .foregroundColor(selectedSavedCard != nil ? .black : .gray)
+                                                    .frame(height: 50)
+                                                    .frame(maxWidth: .infinity)
+                                                    .background(selectedSavedCard != nil ? .white : Color.gray.opacity(0.5))
+                                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 12)
+                                                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                                    )
+                                                }
+                                                .disabled(selectedSavedCard == nil || hasInitiatedPurchase)
+                                            }
+                                        }
+                                        .padding(.horizontal, 20)
+                                        .padding(.bottom, 20)
                                     }
-                                    .animation(.easeInOut(duration: 0.3), value: currentStep)
                                 }
-                                .padding(.vertical, 20)
-                                .padding(.bottom, 20)
                             }
+                            .padding(.vertical, 20)
                         }
                     }
                 }
@@ -190,6 +258,8 @@ struct TicketPurchaseView: View {
                                 selectedSavedCard = nil
                                 cardParams = nil
                                 isCardValid = false
+                                // ✅ FIXED: Reset hasInitiatedPurchase when user goes back/cancels
+                                hasInitiatedPurchase = false
                             }
                         } else {
                             presentationMode.wrappedValue.dismiss()
@@ -275,19 +345,14 @@ struct TicketPurchaseView: View {
         .padding(.horizontal, 20)
     }
     
+    // ✅ UPDATED: Card input section with minimal spacing
     private var cardInputSection: some View {
-        VStack(spacing: 16) {
-            Text("Enter Card Details")
-                .appBody()
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-            
-            CardInputView(
+        VStack(spacing: 0) {
+                CardInputView(
                 cardParams: $cardParams,
                 isValid: $isCardValid
             )
-            .frame(height: 200)
+            .frame(height: 100)
             .padding(.horizontal, 20)
         }
     }
@@ -440,13 +505,18 @@ struct TicketPurchaseView: View {
             eventId: eventId
         ) { result in
             DispatchQueue.main.async {
-                self.alertMessage = result.message
-                self.isSuccess = result.success
-                self.showingAlert = true
-                // ✅ Reset flag after completion
-                self.hasInitiatedPurchase = false
+                self.hasInitiatedPurchase = false  // ✅ Always reset
+                
+                // ✅ Only show alert if there's a message
+                if !result.message.isEmpty {
+                    self.alertMessage = result.message
+                    self.isSuccess = result.success
+                    self.showingAlert = true
+                }
+                
                 if result.success {
                     self.viewModel.fetchEvents()
+                    self.presentationMode.wrappedValue.dismiss()
                 }
             }
         }

@@ -51,13 +51,12 @@ struct Ticket: Identifiable, Codable, Sendable {
     var purchaseDate: Date
     
     // Status & QR
-    var status: String // "confirmed", "cancelled", "used", "deleted"
+    var status: String
     var qrCode: String?
 
     // Optional metadata
     var venueId: String?
 
-    // Optional status tracking (added when ticket is scanned/cancelled)
     var usedAt: Date?
     var scannedBy: String?
     var cancelledAt: Date?

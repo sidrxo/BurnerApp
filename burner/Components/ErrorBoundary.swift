@@ -104,8 +104,6 @@ struct ErrorBoundary<Content: View>: View {
         errorDetails = error.localizedDescription
 
         
-        print("❌ ErrorBoundary captured: \(error.localizedDescription)")
-        
     }
 
     /// Manually set error state with custom message
@@ -113,8 +111,6 @@ struct ErrorBoundary<Content: View>: View {
         hasError = true
         errorDetails = message
 
-        
-        print("❌ ErrorBoundary captured: \(message)")
         
     }
 }
@@ -157,8 +153,6 @@ class ErrorBoundaryState: ObservableObject {
         errorDetails = error.localizedDescription
 
         
-        print("❌ Error: \(error.localizedDescription)")
-        
     }
 
     func setError(
@@ -170,8 +164,6 @@ class ErrorBoundaryState: ObservableObject {
         errorMessage = message
         errorDetails = nil
 
-        
-        print("❌ Error: \(message)")
         
     }
 

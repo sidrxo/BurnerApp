@@ -12,10 +12,8 @@ class AppState: ObservableObject {
     @Published var ticketsViewModel: TicketsViewModel
     @Published var tagViewModel: TagViewModel
     @Published var authService: AuthenticationService
-    @Published var burnerModeMonitor: BurnerModeMonitor
     @Published var passwordlessAuthHandler: PasswordlessAuthHandler
     @Published var userLocationManager: UserLocationManager
-
 
     // MARK: - Navigation Coordinator
     @Published var navigationCoordinator: NavigationCoordinator
@@ -57,6 +55,11 @@ class AppState: ObservableObject {
 
     // Burner Mode Manager (shared)
     let burnerManager: BurnerModeManager
+    
+    // ✅ FIXED: Use lazy initialization for burnerModeMonitor to avoid using 'self' before initialization
+    lazy var burnerModeMonitor: BurnerModeMonitor = {
+        BurnerModeMonitor(appState: self, burnerManager: self.burnerManager)
+    }()
 
     deinit {
         // Remove all NotificationCenter observers
@@ -114,11 +117,11 @@ class AppState: ObservableObject {
         // Initialize Passwordless Auth Handler
         self.passwordlessAuthHandler = PasswordlessAuthHandler()
 
-        // Initialize Burner Mode Monitor (will start monitoring immediately)
-        self.burnerModeMonitor = BurnerModeMonitor(burnerManager: burnerManager)
-
         // Initialize Navigation Coordinator
         self.navigationCoordinator = NavigationCoordinator()
+
+        // ✅ FIXED: Trigger lazy initialization of burnerModeMonitor after all properties are initialized
+        _ = burnerModeMonitor
 
         setupObservers()
         setupBurnerModeObserver()

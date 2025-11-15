@@ -173,7 +173,7 @@ struct DebugMenuView: View {
                 // Create a Task to handle the async call
                 Task {
                     do {
-                        try await burnerManager.enable()
+                        try await burnerManager.enable(appState: appState) // Add appState parameter
                         // Update UI on main thread
                         await MainActor.run {
                             appState.showingBurnerLockScreen = true

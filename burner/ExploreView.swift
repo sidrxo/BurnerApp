@@ -526,7 +526,7 @@ struct EventSection: View {
                             .font(.appIcon)
                             .foregroundColor(.gray)
                             .frame(width: 32, height: 32)
-                            .background(Color.gray.opacity(0.2))
+                            .background(Color.white.opacity(0.05))
                             .clipShape(Circle())
                     }
                     .buttonStyle(PlainButtonStyle())

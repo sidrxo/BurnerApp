@@ -260,10 +260,12 @@ struct TicketDetailView: View {
                                 VStack(spacing: 12) {
                                     QRCodeView(
                                         data: qrCodeData,
-                                        size: 180,
+                                        size: 190,
                                         backgroundColor: .white,
                                         foregroundColor: .black
                                     )
+                                    .padding(5)
+                                    .background(.white)// 👈 Add padding to the entire VStack
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
                                             .stroke(Color.white.opacity(0.1), lineWidth: 1)

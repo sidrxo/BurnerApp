@@ -89,7 +89,7 @@ struct BurnerModeSetupView: View {
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
-                                .background(Color.gray.opacity(0.2))
+                                .background(Color.white.opacity(0.05))
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                     }
@@ -372,7 +372,7 @@ struct InfoBox: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color.gray.opacity(0.1))
+        .background(Color.white.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

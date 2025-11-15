@@ -378,8 +378,15 @@ class StripePaymentService: NSObject, ObservableObject {
                             }
                         },
                         onCancelled: {
-                            // User dismissed the Apple Pay sheet - do nothing
-                            // Don't call completion, just silently return
+                            // ✅ User cancelled - reset state and notify completion
+                            Task {
+                                await MainActor.run { self.isProcessing = false }
+                                completion(PaymentResult(
+                                    success: false,
+                                    message: "",
+                                    ticketId: nil
+                                ))
+                            }
                         }
                     )
                 }

@@ -79,7 +79,7 @@ struct PaymentSettingsView: View {
                                         .foregroundColor(.white)
                                         .frame(maxWidth: .infinity)
                                         .frame(height: 46)
-                                        .background(Color.gray.opacity(0.3))
+                                        .background(Color.white.opacity(0.05))
                                         .clipShape(RoundedRectangle(cornerRadius: 10))
                                 }
 
@@ -315,7 +315,7 @@ struct PaymentMethodRow: View {
                 .appSectionHeader()
                 .foregroundColor(.white)
                 .frame(width: 40, height: 40)
-                .background(Color.gray.opacity(0.3))
+                .background(Color.white.opacity(0.05))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
             // Card info
@@ -367,7 +367,7 @@ struct PaymentMethodRow: View {
             }
         }
         .padding(12)
-        .background(Color.gray.opacity(0.1))
+        .background(Color.white.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .confirmationDialog(
             "Delete Payment Method",

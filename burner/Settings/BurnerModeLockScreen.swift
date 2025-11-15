@@ -12,7 +12,6 @@ struct BurnerModeLockScreen: View {
     @State private var lockScreenOpacity: Double = 0
     @State private var eventEndTime: Date = Date()
     @State private var isExiting = false // Prevent race condition in exit
-    @State private var isSettingUpEventTime = false // Prevent concurrent setup calls
 
     // Terminal state
     @State private var showTerminal: Bool = true
@@ -267,68 +266,12 @@ struct BurnerModeLockScreen: View {
 
     // MARK: - Helper Functions
     private func setupEventEndTime() {
-        // Prevent concurrent setup calls
-        guard !isSettingUpEventTime else { return }
-        isSettingUpEventTime = true
-
-        // Check if we already have a stored end time for this session
+        // SIMPLE: Just retrieve the pre-determined end time that was set when burner mode was activated
         if let stored = UserDefaults.standard.object(forKey: "burnerModeEventEndTime") as? Date {
             eventEndTime = stored
-            isSettingUpEventTime = false
-            return
-        }
-
-        // Find today's scanned ticket
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-
-        let todayScannedTicket = appState.ticketsViewModel.tickets.first { ticket in
-            guard ticket.status == "used",
-                  let usedAt = ticket.usedAt else {
-                return false
-            }
-            let scannedDay = calendar.startOfDay(for: usedAt)
-            return scannedDay == today
-        }
-
-        // If we found a scanned ticket, fetch the event to get the end time
-        if let ticket = todayScannedTicket {
-            Task { @MainActor in
-                do {
-                    let event = try await appState.eventViewModel.fetchEvent(byId: ticket.eventId)
-
-                    if let endTime = event.endTime {
-                        // Use actual event end time with timezone awareness
-                        let calendar = Calendar.current
-                        let timeZone = calendar.timeZone
-                        let components = calendar.dateComponents(in: timeZone, from: endTime)
-                        if let adjustedEndTime = calendar.date(from: components) {
-                            eventEndTime = adjustedEndTime
-                        } else {
-                            eventEndTime = endTime
-                        }
-                        UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
-                    } else {
-                        // Fallback: Use start time + 4 hours if no end time
-                        let fallbackEndTime = ticket.startTime.addingTimeInterval(4 * 3600)
-                        eventEndTime = fallbackEndTime
-                        UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
-                    }
-                    isSettingUpEventTime = false
-                } catch {
-                    // If fetching event fails, use ticket start time + 4 hours as fallback
-                    let fallbackEndTime = ticket.startTime.addingTimeInterval(4 * 3600)
-                    eventEndTime = fallbackEndTime
-                    UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
-                    isSettingUpEventTime = false
-                }
-            }
         } else {
-            // If no scanned ticket found, use a default fallback
-            let fallbackEndTime = Date().addingTimeInterval(4 * 3600)
-            eventEndTime = fallbackEndTime
-            UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
-            isSettingUpEventTime = false
+            // Fallback - this should only happen if something went wrong during activation
+            eventEndTime = Date().addingTimeInterval(4 * 3600)
         }
     }
 

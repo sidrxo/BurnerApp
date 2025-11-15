@@ -178,9 +178,6 @@ class BookmarkManager: ObservableObject {
                     eventName: event.name,
                     message: AppConstants.ErrorMessages.bookmarkFailed
                 )
-
-                
-                print("❌ Bookmark Error: \(error.localizedDescription)")
                 
             }
         }

@@ -195,7 +195,7 @@ struct QRCodeScannerView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 200)
-                    .background(Color.gray.opacity(0.2))
+                    .background(Color.white.opacity(0.05))
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                 }
 

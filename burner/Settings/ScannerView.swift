@@ -140,7 +140,7 @@ struct ScannerView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(Color.gray.opacity(0.3))
+                        .background(Color.white.opacity(0.05))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         
                         Button("SUBMIT") {

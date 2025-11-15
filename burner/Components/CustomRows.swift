@@ -17,7 +17,6 @@ struct EventRow: View {
     let bookmarkManager: BookmarkManager?
     let configuration: Configuration
     let onCancel: (() -> Void)?
-    let onDelete: ((String) async -> Void)?
     let distanceText: String?
     @Binding var showingSignInAlert: Bool
 
@@ -27,7 +26,6 @@ struct EventRow: View {
         bookmarkManager: BookmarkManager? = nil,
         configuration: Configuration = .eventList,
         onCancel: (() -> Void)? = nil,
-        onDelete: ((String) async -> Void)? = nil,
         distanceText: String? = nil,
         showingSignInAlert: Binding<Bool> = .constant(false)
     ) {
@@ -36,7 +34,6 @@ struct EventRow: View {
         self.bookmarkManager = bookmarkManager
         self.configuration = configuration
         self.onCancel = onCancel
-        self.onDelete = onDelete
         self.distanceText = distanceText
         self._showingSignInAlert = showingSignInAlert
     }
@@ -58,9 +55,6 @@ struct EventRow: View {
         .padding(.vertical, configuration.verticalPadding)
         .background(configuration.backgroundColor)
         .clipShape(RoundedRectangle(cornerRadius: configuration.cornerRadius))
-        .contextMenu {
-            contextMenuContent
-        }
     }
     
     // MARK: - Event Image
@@ -93,6 +87,7 @@ struct EventRow: View {
     }
     
     // MARK: - Event Details
+    // MARK: - Event Details
     private var eventDetails: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(event.name)
@@ -101,11 +96,28 @@ struct EventRow: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
             
-            if configuration.showVenue {
-                Text(event.venue)
-                    .appSecondary()
-                    .foregroundColor(.gray)
-                    .lineLimit(1)
+            // Venue and distance on the same line
+            HStack {
+                if configuration.showVenue {
+                    Text(event.venue)
+                        .appSecondary()
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                // Show distance if available
+                if let distance = distanceText {
+                    HStack(spacing: 4) {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.gray)
+                        Text(distance)
+                            .appCaption()
+                            .foregroundColor(.gray)
+                    }
+                }
             }
             
             // Date formatting based on configuration
@@ -127,18 +139,6 @@ struct EventRow: View {
                     .foregroundColor(.gray)
             }
             
-            // Show distance if available
-            if let distance = distanceText {
-                HStack(spacing: 4) {
-                    Image(systemName: "location.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(.gray)
-                    Text(distance)
-                        .appCaption()
-                        .foregroundColor(.gray)
-                }
-            }
-            
             // Only show cancelled badge here
             if let ticket = ticket, ticket.status == "cancelled" {
                 HStack(spacing: 8) {
@@ -153,7 +153,6 @@ struct EventRow: View {
             }
         }
     }
-    
     // MARK: - Right Side Content
     private var rightSideContent: some View {
         VStack(alignment: .trailing, spacing: 8) {
@@ -174,21 +173,6 @@ struct EventRow: View {
                         .font(.appIcon)
                         .foregroundColor(isPastEvent ? .gray : .white)
                 }
-            }
-        }
-    }
-    
-    // MARK: - Context Menu
-    @ViewBuilder
-    private var contextMenuContent: some View {
-        // Show delete option only for past tickets
-        if let ticket = ticket, let ticketId = ticket.id, let onDelete = onDelete, isPastEvent {
-            Button(role: .destructive) {
-                Task {
-                    await onDelete(ticketId)
-                }
-            } label: {
-                Label("Delete Ticket", systemImage: "trash")
             }
         }
     }
@@ -264,33 +248,30 @@ extension EventRow {
             bookmarkManager: bookmarkManager,
             configuration: .eventList,
             onCancel: nil,
-            onDelete: nil,
             distanceText: nil,
             showingSignInAlert: showingSignInAlert
         )
     }
 
-    init(ticketWithEvent: TicketWithEventData, isPast: Bool, onCancel: @escaping () -> Void, onDelete: ((String) async -> Void)? = nil) {
+    init(ticketWithEvent: TicketWithEventData, isPast: Bool, onCancel: @escaping () -> Void) {
         self.init(
             event: ticketWithEvent.event,
             ticket: ticketWithEvent.ticket,
             bookmarkManager: nil,
             configuration: .ticketRow,
             onCancel: onCancel,
-            onDelete: onDelete,
             distanceText: nil,
             showingSignInAlert: .constant(false)
         )
     }
 
-    init(ticketWithEvent: TicketWithEventData, isPast: Bool, bookmarkManager: BookmarkManager, onCancel: @escaping () -> Void, onDelete: ((String) async -> Void)? = nil) {
+    init(ticketWithEvent: TicketWithEventData, isPast: Bool, bookmarkManager: BookmarkManager, onCancel: @escaping () -> Void) {
         self.init(
             event: ticketWithEvent.event,
             ticket: ticketWithEvent.ticket,
             bookmarkManager: bookmarkManager,
             configuration: .ticketRowWithBookmark,
             onCancel: onCancel,
-            onDelete: onDelete,
             distanceText: nil,
             showingSignInAlert: .constant(false)
         )

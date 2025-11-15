@@ -8,11 +8,13 @@ import FamilyControls
 class BurnerModeMonitor: ObservableObject {
     @Published var shouldEnableBurnerMode = false
     
+    private let appState: AppState
     private let db = Firestore.firestore()
     private var ticketListener: ListenerRegistration?
     private let burnerManager: BurnerModeManager
     
-    init(burnerManager: BurnerModeManager) {
+    init(appState: AppState, burnerManager: BurnerModeManager) {
+        self.appState = appState
         self.burnerManager = burnerManager
         // Don't start monitoring in init - wait for user to sign in
     }
@@ -93,7 +95,7 @@ class BurnerModeMonitor: ObservableObject {
         }
 
         do {
-            try await burnerManager.enable()
+            try await burnerManager.enable(appState: appState)
             shouldEnableBurnerMode = true
 
             print("✅ BurnerModeMonitor: Burner Mode enabled")

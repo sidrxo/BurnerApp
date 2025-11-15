@@ -20,6 +20,7 @@ struct EventDetailView: View {
     @State private var showingSignInAlert = false // ✅ NEW
     @State private var showingMapsSheet = false
     @State private var isDescriptionExpanded = false
+    @State private var needsReadMore = false // NEW: Track if text actually needs expansion
     
     // Get screen height for responsive sizing
     private let screenHeight = UIScreen.main.bounds.height
@@ -174,15 +175,38 @@ struct EventDetailView: View {
                                         .appBody()
                                         .foregroundColor(.white)
 
-                                    VStack(alignment: .leading, spacing: 4) {
+                                    VStack(alignment: .leading, spacing: 2) { // REDUCED: spacing from 4 to 2
                                         Text(description)
                                             .appBody()
                                             .foregroundColor(.gray)
                                             .lineSpacing(2)
                                             .lineLimit(isDescriptionExpanded ? nil : 6)
+                                            .background(
+                                                // NEW: Detect if text actually needs expansion
+                                                GeometryReader { textGeometry in
+                                                    Color.clear
+                                                        .onAppear {
+                                                            // Calculate if text is truncated
+                                                            let textSize = description.boundingRect(
+                                                                with: CGSize(
+                                                                    width: textGeometry.size.width,
+                                                                    height: .greatestFiniteMagnitude
+                                                                ),
+                                                                options: .usesLineFragmentOrigin,
+                                                                attributes: [.font: UIFont.preferredFont(forTextStyle: .body)],
+                                                                context: nil
+                                                            )
+                                                            // If text height exceeds 6 lines, show read more
+                                                            let lineHeight: CGFloat = 20 // Approximate line height
+                                                            let maxHeight = lineHeight * 6
+                                                            needsReadMore = textSize.height > maxHeight
+                                                        }
+                                                }
+                                            )
                                             .animation(.easeInOut, value: isDescriptionExpanded)
 
-                                        if description.count > 200 {
+                                        // NEW: Only show if text actually needs expansion
+                                        if needsReadMore {
                                             Button(action: {
                                                 withAnimation {
                                                     isDescriptionExpanded.toggle()
@@ -190,8 +214,8 @@ struct EventDetailView: View {
                                             }) {
                                                 Text(isDescriptionExpanded ? "Read Less" : "Read More")
                                                     .appCaption()
-                                                    .foregroundColor(.blue)
-                                                    .padding(.top, 4)
+                                                    .foregroundColor(.gray) // CHANGED: from blue to gray
+                                                    .padding(.top, 2) // REDUCED: padding from 4 to 2
                                             }
                                         }
                                     }
@@ -319,6 +343,7 @@ struct EventDetailView: View {
                     VStack(spacing: 0) {
                         // Remove the gradient from here
                         
+                        // UPDATED: Get Ticket Button - matching sign-in sheet style
                         Button(action: {
                             if userHasTicket {
                                 // Do nothing when user has a ticket
@@ -332,14 +357,17 @@ struct EventDetailView: View {
                                 }
                             }
                         }) {
-                            Text(buttonText)
-                                .font(.appFont(size: 17))
-                                .largeActionButtonStyle(
-                                    backgroundColor: buttonColor,
-                                    foregroundColor: buttonTextColor,
-                                    height: 50,
-                                    cornerRadius: 25
-                                )
+                            HStack(spacing: 12) {
+          
+                                Text(buttonText)
+                                    .font(.appFont(size: 17))
+                            }
+                            .foregroundColor(buttonTextColor)
+                            .primaryButtonStyle(
+                                backgroundColor: buttonColor,
+                                foregroundColor: buttonTextColor,
+                                borderColor: Color.white.opacity(0.2)
+                            )
                         }
                         .disabled(isButtonDisabled)
                         .padding(.horizontal, 20)
@@ -473,7 +501,6 @@ struct EventDetailView: View {
         return URL(string: "burner://event/\(eventId)")!
     }
 }
-
 
 // MARK: - Event Detail Row - More compact
 struct EventDetailRow: View {
@@ -625,23 +652,4 @@ struct ShareSheet: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
-}
-
-#Preview {
-    NavigationStack {
-        EventDetailView(event: Event(
-            name: "fabric Presents: Nina Kraviz",
-            venue: "fabric London",
-            price: 25.0,
-            maxTickets: 100,
-            ticketsSold: 50,
-            imageUrl: "https://placeholder.com/400x600",
-            isFeatured: false,
-            description: "The Russian techno queen returns to fabric with her hypnotic blend of acid and experimental electronic music."
-        ))
-        .environmentObject(AppState().bookmarkManager)
-        .environmentObject(AppState().eventViewModel)
-        .environmentObject(NavigationCoordinator())
-    }
-    .preferredColorScheme(.dark)
 }

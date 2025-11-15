@@ -237,11 +237,7 @@ class TicketsViewModel: ObservableObject {
         errorMessage = nil
     }
 
-    // MARK: - Delete Ticket
-    func deleteTicket(ticketId: String) async throws {
-        try await ticketRepository.deleteTicket(ticketId: ticketId)
-        // The real-time listener will automatically update the tickets array
-    }
+
 
     // MARK: - Debug helpers
     

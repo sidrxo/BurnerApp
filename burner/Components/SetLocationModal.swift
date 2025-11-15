@@ -42,7 +42,7 @@ struct SetLocationModal: View {
                     }
                     .foregroundColor(.white)
                     .padding()
-                    .background(Color.gray.opacity(0.1))
+                    .background(Color.white.opacity(0.05))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .disabled(isProcessing)
@@ -62,7 +62,7 @@ struct SetLocationModal: View {
                     }
                     .foregroundColor(.white)
                     .padding()
-                    .background(Color.gray.opacity(0.1))
+                    .background(Color.white.opacity(0.05))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
@@ -106,7 +106,6 @@ struct SetLocationModal: View {
     }
 }
 
-
 // MARK: - Manual City Entry View
 struct ManualCityEntryView: View {
     @ObservedObject var locationManager: UserLocationManager
@@ -129,7 +128,7 @@ struct ManualCityEntryView: View {
                         .appBody()
                         .foregroundColor(.white)
                         .padding()
-                        .background(Color.gray.opacity(0.1))
+                        .background(Color.white.opacity(0.05))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .focused($isFocused)
                         .autocorrectionDisabled()
@@ -144,29 +143,34 @@ struct ManualCityEntryView: View {
                         .padding(.horizontal, 20)
                 }
                 
+                Spacer()
+                
+                // Updated Save Location Button - matching sign-in sheet style
                 Button(action: {
                     geocodeCity()
                 }) {
-                    if isProcessing {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                    } else {
-                        Text("Save Location")
-                        .appBody()
+                    HStack(spacing: 12) {
+                        if isProcessing {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                        } else {
+                            
+                            Text("SAVE LOCATION")
+                                .font(.appFont(size: 17))
+                        }
                     }
+                    .foregroundColor(.black)
+                    .primaryButtonStyle(
+                        backgroundColor: cityInput.isEmpty ? Color.gray : Color.white,
+                        foregroundColor: .black,
+                        borderColor: Color.white.opacity(0.2)
+                    )
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(cityInput.isEmpty ? Color.gray : Color.white)
-                .foregroundColor(.black)
-                .clipShape(RoundedRectangle(cornerRadius: 25))
-                .padding(.horizontal, 20)
                 .disabled(cityInput.isEmpty || isProcessing)
-                
-                Spacer()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
             .background(Color.black)
-            .navigationTitle("Enter City")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -197,12 +201,4 @@ struct ManualCityEntryView: View {
             }
         }
     }
-}
-
-#Preview {
-    Text("Background")
-        .sheet(isPresented: .constant(true)) {
-            SetLocationModal()
-                .environmentObject(AppState())
-        }
 }

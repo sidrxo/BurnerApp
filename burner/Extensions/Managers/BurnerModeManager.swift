@@ -114,7 +114,7 @@ class BurnerModeManager: ObservableObject {
         }
     }
     
-    func enable() async throws {
+    func enable(appState: AppState) async throws {
         guard isAuthorized else {
             throw BurnerModeError.notAuthorized
         }
@@ -129,6 +129,11 @@ class BurnerModeManager: ObservableObject {
 
         // Request authorization
         try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+        
+        // DETERMINE AND SET END TIME ONCE when enabling burner mode
+        let eventEndTime = await calculateEventEndTime(appState: appState)
+        UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
+        UserDefaults.standard.set(false, forKey: "burnerModeTerminalShown") // Reset terminal flag
         
         // CRITICAL SECURITY MEASURES
         
@@ -148,6 +153,48 @@ class BurnerModeManager: ObservableObject {
         // Save state to both UserDefaults locations
         appGroupDefaults?.set(true, forKey: "burnerModeEnabled")
         UserDefaults.standard.set(true, forKey: "burnerModeEnabled")
+    }
+    
+    private func calculateEventEndTime(appState: AppState) async -> Date {
+        // 24-HOUR ROLLING WINDOW: Find tickets scanned in last 24 hours
+        let twentyFourHoursAgo = Date().addingTimeInterval(-24 * 3600)
+        
+        let recentScannedTicket = appState.ticketsViewModel.tickets.first { ticket in
+            guard ticket.status == "used",
+                  let usedAt = ticket.usedAt else {
+                return false
+            }
+            // Check if scanned within last 24 hours
+            return usedAt >= twentyFourHoursAgo
+        }
+        
+        // If we found a recent scanned ticket, fetch the event to get the end time
+        if let ticket = recentScannedTicket {
+            do {
+                let event = try await appState.eventViewModel.fetchEvent(byId: ticket.eventId)
+                
+                if let endTime = event.endTime {
+                    // Use actual event end time with timezone awareness
+                    let calendar = Calendar.current
+                    let timeZone = calendar.timeZone
+                    let components = calendar.dateComponents(in: timeZone, from: endTime)
+                    if let adjustedEndTime = calendar.date(from: components) {
+                        return adjustedEndTime
+                    } else {
+                        return endTime
+                    }
+                } else {
+                    // Fallback: Use start time + 4 hours if no end time
+                    return ticket.startTime.addingTimeInterval(4 * 3600)
+                }
+            } catch {
+                // If fetching event fails, use ticket start time + 4 hours as fallback
+                return ticket.startTime.addingTimeInterval(4 * 3600)
+            }
+        } else {
+            // If no recent scanned ticket found, use a default fallback
+            return Date().addingTimeInterval(4 * 3600)
+        }
     }
     
     private func startDeviceActivityMonitoring() throws {
@@ -184,6 +231,10 @@ class BurnerModeManager: ObservableObject {
         // Update state in both locations
         appGroupDefaults?.set(false, forKey: "burnerModeEnabled")
         UserDefaults.standard.set(false, forKey: "burnerModeEnabled")
+        
+        // Clean up end time and terminal flag
+        UserDefaults.standard.removeObject(forKey: "burnerModeEventEndTime")
+        UserDefaults.standard.removeObject(forKey: "burnerModeTerminalShown")
     }
     
     func clearAllSelections() {

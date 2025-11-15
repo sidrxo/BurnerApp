@@ -145,7 +145,7 @@ struct FAQView: View {
                         .foregroundColor(.gray)
                 }
                 .padding(16)
-                .background(Color.gray.opacity(0.1))
+                .background(Color.white.opacity(0.05))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(PlainButtonStyle())
@@ -157,7 +157,7 @@ struct FAQView: View {
                     .lineSpacing(4)
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.gray.opacity(0.05))
+                    .background(Color.white.opacity(0.05))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .padding(.top, 4)
                     .transition(.opacity.combined(with: .move(edge: .top)))

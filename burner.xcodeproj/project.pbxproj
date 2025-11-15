@@ -29,6 +29,7 @@
 		8B66F9422E6864FB00760E4E /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 8B66F9412E6864FB00760E4E /* Kingfisher */; };
 		8B7FF5B62E7C6E6B007072DD /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 8B7FF5B52E7C6E6B007072DD /* FirebaseFunctions */; };
 		8B7FF6482E7CF1DC007072DD /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B7FF6462E7CF1CB007072DD /* ActivityKit.framework */; };
+		8BCF682A2EC7CA17008C42F6 /* StripePaymentsUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8BCF68292EC7CA17008C42F6 /* StripePaymentsUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -166,6 +167,7 @@
 				8B1F297D2E7F946E00B13ED2 /* ManagedSettings.framework in Frameworks */,
 				8B1F297B2E7F946500B13ED2 /* DeviceActivity.framework in Frameworks */,
 				8B66F9422E6864FB00760E4E /* Kingfisher in Frameworks */,
+				8BCF682A2EC7CA17008C42F6 /* StripePaymentsUI in Frameworks */,
 				8B7FF5B62E7C6E6B007072DD /* FirebaseFunctions in Frameworks */,
 				8B7FF6482E7CF1DC007072DD /* ActivityKit.framework in Frameworks */,
 				8B66F8C02E6762AB00760E4E /* GoogleSignIn in Frameworks */,
@@ -286,6 +288,7 @@
 				8B493ED32EC2480F000AB2E4 /* Stripe */,
 				8B493ED52EC2480F000AB2E4 /* StripePayments */,
 				8B493ED92EC2483A000AB2E4 /* StripePaymentSheet */,
+				8BCF68292EC7CA17008C42F6 /* StripePaymentsUI */,
 			);
 			productName = burner;
 			productReference = 8B36D8C72E7DAB7F00EDDF0F /* burner.app */;
@@ -872,6 +875,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8B66F8C12E67633D00760E4E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFunctions;
+		};
+		8BCF68292EC7CA17008C42F6 /* StripePaymentsUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B493ED22EC241CE000AB2E4 /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = StripePaymentsUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
