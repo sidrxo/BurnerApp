@@ -65,6 +65,19 @@ export default function EventDetailPage() {
     }).format(price / 100);
   };
 
+  const formatTime = (timestamp: any) => {
+    if (!timestamp) return "";
+    try {
+      const date = timestamp.toDate();
+      return new Intl.DateTimeFormat("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(date);
+    } catch {
+      return "";
+    }
+  };
+
   const handlePurchase = () => {
     if (!user) {
       // Redirect to sign in with return URL
@@ -101,9 +114,6 @@ export default function EventDetailPage() {
     );
   }
 
-  const remainingTickets = event.maxTickets - event.ticketsSold;
-  const soldOut = remainingTickets <= 0;
-
   return (
     <div className="min-h-screen pb-12">
       {/* Back Button */}
@@ -139,11 +149,6 @@ export default function EventDetailPage() {
             className="object-cover"
             priority
           />
-          {soldOut && (
-            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-              <span className="text-white text-3xl font-bold">SOLD OUT</span>
-            </div>
-          )}
         </div>
       )}
 
@@ -179,24 +184,67 @@ export default function EventDetailPage() {
         </div>
 
         {/* Date & Time */}
-        {event.startTime && (
-          <div className="flex items-start gap-2 text-white/70">
-            <svg
-              className="w-5 h-5 mt-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-            <span className="text-lg">{formatDate(event.startTime)}</span>
-          </div>
-        )}
+        <div className="space-y-3">
+          {event.startTime && (
+            <div className="flex items-start gap-2 text-white/70">
+              <svg
+                className="w-5 h-5 mt-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <div className="space-y-1">
+                <span className="text-lg block">{formatDate(event.startTime)}</span>
+                {event.endTime && (
+                  <span className="text-sm text-white/50 block">
+                    Ends: {formatDate(event.endTime)}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Category */}
+          {event.category && (
+            <div className="flex items-center gap-2">
+              <svg
+                className="w-5 h-5 text-white/70"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                />
+              </svg>
+              <span className="text-lg text-white/70 capitalize">{event.category}</span>
+            </div>
+          )}
+
+          {/* Tags */}
+          {event.tags && event.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {event.tags.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="px-3 py-1 bg-white/10 rounded-full text-sm text-white/70"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Description */}
         {event.description && (
@@ -208,34 +256,20 @@ export default function EventDetailPage() {
           </div>
         )}
 
-        {/* Price and Availability */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
+        {/* Price */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
           <div className="flex items-center justify-between">
-            <span className="text-white/70">Price</span>
+            <span className="text-white/70 text-lg">Ticket Price</span>
             <span className="text-3xl font-bold">{formatPrice(event.price)}</span>
           </div>
-          {!soldOut && (
-            <div className="flex items-center justify-between">
-              <span className="text-white/70">Tickets Available</span>
-              <span className="text-xl font-medium">{remainingTickets}</span>
-            </div>
-          )}
         </div>
 
         {/* Purchase Button */}
         <button
           onClick={handlePurchase}
-          disabled={soldOut}
-          className={`
-            w-full py-4 rounded-xl font-bold text-lg transition-all duration-300
-            ${
-              soldOut
-                ? "bg-white/10 text-white/30 cursor-not-allowed"
-                : "bg-white text-black hover:bg-white/90"
-            }
-          `}
+          className="w-full py-4 rounded-xl font-bold text-lg bg-white text-black hover:bg-white/90 transition-all duration-300"
         >
-          {soldOut ? "Sold Out" : "Buy Ticket"}
+          Buy Ticket
         </button>
 
         {/* Terms */}
