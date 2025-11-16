@@ -160,14 +160,47 @@ struct EventDetailView: View {
                                 .padding(.top, 24)
                                 .padding(.bottom, 28)
 
-                            VStack(alignment: .leading, spacing: 8) {
+                            HStack(alignment: .center, spacing: 12) {
                                 Text(event.name)
                                     .appHero()
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
 
+                                HStack(spacing: 10) {
+                                    Button(action: {
+                                        if Auth.auth().currentUser == nil {
+                                            showingSignInAlert = true
+                                        } else {
+                                            Task {
+                                                await bookmarkManager.toggleBookmark(for: event)
+                                            }
+                                        }
+                                    }) {
+                                        Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                                            .appSectionHeader()
+                                            .foregroundColor(.white)
+                                            .iconButtonStyle(
+                                                size: 60,
+                                                backgroundColor: Color.white.opacity(0.1),
+                                                cornerRadius: 10
+                                            )
+                                    }
+
+                                    Button(action: {
+                                        coordinator.shareEvent(event)
+                                    }) {
+                                        Image(systemName: "square.and.arrow.up")
+                                            .appSectionHeader()
+                                            .foregroundColor(.white)
+                                            .iconButtonStyle(
+                                                size: 60,
+                                                backgroundColor: Color.white.opacity(0.1),
+                                                cornerRadius: 10
+                                            )
+                                    }
+                                }
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading) // Add this line
                             .padding(.bottom, 24)
                             .padding(.horizontal, 20)
 
@@ -288,51 +321,12 @@ struct EventDetailView: View {
                                     .padding(.horizontal, 20)
                                     .padding(.top, 8)
                                 }
-
-                                // Save & Share buttons
-                                HStack(spacing: 12) {
-                                    Button(action: {
-                                        if Auth.auth().currentUser == nil {
-                                            showingSignInAlert = true
-                                        } else {
-                                            Task {
-                                                await bookmarkManager.toggleBookmark(for: event)
-                                            }
-                                        }
-                                    }) {
-                                        Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                                            .appCard()
-                                            .foregroundColor(.white)
-                                            .iconButtonStyle(
-                                                size: 60,
-                                                backgroundColor: Color.white.opacity(0.1),
-                                                cornerRadius: 12
-                                            )
-                                    }
-
-                                    Button(action: {
-                                        coordinator.shareEvent(event)
-                                    }) {
-                                        Image(systemName: "square.and.arrow.up")
-                                            .appCard()
-                                            .foregroundColor(.white)
-                                            .iconButtonStyle(
-                                                size: 60,
-                                                backgroundColor: Color.white.opacity(0.1),
-                                                cornerRadius: 12
-                                            )
-                                    }
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.top, 16)
-
                                 Spacer(minLength: 100)
                             }
                         }
                     }
                 }
 
-                // Fixed close button on top-right
                 // Fixed close button on top-right — updated to use CloseButton
                 VStack {
                     HStack {

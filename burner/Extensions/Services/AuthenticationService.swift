@@ -1,14 +1,11 @@
-//
-//  AuthenticationService.swift
-//  burner
-//
-//  Created by Sid Rao on 22/10/2025.
-//
-
+// StripePaymentService.swift
 
 import Foundation
 import FirebaseAuth
+import FirebaseFunctions
+@_spi(STP) import StripePaymentSheet
 import Combine
+import UIKit
 
 @MainActor
 class AuthenticationService: ObservableObject {
@@ -273,5 +270,35 @@ class AuthenticationService: ObservableObject {
             errorMessage = error.localizedDescription
             throw error
         }
+    }
+}
+
+// MARK: - Authentication Context Helper
+@MainActor
+class AuthenticationContext: NSObject, STPAuthenticationContext {
+    nonisolated func authenticationPresentingViewController() -> UIViewController {
+        var viewController: UIViewController!
+
+        DispatchQueue.main.sync {
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let window = windowScene.windows.first,
+                  let rootViewController = window.rootViewController else {
+                viewController = MainActor.assumeIsolated {
+                    UIViewController()
+                }
+                return
+            }
+
+            func getTopmostViewController(from vc: UIViewController) -> UIViewController {
+                if let presented = vc.presentedViewController {
+                    return getTopmostViewController(from: presented)
+                }
+                return vc
+            }
+
+            viewController = getTopmostViewController(from: rootViewController)
+        }
+
+        return viewController
     }
 }
