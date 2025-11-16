@@ -1,6 +1,7 @@
 import SwiftUI
 import Kingfisher
 import FirebaseAuth
+import Glur
 
 struct FeaturedHeroCard: View {
     let event: Event
@@ -18,7 +19,7 @@ struct FeaturedHeroCard: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Base Image with Matched Transition Source
+                // Base Image with Glur + Matched Transition Source
                 Group {
                     KFImage(URL(string: event.imageUrl))
                         .placeholder {
@@ -36,29 +37,23 @@ struct FeaturedHeroCard: View {
                             .clipShape(RoundedRectangle(cornerRadius: 20))
                     }
                 }
-                .overlay(
-                    // Progressive Blur Overlay (top to bottom fade)
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(stops: [
-                                    .init(color: Color.white.opacity(0.15), location: 0.0),
-                                    .init(color: Color.clear, location: 0.3)
-                                ]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .blur(radius: 20)
-                        .opacity(0.6)
+                // 🔹 Apply Glur here
+                .glur(
+                    radius: 15,          // how strong the blur gets
+                    offset: 0.60,        // where along the height it starts
+                    interpolation: 0.5, // how quickly it ramps up
+                    direction: .down,    // blur from top → bottom
+                    noise: 4,
+                    drawingGroup: true
                 )
-
-                // Gradient overlay
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.8)]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                .overlay {
+                             LinearGradient(
+                                stops:
+                                    [.init(color: .clear, location: 0.5),
+                                     .init(color: .black.opacity(0.6), location: 0.8)],
+                                      startPoint: .top, endPoint: .bottom)
+                         }
+                
                 .frame(width: geometry.size.width, height: 400)
                 .clipShape(RoundedRectangle(cornerRadius: 20))
                 
