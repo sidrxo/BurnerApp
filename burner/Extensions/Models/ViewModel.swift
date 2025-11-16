@@ -18,6 +18,8 @@ class EventViewModel: ObservableObject {
     private let ticketRepository: TicketRepository
     private var cancellables = Set<AnyCancellable>()
     private var isSimulatingEmptyData = false
+    private var liveEvents: [Event] = []
+    private var debugEvents: [Event] = []
     
     init(
         eventRepository: EventRepository,
@@ -48,7 +50,8 @@ class EventViewModel: ObservableObject {
 
                 switch result {
                 case .success(let events):
-                    self.events = events
+                    self.liveEvents = events
+                    self.updateCombinedEvents()
                     await self.refreshUserTicketStatus()
 
                 case .failure(let error):
@@ -77,6 +80,7 @@ class EventViewModel: ObservableObject {
     func simulateEmptyData() {
         isSimulatingEmptyData = true
         eventRepository.stopObserving()
+        liveEvents = []
         events = []
         userTicketStatus = [:]
         isLoading = false
@@ -88,6 +92,32 @@ class EventViewModel: ObservableObject {
         guard isSimulatingEmptyData else { return }
         isSimulatingEmptyData = false
         fetchEvents()
+    }
+
+    func addDebugEvent(_ event: Event) {
+        if let id = event.id {
+            debugEvents.removeAll { $0.id == id }
+        }
+        debugEvents.append(event)
+        updateCombinedEvents()
+    }
+
+    func clearDebugEvents() {
+        debugEvents.removeAll()
+        updateCombinedEvents()
+    }
+
+    private func updateCombinedEvents() {
+        var combined = liveEvents
+        combined.append(contentsOf: debugEvents)
+
+        combined.sort { lhs, rhs in
+            let lhsDate = lhs.startTime ?? Date.distantFuture
+            let rhsDate = rhs.startTime ?? Date.distantFuture
+            return lhsDate < rhsDate
+        }
+
+        events = combined
     }
     
     
