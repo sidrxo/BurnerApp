@@ -5,12 +5,14 @@ import FirebaseFunctions
 import Firebase
 import PassKit
 import MapKit
+import UIKit
 
 struct EventDetailView: View {
     let event: Event
     var source: EventSource? = nil
     var namespace: Namespace.ID?
 
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
@@ -113,242 +115,31 @@ struct EventDetailView: View {
     
     var body: some View {
         ZStack(alignment: .top) {
-            // Background
             Color.black.ignoresSafeArea()
-            
-            // Main content
-            VStack(spacing: 0) {
-                // Hero Section - FIXED: Simplified and properly constrained
-                heroSection
-                    .frame(height: heroHeight)
-                    .zIndex(1) // Ensure it stays on top
-                
-                // Content Section
-                ScrollView {
-                    VStack(spacing: 0) {
-                        // Scroll offset tracker
-                        GeometryReader { scrollGeometry in
-                            Color.clear
-                                .preference(
-                                    key: ScrollOffsetPreferenceKey.self,
-                                    value: -scrollGeometry.frame(in: .named("scroll")).minY
-                                )
-                        }
-                        .frame(height: 0)
-                        
-                        // Content
-                        VStack(spacing: 16) {
-                            // Description
-                            if let description = event.description, !description.isEmpty {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("About")
-                                        .appBody()
-                                        .foregroundColor(.white)
 
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(description)
-                                            .appBody()
-                                            .foregroundColor(.gray)
-                                            .lineSpacing(2)
-                                            .lineLimit(isDescriptionExpanded ? nil : 6)
-                                            .background(
-                                                GeometryReader { textGeometry in
-                                                    Color.clear
-                                                        .onAppear {
-                                                            let textSize = description.boundingRect(
-                                                                with: CGSize(
-                                                                    width: textGeometry.size.width,
-                                                                    height: .greatestFiniteMagnitude
-                                                                ),
-                                                                options: .usesLineFragmentOrigin,
-                                                                attributes: [.font: UIFont.preferredFont(forTextStyle: .body)],
-                                                                context: nil
-                                                            )
-                                                            let lineHeight: CGFloat = 20
-                                                            let maxHeight = lineHeight * 6
-                                                            needsReadMore = textSize.height > maxHeight
-                                                        }
-                                                }
-                                            )
-                                            .animation(.easeInOut, value: isDescriptionExpanded)
-
-                                        if needsReadMore {
-                                            Button(action: {
-                                                withAnimation {
-                                                    isDescriptionExpanded.toggle()
-                                                }
-                                            }) {
-                                                Text(isDescriptionExpanded ? "Read Less" : "Read More")
-                                                    .appCaption()
-                                                    .foregroundColor(.gray)
-                                                    .padding(.top, 2)
-                                            }
-                                        }
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 8)
-                            }
-                            
-                            // Event details
-                            VStack(spacing: 12) {
-                                Text("Event Details")
-                                    .appBody()
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                                VStack(spacing: 8) {
-                                    EventDetailRow(
-                                        icon: "calendar",
-                                        title: "Date",
-                                        value: (event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month().year())
-                                    )
-                                    
-                                    EventDetailRow(
-                                        icon: "clock",
-                                        title: "Time",
-                                        value: formatTimeRange()
-                                    )
-
-                                    EventDetailRow(
-                                        icon: "location",
-                                        title: "Venue",
-                                        value: event.venue
-                                    )
-
-                                    EventDetailRow(
-                                        icon: "creditcard",
-                                        title: "Price",
-                                        value: "£\(String(format: "%.2f", event.price))"
-                                    )
-
-                                    if let tags = event.tags, !tags.isEmpty {
-                                        EventDetailRow(
-                                            icon: "tag",
-                                            title: "Genre",
-                                            value: tags.joined(separator: ", ")
-                                        )
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 20)
-
-                            // Map Section
-                            if let coordinates = event.coordinates {
-                                Button(action: {
-                                    showingMapsSheet = true
-                                }) {
-                                    EventMapView(
-                                        coordinate: CLLocationCoordinate2D(
-                                            latitude: coordinates.latitude,
-                                            longitude: coordinates.longitude
-                                        ),
-                                        venueName: event.venue
-                                    )
-                                    .frame(height: 200)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .padding(.horizontal, 20)
-                                .padding(.top, 8)
-                            }
-
-                            // Action buttons
-                            HStack(spacing: 12) {
-                                Button(action: {
-                                    if Auth.auth().currentUser == nil {
-                                        showingSignInAlert = true
-                                    } else {
-                                        Task {
-                                            await bookmarkManager.toggleBookmark(for: event)
-                                        }
-                                    }
-                                }) {
-                                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                                        .appCard()
-                                        .foregroundColor(.white)
-                                        .iconButtonStyle(
-                                            size: 60,
-                                            backgroundColor: Color.white.opacity(0.1),
-                                            cornerRadius: 12
-                                        )
-                                }
-
-                                Button(action: {
-                                    coordinator.shareEvent(event)
-                                }) {
-                                    Image(systemName: "square.and.arrow.up")
-                                        .appCard()
-                                        .foregroundColor(.white)
-                                        .iconButtonStyle(
-                                            size: 60,
-                                            backgroundColor: Color.white.opacity(0.1),
-                                            cornerRadius: 12
-                                        )
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.top, 16)
-                            
-                            // Bottom spacing for floating button
-                            Spacer(minLength: 120)
-                        }
-                        .padding(.top, 20) // Add padding between hero and content
-                    }
-                }
-                .coordinateSpace(name: "scroll")
-                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                    scrollOffset = value
-                }
-            }
-            
-            // Floating Button Area
-            VStack {
-                Spacer()
-                
-                VStack(spacing: 0) {
-                    Button(action: {
-                        if userHasTicket {
-                            // Do nothing when user has a ticket
-                        } else if availableTickets > 0 {
-                            if Auth.auth().currentUser == nil {
-                                showingSignInAlert = true
-                            } else {
-                                coordinator.purchaseTicket(for: event)
-                            }
-                        }
-                    }) {
-                        HStack(spacing: 12) {
-                            Text(buttonText)
-                                .font(.appFont(size: 17))
-                        }
-                        .foregroundColor(buttonTextColor)
-                        .primaryButtonStyle(
-                            backgroundColor: buttonColor,
-                            foregroundColor: buttonTextColor,
-                            borderColor: Color.white.opacity(0.2)
+            ScrollView(.vertical, showsIndicators: false) {
+                GeometryReader { proxy in
+                    Color.clear
+                        .preference(
+                            key: ScrollOffsetPreferenceKey.self,
+                            value: proxy.frame(in: .named("detailScroll")).minY
                         )
-                    }
-                    .disabled(isButtonDisabled)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-                    .padding(.top, 20)
                 }
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.black.opacity(0),
-                            Color.black.opacity(0.8),
-                            Color.black
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+                .frame(height: 0)
+
+                heroHeader
+
+                detailContent
+                    .padding(.top, 24)
+                    .padding(.bottom, 40)
             }
-            
-            // Sign In Alert
+            .coordinateSpace(name: "detailScroll")
+            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                scrollOffset = max(0, -value)
+            }
+
+            heroTopBar
+
             if showingSignInAlert {
                 CustomAlertView(
                     title: "Sign In Required",
@@ -369,7 +160,10 @@ struct EventDetailView: View {
                 .zIndex(1002)
             }
         }
-        .navigationBarHidden(true)
+        .safeAreaInset(edge: .bottom) {
+            purchaseButtonArea
+        }
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showingMapsSheet) {
             if let coordinates = event.coordinates {
                 MapsOptionsSheet(
@@ -382,7 +176,11 @@ struct EventDetailView: View {
             }
         }
         .onAppear {
+            coordinator.hideTabBar()
             checkUserTicketStatus()
+        }
+        .onDisappear {
+            coordinator.showTabBar()
         }
         .onChange(of: ticketsViewModel.tickets.count) { _, _ in
             checkUserTicketStatus()
@@ -405,66 +203,304 @@ struct EventDetailView: View {
         }
     }
     
-    // MARK: - Hero Section (Extracted for clarity)
-    private var heroSection: some View {
-        ZStack(alignment: .bottom) {
-            // Hero Image
-            Group {
-                if let url = URL(string: event.imageUrl), !event.imageUrl.isEmpty {
-                    KFImage(url)
-                        .placeholder {
-                            Color.gray.opacity(0.3)
-                                .overlay(
-                                    Image(systemName: "music.note")
-                                        .appHero()
-                                        .foregroundColor(.gray)
-                                )
+    // MARK: - Hero Header
+    private var heroHeader: some View {
+        GeometryReader { geometry in
+            let minY = geometry.frame(in: .named("detailScroll")).minY
+            let pullDownOffset = max(0, minY)
+            let width = geometry.size.width
+
+            ZStack(alignment: .bottomLeading) {
+                heroImageView(width: width, pullDownOffset: pullDownOffset)
+
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.clear,
+                        Color.black.opacity(0.3),
+                        Color.black.opacity(0.85)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(event.name)
+                        .appHero()
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.leading)
+
+                    if let startTime = event.startTime {
+                        Text("\(startTime.formatted(.dateTime.weekday(.wide).day().month())) • \(event.venue)")
+                            .appBody()
+                            .foregroundColor(.white.opacity(0.85))
+                    } else {
+                        Text(event.venue)
+                            .appBody()
+                            .foregroundColor(.white.opacity(0.85))
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 32)
+            }
+            .frame(width: width, height: heroHeight + pullDownOffset)
+            .offset(y: minY > 0 ? -minY : 0)
+            .clipped()
+        }
+        .frame(height: heroHeight)
+    }
+
+    private func heroImageView(width: CGFloat, pullDownOffset: CGFloat) -> some View {
+        Group {
+            if let url = URL(string: event.imageUrl), !event.imageUrl.isEmpty {
+                KFImage(url)
+                    .placeholder {
+                        Color.gray.opacity(0.3)
+                            .overlay(
+                                Image(systemName: "music.note")
+                                    .appHero()
+                                    .foregroundColor(.gray)
+                            )
+                    }
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: width, height: heroHeight + pullDownOffset)
+                    .clipped()
+            } else {
+                Color.gray.opacity(0.3)
+                    .overlay(
+                        Image(systemName: "music.note")
+                            .appHero()
+                            .foregroundColor(.gray)
+                    )
+                    .frame(width: width, height: heroHeight + pullDownOffset)
+            }
+        }
+        .modifier(HeroImageModifier(namespace: namespace, source: source, heroImageId: heroImageId))
+    }
+
+    // MARK: - Detail Content
+    private var detailContent: some View {
+        VStack(spacing: 16) {
+            if let description = event.description, !description.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("About")
+                        .appBody()
+                        .foregroundColor(.white)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(description)
+                            .appBody()
+                            .foregroundColor(.gray)
+                            .lineSpacing(2)
+                            .lineLimit(isDescriptionExpanded ? nil : 6)
+                            .background(
+                                GeometryReader { textGeometry in
+                                    Color.clear
+                                        .onAppear {
+                                            let textSize = description.boundingRect(
+                                                with: CGSize(
+                                                    width: textGeometry.size.width,
+                                                    height: .greatestFiniteMagnitude
+                                                ),
+                                                options: .usesLineFragmentOrigin,
+                                                attributes: [.font: UIFont.preferredFont(forTextStyle: .body)],
+                                                context: nil
+                                            )
+                                            let lineHeight: CGFloat = 20
+                                            let maxHeight = lineHeight * 6
+                                            needsReadMore = textSize.height > maxHeight
+                                        }
+                                }
+                            )
+                            .animation(.easeInOut, value: isDescriptionExpanded)
+
+                        if needsReadMore {
+                            Button(action: {
+                                withAnimation {
+                                    isDescriptionExpanded.toggle()
+                                }
+                            }) {
+                                Text(isDescriptionExpanded ? "Read Less" : "Read More")
+                                    .appCaption()
+                                    .foregroundColor(.gray)
+                                    .padding(.top, 2)
+                            }
                         }
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: UIScreen.main.bounds.width, height: heroHeight)
-                        .clipped()
-                } else {
-                    Color.gray.opacity(0.3)
-                        .overlay(
-                            Image(systemName: "music.note")
-                                .appHero()
-                                .foregroundColor(.gray)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+            }
+
+            VStack(spacing: 12) {
+                Text("Event Details")
+                    .appBody()
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                VStack(spacing: 8) {
+                    EventDetailRow(
+                        icon: "calendar",
+                        title: "Date",
+                        value: (event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month().year())
+                    )
+
+                    EventDetailRow(
+                        icon: "clock",
+                        title: "Time",
+                        value: formatTimeRange()
+                    )
+
+                    EventDetailRow(
+                        icon: "location",
+                        title: "Venue",
+                        value: event.venue
+                    )
+
+                    EventDetailRow(
+                        icon: "creditcard",
+                        title: "Price",
+                        value: "£\(String(format: "%.2f", event.price))"
+                    )
+
+                    if let tags = event.tags, !tags.isEmpty {
+                        EventDetailRow(
+                            icon: "tag",
+                            title: "Genre",
+                            value: tags.joined(separator: ", ")
+                        )
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+
+            if let coordinates = event.coordinates {
+                Button(action: {
+                    showingMapsSheet = true
+                }) {
+                    EventMapView(
+                        coordinate: CLLocationCoordinate2D(
+                            latitude: coordinates.latitude,
+                            longitude: coordinates.longitude
+                        ),
+                        venueName: event.venue
+                    )
+                    .frame(height: 200)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+            }
+
+            HStack(spacing: 12) {
+                Button(action: {
+                    if Auth.auth().currentUser == nil {
+                        showingSignInAlert = true
+                    } else {
+                        Task {
+                            await bookmarkManager.toggleBookmark(for: event)
+                        }
+                    }
+                }) {
+                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                        .appCard()
+                        .foregroundColor(.white)
+                        .iconButtonStyle(
+                            size: 60,
+                            backgroundColor: Color.white.opacity(0.1),
+                            cornerRadius: 12
+                        )
+                }
+
+                Button(action: {
+                    coordinator.shareEvent(event)
+                }) {
+                    Image(systemName: "square.and.arrow.up")
+                        .appCard()
+                        .foregroundColor(.white)
+                        .iconButtonStyle(
+                            size: 60,
+                            backgroundColor: Color.white.opacity(0.1),
+                            cornerRadius: 12
                         )
                 }
             }
-            // This is the DESTINATION - never the source
-            .modifier(HeroImageModifier(namespace: namespace, source: source, heroImageId: heroImageId))
-            
-            // Gradient Overlay
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+        }
+    }
+
+    // MARK: - Top Bar
+    private var heroTopBar: some View {
+        let backgroundOpacity = min(max(scrollOffset / (heroHeight * 0.75), 0), 1)
+
+        return HStack(spacing: 12) {
+            HeroControlButton(systemName: "chevron.left") {
+                dismiss()
+            }
+
+            Spacer()
+
+            HeroControlButton(systemName: "square.and.arrow.up") {
+                coordinator.shareEvent(event)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, topSafeAreaInset + 8)
+        .padding(.bottom, 12)
+        .background(
+            Color.black.opacity(Double(backgroundOpacity))
+                .ignoresSafeArea(edges: .top)
+        )
+    }
+
+    private var topSafeAreaInset: CGFloat {
+        UIApplication.shared.firstKeyWindow?.safeAreaInsets.top ?? 0
+    }
+
+    // MARK: - Purchase Button Area
+    private var purchaseButtonArea: some View {
+        VStack(spacing: 0) {
+            Button(action: {
+                if userHasTicket {
+                    return
+                } else if availableTickets > 0 {
+                    if Auth.auth().currentUser == nil {
+                        showingSignInAlert = true
+                    } else {
+                        coordinator.purchaseTicket(for: event)
+                    }
+                }
+            }) {
+                HStack(spacing: 12) {
+                    Text(buttonText)
+                        .font(.appFont(size: 17))
+                }
+                .foregroundColor(buttonTextColor)
+                .primaryButtonStyle(
+                    backgroundColor: buttonColor,
+                    foregroundColor: buttonTextColor,
+                    borderColor: Color.white.opacity(0.2)
+                )
+            }
+            .disabled(isButtonDisabled)
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 20)
+        }
+        .background(
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color.clear,
-                    Color.black.opacity(0.3),
-                    Color.black.opacity(0.7)
+                    Color.black.opacity(0),
+                    Color.black.opacity(0.85),
+                    Color.black
                 ]),
                 startPoint: .top,
                 endPoint: .bottom
             )
-            
-            // Event Info
-            VStack {
-                Spacer()
-                
-                HStack {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(event.name)
-                            .appHero()
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.leading)
-                    }
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-            }
-        }
+            .ignoresSafeArea(edges: .bottom)
+        )
     }
     
     private func checkUserTicketStatus() {
@@ -663,6 +699,33 @@ struct HeroImageModifier: ViewModifier {
         } else {
             content
         }
+    }
+}
+
+// MARK: - Hero Control Button
+private struct HeroControlButton: View {
+    let systemName: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 36, height: 36)
+                .background(Color.black.opacity(0.45))
+                .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private extension UIApplication {
+    var firstKeyWindow: UIWindow? {
+        connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
     }
 }
 
