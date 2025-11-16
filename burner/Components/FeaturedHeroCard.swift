@@ -41,7 +41,7 @@ struct FeaturedHeroCard: View {
                 // Only be source in featured cards, not in detail views
                 .ifLet(namespace) { view, namespace in
                     view.matchedGeometryEffect(
-                        id: "heroImage-\(event.id ?? "")",
+                        id: "heroImage-featured-\(event.id ?? "")",
                         in: namespace,
                         isSource: true // This is the source for featured cards
                     )

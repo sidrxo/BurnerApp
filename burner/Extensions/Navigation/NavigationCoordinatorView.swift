@@ -172,8 +172,8 @@ struct NavigationDestinationBuilder: View {
             switch destination {
             // Event Navigation
                 // In NavigationDestinationBuilder
-                case .eventDetail(let event):
-                    EventDetailView(event: event, namespace: heroNamespace)
+                case .eventDetail(let event, let source):
+                    EventDetailView(event: event, source: source, namespace: heroNamespace)
 
             case .eventById(let eventId):
                 EventDetailDestination(eventId: eventId)
