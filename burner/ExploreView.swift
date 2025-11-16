@@ -390,6 +390,8 @@ struct ExploreView: View {
             .padding(.bottom, 40)
         }
         .buttonStyle(.noHighlight)
+        // Add transition ID for this specific card
+        .id("featured-card-\(event.id ?? "")")
     }
 
     // MARK: - Helper: Nearby Section
@@ -415,6 +417,7 @@ struct ExploreView: View {
                         )
                     }
                     .buttonStyle(.noHighlight)
+                    .id("nearby-row-\(item.event.id ?? "")") // Add unique ID
                 }
             }
         }
@@ -551,10 +554,11 @@ struct EventSection: View {
                             event: event,
                             bookmarkManager: bookmarkManager,
                             showingSignInAlert: $showingSignInAlert,
-                            namespace: namespace
+                            namespace: namespace // Use the passed namespace, not heroNamespace
                         )
                     }
                     .buttonStyle(.noHighlight)
+                    .id("event-row-\(event.id ?? "")") // Unique ID for each row
                 }
             }
         }

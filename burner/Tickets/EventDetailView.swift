@@ -10,7 +10,6 @@ struct EventDetailView: View {
     let event: Event
     var namespace: Namespace.ID?
 
-    // Use environment objects instead of creating new instances
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
@@ -18,35 +17,17 @@ struct EventDetailView: View {
     @EnvironmentObject var appState: AppState
 
     @State private var userHasTicket = false
-    @State private var showingSignInAlert = false // ✅ NEW
+    @State private var showingSignInAlert = false
     @State private var showingMapsSheet = false
     @State private var isDescriptionExpanded = false
-    @State private var needsReadMore = false // NEW: Track if text actually needs expansion
+    @State private var needsReadMore = false
     @State private var scrollOffset: CGFloat = 0
     
-    // Get screen height for responsive sizing
-    private let screenHeight = UIScreen.main.bounds.height
-    
-    // Calculate responsive hero height based on screen size
+    // Simplified hero height calculation
     private var heroHeight: CGFloat {
-        // Use 50% of screen height to show more of the image, with min/max bounds
-        let calculatedHeight = screenHeight * 0.50
-        return max(350, min(calculatedHeight, 550))
+        UIScreen.main.bounds.height * 0.5 // 50% of screen height
     }
 
-    // Calculate progressive blur based on scroll offset
-    private var blurRadius: CGFloat {
-        // Start blurring after 50 points of scroll, max blur at 200 points
-        let progress = min(max(scrollOffset - 50, 0) / 150, 1.0)
-        return progress * 20 // Max blur radius of 20
-    }
-
-    // Calculate blur overlay opacity
-    private var blurOverlayOpacity: Double {
-        let progress = min(max(scrollOffset - 50, 0) / 150, 1.0)
-        return Double(progress) * 0.6
-    }
-    
     var availableTickets: Int {
         max(0, event.maxTickets - event.ticketsSold)
     }
@@ -70,7 +51,6 @@ struct EventDetailView: View {
     // Check if event is past (event ended)
     private var isEventPast: Bool {
         guard let endTime = event.endTime else {
-            // If no end time, check if event started more than 6 hours ago
             guard let startTime = event.startTime else { return false }
             let sixHoursAfterStart = Calendar.current.date(byAdding: .hour, value: 6, to: startTime) ?? startTime
             return Date() > sixHoursAfterStart
@@ -121,10 +101,18 @@ struct EventDetailView: View {
     }
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Color.black.ignoresSafeArea()
+        ZStack(alignment: .top) {
+            // Background
+            Color.black.ignoresSafeArea()
+            
+            // Main content
+            VStack(spacing: 0) {
+                // Hero Section - FIXED: Simplified and properly constrained
+                heroSection
+                    .frame(height: heroHeight)
+                    .zIndex(1) // Ensure it stays on top
                 
+                // Content Section
                 ScrollView {
                     VStack(spacing: 0) {
                         // Scroll offset tracker
@@ -136,107 +124,26 @@ struct EventDetailView: View {
                                 )
                         }
                         .frame(height: 0)
-                        .onAppear {
-                            scrollOffset = 0
-                        }
-
-                        // Hero Image Section - Extends under navigation bar
-                        ZStack {
-                            // Base image with matched geometry effect
-                            Group {
-                                KFImage(URL(string: event.imageUrl))
-                                    .placeholder {
-                                        Rectangle()
-                                            .fill(Color.gray.opacity(0.3))
-                                            .overlay(
-                                                Image(systemName: "music.note")
-                                                    .appHero()
-                                                    .foregroundColor(.gray)
-                                            )
-                                    }
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: geometry.size.width, height: heroHeight)
-                                    .clipped()
-                            }
-                            .if(namespace != nil && event.id != nil) { view in
-                                view.matchedGeometryEffect(id: "heroImage-\(event.id!)", in: namespace!)
-                            }
-                            .overlay(
-                                // Progressive Blur Overlay (top to bottom fade) - responds to scroll
-                                Rectangle()
-                                    .fill(
-                                        LinearGradient(
-                                            gradient: Gradient(stops: [
-                                                .init(color: Color.white.opacity(0.15), location: 0.0),
-                                                .init(color: Color.clear, location: 0.3)
-                                            ]),
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
-                                    )
-                                    .blur(radius: 20)
-                                    .opacity(blurOverlayOpacity)
-                            )
-
-                            // Gradient overlay that darkens the bottom
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.black.opacity(0.2),
-                                    Color.clear,
-                                    Color.clear,
-                                    Color.black.opacity(0.6),
-                                    Color.black.opacity(0.9)
-                                ]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                            .frame(width: geometry.size.width, height: heroHeight)
-                            
-                            // Event info overlay - positioned at bottom
-                            VStack {
-                                   Spacer()
-                                   
-                                   HStack {
-                                       VStack(alignment: .leading, spacing: 12) {
-                                           Text(event.name)
-                                               .appHero()
-                                               .foregroundColor(.white)
-                                               .multilineTextAlignment(.leading)
-                                               .fixedSize(horizontal: false, vertical: true)
-                                       }
-                                       
-                                       Spacer()
-                                   }
-                                   .padding(.horizontal, 20)
-                                   .padding(.bottom, 20)
-                            }
-                        }
-                        .frame(height: heroHeight)
-                        .padding(.bottom, 30)
                         
-                        // Content Section - More compact spacing
+                        // Content
                         VStack(spacing: 16) {
-                           
-                            // Description - more compact with read more
+                            // Description
                             if let description = event.description, !description.isEmpty {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("About")
                                         .appBody()
                                         .foregroundColor(.white)
 
-                                    VStack(alignment: .leading, spacing: 2) { // REDUCED: spacing from 4 to 2
+                                    VStack(alignment: .leading, spacing: 2) {
                                         Text(description)
                                             .appBody()
                                             .foregroundColor(.gray)
                                             .lineSpacing(2)
                                             .lineLimit(isDescriptionExpanded ? nil : 6)
                                             .background(
-                                                // NEW: Detect if text actually needs expansion
                                                 GeometryReader { textGeometry in
                                                     Color.clear
                                                         .onAppear {
-                                                            // Calculate if text is truncated
                                                             let textSize = description.boundingRect(
                                                                 with: CGSize(
                                                                     width: textGeometry.size.width,
@@ -246,8 +153,7 @@ struct EventDetailView: View {
                                                                 attributes: [.font: UIFont.preferredFont(forTextStyle: .body)],
                                                                 context: nil
                                                             )
-                                                            // If text height exceeds 6 lines, show read more
-                                                            let lineHeight: CGFloat = 20 // Approximate line height
+                                                            let lineHeight: CGFloat = 20
                                                             let maxHeight = lineHeight * 6
                                                             needsReadMore = textSize.height > maxHeight
                                                         }
@@ -255,7 +161,6 @@ struct EventDetailView: View {
                                             )
                                             .animation(.easeInOut, value: isDescriptionExpanded)
 
-                                        // NEW: Only show if text actually needs expansion
                                         if needsReadMore {
                                             Button(action: {
                                                 withAnimation {
@@ -264,8 +169,8 @@ struct EventDetailView: View {
                                             }) {
                                                 Text(isDescriptionExpanded ? "Read Less" : "Read More")
                                                     .appCaption()
-                                                    .foregroundColor(.gray) // CHANGED: from blue to gray
-                                                    .padding(.top, 2) // REDUCED: padding from 4 to 2
+                                                    .foregroundColor(.gray)
+                                                    .padding(.top, 2)
                                             }
                                         }
                                     }
@@ -275,7 +180,7 @@ struct EventDetailView: View {
                                 .padding(.bottom, 8)
                             }
                             
-                            // Event details - more compact
+                            // Event details
                             VStack(spacing: 12) {
                                 Text("Event Details")
                                     .appBody()
@@ -307,7 +212,6 @@ struct EventDetailView: View {
                                         value: "£\(String(format: "%.2f", event.price))"
                                     )
 
-                                    // Genre/Tag row - non-clickable
                                     if let tags = event.tags, !tags.isEmpty {
                                         EventDetailRow(
                                             icon: "tag",
@@ -339,16 +243,12 @@ struct EventDetailView: View {
                                 .padding(.top, 8)
                             }
 
-                            // Save and Share buttons side by side (icons only)
+                            // Action buttons
                             HStack(spacing: 12) {
-                                // Save/Bookmark button
                                 Button(action: {
-                                    // Check if user is authenticated
                                     if Auth.auth().currentUser == nil {
-                                        // Show sign-in alert if not authenticated
                                         showingSignInAlert = true
                                     } else {
-                                        // Toggle bookmark if authenticated
                                         Task {
                                             await bookmarkManager.toggleBookmark(for: event)
                                         }
@@ -364,7 +264,6 @@ struct EventDetailView: View {
                                         )
                                 }
 
-                                // Share button
                                 Button(action: {
                                     coordinator.shareEvent(event)
                                 }) {
@@ -382,92 +281,91 @@ struct EventDetailView: View {
                             .padding(.top, 16)
                             
                             // Bottom spacing for floating button
-                            Spacer(minLength: 100)
+                            Spacer(minLength: 120)
                         }
+                        .padding(.top, 20) // Add padding between hero and content
                     }
                 }
                 .coordinateSpace(name: "scroll")
                 .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                     scrollOffset = value
                 }
-
-                VStack {
-                    Spacer()
-
-                    VStack(spacing: 0) {
-                        // Remove the gradient from here
-                        
-                        // UPDATED: Get Ticket Button - matching sign-in sheet style
-                        Button(action: {
-                            if userHasTicket {
-                                // Do nothing when user has a ticket
-                            } else if availableTickets > 0 {
-                                // Check if user is authenticated
-                                if Auth.auth().currentUser == nil {
-                                    // ✅ Show custom alert instead of toast
-                                    showingSignInAlert = true
-                                } else {
-                                    coordinator.purchaseTicket(for: event)
-                                }
-                            }
-                        }) {
-                            HStack(spacing: 12) {
-          
-                                Text(buttonText)
-                                    .font(.appFont(size: 17))
-                            }
-                            .foregroundColor(buttonTextColor)
-                            .primaryButtonStyle(
-                                backgroundColor: buttonColor,
-                                foregroundColor: buttonTextColor,
-                                borderColor: Color.white.opacity(0.2)
-                            )
-                        }
-                        .disabled(isButtonDisabled)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
-                        .padding(.top, 40)  // ✅ Add top padding to create space for gradient
-
-                    }
-                    .background(
-                        // Apply gradient as the background instead
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.black.opacity(0),
-                                Color.black.opacity(0.7),
-                                Color.black
-                            ]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                }
+            }
+            
+            // Floating Button Area
+            VStack {
+                Spacer()
                 
-                // ✅ NEW: Sign In Alert
-                if showingSignInAlert {
-                    CustomAlertView(
-                        title: "Sign In Required",
-                        description: "You need to be signed in to purchase tickets.",
-                        cancelAction: {
-                            showingSignInAlert = false
-                        },
-                        cancelActionTitle: "Cancel",
-                        primaryAction: {
-                            showingSignInAlert = false
-                            coordinator.showSignIn()
-                        },
-                        primaryActionTitle: "Sign In",
-                        primaryActionColor: .white,
-                        customContent: EmptyView()
-                    )
-                    .transition(.opacity)
-                    .zIndex(1002)
+                VStack(spacing: 0) {
+                    Button(action: {
+                        if userHasTicket {
+                            // Do nothing when user has a ticket
+                        } else if availableTickets > 0 {
+                            if Auth.auth().currentUser == nil {
+                                showingSignInAlert = true
+                            } else {
+                                coordinator.purchaseTicket(for: event)
+                            }
+                        }
+                    }) {
+                        HStack(spacing: 12) {
+                            Text(buttonText)
+                                .font(.appFont(size: 17))
+                        }
+                        .foregroundColor(buttonTextColor)
+                        .primaryButtonStyle(
+                            backgroundColor: buttonColor,
+                            foregroundColor: buttonTextColor,
+                            borderColor: Color.white.opacity(0.2)
+                        )
+                    }
+                    .disabled(isButtonDisabled)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                    .padding(.top, 20)
                 }
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.black.opacity(0),
+                            Color.black.opacity(0.8),
+                            Color.black
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+            }
+            
+            // Sign In Alert
+            if showingSignInAlert {
+                CustomAlertView(
+                    title: "Sign In Required",
+                    description: "You need to be signed in to purchase tickets.",
+                    cancelAction: {
+                        showingSignInAlert = false
+                    },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        showingSignInAlert = false
+                        coordinator.showSignIn()
+                    },
+                    primaryActionTitle: "Sign In",
+                    primaryActionColor: .white,
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1002)
             }
         }
-        .navigationBarBackButtonHidden(false)
-        .if(namespace != nil && event.id != nil) { view in
-            view.navigationTransition(.zoom(sourceID: "heroImage-\(event.id!)", in: namespace!))
+        .navigationBarHidden(true)
+        .ifLet(namespace) { view, namespace in
+            view.navigationTransition(
+                .zoom(
+                    sourceID: "heroImage-\(event.id ?? "")",
+                    in: namespace
+                )
+            )
         }
         .sheet(isPresented: $showingMapsSheet) {
             if let coordinates = event.coordinates {
@@ -484,11 +382,9 @@ struct EventDetailView: View {
             checkUserTicketStatus()
         }
         .onChange(of: ticketsViewModel.tickets.count) { _, _ in
-            // Refresh ticket status when tickets list changes
             checkUserTicketStatus()
         }
         .onChange(of: event.ticketsSold) { _, _ in
-            // Refresh when tickets sold changes
             checkUserTicketStatus()
         }
         .onReceive(eventViewModel.$errorMessage) { errorMessage in
@@ -502,6 +398,73 @@ struct EventDetailView: View {
                 coordinator.showSuccess(title: "Success", message: successMessage)
                 eventViewModel.clearMessages()
                 checkUserTicketStatus()
+            }
+        }
+    }
+    
+    // MARK: - Hero Section (Extracted for clarity)
+    private var heroSection: some View {
+        ZStack(alignment: .bottom) {
+            // Hero Image
+            Group {
+                if let url = URL(string: event.imageUrl), !event.imageUrl.isEmpty {
+                    KFImage(url)
+                        .placeholder {
+                            Color.gray.opacity(0.3)
+                                .overlay(
+                                    Image(systemName: "music.note")
+                                        .appHero()
+                                        .foregroundColor(.gray)
+                                )
+                        }
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: UIScreen.main.bounds.width, height: heroHeight)
+                        .clipped()
+                } else {
+                    Color.gray.opacity(0.3)
+                        .overlay(
+                            Image(systemName: "music.note")
+                                .appHero()
+                                .foregroundColor(.gray)
+                        )
+                }
+            }
+            .ifLet(namespace) { view, namespace in
+                view.matchedGeometryEffect(
+                    id: "heroImage-\(event.id ?? "")",
+                    in: namespace,
+                    isSource: false
+                )
+            }
+            
+            // Gradient Overlay
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.clear,
+                    Color.black.opacity(0.3),
+                    Color.black.opacity(0.7)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            
+            // Event Info
+            VStack {
+                Spacer()
+                
+                HStack {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(event.name)
+                            .appHero()
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.leading)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
         }
     }
@@ -533,31 +496,9 @@ struct EventDetailView: View {
             return startTimeString
         }
     }
-
-    private func generateShareText() -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .medium
-        dateFormatter.timeStyle = .short
-        let dateString = event.startTime.map { dateFormatter.string(from: $0) } ?? "TBA"
-
-        return """
-        Check out this event on Burner!
-
-        \(event.name)
-        \(event.venue)
-        \(dateString)
-
-        £\(String(format: "%.2f", event.price))
-        """
-    }
-
-    private func generateShareURL() -> URL {
-        guard let eventId = event.id else {
-            return URL(string: "burner://events")!
-        }
-        return URL(string: "burner://event/\(eventId)")!
-    }
 }
+
+// ... rest of the code remains the same (EventDetailRow, EventMapView, etc.)
 
 // MARK: - Scroll Offset Preference Key
 struct ScrollOffsetPreferenceKey: PreferenceKey {
@@ -567,17 +508,6 @@ struct ScrollOffsetPreferenceKey: PreferenceKey {
     }
 }
 
-// MARK: - View Extension for Conditional Modifiers
-extension View {
-    @ViewBuilder
-    func `if`<Transform: View>(_ condition: Bool, transform: (Self) -> Transform) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
-    }
-}
 
 // MARK: - Event Detail Row - More compact
 struct EventDetailRow: View {

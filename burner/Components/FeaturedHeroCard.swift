@@ -1,6 +1,7 @@
 import SwiftUI
 import Kingfisher
 import FirebaseAuth
+import Glur  // Make sure to import Glur
 
 struct FeaturedHeroCard: View {
     let event: Event
@@ -19,6 +20,7 @@ struct FeaturedHeroCard: View {
         GeometryReader { geometry in
             ZStack {
                 // Base Image with Matched Transition Source
+                // Base Image with Matched Transition Source
                 Group {
                     KFImage(URL(string: event.imageUrl))
                         .placeholder {
@@ -29,42 +31,23 @@ struct FeaturedHeroCard: View {
                         .scaledToFill()
                         .frame(width: geometry.size.width, height: 400)
                         .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .glur(radius: 10.0,
+                              offset: 0.5,
+                              interpolation: 0.5,
+                              direction: .down,
+                              noise: 0.2,
+                              drawingGroup: true)
                 }
-                .if(namespace != nil && event.id != nil) { view in
-                    view.matchedGeometryEffect(id: "heroImage-\(event.id!)", in: namespace!)
+                // Only be source in featured cards, not in detail views
+                .ifLet(namespace) { view, namespace in
+                    view.matchedGeometryEffect(
+                        id: "heroImage-\(event.id ?? "")",
+                        in: namespace,
+                        isSource: true // This is the source for featured cards
+                    )
                 }
-                .if(namespace != nil && event.id != nil) { view in
-                    view.matchedTransitionSource(id: "heroImage-\(event.id!)", in: namespace!) { source in
-                        source
-                            .clipShape(RoundedRectangle(cornerRadius: 20))
-                    }
-                }
-                .overlay(
-                    // Progressive Blur Overlay (top to bottom fade)
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(stops: [
-                                    .init(color: Color.white.opacity(0.15), location: 0.0),
-                                    .init(color: Color.clear, location: 0.3)
-                                ]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .blur(radius: 20)
-                        .opacity(0.6)
-                )
 
-                // Gradient overlay
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.8)]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(width: geometry.size.width, height: 400)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                
+                // Content overlay (text and buttons)
                 VStack {
                     HStack {
                         Spacer()
@@ -132,17 +115,5 @@ struct FeaturedHeroCard: View {
             }
         }
         .frame(height: 400)
-    }
-}
-
-// MARK: - View Extension for Conditional Modifiers
-extension View {
-    @ViewBuilder
-    func `if`<Transform: View>(_ condition: Bool, transform: (Self) -> Transform) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
     }
 }

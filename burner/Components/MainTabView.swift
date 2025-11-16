@@ -12,7 +12,7 @@ struct MainTabView: View {
 
     var body: some View {
         NavigationCoordinatorView {
-            ZStack {
+            TabView(selection: $coordinator.selectedTab) {
                 // Home Tab
                 NavigationStack(path: $coordinator.homePath) {
                     ExploreView()
@@ -22,8 +22,10 @@ struct MainTabView: View {
                                 .environment(\.heroNamespace, homeHeroNamespace)
                         }
                 }
-                .opacity(coordinator.selectedTab == .home ? 1 : 0)
-                .zIndex(coordinator.selectedTab == .home ? 1 : 0)
+                .tabItem {
+                    Label("Home", systemImage: "house")
+                }
+                .tag(AppTab.home)
 
                 // Explore Tab
                 NavigationStack(path: $coordinator.explorePath) {
@@ -34,8 +36,10 @@ struct MainTabView: View {
                                 .environment(\.heroNamespace, exploreHeroNamespace)
                         }
                 }
-                .opacity(coordinator.selectedTab == .explore ? 1 : 0)
-                .zIndex(coordinator.selectedTab == .explore ? 1 : 0)
+                .tabItem {
+                    Label("Explore", systemImage: "magnifyingglass")
+                }
+                .tag(AppTab.explore)
 
                 // Tickets Tab
                 NavigationStack(path: $coordinator.ticketsPath) {
@@ -46,8 +50,10 @@ struct MainTabView: View {
                                 .environment(\.heroNamespace, ticketsHeroNamespace)
                         }
                 }
-                .opacity(coordinator.selectedTab == .tickets ? 1 : 0)
-                .zIndex(coordinator.selectedTab == .tickets ? 1 : 0)
+                .tabItem {
+                    Label("Tickets", systemImage: "ticket")
+                }
+                .tag(AppTab.tickets)
 
                 // Settings Tab
                 NavigationStack(path: $coordinator.settingsPath) {
@@ -58,19 +64,18 @@ struct MainTabView: View {
                                 .environment(\.heroNamespace, settingsHeroNamespace)
                         }
                 }
-                .opacity(coordinator.selectedTab == .settings ? 1 : 0)
-                .zIndex(coordinator.selectedTab == .settings ? 1 : 0)
-                
-                // Custom tab bar overlay
-                VStack {
-                    Spacer()
-                    if shouldShowTabBar {
-                        CustomTabBar()
-                            .transition(.move(edge: .bottom))
-                    }
+                .tabItem {
+                    Label("Settings", systemImage: "person")
                 }
-                .zIndex(100)
-                .ignoresSafeArea(.keyboard)
+                .tag(AppTab.settings)
+            }
+            .tint(.white)
+            .preferredColorScheme(.dark)
+            .overlay(alignment: .bottom) {
+                if shouldShowTabBar {
+                    CustomTabBar()
+                        .transition(.move(edge: .bottom))
+                }
             }
         }
     }

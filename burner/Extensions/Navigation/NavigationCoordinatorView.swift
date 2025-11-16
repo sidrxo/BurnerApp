@@ -171,8 +171,9 @@ struct NavigationDestinationBuilder: View {
         Group {
             switch destination {
             // Event Navigation
-            case .eventDetail(let event):
-                EventDetailView(event: event, namespace: heroNamespace)
+                // In NavigationDestinationBuilder
+                case .eventDetail(let event):
+                    EventDetailView(event: event, namespace: heroNamespace)
 
             case .eventById(let eventId):
                 EventDetailDestination(eventId: eventId)
@@ -389,5 +390,18 @@ struct ToastAlertView: View {
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.3), radius: 10, y: 5)
         .padding(.horizontal, 20)
+    }
+}
+
+// Debug modifier to track namespace usage
+extension View {
+    func debugNamespace(_ id: String) -> some View {
+        #if DEBUG
+        return self.onAppear {
+            print("Namespace used for: \(id)")
+        }
+        #else
+        return self
+        #endif
     }
 }

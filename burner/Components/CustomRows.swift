@@ -72,14 +72,14 @@ struct EventRow: View {
                     .scaledToFill()
                     .frame(width: 60, height: 60)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .if(namespace != nil && event.id != nil) { view in
-                        view.matchedGeometryEffect(id: "heroImage-\(event.id!)", in: namespace!)
-                    }
-                    .if(namespace != nil && event.id != nil) { view in
-                        view.matchedTransitionSource(id: "heroImage-\(event.id!)", in: namespace!) { source in
-                            source
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
+                    // Only apply matchedGeometryEffect if this is NOT in a list context
+                    // and we have a valid namespace and event ID
+                    .ifLet(namespace) { view, namespace in
+                        view.matchedGeometryEffect(
+                            id: "heroImage-\(event.id ?? "")",
+                            in: namespace,
+                            isSource: configuration.isEventList // Use computed property instead of ==
+                        )
                     }
             } else {
                 imagePlaceholder
@@ -98,7 +98,6 @@ struct EventRow: View {
             )
     }
     
-    // MARK: - Event Details
     // MARK: - Event Details
     private var eventDetails: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -165,6 +164,7 @@ struct EventRow: View {
             }
         }
     }
+    
     // MARK: - Right Side Content
     private var rightSideContent: some View {
         VStack(alignment: .trailing, spacing: 8) {
@@ -202,7 +202,7 @@ struct EventRow: View {
 
 // MARK: - Configuration
 extension EventRow {
-    struct Configuration {
+    struct Configuration: Equatable {
         let showBookmark: Bool
         let showPrice: Bool
         let showVenue: Bool
@@ -212,6 +212,11 @@ extension EventRow {
         let verticalPadding: CGFloat
         let backgroundColor: Color
         let cornerRadius: CGFloat
+        
+        // Helper property to check if this is an event list configuration
+        var isEventList: Bool {
+            self == .eventList
+        }
         
         static let eventList = Configuration(
             showBookmark: true,
@@ -248,6 +253,19 @@ extension EventRow {
             backgroundColor: Color.clear,
             cornerRadius: 0
         )
+        
+        // Equatable conformance
+        static func == (lhs: EventRow.Configuration, rhs: EventRow.Configuration) -> Bool {
+            return lhs.showBookmark == rhs.showBookmark &&
+                   lhs.showPrice == rhs.showPrice &&
+                   lhs.showVenue == rhs.showVenue &&
+                   lhs.showDetailedDate == rhs.showDetailedDate &&
+                   lhs.bookmarkSize == rhs.bookmarkSize &&
+                   lhs.horizontalPadding == rhs.horizontalPadding &&
+                   lhs.verticalPadding == rhs.verticalPadding &&
+                   lhs.backgroundColor == rhs.backgroundColor &&
+                   lhs.cornerRadius == rhs.cornerRadius
+        }
     }
 }
 
@@ -354,17 +372,7 @@ struct BookmarkButton: View {
     }
 }
 
-// MARK: - View Extension for Conditional Modifiers
-extension View {
-    @ViewBuilder
-    func `if`<Transform: View>(_ condition: Bool, transform: (Self) -> Transform) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
-    }
-}
+
 
 // MARK: - Supporting Types
 struct TicketWithEventData: Codable, Identifiable {
