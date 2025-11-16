@@ -142,27 +142,22 @@ struct EventDetailView: View {
 
                         // Hero Image Section - Extends under navigation bar
                         ZStack {
-                            // Base image with matched geometry effect
-                            Group {
-                                KFImage(URL(string: event.imageUrl))
-                                    .placeholder {
-                                        Rectangle()
-                                            .fill(Color.gray.opacity(0.3))
-                                            .overlay(
-                                                Image(systemName: "music.note")
-                                                    .appHero()
-                                                    .foregroundColor(.gray)
-                                            )
-                                    }
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: geometry.size.width, height: heroHeight)
-                                    .clipped()
-                            }
-                            .if(namespace != nil && event.id != nil) { view in
-                                view.matchedGeometryEffect(id: "heroImage-\(event.id!)", in: namespace!)
-                            }
-                            .overlay(
+                            // Base image - no matched geometry effect needed for destination
+                            KFImage(URL(string: event.imageUrl))
+                                .placeholder {
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .overlay(
+                                            Image(systemName: "music.note")
+                                                .appHero()
+                                                .foregroundColor(.gray)
+                                        )
+                                }
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: geometry.size.width, height: heroHeight)
+                                .clipped()
+                                .overlay(
                                 // Progressive Blur Overlay (top to bottom fade) - responds to scroll
                                 Rectangle()
                                     .fill(

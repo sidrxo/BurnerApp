@@ -31,9 +31,6 @@ struct FeaturedHeroCard: View {
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                 }
                 .if(namespace != nil && event.id != nil) { view in
-                    view.matchedGeometryEffect(id: "heroImage-\(event.id!)", in: namespace!)
-                }
-                .if(namespace != nil && event.id != nil) { view in
                     view.matchedTransitionSource(id: "heroImage-\(event.id!)", in: namespace!) { source in
                         source
                             .clipShape(RoundedRectangle(cornerRadius: 20))
