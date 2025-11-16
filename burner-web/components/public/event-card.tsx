@@ -33,9 +33,6 @@ export function EventCard({ event, featured = false }: EventCardProps) {
     }).format(price / 100);
   };
 
-  const remainingTickets = event.maxTickets - event.ticketsSold;
-  const soldOut = remainingTickets <= 0;
-
   return (
     <Link href={`/events/${event.id}`}>
       <div
@@ -55,11 +52,6 @@ export function EventCard({ event, featured = false }: EventCardProps) {
               className="object-cover"
               sizes={featured ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 100vw, 33vw"}
             />
-            {soldOut && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                <span className="text-white text-xl font-bold">SOLD OUT</span>
-              </div>
-            )}
           </div>
         )}
 
@@ -88,14 +80,28 @@ export function EventCard({ event, featured = false }: EventCardProps) {
               </p>
             )}
 
-            {/* Bottom row: Price & Availability */}
+            {/* Tags */}
+            {event.tags && event.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {event.tags.slice(0, 3).map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-0.5 bg-white/10 rounded-full text-xs text-white/70"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Bottom row: Price & Category */}
             <div className="flex items-center justify-between pt-2">
               <span className={`font-bold ${featured ? "text-xl" : "text-lg"}`}>
                 {formatPrice(event.price)}
               </span>
-              {!soldOut && (
-                <span className="text-white/50 text-sm">
-                  {remainingTickets} left
+              {event.category && (
+                <span className="text-white/50 text-sm capitalize">
+                  {event.category}
                 </span>
               )}
             </div>
