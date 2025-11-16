@@ -20,20 +20,12 @@ export function PublicNav() {
           {/* Right side actions */}
           <div className="flex items-center gap-4">
             {user ? (
-              <>
-                <button
-                  onClick={() => router.push("/my-tickets")}
-                  className="text-sm font-medium hover:text-white/70 transition-colors"
-                >
-                  My Tickets
-                </button>
-                <button
-                  onClick={() => router.push("/overview")}
-                  className="text-sm font-medium hover:text-white/70 transition-colors"
-                >
-                  Dashboard
-                </button>
-              </>
+              <button
+                onClick={() => router.push("/my-tickets")}
+                className="text-sm font-medium hover:text-white/70 transition-colors"
+              >
+                My Tickets
+              </button>
             ) : (
               <button
                 onClick={() => router.push("/signin")}
