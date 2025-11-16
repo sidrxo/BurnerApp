@@ -22,7 +22,7 @@ struct FilteredEventsView: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(events) { event in
-                            NavigationLink(value: NavigationDestination.eventDetail(event)) {
+                            NavigationLink(value: NavigationDestination.eventDetail(event, .listRow)) {
                                 EventRow(
                                     event: event,
                                     bookmarkManager: bookmarkManager,
