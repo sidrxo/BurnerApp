@@ -109,8 +109,15 @@ function CheckoutForm({
         </div>
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-        <PaymentElement />
+      <div className="bg-white/5 border border-white/10 rounded-xl p-6 min-h-[200px]">
+        <PaymentElement
+          options={{
+            layout: {
+              type: 'tabs',
+              defaultCollapsed: false,
+            }
+          }}
+        />
       </div>
 
       <p className="text-white/30 text-sm text-center">
@@ -244,11 +251,38 @@ export default function PurchasePage() {
       theme: "night" as const,
       variables: {
         colorPrimary: "#ffffff",
-        colorBackground: "#0a0a0a",
+        colorBackground: "#1a1a1a",
         colorText: "#ffffff",
         colorDanger: "#ef4444",
-        fontFamily: "system-ui, sans-serif",
+        fontFamily: "system-ui, -apple-system, sans-serif",
         borderRadius: "12px",
+        spacingUnit: "4px",
+        fontSizeBase: "16px",
+      },
+      rules: {
+        '.Input': {
+          backgroundColor: '#2a2a2a',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          padding: '12px',
+          color: '#ffffff',
+        },
+        '.Input:focus': {
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          boxShadow: 'none',
+        },
+        '.Label': {
+          color: '#ffffff',
+          fontWeight: '500',
+          marginBottom: '8px',
+        },
+        '.Tab': {
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          backgroundColor: '#1a1a1a',
+        },
+        '.Tab--selected': {
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          backgroundColor: '#2a2a2a',
+        },
       },
     },
   };
