@@ -17,7 +17,7 @@ struct TicketPurchaseView: View {
     @State private var currentStep: PurchaseStep = .paymentMethod
     @State private var cardParams: STPPaymentMethodCardParams?
     @State private var isCardValid = false
-    @State private var selectedSavedCard: StripePaymentService.PaymentMethodInfo?
+    @State private var selectedSavedCard: PaymentMethodInfo?
     @State private var hasInitiatedPurchase = false // ✅ Prevent duplicate purchases
 
     @Environment(\.presentationMode) var presentationMode
@@ -88,7 +88,7 @@ struct TicketPurchaseView: View {
                                 
                                 // ✅ UPDATED: Matching button styles
                                 VStack(spacing: 12) {
-                                    if ApplePayHandler.canMakePayments() {
+                                    if ApplePayService.canMakePayments() {
                                         Button(action: {
                                             handleApplePayPayment()
                                         }) {
@@ -291,7 +291,7 @@ struct TicketPurchaseView: View {
     private func preparePaymentIntent() async {
         guard let eventId = event.id else { return }
         guard Auth.auth().currentUser != nil else { return }
-        guard ApplePayHandler.canMakePayments() else { return }
+        guard ApplePayService.canMakePayments() else { return }
         // `preparePayment` is not async; don't await it.
         paymentService.preparePayment(eventId: eventId)
     }
@@ -489,7 +489,7 @@ struct TicketPurchaseView: View {
             return
         }
 
-        guard ApplePayHandler.canMakePayments() else {
+        guard ApplePayService.canMakePayments() else {
             alertMessage = "Apple Pay is not available on this device"
             isSuccess = false
             showingAlert = true
