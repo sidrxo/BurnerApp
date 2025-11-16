@@ -17,7 +17,7 @@ struct FeaturedHeroCard: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let imageHeight: CGFloat = 400
+            let imageHeight: CGFloat = 420
 
             ZStack(alignment: .top) {
                 // Base image
@@ -142,7 +142,7 @@ struct FeaturedHeroCard: View {
                 .frame(width: geometry.size.width, height: imageHeight)
             }
         }
-        .frame(height: 400)
+        .frame(height: 420)
     }
 }
 

@@ -26,3 +26,22 @@ struct CloseButton: View {
         }
     }
 }
+
+struct CloseButtonDark: View {
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "xmark")
+                .font(.appIcon)
+                .foregroundColor(.white)
+                .frame(width: 32, height: 32)
+                .background(Color.black.opacity(0.7))
+                .clipShape(Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                )
+        }
+    }
+}

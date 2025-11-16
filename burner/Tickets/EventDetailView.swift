@@ -337,7 +337,7 @@ struct EventDetailView: View {
                 VStack {
                     HStack {
                         Spacer()
-                        CloseButton {
+                        CloseButtonDark {
                             dismiss()
                         }
                         .padding(.top, 80)
