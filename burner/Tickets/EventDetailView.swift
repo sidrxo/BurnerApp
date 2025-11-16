@@ -434,18 +434,7 @@ struct EventDetailView: View {
                 }
             }
             // This is the DESTINATION - never the source
-            .ifLet(namespace) { view, namespace in
-                switch source {
-                case .some(let source):
-                    view.matchedGeometryEffect(
-                        id: heroImageId(for: source),
-                        in: namespace,
-                        isSource: false
-                    )
-                case .none:
-                    view
-                }
-            }
+            .modifier(HeroImageModifier(namespace: namespace, source: source, heroImageId: heroImageId))
             
             // Gradient Overlay
             LinearGradient(
@@ -654,6 +643,25 @@ struct MapsOptionsSheet: View {
                     UIApplication.shared.open(webUrl)
                 }
             }
+        }
+    }
+}
+
+// MARK: - Hero Image Modifier
+struct HeroImageModifier: ViewModifier {
+    let namespace: Namespace.ID?
+    let source: EventSource?
+    let heroImageId: (EventSource) -> String
+
+    func body(content: Content) -> some View {
+        if let namespace = namespace, let source = source {
+            content.matchedGeometryEffect(
+                id: heroImageId(source),
+                in: namespace,
+                isSource: false
+            )
+        } else {
+            content
         }
     }
 }
