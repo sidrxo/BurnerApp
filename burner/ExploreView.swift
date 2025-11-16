@@ -348,13 +348,13 @@ struct ExploreView: View {
                         EventSectionDestination(title: "All Events", events: allEvents)
                     )
                 ) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 2) {
                         Text("All Events")
                             .appSecondary()
                             .foregroundColor(.gray)
 
                         Image(systemName: "chevron.right")
-                            .font(.appIcon)
+                            .font(.appSecondary)
                             .foregroundColor(.gray)
                             .frame(width: 32, height: 32)
                             .background(Color.white.opacity(0.05))
@@ -561,7 +561,7 @@ struct EventSection: View {
                             .font(.appIcon)
                             .foregroundColor(.gray)
                             .frame(width: 32, height: 32)
-                            .background(Color.white.opacity(0.05))
+                            .background(Color.gray.opacity(0.3))
                             .clipShape(Circle())
                     }
                     .buttonStyle(PlainButtonStyle())
