@@ -5,6 +5,7 @@ struct EventDetailDestination: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
     @EnvironmentObject var appState: AppState
+    @Environment(\.heroNamespace) private var heroNamespace
 
     let eventId: String
     @State private var event: Event?
@@ -14,7 +15,7 @@ struct EventDetailDestination: View {
     var body: some View {
         Group {
             if let event {
-                EventDetailView(event: event)
+                EventDetailView(event: event, namespace: heroNamespace)
             } else if isLoading {
                 ZStack {
                     Color.black.ignoresSafeArea()

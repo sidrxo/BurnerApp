@@ -7,6 +7,7 @@ struct FilteredEventsView: View {
     let events: [Event]
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var appState: AppState
+    @Environment(\.heroNamespace) private var heroNamespace
     @State private var showingSignInAlert = false
     
     var body: some View {
@@ -25,7 +26,8 @@ struct FilteredEventsView: View {
                                 EventRow(
                                     event: event,
                                     bookmarkManager: bookmarkManager,
-                                    showingSignInAlert: $showingSignInAlert
+                                    showingSignInAlert: $showingSignInAlert,
+                                    namespace: heroNamespace
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())

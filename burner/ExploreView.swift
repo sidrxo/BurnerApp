@@ -10,6 +10,7 @@ struct ExploreView: View {
     @EnvironmentObject var coordinator: NavigationCoordinator
     @EnvironmentObject var tagViewModel: TagViewModel
     @EnvironmentObject var userLocationManager: UserLocationManager
+    @Environment(\.heroNamespace) private var heroNamespace
 
     @State private var searchText = ""
     @State private var showingSignInAlert = false
@@ -290,7 +291,8 @@ struct ExploreView: View {
                 allEvents: popularEvents,
                 bookmarkManager: bookmarkManager,
                 showViewAllButton: false,
-                showingSignInAlert: $showingSignInAlert
+                showingSignInAlert: $showingSignInAlert,
+                namespace: heroNamespace
             )
         }
 
@@ -302,7 +304,8 @@ struct ExploreView: View {
                 allEvents: thisWeekEvents,
                 bookmarkManager: bookmarkManager,
                 showViewAllButton: false,
-                showingSignInAlert: $showingSignInAlert
+                showingSignInAlert: $showingSignInAlert,
+                namespace: heroNamespace
             )
         }
 
@@ -340,7 +343,8 @@ struct ExploreView: View {
                 allEvents: allEvents,
                 bookmarkManager: bookmarkManager,
                 showViewAllButton: allEvents.count > 6,
-                showingSignInAlert: $showingSignInAlert
+                showingSignInAlert: $showingSignInAlert,
+                namespace: heroNamespace
             )
         }
     }
@@ -357,7 +361,8 @@ struct ExploreView: View {
                 allEvents: allEventsForGenre(genre),
                 bookmarkManager: bookmarkManager,
                 showViewAllButton: true,
-                showingSignInAlert: $showingSignInAlert
+                showingSignInAlert: $showingSignInAlert,
+                namespace: heroNamespace
             )
 
             // Add featured card after every 2 genre sections
@@ -378,7 +383,8 @@ struct ExploreView: View {
             FeaturedHeroCard(
                 event: event,
                 bookmarkManager: bookmarkManager,
-                showingSignInAlert: $showingSignInAlert
+                showingSignInAlert: $showingSignInAlert,
+                namespace: heroNamespace
             )
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
@@ -404,7 +410,8 @@ struct ExploreView: View {
                             event: item.event,
                             bookmarkManager: bookmarkManager,
                             distanceText: formatDistance(item.distance),
-                            showingSignInAlert: $showingSignInAlert
+                            showingSignInAlert: $showingSignInAlert,
+                            namespace: heroNamespace
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -494,6 +501,7 @@ struct EventSection: View {
     let bookmarkManager: BookmarkManager
     let showViewAllButton: Bool
     @Binding var showingSignInAlert: Bool
+    var namespace: Namespace.ID?
 
     init(
         title: String,
@@ -501,7 +509,8 @@ struct EventSection: View {
         allEvents: [Event]? = nil,
         bookmarkManager: BookmarkManager,
         showViewAllButton: Bool = true,
-        showingSignInAlert: Binding<Bool> = .constant(false)
+        showingSignInAlert: Binding<Bool> = .constant(false),
+        namespace: Namespace.ID? = nil
     ) {
         self.title = title
         self.events = events
@@ -509,6 +518,7 @@ struct EventSection: View {
         self.bookmarkManager = bookmarkManager
         self.showViewAllButton = showViewAllButton
         self._showingSignInAlert = showingSignInAlert
+        self.namespace = namespace
     }
 
     var body: some View {
@@ -540,7 +550,8 @@ struct EventSection: View {
                         EventRow(
                             event: event,
                             bookmarkManager: bookmarkManager,
-                            showingSignInAlert: $showingSignInAlert
+                            showingSignInAlert: $showingSignInAlert,
+                            namespace: namespace
                         )
                     }
                     .buttonStyle(PlainButtonStyle())

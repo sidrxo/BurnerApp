@@ -165,13 +165,14 @@ struct NavigationDestinationBuilder: View {
     let destination: NavigationDestination
     @EnvironmentObject var coordinator: NavigationCoordinator
     @EnvironmentObject var appState: AppState
+    @Environment(\.heroNamespace) private var heroNamespace
 
     var body: some View {
         Group {
             switch destination {
             // Event Navigation
             case .eventDetail(let event):
-                EventDetailView(event: event)
+                EventDetailView(event: event, namespace: heroNamespace)
 
             case .eventById(let eventId):
                 EventDetailDestination(eventId: eventId)

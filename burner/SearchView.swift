@@ -11,6 +11,7 @@ struct SearchView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var eventViewModel: EventViewModel  // ✅ Single source of truth
     @EnvironmentObject var userLocationManager: UserLocationManager
+    @Environment(\.heroNamespace) private var heroNamespace
 
     @State private var searchText = ""
     @State private var sortBy: SortOption? = .date
@@ -333,7 +334,8 @@ struct SearchView: View {
                                 EventRow(
                                     event: event,
                                     bookmarkManager: bookmarkManager,
-                                    showingSignInAlert: $showingSignInAlert
+                                    showingSignInAlert: $showingSignInAlert,
+                                    namespace: heroNamespace
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
