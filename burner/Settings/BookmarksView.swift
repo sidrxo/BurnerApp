@@ -5,6 +5,7 @@ struct BookmarksView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
+    @Environment(\.heroNamespace) private var heroNamespace
     @State private var searchText = ""
     @State private var showingSignInAlert = false
     @Environment(\.dismiss) var dismiss
@@ -137,7 +138,8 @@ struct BookmarksView: View {
                         EventRow(
                             event: event,
                             bookmarkManager: bookmarkManager,
-                            showingSignInAlert: $showingSignInAlert
+                            showingSignInAlert: $showingSignInAlert,
+                            namespace: heroNamespace
                         )
                     }
                     .buttonStyle(PlainButtonStyle())

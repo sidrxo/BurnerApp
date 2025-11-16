@@ -5,6 +5,10 @@ import Combine
 struct MainTabView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
+    @Namespace private var homeHeroNamespace
+    @Namespace private var exploreHeroNamespace
+    @Namespace private var ticketsHeroNamespace
+    @Namespace private var settingsHeroNamespace
 
     var body: some View {
         NavigationCoordinatorView {
@@ -12,8 +16,10 @@ struct MainTabView: View {
                 // Home Tab
                 NavigationStack(path: $coordinator.homePath) {
                     ExploreView()
+                        .environment(\.heroNamespace, homeHeroNamespace)
                         .navigationDestination(for: NavigationDestination.self) { destination in
                             NavigationDestinationBuilder(destination: destination)
+                                .environment(\.heroNamespace, homeHeroNamespace)
                         }
                 }
                 .opacity(coordinator.selectedTab == .home ? 1 : 0)
@@ -22,8 +28,10 @@ struct MainTabView: View {
                 // Explore Tab
                 NavigationStack(path: $coordinator.explorePath) {
                     SearchView()
+                        .environment(\.heroNamespace, exploreHeroNamespace)
                         .navigationDestination(for: NavigationDestination.self) { destination in
                             NavigationDestinationBuilder(destination: destination)
+                                .environment(\.heroNamespace, exploreHeroNamespace)
                         }
                 }
                 .opacity(coordinator.selectedTab == .explore ? 1 : 0)
@@ -32,8 +40,10 @@ struct MainTabView: View {
                 // Tickets Tab
                 NavigationStack(path: $coordinator.ticketsPath) {
                     TicketsView()
+                        .environment(\.heroNamespace, ticketsHeroNamespace)
                         .navigationDestination(for: NavigationDestination.self) { destination in
                             NavigationDestinationBuilder(destination: destination)
+                                .environment(\.heroNamespace, ticketsHeroNamespace)
                         }
                 }
                 .opacity(coordinator.selectedTab == .tickets ? 1 : 0)
@@ -42,8 +52,10 @@ struct MainTabView: View {
                 // Settings Tab
                 NavigationStack(path: $coordinator.settingsPath) {
                     SettingsView()
+                        .environment(\.heroNamespace, settingsHeroNamespace)
                         .navigationDestination(for: NavigationDestination.self) { destination in
                             NavigationDestinationBuilder(destination: destination)
+                                .environment(\.heroNamespace, settingsHeroNamespace)
                         }
                 }
                 .opacity(coordinator.selectedTab == .settings ? 1 : 0)

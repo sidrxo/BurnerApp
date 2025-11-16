@@ -8,6 +8,7 @@ struct FeaturedHeroCard: View {
     @Binding var showingSignInAlert: Bool
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
+    var namespace: Namespace.ID?
 
     private var isBookmarked: Bool {
         guard let eventId = event.id else { return false }
@@ -17,15 +18,37 @@ struct FeaturedHeroCard: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                KFImage(URL(string: event.imageUrl))
-                    .placeholder {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                    }
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: geometry.size.width, height: 400)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                // Base Image with Matched Geometry Effect
+                Group {
+                    KFImage(URL(string: event.imageUrl))
+                        .placeholder {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                        }
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geometry.size.width, height: 400)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                }
+                .if(namespace != nil && event.id != nil) { view in
+                    view.matchedGeometryEffect(id: "heroImage-\(event.id!)", in: namespace!)
+                }
+                .overlay(
+                    // Progressive Blur Overlay (top to bottom fade)
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(stops: [
+                                    .init(color: Color.white.opacity(0.15), location: 0.0),
+                                    .init(color: Color.clear, location: 0.3)
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .blur(radius: 20)
+                        .opacity(0.6)
+                )
 
                 // Gradient overlay
                 LinearGradient(
@@ -103,5 +126,17 @@ struct FeaturedHeroCard: View {
             }
         }
         .frame(height: 400)
+    }
+}
+
+// MARK: - View Extension for Conditional Modifiers
+extension View {
+    @ViewBuilder
+    func `if`<Transform: View>(_ condition: Bool, transform: (Self) -> Transform) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
     }
 }

@@ -19,6 +19,7 @@ struct EventRow: View {
     let onCancel: (() -> Void)?
     let distanceText: String?
     @Binding var showingSignInAlert: Bool
+    var namespace: Namespace.ID?
 
     init(
         event: Event,
@@ -27,7 +28,8 @@ struct EventRow: View {
         configuration: Configuration = .eventList,
         onCancel: (() -> Void)? = nil,
         distanceText: String? = nil,
-        showingSignInAlert: Binding<Bool> = .constant(false)
+        showingSignInAlert: Binding<Bool> = .constant(false),
+        namespace: Namespace.ID? = nil
     ) {
         self.event = event
         self.ticket = ticket
@@ -36,6 +38,7 @@ struct EventRow: View {
         self.onCancel = onCancel
         self.distanceText = distanceText
         self._showingSignInAlert = showingSignInAlert
+        self.namespace = namespace
     }
     
     var body: some View {
@@ -69,6 +72,9 @@ struct EventRow: View {
                     .scaledToFill()
                     .frame(width: 60, height: 60)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .if(namespace != nil && event.id != nil) { view in
+                        view.matchedGeometryEffect(id: "heroImage-\(event.id!)", in: namespace!)
+                    }
             } else {
                 imagePlaceholder
             }
@@ -241,7 +247,7 @@ extension EventRow {
 
 // MARK: - Convenience Initializers
 extension EventRow {
-    init(event: Event, bookmarkManager: BookmarkManager, showingSignInAlert: Binding<Bool> = .constant(false)) {
+    init(event: Event, bookmarkManager: BookmarkManager, showingSignInAlert: Binding<Bool> = .constant(false), namespace: Namespace.ID? = nil) {
         self.init(
             event: event,
             ticket: nil,
@@ -249,7 +255,8 @@ extension EventRow {
             configuration: .eventList,
             onCancel: nil,
             distanceText: nil,
-            showingSignInAlert: showingSignInAlert
+            showingSignInAlert: showingSignInAlert,
+            namespace: namespace
         )
     }
 
@@ -261,7 +268,8 @@ extension EventRow {
             configuration: .ticketRow,
             onCancel: onCancel,
             distanceText: nil,
-            showingSignInAlert: .constant(false)
+            showingSignInAlert: .constant(false),
+            namespace: nil
         )
     }
 
@@ -273,7 +281,8 @@ extension EventRow {
             configuration: .ticketRowWithBookmark,
             onCancel: onCancel,
             distanceText: nil,
-            showingSignInAlert: .constant(false)
+            showingSignInAlert: .constant(false),
+            namespace: nil
         )
     }
 }
@@ -336,6 +345,18 @@ struct BookmarkButton: View {
     private var isToggling: Bool {
         guard let eventId = event.id else { return false }
         return bookmarkManager.isTogglingBookmark[eventId] ?? false
+    }
+}
+
+// MARK: - View Extension for Conditional Modifiers
+extension View {
+    @ViewBuilder
+    func `if`<Transform: View>(_ condition: Bool, transform: (Self) -> Transform) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
     }
 }
 

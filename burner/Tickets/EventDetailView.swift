@@ -8,7 +8,8 @@ import MapKit
 
 struct EventDetailView: View {
     let event: Event
-    
+    var namespace: Namespace.ID?
+
     // Use environment objects instead of creating new instances
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var eventViewModel: EventViewModel
@@ -21,6 +22,7 @@ struct EventDetailView: View {
     @State private var showingMapsSheet = false
     @State private var isDescriptionExpanded = false
     @State private var needsReadMore = false // NEW: Track if text actually needs expansion
+    @State private var scrollOffset: CGFloat = 0
     
     // Get screen height for responsive sizing
     private let screenHeight = UIScreen.main.bounds.height
@@ -30,6 +32,19 @@ struct EventDetailView: View {
         // Use 50% of screen height to show more of the image, with min/max bounds
         let calculatedHeight = screenHeight * 0.50
         return max(350, min(calculatedHeight, 550))
+    }
+
+    // Calculate progressive blur based on scroll offset
+    private var blurRadius: CGFloat {
+        // Start blurring after 50 points of scroll, max blur at 200 points
+        let progress = min(max(scrollOffset - 50, 0) / 150, 1.0)
+        return progress * 20 // Max blur radius of 20
+    }
+
+    // Calculate blur overlay opacity
+    private var blurOverlayOpacity: Double {
+        let progress = min(max(scrollOffset - 50, 0) / 150, 1.0)
+        return Double(progress) * 0.6
     }
     
     var availableTickets: Int {
@@ -112,23 +127,58 @@ struct EventDetailView: View {
                 
                 ScrollView {
                     VStack(spacing: 0) {
+                        // Scroll offset tracker
+                        GeometryReader { scrollGeometry in
+                            Color.clear
+                                .preference(
+                                    key: ScrollOffsetPreferenceKey.self,
+                                    value: -scrollGeometry.frame(in: .named("scroll")).minY
+                                )
+                        }
+                        .frame(height: 0)
+                        .onAppear {
+                            scrollOffset = 0
+                        }
+
                         // Hero Image Section - Extends under navigation bar
                         ZStack {
-                            KFImage(URL(string: event.imageUrl))
-                                .placeholder {
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .overlay(
-                                            Image(systemName: "music.note")
-                                                .appHero()
-                                                .foregroundColor(.gray)
+                            // Base image with matched geometry effect
+                            Group {
+                                KFImage(URL(string: event.imageUrl))
+                                    .placeholder {
+                                        Rectangle()
+                                            .fill(Color.gray.opacity(0.3))
+                                            .overlay(
+                                                Image(systemName: "music.note")
+                                                    .appHero()
+                                                    .foregroundColor(.gray)
+                                            )
+                                    }
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: geometry.size.width, height: heroHeight)
+                                    .clipped()
+                            }
+                            .if(namespace != nil && event.id != nil) { view in
+                                view.matchedGeometryEffect(id: "heroImage-\(event.id!)", in: namespace!)
+                            }
+                            .overlay(
+                                // Progressive Blur Overlay (top to bottom fade) - responds to scroll
+                                Rectangle()
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(stops: [
+                                                .init(color: Color.white.opacity(0.15), location: 0.0),
+                                                .init(color: Color.clear, location: 0.3)
+                                            ]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
                                         )
-                                }
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: geometry.size.width, height: heroHeight)
-                                .clipped()
-                            
+                                    )
+                                    .blur(radius: 20)
+                                    .opacity(blurOverlayOpacity)
+                            )
+
                             // Gradient overlay that darkens the bottom
                             LinearGradient(
                                 gradient: Gradient(colors: [
@@ -336,7 +386,11 @@ struct EventDetailView: View {
                         }
                     }
                 }
-                
+                .coordinateSpace(name: "scroll")
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    scrollOffset = value
+                }
+
                 VStack {
                     Spacer()
 
@@ -499,6 +553,26 @@ struct EventDetailView: View {
             return URL(string: "burner://events")!
         }
         return URL(string: "burner://event/\(eventId)")!
+    }
+}
+
+// MARK: - Scroll Offset Preference Key
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+// MARK: - View Extension for Conditional Modifiers
+extension View {
+    @ViewBuilder
+    func `if`<Transform: View>(_ condition: Bool, transform: (Self) -> Transform) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
     }
 }
 
