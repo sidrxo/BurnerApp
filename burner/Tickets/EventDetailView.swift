@@ -465,7 +465,7 @@ struct EventDetailView: View {
                 }
             }
         }
-        .navigationBarBackButtonHidden(false)
+        .navigationBarHidden(true)
         .if(namespace != nil && event.id != nil) { view in
             view.navigationTransition(.zoom(sourceID: "heroImage-\(event.id!)", in: namespace!))
         }

@@ -134,15 +134,3 @@ struct FeaturedHeroCard: View {
         .frame(height: 400)
     }
 }
-
-// MARK: - View Extension for Conditional Modifiers
-extension View {
-    @ViewBuilder
-    func `if`<Transform: View>(_ condition: Bool, transform: (Self) -> Transform) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
-    }
-}
