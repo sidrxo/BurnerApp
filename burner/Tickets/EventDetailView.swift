@@ -118,20 +118,23 @@ struct EventDetailView: View {
             Color.black.ignoresSafeArea()
 
             ScrollView(.vertical, showsIndicators: false) {
-                GeometryReader { proxy in
-                    Color.clear
-                        .preference(
-                            key: ScrollOffsetPreferenceKey.self,
-                            value: proxy.frame(in: .named("detailScroll")).minY
-                        )
+                LazyVStack(spacing: 0) {
+                    GeometryReader { proxy in
+                        Color.clear
+                            .preference(
+                                key: ScrollOffsetPreferenceKey.self,
+                                value: proxy.frame(in: .named("detailScroll")).minY
+                            )
+                    }
+                    .frame(height: 0)
+
+                    heroHeader
+                        .frame(maxWidth: .infinity)
+
+                    detailContent
+                        .padding(.top, 24)
+                        .padding(.bottom, 40)
                 }
-                .frame(height: 0)
-
-                heroHeader
-
-                detailContent
-                    .padding(.top, 24)
-                    .padding(.bottom, 40)
             }
             .coordinateSpace(name: "detailScroll")
             .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
@@ -208,7 +211,7 @@ struct EventDetailView: View {
         GeometryReader { geometry in
             let minY = geometry.frame(in: .named("detailScroll")).minY
             let pullDownOffset = max(0, minY)
-            let width = geometry.size.width
+            let width = max(geometry.size.width, UIScreen.main.bounds.width)
 
             ZStack(alignment: .bottomLeading) {
                 heroImageView(width: width, pullDownOffset: pullDownOffset)
@@ -247,6 +250,7 @@ struct EventDetailView: View {
             .clipped()
         }
         .frame(height: heroHeight)
+        .frame(maxWidth: .infinity)
     }
 
     private func heroImageView(width: CGFloat, pullDownOffset: CGFloat) -> some View {
@@ -441,10 +445,6 @@ struct EventDetailView: View {
             }
 
             Spacer()
-
-            HeroControlButton(systemName: "square.and.arrow.up") {
-                coordinator.shareEvent(event)
-            }
         }
         .padding(.horizontal, 20)
         .padding(.top, topSafeAreaInset + 8)
