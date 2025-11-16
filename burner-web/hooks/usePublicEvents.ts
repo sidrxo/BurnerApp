@@ -45,7 +45,7 @@ export function usePublicEvents() {
         // Only fetch active/published events
         const q = query(
           eventsRef,
-          where("status", "==", "published"),
+          where("status", "==", "active"),
           orderBy("startTime", "desc")
         );
 

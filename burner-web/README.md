@@ -1,44 +1,4 @@
-# Burner Public Web App
 
-Customer-facing mobile-first website for browsing and purchasing event tickets.
-
-## Features
-
-- 🎫 Browse and discover events
-- 📱 Mobile-first responsive design
-- 💳 Stripe payment integration
-- 🎟️ Digital tickets with QR codes
-- 🔐 Firebase authentication
-- 🌑 Dark theme matching iOS app
-
-## Getting Started
-
-### 1. Install Dependencies
-
-```bash
-npm install
-```
-
-### 2. Set Up Environment Variables
-
-Copy `.env.local.example` to `.env.local` and fill in your values:
-
-```bash
-cp .env.local.example .env.local
-```
-
-Required environment variables:
-
-- **Firebase**: API key, auth domain, project ID, etc.
-- **Stripe**: Publishable key for payments
-
-### 3. Run Development Server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) to view the app.
 
 ## Project Structure
 

@@ -17,7 +17,6 @@ import {
 import { toast } from "sonner";
 import Image from "next/image";
 
-// Initialize Stripe - You'll need to add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to your environment variables
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
 );
@@ -63,35 +62,42 @@ function CheckoutForm({
         elements,
         clientSecret,
         confirmParams: {
-          return_url: `${window.location.origin}/payment-success`,
+          return_url: `${window.location.origin}/my-tickets`,
         },
         redirect: "if_required",
       });
 
       if (error) {
+        console.error('Payment error:', error);
         toast.error(error.message || "Payment failed");
         setLoading(false);
         return;
       }
 
       if (paymentIntent && paymentIntent.status === "succeeded") {
-        // Call confirmPurchase Cloud Function
+        // Call confirmPurchase Cloud Function using Firebase SDK
         const confirmPurchase = httpsCallable(functions, "confirmPurchase");
-        await confirmPurchase({ paymentIntentId: paymentIntent.id });
-
-        toast.success("Ticket purchased successfully!");
-        onSuccess();
+        
+        try {
+          await confirmPurchase({ paymentIntentId: paymentIntent.id });
+          toast.success("Ticket purchased successfully!");
+          onSuccess();
+        } catch (confirmError) {
+          console.error('Error confirming purchase:', confirmError);
+          toast.error("Payment succeeded but ticket creation failed. Please contact support.");
+        }
       }
     } catch (err: any) {
       console.error("Payment error:", err);
       toast.error(err.message || "Payment failed");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Price Summary */}
+      {/* Your existing form JSX */}
       <div className="bg-white/5 border border-white/10 rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <span className="text-white/70">Total</span>
@@ -103,12 +109,10 @@ function CheckoutForm({
         </div>
       </div>
 
-      {/* Payment Element */}
       <div className="bg-white/5 border border-white/10 rounded-xl p-6">
         <PaymentElement />
       </div>
 
-      {/* Terms */}
       <p className="text-white/30 text-sm text-center">
         By purchasing a ticket, you agree to our{" "}
         <a href="/terms" className="underline hover:text-white/50">
@@ -120,7 +124,6 @@ function CheckoutForm({
         </a>
       </p>
 
-      {/* Submit Button */}
       <button
         type="submit"
         disabled={!stripe || loading}
@@ -159,6 +162,7 @@ export default function PurchasePage() {
     const initPurchase = async () => {
       try {
         setLoading(true);
+        setError(null);
 
         // Fetch event
         const eventDoc = await getDoc(doc(db, "events", params.eventId as string));
@@ -171,16 +175,29 @@ export default function PurchasePage() {
         const eventData = { id: eventDoc.id, ...eventDoc.data() } as Event;
         setEvent(eventData);
 
-        // Create payment intent
+        // Create payment intent using Firebase SDK
         const createPaymentIntent = httpsCallable(functions, "createPaymentIntent");
-        const result = await createPaymentIntent({ eventId: params.eventId });
+        
+        const result = await createPaymentIntent({ 
+          eventId: params.eventId 
+        });
+        
         const data = result.data as { clientSecret: string };
-
         setClientSecret(data.clientSecret);
       } catch (err: any) {
         console.error("Error initializing purchase:", err);
-        setError(err.message || "Failed to initialize purchase");
-        toast.error("Failed to initialize purchase");
+        
+        // Handle different types of Firebase errors
+        if (err.code === 'functions/unauthenticated') {
+          setError("Please sign in to continue");
+          router.push(`/signin?return=/events/${params.eventId}/purchase`);
+        } else if (err.code === 'functions/not-found') {
+          setError("Event not found");
+        } else {
+          setError(err.message || "Failed to initialize purchase");
+        }
+        
+        toast.error(err.message || "Failed to initialize purchase");
       } finally {
         setLoading(false);
       }
@@ -193,6 +210,7 @@ export default function PurchasePage() {
     router.push("/my-tickets");
   };
 
+  // Rest of your component JSX remains the same...
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
