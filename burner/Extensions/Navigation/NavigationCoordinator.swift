@@ -35,11 +35,18 @@ enum AppTab: Int, CaseIterable {
     }
 }
 
+// MARK: - Event Source for Hero Transitions
+
+enum EventSource: Hashable {
+    case featuredCard
+    case listRow
+}
+
 // MARK: - Navigation Destinations
 
 enum NavigationDestination: Hashable {
     // Event Navigation
-    case eventDetail(Event)
+    case eventDetail(Event, EventSource)
     case eventById(String)
     case filteredEvents(EventSectionDestination)
 
@@ -60,9 +67,10 @@ enum NavigationDestination: Hashable {
 
     func hash(into hasher: inout Hasher) {
         switch self {
-        case .eventDetail(let event):
+        case .eventDetail(let event, let source):
             hasher.combine("eventDetail")
             hasher.combine(event.id)
+            hasher.combine(source)
         case .eventById(let id):
             hasher.combine("eventById")
             hasher.combine(id)
@@ -100,8 +108,8 @@ enum NavigationDestination: Hashable {
 
     static func == (lhs: NavigationDestination, rhs: NavigationDestination) -> Bool {
         switch (lhs, rhs) {
-        case (.eventDetail(let lEvent), .eventDetail(let rEvent)):
-            return lEvent.id == rEvent.id
+        case (.eventDetail(let lEvent, let lSource), .eventDetail(let rEvent, let rSource)):
+            return lEvent.id == rEvent.id && lSource == rSource
         case (.eventById(let lId), .eventById(let rId)):
             return lId == rId
         case (.filteredEvents(let lDest), .filteredEvents(let rDest)):

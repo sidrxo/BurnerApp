@@ -76,7 +76,7 @@ struct EventRow: View {
                     // and we have a valid namespace and event ID
                     .ifLet(namespace) { view, namespace in
                         view.matchedGeometryEffect(
-                            id: "heroImage-\(event.id ?? "")",
+                            id: "heroImage-row-\(event.id ?? "")",
                             in: namespace,
                             isSource: configuration.isEventList // Use computed property instead of ==
                         )

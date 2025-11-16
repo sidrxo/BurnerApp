@@ -379,7 +379,7 @@ struct ExploreView: View {
     // MARK: - Helper: Featured Card
     @ViewBuilder
     private func featuredCard(_ event: Event) -> some View {
-        NavigationLink(value: NavigationDestination.eventDetail(event)) {
+        NavigationLink(value: NavigationDestination.eventDetail(event, .featuredCard)) {
             FeaturedHeroCard(
                 event: event,
                 bookmarkManager: bookmarkManager,
@@ -407,7 +407,7 @@ struct ExploreView: View {
 
             LazyVStack(spacing: 0) {
                 ForEach(Array(nearbyEventsPreview.enumerated()), id: \.element.event.id) { _, item in
-                    NavigationLink(value: NavigationDestination.eventDetail(item.event)) {
+                    NavigationLink(value: NavigationDestination.eventDetail(item.event, .listRow)) {
                         EventRow(
                             event: item.event,
                             bookmarkManager: bookmarkManager,
@@ -549,7 +549,7 @@ struct EventSection: View {
 
             LazyVStack(spacing: 0) {
                 ForEach(events) { event in
-                    NavigationLink(value: NavigationDestination.eventDetail(event)) {
+                    NavigationLink(value: NavigationDestination.eventDetail(event, .listRow)) {
                         EventRow(
                             event: event,
                             bookmarkManager: bookmarkManager,

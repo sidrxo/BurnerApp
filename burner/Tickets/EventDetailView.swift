@@ -8,6 +8,7 @@ import MapKit
 
 struct EventDetailView: View {
     let event: Event
+    var source: EventSource? = nil
     var namespace: Namespace.ID?
 
     @EnvironmentObject var bookmarkManager: BookmarkManager
@@ -26,6 +27,16 @@ struct EventDetailView: View {
     // Simplified hero height calculation
     private var heroHeight: CGFloat {
         UIScreen.main.bounds.height * 0.5 // 50% of screen height
+    }
+
+    // Helper to determine the correct hero ID based on source
+    private func heroImageId(for source: EventSource) -> String {
+        switch source {
+        case .featuredCard:
+            return "heroImage-featured-\(event.id ?? "")"
+        case .listRow:
+            return "heroImage-row-\(event.id ?? "")"
+        }
     }
 
     var availableTickets: Int {
@@ -359,14 +370,6 @@ struct EventDetailView: View {
             }
         }
         .navigationBarHidden(true)
-        .ifLet(namespace) { view, namespace in
-            view.navigationTransition(
-                .zoom(
-                    sourceID: "heroImage-\(event.id ?? "")",
-                    in: namespace
-                )
-            )
-        }
         .sheet(isPresented: $showingMapsSheet) {
             if let coordinates = event.coordinates {
                 MapsOptionsSheet(
@@ -430,12 +433,18 @@ struct EventDetailView: View {
                         )
                 }
             }
+            // This is the DESTINATION - never the source
             .ifLet(namespace) { view, namespace in
-                view.matchedGeometryEffect(
-                    id: "heroImage-\(event.id ?? "")",
-                    in: namespace,
-                    isSource: false
-                )
+                switch source {
+                case .some(let source):
+                    view.matchedGeometryEffect(
+                        id: heroImageId(for: source),
+                        in: namespace,
+                        isSource: false
+                    )
+                case .none:
+                    view
+                }
             }
             
             // Gradient Overlay
