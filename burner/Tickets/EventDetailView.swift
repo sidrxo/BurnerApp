@@ -333,24 +333,20 @@ struct EventDetailView: View {
                 }
 
                 // Fixed close button on top-right
+                // Fixed close button on top-right — updated to use CloseButton
                 VStack {
                     HStack {
                         Spacer()
-                        Button(action: { dismiss() }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(width: 44, height: 44)
-                                .background(Color.black)
-                                .clipShape(Circle())
-                                .shadow(radius: 10)
+                        CloseButton {
+                            dismiss()
                         }
-                        .padding(.top, 16)
-                        .padding(.trailing, 16)
+                        .padding(.top, 80)
+                        .padding(.trailing, 30)
                     }
                     Spacer()
                 }
                 .ignoresSafeArea(edges: .top)
+
 
                 // Bottom ticket button
                 VStack {

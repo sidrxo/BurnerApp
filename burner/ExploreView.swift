@@ -122,6 +122,8 @@ struct ExploreView: View {
         }
     }
     
+    
+    
     // MARK: - Popular Events
     var popularEvents: [Event] {
         let thisWeekEventIds = Set(thisWeekEvents.compactMap { $0.id })
@@ -224,7 +226,7 @@ struct ExploreView: View {
                         contentView
                     }
                 }
-                .padding(.bottom, 100)
+                .padding(.bottom, 80)
             }
             .refreshable {
                 await eventViewModel.refreshEvents()
@@ -333,25 +335,44 @@ struct ExploreView: View {
         }
 
         // 7) Genre sections with featured cards interspersed every 2 sections
-        buildGenreSectionsWithFeaturedCards()
+        buildGenreSectionsWithFeaturedCards(isLast: true)
 
         // 8) All Events
+        // 8) All Events (centered title + arrow, no list)
         if !allEvents.isEmpty {
-            EventSection(
-                title: "All Events",
-                events: allEventsPreview,
-                allEvents: allEvents,
-                bookmarkManager: bookmarkManager,
-                showViewAllButton: allEvents.count > 6,
-                showingSignInAlert: $showingSignInAlert,
-                namespace: heroNamespace
-            )
+            HStack {
+                Spacer()
+
+                NavigationLink(
+                    value: NavigationDestination.filteredEvents(
+                        EventSectionDestination(title: "All Events", events: allEvents)
+                    )
+                ) {
+                    HStack(spacing: 6) {
+                        Text("All Events")
+                            .appSecondary()
+                            .foregroundColor(.gray)
+
+                        Image(systemName: "chevron.right")
+                            .font(.appIcon)
+                            .foregroundColor(.gray)
+                            .frame(width: 32, height: 32)
+                            .background(Color.white.opacity(0.05))
+                            .clipShape(Circle())
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                Spacer()
+            }
+            .padding(.horizontal, 20)
         }
+
     }
 
     // MARK: - Helper: Build Genre Sections with Featured Cards
     @ViewBuilder
-    private func buildGenreSectionsWithFeaturedCards() -> some View {
+    private func buildGenreSectionsWithFeaturedCards(isLast: Bool = false) -> some View {
         let genresWithEvents = displayGenres.filter { !allEventsForGenre($0).isEmpty }
 
         ForEach(Array(genresWithEvents.enumerated()), id: \.element) { index, genre in
@@ -361,6 +382,7 @@ struct ExploreView: View {
                 allEvents: allEventsForGenre(genre),
                 bookmarkManager: bookmarkManager,
                 showViewAllButton: true,
+                isLast: index == genresWithEvents.count - 1,   // <-- PASS IT
                 showingSignInAlert: $showingSignInAlert,
                 namespace: heroNamespace
             )
@@ -500,6 +522,7 @@ struct EventSection: View {
     let allEvents: [Event]
     let bookmarkManager: BookmarkManager
     let showViewAllButton: Bool
+    let isLast: Bool   // <-- ADD THIS
     @Binding var showingSignInAlert: Bool
     var namespace: Namespace.ID?
 
@@ -509,6 +532,7 @@ struct EventSection: View {
         allEvents: [Event]? = nil,
         bookmarkManager: BookmarkManager,
         showViewAllButton: Bool = true,
+        isLast: Bool = false, // <-- add this
         showingSignInAlert: Binding<Bool> = .constant(false),
         namespace: Namespace.ID? = nil
     ) {
@@ -519,6 +543,7 @@ struct EventSection: View {
         self.showViewAllButton = showViewAllButton
         self._showingSignInAlert = showingSignInAlert
         self.namespace = namespace
+        self.isLast = isLast
     }
 
     var body: some View {
@@ -558,7 +583,7 @@ struct EventSection: View {
                 }
             }
         }
-        .padding(.bottom, 40)
+        .padding(.bottom, isLast ? 20 : 40)
     }
 }
 

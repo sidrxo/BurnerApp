@@ -134,7 +134,7 @@ struct CustomTabBar: View {
             }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.vertical, 10)
         .background(Color.black)
         .ignoresSafeArea(.all, edges: .bottom)
     }

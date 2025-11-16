@@ -51,7 +51,7 @@ struct FeaturedHeroCard: View {
                                 stops:
                                     [.init(color: .clear, location: 0.5),
                                      .init(color: .black.opacity(0.6), location: 0.8)],
-                                      startPoint: .top, endPoint: .bottom)
+                                        startPoint: .top, endPoint: .bottom)
                          }
                 
                 .frame(width: geometry.size.width, height: 400)
