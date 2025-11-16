@@ -79,6 +79,19 @@ struct DebugMenuView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
+
+                    MenuSection(title: "TEST EVENTS") {
+                        Button(action: {
+                            appState.addDebugPurchasableEvent()
+                        }) {
+                            MenuItemContent(
+                                title: "Add Purchasable Test Event",
+                                subtitle: "Starts in 5 min, ends 10 min"
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 100)

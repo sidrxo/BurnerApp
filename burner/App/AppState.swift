@@ -348,8 +348,37 @@ class AppState: ObservableObject {
         let startTime = calendar.date(byAdding: .hour, value: -1, to: now)!
         // Event ends in 3 hours
         let endTime = calendar.date(byAdding: .hour, value: 3, to: now)!
-        
+
         createDebugEvent(startTime: startTime, endTime: endTime)
+    }
+
+    // Create a purchasable debug event starting soon
+    func addDebugPurchasableEvent() {
+        let now = Date()
+        let startTime = now.addingTimeInterval(5 * 60)
+        let endTime = now.addingTimeInterval(10 * 60)
+
+        let debugEvent = Event(
+            id: "debug_purchasable_event_\(UUID().uuidString)",
+            name: "Debug Express Entry",
+            venue: "Burner Labs",
+            venueId: nil,
+            startTime: startTime,
+            endTime: endTime,
+            price: 12.5,
+            maxTickets: 200,
+            ticketsSold: 0,
+            imageUrl: "https://images.unsplash.com/photo-1506157786151-b8491531f063",
+            isFeatured: false,
+            description: "A temporary debug event that starts in 5 minutes for testing ticket purchases.",
+            status: "active",
+            tags: ["debug", "test"],
+            coordinates: nil,
+            createdAt: now,
+            updatedAt: now
+        )
+
+        eventViewModel.addDebugEvent(debugEvent)
     }
     
     private func createDebugEvent(startTime: Date, endTime: Date) {
