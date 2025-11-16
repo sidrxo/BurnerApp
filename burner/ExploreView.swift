@@ -389,7 +389,7 @@ struct ExploreView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(.noHighlight)
     }
 
     // MARK: - Helper: Nearby Section
@@ -414,7 +414,7 @@ struct ExploreView: View {
                             namespace: heroNamespace
                         )
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(.noHighlight)
                 }
             }
         }
@@ -554,7 +554,7 @@ struct EventSection: View {
                             namespace: namespace
                         )
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(.noHighlight)
                 }
             }
         }

@@ -466,6 +466,9 @@ struct EventDetailView: View {
             }
         }
         .navigationBarBackButtonHidden(false)
+        .if(namespace != nil && event.id != nil) { view in
+            view.navigationTransition(.zoom(sourceID: "heroImage-\(event.id!)", in: namespace!))
+        }
         .sheet(isPresented: $showingMapsSheet) {
             if let coordinates = event.coordinates {
                 MapsOptionsSheet(

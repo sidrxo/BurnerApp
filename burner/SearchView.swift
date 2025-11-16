@@ -338,7 +338,7 @@ struct SearchView: View {
                                     namespace: heroNamespace
                                 )
                             }
-                            .buttonStyle(PlainButtonStyle())
+                            .buttonStyle(.noHighlight)
                         }
                     }
                 }

@@ -212,3 +212,17 @@ struct IconButton: ButtonStyle {
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
+
+/// No highlight button style - used for navigation links with hero animations
+/// Removes the default SwiftUI press highlighting to avoid visual conflicts with zoom transitions
+struct NoHighlightButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+    }
+}
+
+extension ButtonStyle where Self == NoHighlightButtonStyle {
+    static var noHighlight: NoHighlightButtonStyle {
+        NoHighlightButtonStyle()
+    }
+}

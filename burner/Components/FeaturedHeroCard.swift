@@ -18,7 +18,7 @@ struct FeaturedHeroCard: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Base Image with Matched Geometry Effect
+                // Base Image with Matched Transition Source
                 Group {
                     KFImage(URL(string: event.imageUrl))
                         .placeholder {
@@ -32,6 +32,12 @@ struct FeaturedHeroCard: View {
                 }
                 .if(namespace != nil && event.id != nil) { view in
                     view.matchedGeometryEffect(id: "heroImage-\(event.id!)", in: namespace!)
+                }
+                .if(namespace != nil && event.id != nil) { view in
+                    view.matchedTransitionSource(id: "heroImage-\(event.id!)", in: namespace!) { source in
+                        source
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                    }
                 }
                 .overlay(
                     // Progressive Blur Overlay (top to bottom fade)

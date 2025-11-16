@@ -30,7 +30,7 @@ struct FilteredEventsView: View {
                                     namespace: heroNamespace
                                 )
                             }
-                            .buttonStyle(PlainButtonStyle())
+                            .buttonStyle(.noHighlight)
                         }
                     }
                     .padding(.bottom, 100)
