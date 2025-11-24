@@ -175,11 +175,21 @@ struct BurnerModeSetupView: View {
             }
         } else {
             // Complete setup
-            if let onSkip = onSkip {
-                onSkip()
-            } else {
-                dismiss()
-            }
+            finishSetup()
+        }
+    }
+
+    private func finishSetup() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+
+        // Mark setup as completed
+        burnerManager.completeSetup()
+
+        if let onSkip = onSkip {
+            onSkip()
+        } else {
+            dismiss()
         }
     }
     

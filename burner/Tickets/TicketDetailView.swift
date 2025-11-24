@@ -99,6 +99,7 @@ struct TicketDetailView: View {
     @State private var hasStartedLiveActivity = false
     @State private var isLiveActivityActive = false
     @State private var showTransferSuccess = false
+    @State private var showBurnerSetup = false
     @State private var liveActivityUpdateTimer: Timer?
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
@@ -144,6 +145,14 @@ struct TicketDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .fullScreenCover(isPresented: $showBurnerSetup) {
+            BurnerModeSetupView(
+                burnerManager: appState.burnerManager,
+                onSkip: {
+                    showBurnerSetup = false
+                }
+            )
+        }
         .onAppear {
             autoStartLiveActivityForEventDay()
             checkLiveActivityStatus()
@@ -252,7 +261,7 @@ struct TicketDetailView: View {
                     
                     // Bottom section - QR code
                     VStack(spacing: 10) {
-                        if appState.burnerManager.isSetupValid {
+                        if appState.burnerManager.hasCompletedSetup {
                             // QR Code section
                             Button(action: {
                                 coordinator.showFullScreenQRCode(for: ticketWithEvent.ticket)
@@ -265,7 +274,7 @@ struct TicketDetailView: View {
                                         foregroundColor: .black
                                     )
                                     .padding(5)
-                                    .background(.white)// 👈 Add padding to the entire VStack
+                                    .background(.white)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
                                             .stroke(Color.white.opacity(0.1), lineWidth: 1)
@@ -274,7 +283,7 @@ struct TicketDetailView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                         } else {
-                            // Locked state
+                            // Locked state with setup button
                             VStack(spacing: 16) {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 8)
@@ -286,23 +295,31 @@ struct TicketDetailView: View {
                                             .font(.system(size: 60))
                                             .foregroundColor(.white.opacity(0.3))
 
-                                        Text("BURNER MODE\nREQUIRED")
+                                        Text("SETUP REQUIRED")
                                             .font(.custom("Avenir", size: 15).weight(.black))
                                             .foregroundColor(.white.opacity(0.8))
                                             .multilineTextAlignment(.center)
                                             .tracking(1)
-
-                                        Text("Enable in Settings")
-                                            .font(.custom("Avenir", size: 10).weight(.semibold))
-                                            .foregroundColor(.white.opacity(0.4))
-                                            .tracking(1)
                                     }
                                 }
+
+                                Button(action: {
+                                    showBurnerSetup = true
+                                }) {
+                                    Text("COMPLETE SETUP")
+                                        .font(.custom("Avenir", size: 15).weight(.bold))
+                                        .foregroundColor(.black)
+                                        .padding(.horizontal, 32)
+                                        .padding(.vertical, 12)
+                                        .background(Color.white)
+                                        .clipShape(Capsule())
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
 
                         // Ticket number - only show if burner mode is setup
-                        if appState.burnerManager.isSetupValid {
+                        if appState.burnerManager.hasCompletedSetup {
                             Text(ticketWithEvent.ticket.ticketNumber ?? "N/A")
                                 .font(.custom("Avenir", size: 15).weight(.black))
                                 .foregroundColor(.white)

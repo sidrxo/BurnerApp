@@ -19,9 +19,13 @@ struct TicketPurchaseView: View {
     @State private var isCardValid = false
     @State private var selectedSavedCard: StripePaymentService.PaymentMethodInfo?
     @State private var hasInitiatedPurchase = false // ✅ Prevent duplicate purchases
+    @State private var showSignIn = false
+    @State private var pendingPaymentAction: (() -> Void)?
+    @State private var showBurnerSetup = false
 
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var coordinator: NavigationCoordinator
+    @EnvironmentObject var appState: AppState
     
     enum PurchaseStep {
         case paymentMethod
@@ -90,7 +94,9 @@ struct TicketPurchaseView: View {
                                 VStack(spacing: 12) {
                                     if ApplePayHandler.canMakePayments() {
                                         Button(action: {
-                                            handleApplePayPayment()
+                                            checkAuthAndProceed {
+                                                handleApplePayPayment()
+                                            }
                                         }) {
                                             HStack(spacing: 12) {
                                                 Image(systemName: "applelogo")
@@ -171,7 +177,11 @@ struct TicketPurchaseView: View {
                                         
                                         VStack(spacing: 12) {
                                             if currentStep == .cardInput {
-                                                Button(action: { handleCardPayment() }) {
+                                                Button(action: {
+                                                    checkAuthAndProceed {
+                                                        handleCardPayment()
+                                                    }
+                                                }) {
                                                     HStack(spacing: 12) {
                                                         Image(systemName: "creditcard.fill").font(.appIcon)
                                                         Text("PAY £\(String(format: "%.2f", event.price))")
@@ -189,7 +199,11 @@ struct TicketPurchaseView: View {
                                                 }
                                                 .disabled(!isCardValid || hasInitiatedPurchase)
                                             } else if currentStep == .savedCards {
-                                                Button(action: { handleSavedCardPayment() }) {
+                                                Button(action: {
+                                                    checkAuthAndProceed {
+                                                        handleSavedCardPayment()
+                                                    }
+                                                }) {
                                                     HStack(spacing: 12) {
                                                         Image(systemName: "creditcard.fill").font(.appIcon)
                                                         Text("PAY £\(String(format: "%.2f", event.price))")
@@ -225,7 +239,11 @@ struct TicketPurchaseView: View {
                         primaryAction: {
                             showingAlert = false
                             if isSuccess {
-                                presentationMode.wrappedValue.dismiss()
+                                if !appState.burnerManager.hasCompletedSetup {
+                                    showBurnerSetup = true
+                                } else {
+                                    presentationMode.wrappedValue.dismiss()
+                                }
                             }
                         },
                         primaryActionTitle: "OK",
@@ -278,6 +296,31 @@ struct TicketPurchaseView: View {
                 }
             }
         }
+        .sheet(isPresented: $showSignIn) {
+            SignInSheetView(
+                showingSignIn: $showSignIn,
+                onSkip: {
+                    pendingPaymentAction = nil
+                }
+            )
+        }
+        .fullScreenCover(isPresented: $showBurnerSetup) {
+            BurnerModeSetupView(
+                burnerManager: appState.burnerManager,
+                onSkip: {
+                    showBurnerSetup = false
+                    presentationMode.wrappedValue.dismiss()
+                }
+            )
+        }
+        .onChange(of: Auth.auth().currentUser) { oldValue, newValue in
+            if newValue != nil, let action = pendingPaymentAction {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    action()
+                    pendingPaymentAction = nil
+                }
+            }
+        }
         .onAppear {
             Task {
                 // Run these in parallel and await both
@@ -288,6 +331,15 @@ struct TicketPurchaseView: View {
         }
     }
     
+    private func checkAuthAndProceed(action: @escaping () -> Void) {
+        if Auth.auth().currentUser == nil {
+            pendingPaymentAction = action
+            showSignIn = true
+        } else {
+            action()
+        }
+    }
+
     private func preparePaymentIntent() async {
         guard let eventId = event.id else { return }
         guard Auth.auth().currentUser != nil else { return }

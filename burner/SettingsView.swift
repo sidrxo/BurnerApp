@@ -30,7 +30,7 @@ struct SettingsView: View {
     
     // Check if burner mode needs setup
     private var needsBurnerSetup: Bool {
-        !burnerManager.isSetup || !burnerManager.isAuthorized
+        !burnerManager.hasCompletedSetup || !burnerManager.isSetupValid
     }
     
     var body: some View {
@@ -120,7 +120,7 @@ struct SettingsView: View {
                                     }) {
                                         MenuItemContent(
                                             title: "Setup Burner Mode",
-                                            subtitle: burnerManager.isAuthorized
+                                            subtitle: burnerManager.isSetupValid
                                             ? "Configure app blocking"
                                             : "Screen Time permissions needed"
                                         )
