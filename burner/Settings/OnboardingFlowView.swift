@@ -52,9 +52,6 @@ struct OnboardingFlowView: View {
                 handleUserSignIn()
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
-            handleUserSignIn()
-        }
     }
     
     private func handleUserSignIn() {
@@ -63,14 +60,11 @@ struct OnboardingFlowView: View {
     }
     
     private func checkSignInStatus() {
-        // Delay to allow animation to complete
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            if authService.currentUser != nil {
-                handleUserSignIn()
-            } else {
-                // User closed sign in - skip entire onboarding
-                skipOnboarding()
-            }
+        if authService.currentUser != nil {
+            handleUserSignIn()
+        } else {
+            // User closed sign in - skip entire onboarding
+            skipOnboarding()
         }
     }
     
