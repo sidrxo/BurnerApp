@@ -143,6 +143,12 @@ struct DebugMenuView: View {
                 }
             }
 
+            // Reset burner setup
+            await MainActor.run {
+                burnerManager.resetSetup()
+                burnerManager.clearAllSelections()
+            }
+
             // Reset user location
             await MainActor.run {
                 appState.userLocationManager.resetLocation()

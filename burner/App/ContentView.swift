@@ -4,7 +4,6 @@ import FirebaseAuth
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var onboardingManager = OnboardingManager()
-    @StateObject private var burnerManager = BurnerModeManager()
 
     var body: some View {
         ZStack {
@@ -14,9 +13,9 @@ struct ContentView: View {
             // Onboarding overlay (shown on first launch)
             if onboardingManager.shouldShowOnboarding {
                 OnboardingFlowView(
-                    onboardingManager: onboardingManager,
-                    burnerManager: burnerManager
+                    onboardingManager: onboardingManager
                 )
+                .environmentObject(appState)
                 .transition(.opacity)
                 .zIndex(100)
             }

@@ -4,6 +4,7 @@ import FamilyControls
 import ManagedSettings
 import DeviceActivity
 import Combine
+import UserNotifications
 
 @MainActor
 class BurnerModeManager: ObservableObject {
@@ -16,6 +17,8 @@ class BurnerModeManager: ObservableObject {
     @Published var isSetupValid = false
     @Published var setupError: String?
     @Published var isAuthorized = false
+    @Published var hasCompletedSetup: Bool = false
+    @Published var isLocked: Bool = false
     
     private let store = ManagedSettingsStore()
     private let center = DeviceActivityCenter()
@@ -28,8 +31,13 @@ class BurnerModeManager: ObservableObject {
     
     init() {
         loadSelectedApps()
+        loadHasCompletedSetup()
         setupAuthorizationMonitoring()
         checkSetupCompliance()
+    }
+
+    private func loadHasCompletedSetup() {
+        hasCompletedSetup = UserDefaults.standard.bool(forKey: "hasCompletedBurnerSetup")
     }
     
     private func setupAuthorizationMonitoring() {
@@ -113,7 +121,40 @@ class BurnerModeManager: ObservableObject {
             UserDefaults.standard.set(data, forKey: "selectedApps")
         }
     }
-    
+
+    // MARK: - Check Authorization
+    func checkAuthorization() {
+        isAuthorized = AuthorizationCenter.shared.authorizationStatus == .approved
+        checkSetupCompliance()
+    }
+
+    // MARK: - Complete Setup
+    func completeSetup() {
+        hasCompletedSetup = true
+        UserDefaults.standard.set(true, forKey: "hasCompletedBurnerSetup")
+
+        // Cancel all pending setup reminder notifications
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let setupReminderIDs = requests
+                .filter { $0.identifier.starts(with: "setup-reminder-") }
+                .map { $0.identifier }
+
+            if !setupReminderIDs.isEmpty {
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: setupReminderIDs)
+                print("🔔 Cancelled \(setupReminderIDs.count) setup reminder notifications")
+            }
+        }
+
+        print("✅ Burner Mode setup completed")
+    }
+
+    // MARK: - Reset Setup
+    func resetSetup() {
+        hasCompletedSetup = false
+        UserDefaults.standard.set(false, forKey: "hasCompletedBurnerSetup")
+        print("🔄 Burner Mode setup reset")
+    }
+
     func enable(appState: AppState) async throws {
         guard isAuthorized else {
             throw BurnerModeError.notAuthorized
@@ -153,6 +194,9 @@ class BurnerModeManager: ObservableObject {
         // Save state to both UserDefaults locations
         appGroupDefaults?.set(true, forKey: "burnerModeEnabled")
         UserDefaults.standard.set(true, forKey: "burnerModeEnabled")
+
+        // Update locked state
+        isLocked = true
     }
     
     private func calculateEventEndTime(appState: AppState) async -> Date {
@@ -224,31 +268,26 @@ class BurnerModeManager: ObservableObject {
         // Stop device activity monitoring
         let activityName = DeviceActivityName("burner.protection")
         center.stopMonitoring([activityName])
-        
+
         // Clear all restrictions
         store.clearAllSettings()
-        
+
         // Update state in both locations
         appGroupDefaults?.set(false, forKey: "burnerModeEnabled")
         UserDefaults.standard.set(false, forKey: "burnerModeEnabled")
-        
+
         // Clean up end time and terminal flag
         UserDefaults.standard.removeObject(forKey: "burnerModeEventEndTime")
         UserDefaults.standard.removeObject(forKey: "burnerModeTerminalShown")
+
+        // Update locked state
+        isLocked = false
     }
     
     func clearAllSelections() {
         selectedApps = FamilyActivitySelection()
         appGroupDefaults?.removeObject(forKey: "selectedApps")
         UserDefaults.standard.removeObject(forKey: "selectedApps")
-    }
-    
-    var isSetup: Bool {
-        return isAuthorized &&
-               isSetupValid &&
-               hasAllCategoriesSelected() &&
-               (appGroupDefaults?.data(forKey: "selectedApps") != nil ||
-                UserDefaults.standard.data(forKey: "selectedApps") != nil)
     }
 }
 

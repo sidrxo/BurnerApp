@@ -22,9 +22,6 @@ struct SignInSheetView: View {
     // Passwordless auth navigation
     @State private var showingPasswordlessAuth = false
 
-    // Burner mode setup navigation
-    @State private var showingBurnerModeSetup = false
-
     // Random background image
     @State private var selectedBackground: String = "Background1"
 
@@ -125,15 +122,6 @@ struct SignInSheetView: View {
         }
             .fullScreenCover(isPresented: $showingPasswordlessAuth) {
                 PasswordlessAuthView(showingSignIn: $showingSignIn)
-            }
-            .fullScreenCover(isPresented: $showingBurnerModeSetup) {
-                BurnerModeSetupView(
-                    burnerManager: appState.burnerManager,
-                    onSkip: {
-                        showingBurnerModeSetup = false
-                        showingSignIn = false
-                    }
-                )
             }
             .onAppear {
                 selectRandomBackground()
@@ -512,14 +500,17 @@ struct SignInSheetView: View {
             triggerSuccessFeedback()
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
 
-            // Check if burner mode is setup
-            if !appState.burnerManager.isSetup {
-                // Show burner mode setup
-                showingBurnerModeSetup = true
-            } else {
-                // Already setup, just dismiss
-                showingSignIn = false
+            // Sync local preferences to Firebase
+            let syncService = PreferencesSyncService()
+            let localPrefs = LocalPreferences()
+            Task { @MainActor in
+                syncService.mergePreferences(localPreferences: localPrefs) {
+                    print("✅ Preferences synced to Firebase")
+                }
             }
+
+            // Just dismiss - burner setup happens after ticket purchase
+            showingSignIn = false
         }
     }
     
