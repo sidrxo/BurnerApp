@@ -119,23 +119,10 @@ struct NavigationCoordinatorView<Content: View>: View {
             ))
 
         case .fullScreenQRCode(let ticket):
-            // Use the FullScreenQRCodeView from TicketDetailView.swift
-            // Create a TicketWithEventData wrapper with a placeholder event
             FullScreenQRCodeView(
                 ticketWithEvent: TicketWithEventData(
                     ticket: ticket,
-                    event: Event(
-                        id: ticket.eventId,
-                        name: ticket.eventName,
-                        venue: ticket.venue,
-                        startTime: ticket.startTime,
-                        price: ticket.totalPrice,
-                        maxTickets: 100,
-                        ticketsSold: 0,
-                        imageUrl: "",
-                        isFeatured: false,
-                        description: nil
-                    )
+                    event: createPlaceholderEvent(from: ticket)
                 ),
                 qrCodeData: ticket.qrCode ?? ""
             )
@@ -213,11 +200,7 @@ struct NavigationDestinationBuilder: View {
                 SupportView()
 
             case .debugMenu:
-                
                 DebugMenuView(appState: appState, burnerManager: appState.burnerManager)
-                
-                EmptyView()
-                
             }
         }
         // REMOVED: Manual tab bar management - let MainTabView handle it
@@ -251,21 +234,9 @@ struct TicketDetailDestination: View {
             if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
                 TicketDetailView(ticketWithEvent: TicketWithEventData(ticket: ticket, event: event))
             } else {
-                // Create placeholder event if event data is missing
                 TicketDetailView(ticketWithEvent: TicketWithEventData(
                     ticket: ticket,
-                    event: Event(
-                        id: ticket.eventId,
-                        name: ticket.eventName,
-                        venue: ticket.venue,
-                        startTime: ticket.startTime,
-                        price: ticket.totalPrice,
-                        maxTickets: 100,
-                        ticketsSold: 0,
-                        imageUrl: "",
-                        isFeatured: false,
-                        description: nil
-                    )
+                    event: createPlaceholderEvent(from: ticket)
                 ))
             }
         }
@@ -286,21 +257,9 @@ struct TicketDetailByIdDestination: View {
                 if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
                     TicketDetailView(ticketWithEvent: TicketWithEventData(ticket: ticket, event: event))
                 } else {
-                    // Create placeholder event if event data is missing
                     TicketDetailView(ticketWithEvent: TicketWithEventData(
                         ticket: ticket,
-                        event: Event(
-                            id: ticket.eventId,
-                            name: ticket.eventName,
-                            venue: ticket.venue,
-                            startTime: ticket.startTime,
-                            price: ticket.totalPrice,
-                            maxTickets: 100,
-                            ticketsSold: 0,
-                            imageUrl: "",
-                            isFeatured: false,
-                            description: nil
-                        )
+                        event: createPlaceholderEvent(from: ticket)
                     ))
                 }
             } else {
@@ -337,25 +296,31 @@ struct TransferTicketDestination: View {
             if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
                 TransferTicketView(ticketWithEvent: TicketWithEventData(ticket: ticket, event: event))
             } else {
-                // Create placeholder event if event data is missing
                 TransferTicketView(ticketWithEvent: TicketWithEventData(
                     ticket: ticket,
-                    event: Event(
-                        id: ticket.eventId,
-                        name: ticket.eventName,
-                        venue: ticket.venue,
-                        startTime: ticket.startTime,
-                        price: ticket.totalPrice,
-                        maxTickets: 100,
-                        ticketsSold: 0,
-                        imageUrl: "",
-                        isFeatured: false,
-                        description: nil
-                    )
+                    event: createPlaceholderEvent(from: ticket)
                 ))
             }
         }
     }
+}
+
+// MARK: - Helper Functions
+
+/// Creates a placeholder Event from a Ticket when the full event data is not available
+private func createPlaceholderEvent(from ticket: Ticket) -> Event {
+    Event(
+        id: ticket.eventId,
+        name: ticket.eventName,
+        venue: ticket.venue,
+        startTime: ticket.startTime,
+        price: ticket.totalPrice,
+        maxTickets: 100,
+        ticketsSold: 0,
+        imageUrl: "",
+        isFeatured: false,
+        description: nil
+    )
 }
 
 // MARK: - Toast Alert View

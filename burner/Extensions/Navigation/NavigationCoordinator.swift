@@ -261,13 +261,21 @@ class NavigationCoordinator: ObservableObject {
 
         switch targetTab {
         case .home:
-            homePath.removeLast(homePath.count)
+            if !homePath.isEmpty {
+                homePath.removeLast(homePath.count)
+            }
         case .explore:
-            explorePath.removeLast(explorePath.count)
+            if !explorePath.isEmpty {
+                explorePath.removeLast(explorePath.count)
+            }
         case .tickets:
-            ticketsPath.removeLast(ticketsPath.count)
+            if !ticketsPath.isEmpty {
+                ticketsPath.removeLast(ticketsPath.count)
+            }
         case .settings:
-            settingsPath.removeLast(settingsPath.count)
+            if !settingsPath.isEmpty {
+                settingsPath.removeLast(settingsPath.count)
+            }
         }
     }
 
@@ -337,15 +345,15 @@ class NavigationCoordinator: ObservableObject {
         selectedTab = .explore
 
         // Clear any existing navigation
-        explorePath.removeLast(explorePath.count)
+        if !explorePath.isEmpty {
+            explorePath.removeLast(explorePath.count)
+        }
 
         // Set pending deep link (will be picked up by SearchView)
         pendingDeepLink = eventId
 
-        // Small delay to ensure state is stable
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.navigate(to: .eventById(eventId), in: .explore)
-        }
+        // Navigate to event
+        navigate(to: .eventById(eventId), in: .explore)
     }
 
     func handleTicketDeepLink(ticketId: String) {
@@ -353,12 +361,12 @@ class NavigationCoordinator: ObservableObject {
         selectedTab = .tickets
 
         // Clear any existing navigation
-        ticketsPath.removeLast(ticketsPath.count)
-
-        // Small delay to ensure state is stable
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.navigate(to: .ticketById(ticketId), in: .tickets)
+        if !ticketsPath.isEmpty {
+            ticketsPath.removeLast(ticketsPath.count)
         }
+
+        // Navigate to ticket
+        navigate(to: .ticketById(ticketId), in: .tickets)
     }
 
     // MARK: - Convenience Methods for Common Flows
