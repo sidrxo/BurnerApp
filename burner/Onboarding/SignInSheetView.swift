@@ -36,34 +36,35 @@ struct SignInSheetView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                Spacer()
-                    .frame(height: 30)
+            ZStack {
+                VStack(spacing: 0) {
+                    Spacer()
+                        .frame(height: 30)
 
-                // Bottom section with buttons and terms
-                VStack(spacing: 16) {
-                    signInButtonsSection
-                    footerSection
+                    // Bottom section with buttons and terms
+                    VStack(spacing: 16) {
+                        signInButtonsSection
+                        footerSection
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 50)
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 50)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.white)
-            .presentationDetents([.height(400)])
-            .presentationDragIndicator(.visible)
-            
-            // Loading overlay
-            if isLoading {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea(.all)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white)
+                .presentationDetents([.height(400)])
+                .presentationDragIndicator(.visible)
 
-                ProgressView()
-                    .scaleEffect(1.5)
-                    .tint(.white)
-            }
+                // Loading overlay
+                if isLoading {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea(.all)
 
-            // ✅ Regular error alert
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .tint(.white)
+                }
+
+                // ✅ Regular error alert
                 if showingError && !showingAccountExistsAlert && !showingLinkSuccessAlert {
                     CustomAlertView(
                         title: "Sign In Error",
@@ -78,8 +79,8 @@ struct SignInSheetView: View {
                     .transition(.opacity)
                     .zIndex(1002)
                 }
-            
-            // ✅ Account exists alert with two buttons
+
+                // ✅ Account exists alert with two buttons
                 if showingAccountExistsAlert {
                     CustomAlertView(
                         title: alertTitle,
@@ -99,8 +100,8 @@ struct SignInSheetView: View {
                     .zIndex(1003)
                 }
 
-            
-            // ✅ Link success alert
+
+                // ✅ Link success alert
                 if showingLinkSuccessAlert {
                     CustomAlertView(
                         title: "Accounts Linked!",
@@ -114,9 +115,10 @@ struct SignInSheetView: View {
                     .transition(.opacity)
                     .zIndex(1003)
                 }
-            .fullScreenCover(isPresented: $showingPasswordlessAuth) {
-                PasswordlessAuthView(showingSignIn: $showingSignIn)
             }
+        }
+        .fullScreenCover(isPresented: $showingPasswordlessAuth) {
+            PasswordlessAuthView(showingSignIn: $showingSignIn)
         }
     }
 
