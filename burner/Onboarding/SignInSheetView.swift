@@ -114,7 +114,6 @@ struct SignInSheetView: View {
                     .transition(.opacity)
                     .zIndex(1003)
                 }
-        }
             .fullScreenCover(isPresented: $showingPasswordlessAuth) {
                 PasswordlessAuthView(showingSignIn: $showingSignIn)
             }
