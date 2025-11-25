@@ -135,6 +135,12 @@ class EventViewModel: ObservableObject {
         }
     }
     
+    var featuredEvents: [Event] {
+        let featured = events.filter { $0.isFeatured == true }
+        return Array(featured.prefix(5))
+    }
+    
+    
     // MARK: - Check Single Ticket Status
     func checkUserTicketStatus(for eventId: String, completion: @escaping (Bool) -> Void) {
         guard let userId = Auth.auth().currentUser?.uid else {

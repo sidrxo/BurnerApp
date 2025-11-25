@@ -20,7 +20,7 @@ struct HeaderSection: View {
             Spacer()
         }
         .padding(.horizontal, 20)
-        .padding(.top, 50)
+        .padding(.top, 30)
         .padding(.bottom, 30)
     }
 }
