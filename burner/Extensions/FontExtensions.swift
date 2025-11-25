@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension Font {
-    private static let fontFamily = "Avenir Next"
+    private static let fontFamily = "Helvetica"
     
     static func appFont(size: CGFloat, weight: Font.Weight = .regular) -> Font {
         switch weight {

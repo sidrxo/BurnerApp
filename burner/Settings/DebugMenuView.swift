@@ -8,6 +8,10 @@ struct DebugMenuView: View {
     @State private var burnerErrorMessage = ""
     @State private var showResetConfirmation = false
     
+    // MARK: - New State for Presentation
+    @State private var showBurnerModeSetup = false
+    @State private var showOnboardingFlow = false
+
     // Three states: no event, before event starts, during event
     enum EventState {
         case noEvent
@@ -65,6 +69,44 @@ struct DebugMenuView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(PlainButtonStyle())
+                        
+                        Button(action: {
+                            burnerManager.toggleNFCUnlock()
+                        }) {
+                            MenuItemContent(
+                                title: burnerManager.nfcUnlockEnabled ? "Disable NFC Unlock" : "Enable NFC Unlock",
+                                subtitle: burnerManager.nfcUnlockEnabled ? "NFC tags can unlock Burner Mode" : "Enable NFC tag unlocking"
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+
+                    // MARK: - New Menu Section for Flows
+                    MenuSection(title: "ONBOARDING & FLOWS") {
+                        Button(action: {
+                            // Reset OnboardingManager state before showing the flow for proper testing
+                            OnboardingManager().resetOnboarding()
+                            showOnboardingFlow = true
+                        }) {
+                            MenuItemContent(
+                                title: "Show Onboarding Flow",
+                                subtitle: "Shows Sign-In then Burner Setup flow"
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        Button(action: {
+                            showBurnerModeSetup = true
+                        }) {
+                            MenuItemContent(
+                                title: "Show Burner Mode Setup",
+                                subtitle: "Directly launch the 6-step setup guide"
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
 
                     MenuSection(title: "LIVE ACTIVITY") {
@@ -98,6 +140,21 @@ struct DebugMenuView: View {
             }
         } message: {
             Text("This will clear all app data, sign you out, and reset the app to its first install state. This action cannot be undone.")
+        }
+        // MARK: - New Full Screen Covers
+        .fullScreenCover(isPresented: $showOnboardingFlow) {
+            // Instantiate a new manager instance for isolated testing of the flow
+            let temporaryOnboardingManager = OnboardingManager()
+            OnboardingFlowView(
+                onboardingManager: temporaryOnboardingManager,
+            )
+            // Note: Environment objects like AuthenticationService are assumed to be implicitly available
+        }
+        .fullScreenCover(isPresented: $showBurnerModeSetup) {
+            BurnerModeSetupView(
+                burnerManager: burnerManager,
+                onSkip: { showBurnerModeSetup = false }
+            )
         }
     }
     
@@ -134,6 +191,9 @@ struct DebugMenuView: View {
             if let bundleID = Bundle.main.bundleIdentifier {
                 UserDefaults.standard.removePersistentDomain(forName: bundleID)
             }
+            
+            // Explicitly call reset on OnboardingManager via a temporary instance
+            OnboardingManager().resetOnboarding() // This clears the userDefaults flags for onboarding/sign-in
 
             // Disable burner mode if enabled
             if appState.showingBurnerLockScreen {
@@ -143,12 +203,9 @@ struct DebugMenuView: View {
                 }
             }
 
-            // Reset burner setup
-            await MainActor.run {
-                burnerManager.resetSetup()
-                burnerManager.clearAllSelections()
-            }
-
+            // Clear burner selections
+            burnerManager.clearAllSelections()
+            
             // Reset user location
             await MainActor.run {
                 appState.userLocationManager.resetLocation()

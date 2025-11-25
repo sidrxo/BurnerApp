@@ -14,7 +14,7 @@ class PreferencesSyncService {
     private let db = Firestore.firestore()
 
     // MARK: - Sync Local Preferences to Firebase
-    func syncLocalPreferencesToFirebase(localPreferences: LocalPreferences) {
+    func syncLocalPreferencesToFirebase(localPreferences: LocalPreferences) async {
         guard let userId = Auth.auth().currentUser?.uid else {
             print("❌ No authenticated user, cannot sync preferences")
             return
@@ -29,40 +29,33 @@ class PreferencesSyncService {
 
         let userRef = db.collection("users").document(userId)
 
-        userRef.setData(["preferences": preferencesData], merge: true) { error in
-            if let error = error {
-                print("❌ Failed to sync local preferences to Firebase: \(error.localizedDescription)")
-            } else {
-                print("✅ Local preferences synced to Firebase successfully")
-            }
+        do {
+            try await userRef.setData(["preferences": preferencesData], merge: true)
+            print("✅ Local preferences synced to Firebase successfully")
+        } catch {
+            print("❌ Failed to sync local preferences to Firebase: \(error.localizedDescription)")
         }
     }
 
     // MARK: - Load Preferences from Firebase
-    func loadPreferencesFromFirebase(completion: @escaping (LocalPreferences?) -> Void) {
+    func loadPreferencesFromFirebase() async -> LocalPreferences? {
         guard let userId = Auth.auth().currentUser?.uid else {
             print("❌ No authenticated user, cannot load preferences")
-            completion(nil)
-            return
+            return nil
         }
 
         let userRef = db.collection("users").document(userId)
 
-        userRef.getDocument { snapshot, error in
-            if let error = error {
-                print("❌ Failed to load preferences from Firebase: \(error.localizedDescription)")
-                completion(nil)
-                return
-            }
-
-            guard let data = snapshot?.data(),
+        do {
+            let snapshot = try await userRef.getDocument()
+            
+            guard let data = snapshot.data(),
                   let preferencesData = data["preferences"] as? [String: Any] else {
                 print("⚠️ No preferences found in Firebase")
-                completion(nil)
-                return
+                return nil
             }
 
-            // Convert Firebase data to LocalPreferences
+            // ✅ Safe to initialize because we are back on the MainActor after 'await'
             let preferences = LocalPreferences()
 
             // Load genres
@@ -86,74 +79,63 @@ class PreferencesSyncService {
             }
 
             print("✅ Preferences loaded from Firebase successfully")
-            completion(preferences)
+            return preferences
+
+        } catch {
+            print("❌ Failed to load preferences from Firebase: \(error.localizedDescription)")
+            return nil
         }
     }
 
     // MARK: - Merge Preferences (local + Firebase)
-    func mergePreferences(localPreferences: LocalPreferences, completion: @escaping () -> Void) {
+    func mergePreferences(localPreferences: LocalPreferences) async {
         guard let userId = Auth.auth().currentUser?.uid else {
             print("❌ No authenticated user, cannot merge preferences")
-            completion()
             return
         }
 
-        // Load Firebase preferences first
-        loadPreferencesFromFirebase { [weak self] firebasePreferences in
-            guard let self = self else {
-                completion()
-                return
-            }
+        // 1. Load Firebase preferences
+        let firebasePreferences = await loadPreferencesFromFirebase()
 
-            // If no Firebase preferences, just sync local to Firebase
-            guard let firebasePreferences = firebasePreferences else {
-                self.syncLocalPreferencesToFirebase(localPreferences: localPreferences)
-                completion()
-                return
-            }
+        // 2. If no Firebase data, just sync local up
+        guard let firebasePreferences = firebasePreferences else {
+            await syncLocalPreferencesToFirebase(localPreferences: localPreferences)
+            return
+        }
 
-            // Merge strategy:
-            // 1. Genres: Combine both (unique set)
-            // 2. Location: Prefer local if exists, otherwise Firebase
-            // 3. Notifications: OR them (true if either is true)
+        // 3. Merge Strategy
+        let mergedPreferences = LocalPreferences()
 
-            let mergedPreferences = LocalPreferences()
+        // Merge genres (unique set)
+        let combinedGenres = Array(Set(localPreferences.selectedGenres + firebasePreferences.selectedGenres))
+        mergedPreferences.selectedGenres = combinedGenres
 
-            // Merge genres (unique set)
-            let combinedGenres = Array(Set(localPreferences.selectedGenres + firebasePreferences.selectedGenres))
-            mergedPreferences.selectedGenres = combinedGenres
+        // Merge location (prefer local)
+        if localPreferences.hasLocation {
+            mergedPreferences.locationName = localPreferences.locationName
+            mergedPreferences.locationLat = localPreferences.locationLat
+            mergedPreferences.locationLon = localPreferences.locationLon
+        } else if firebasePreferences.hasLocation {
+            mergedPreferences.locationName = firebasePreferences.locationName
+            mergedPreferences.locationLat = firebasePreferences.locationLat
+            mergedPreferences.locationLon = firebasePreferences.locationLon
+        }
 
-            // Merge location (prefer local)
-            if localPreferences.hasLocation {
-                mergedPreferences.locationName = localPreferences.locationName
-                mergedPreferences.locationLat = localPreferences.locationLat
-                mergedPreferences.locationLon = localPreferences.locationLon
-            } else if firebasePreferences.hasLocation {
-                mergedPreferences.locationName = firebasePreferences.locationName
-                mergedPreferences.locationLat = firebasePreferences.locationLat
-                mergedPreferences.locationLon = firebasePreferences.locationLon
-            }
+        // Merge notifications (OR logic)
+        mergedPreferences.hasEnabledNotifications = localPreferences.hasEnabledNotifications || firebasePreferences.hasEnabledNotifications
 
-            // Merge notifications (OR them)
-            mergedPreferences.hasEnabledNotifications = localPreferences.hasEnabledNotifications || firebasePreferences.hasEnabledNotifications
+        // 4. Save merged result
+        mergedPreferences.saveToUserDefaults()
 
-            // Save merged result to both local and Firebase
-            mergedPreferences.saveToUserDefaults()
+        // 5. Sync merged result back to Firebase
+        let mergedData = mergedPreferences.exportDictionary()
+        let userRef = self.db.collection("users").document(userId)
 
-            let mergedData = mergedPreferences.exportDictionary()
-            let userRef = self.db.collection("users").document(userId)
-
-            userRef.setData(["preferences": mergedData], merge: true) { error in
-                if let error = error {
-                    print("❌ Failed to save merged preferences to Firebase: \(error.localizedDescription)")
-                } else {
-                    print("✅ Merged preferences saved to Firebase successfully")
-                    print("   - Genres: \(mergedPreferences.selectedGenres.count) selected")
-                    print("   - Location: \(mergedPreferences.hasLocation ? "Set" : "Not set")")
-                    print("   - Notifications: \(mergedPreferences.hasEnabledNotifications ? "Enabled" : "Disabled")")
-                }
-                completion()
-            }
+        do {
+            try await userRef.setData(["preferences": mergedData], merge: true)
+            print("✅ Merged preferences saved to Firebase successfully")
+        } catch {
+            print("❌ Failed to save merged preferences to Firebase: \(error.localizedDescription)")
         }
     }
 }

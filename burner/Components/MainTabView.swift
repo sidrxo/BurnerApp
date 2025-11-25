@@ -127,7 +127,7 @@ struct CustomTabBar: View {
             Spacer()
 
             TabBarButton(
-                icon: "person",
+                icon: "gear",
                 isSelected: coordinator.selectedTab == .settings
             ) {
                 coordinator.selectTab(.settings)

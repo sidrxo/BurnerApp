@@ -19,6 +19,7 @@ class BurnerModeManager: ObservableObject {
     @Published var isAuthorized = false
     @Published var hasCompletedSetup: Bool = false
     @Published var isLocked: Bool = false
+    @Published var nfcUnlockEnabled: Bool = false
     
     private let store = ManagedSettingsStore()
     private let center = DeviceActivityCenter()
@@ -27,17 +28,25 @@ class BurnerModeManager: ObservableObject {
     // App Group for sharing data with extension
     private let appGroupDefaults = UserDefaults(suiteName: "group.com.yourapp.burner")
     
+    // NFC Manager for unlock functionality
+    let nfcManager = NFCUnlockManager()
+    
     let minimumCategoriesRequired = 8
     
     init() {
         loadSelectedApps()
         loadHasCompletedSetup()
+        loadNFCUnlockEnabled()
         setupAuthorizationMonitoring()
         checkSetupCompliance()
     }
 
     private func loadHasCompletedSetup() {
         hasCompletedSetup = UserDefaults.standard.bool(forKey: "hasCompletedBurnerSetup")
+    }
+    
+    private func loadNFCUnlockEnabled() {
+        nfcUnlockEnabled = UserDefaults.standard.bool(forKey: "nfcUnlockEnabled")
     }
     
     private func setupAuthorizationMonitoring() {
@@ -288,6 +297,17 @@ class BurnerModeManager: ObservableObject {
         selectedApps = FamilyActivitySelection()
         appGroupDefaults?.removeObject(forKey: "selectedApps")
         UserDefaults.standard.removeObject(forKey: "selectedApps")
+    }
+    
+    // MARK: - NFC Unlock
+    func toggleNFCUnlock() {
+        nfcUnlockEnabled.toggle()
+        UserDefaults.standard.set(nfcUnlockEnabled, forKey: "nfcUnlockEnabled")
+    }
+    
+    func unlockWithNFC() {
+        guard isLocked else { return }
+        disable()
     }
 }
 

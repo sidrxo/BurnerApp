@@ -3,6 +3,7 @@
 //  burner
 //
 //  5-step onboarding flow: Welcome → Location → Genres → Notifications → Complete
+//  Design: Monochrome black & white system with premium feel
 //
 
 import SwiftUI
@@ -10,6 +11,18 @@ import CoreLocation
 import UserNotifications
 import Kingfisher
 import Combine
+
+// MARK: - Design System
+struct OnboardingColors {
+    static let background = Color.black
+    static let foreground = Color.white
+    static let muted = Color(white: 0.15)
+    static let mutedForeground = Color(white: 0.6)
+    static let border = Color(white: 0.2)
+    static let pillBg = Color(white: 0.15)
+    static let pillActive = Color.white
+    static let pillActiveForeground = Color.black
+}
 
 struct OnboardingFlowView: View {
     @ObservedObject var onboardingManager: OnboardingManager
@@ -24,7 +37,7 @@ struct OnboardingFlowView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            OnboardingColors.background.ignoresSafeArea()
 
             TabView(selection: $currentStep) {
                 // Step 0: Welcome + Featured Events Carousel
@@ -61,15 +74,15 @@ struct OnboardingFlowView: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
             .ignoresSafeArea()
 
-            // Progress indicator (for steps 1-3 only)
+            // Minimalist progress indicator (for steps 1-3 only)
             if currentStep > 0 && currentStep < 4 {
                 VStack {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 6) {
                         ForEach(1...3, id: \.self) { index in
-                            Rectangle()
-                                .fill(currentStep >= index ? Color.white : Color.white.opacity(0.3))
-                                .frame(width: 30, height: 3)
-                                .clipShape(Capsule())
+                            Capsule()
+                                .fill(currentStep >= index ? OnboardingColors.foreground : OnboardingColors.border)
+                                .frame(width: currentStep == index ? 40 : 24, height: 2)
+                                .animation(.spring(response: 0.3), value: currentStep)
                         }
                     }
                     .padding(.top, 60)
@@ -89,26 +102,27 @@ struct WelcomeStep: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
+                .frame(height: 80)
 
-            VStack(spacing: 20) {
-                Text("EXPERIENCE THE MUSIC")
-                    .font(.custom("Avenir", size: 32).weight(.black))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                    .tracking(1)
+            VStack(spacing: 16) {
+                Text("Welcome to\nBurner.")
+                    .font(.system(size: 32, weight: .heavy))
+                    .foregroundColor(OnboardingColors.foreground)
+                    .multilineTextAlignment(.leading)
+                    .tracking(1.5)
                     .padding(.horizontal, 40)
 
                 Text("Discover events, buy tickets,\nand focus on what matters")
-                    .font(.custom("Avenir", size: 16))
-                    .foregroundColor(.white.opacity(0.7))
-                    .multilineTextAlignment(.center)
+                    .font(.system(size: 16, weight: .regular, design: .rounded))
+                    .foregroundColor(OnboardingColors.mutedForeground)
+                    .multilineTextAlignment(.leading)
                     .padding(.horizontal, 40)
             }
-            .padding(.bottom, 40)
+            .padding(.bottom, 50)
 
-            // Featured Events Carousel
-            FeaturedEventsCarouselView(events: appState.eventViewModel.featuredEvents)
-                .frame(height: 280)
+            // Featured Events Carousel - Tall centered card with arced layout
+            ArcedCarouselView(events: appState.eventViewModel.featuredEvents)
+                .frame(height: 450)
 
             Spacer()
 
@@ -123,6 +137,246 @@ struct WelcomeStep: View {
     }
 }
 
+// MARK: - Arced Carousel View
+struct ArcedCarouselView: View {
+    let events: [Event]
+    
+    @State private var currentIndex = 0
+    @State private var dragOffset: CGFloat = 0
+    
+    private let cardWidth: CGFloat = 280
+    private let cardHeight: CGFloat = 380
+    private let spacing: CGFloat = 20
+    
+    var body: some View {
+        GeometryReader { geometry in
+            let screenWidth = geometry.size.width
+            let centerX = screenWidth / 2
+            
+            ZStack {
+                if events.isEmpty {
+                    // Minimalist placeholder
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(OnboardingColors.muted)
+                        .frame(width: cardWidth, height: cardHeight)
+                        .overlay(
+                            VStack(spacing: 16) {
+                                Circle()
+                                    .fill(OnboardingColors.border)
+                                    .frame(width: 80, height: 80)
+                                    .overlay(
+                                        Image(systemName: "music.note")
+                                            .font(.system(size: 32, weight: .light))
+                                            .foregroundColor(OnboardingColors.mutedForeground)
+                                    )
+                                Text("Loading events...")
+                                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                                    .foregroundColor(OnboardingColors.mutedForeground)
+                            }
+                        )
+                        .position(x: centerX, y: geometry.size.height / 2)
+                } else {
+                    ForEach(Array(events.prefix(5).enumerated()), id: \.element.id) { index, event in
+                        TallEventCard(event: event)
+                            .frame(width: cardWidth, height: cardHeight)
+                            .modifier(
+                                ArcedCardModifier(
+                                    index: index,
+                                    currentIndex: currentIndex,
+                                    dragOffset: dragOffset,
+                                    centerX: centerX,
+                                    cardWidth: cardWidth,
+                                    spacing: spacing
+                                )
+                            )
+                    }
+                }
+                
+                // Minimalist pagination dots
+                VStack {
+                    Spacer()
+                    
+                    if !events.isEmpty {
+                        HStack(spacing: 6) {
+                            ForEach(0..<min(events.count, 5), id: \.self) { index in
+                                Capsule()
+                                    .fill(currentIndex == index ? OnboardingColors.foreground : OnboardingColors.border)
+                                    .frame(width: currentIndex == index ? 20 : 6, height: 2)
+                                    .animation(.spring(response: 0.3), value: currentIndex)
+                            }
+                        }
+                        .padding(.bottom, 20)
+                    }
+                }
+            }
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        dragOffset = value.translation.width
+                    }
+                    .onEnded { value in
+                        let threshold: CGFloat = 50
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            if value.translation.width < -threshold && currentIndex < min(events.count, 5) - 1 {
+                                currentIndex += 1
+                            } else if value.translation.width > threshold && currentIndex > 0 {
+                                currentIndex -= 1
+                            }
+                            dragOffset = 0
+                        }
+                        
+                        // Haptic feedback
+                        let generator = UIImpactFeedbackGenerator(style: .light)
+                        generator.impactOccurred()
+                    }
+            )
+        }
+    }
+}
+
+// MARK: - Arced Card Modifier
+struct ArcedCardModifier: ViewModifier {
+    let index: Int
+    let currentIndex: Int
+    let dragOffset: CGFloat
+    let centerX: CGFloat
+    let cardWidth: CGFloat
+    let spacing: CGFloat
+    
+    func body(content: Content) -> some View {
+        let offset = CGFloat(index - currentIndex)
+        let totalOffset = (offset * (cardWidth + spacing)) + dragOffset
+        
+        // Calculate arc effect
+        let normalizedOffset = abs(totalOffset) / (cardWidth + spacing)
+        let arcHeight = min(normalizedOffset * 40, 60) // Max arc of 60pt
+        
+        // Calculate scale
+        let isCentered = index == currentIndex && abs(dragOffset) < 10
+        let scale: CGFloat = isCentered ? 1.0 : 0.85
+        
+        // Calculate opacity
+        let opacity: Double = isCentered ? 1.0 : 0.6
+        
+        // Calculate rotation for arc effect
+        let rotation: Double = totalOffset / cardWidth * 8 // Slight rotation
+        
+        content
+            .scaleEffect(scale)
+            .opacity(opacity)
+            .offset(
+                x: totalOffset,
+                y: arcHeight
+            )
+            .rotation3DEffect(
+                .degrees(rotation),
+                axis: (x: 0, y: 1, z: 0)
+            )
+            .position(x: centerX, y: 190)
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: currentIndex)
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: dragOffset)
+    }
+}
+
+// MARK: - Tall Event Card
+struct TallEventCard: View {
+    let event: Event
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Event image with subtle overlay
+            ZStack(alignment: .bottom) {
+                KFImage(URL(string: event.imageUrl))
+                    .placeholder {
+                        Rectangle()
+                            .fill(OnboardingColors.muted)
+                            .overlay(
+                                Circle()
+                                    .fill(OnboardingColors.border)
+                                    .frame(width: 60, height: 60)
+                                    .overlay(
+                                        Image(systemName: "music.note")
+                                            .font(.system(size: 24, weight: .light))
+                                            .foregroundColor(OnboardingColors.mutedForeground)
+                                    )
+                            )
+                    }
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 280, height: 280)
+                    .clipped()
+                
+                // Subtle gradient overlay
+                LinearGradient(
+                    colors: [
+                        Color.clear,
+                        OnboardingColors.background.opacity(0.8)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 120)
+            }
+            .frame(width: 280, height: 280)
+            
+            // Event details section - monochrome styling
+            VStack(alignment: .leading, spacing: 12) {
+                Text(event.name)
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundColor(OnboardingColors.foreground)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(OnboardingColors.mutedForeground)
+                        
+                        Text(event.venue)
+                            .font(.system(size: 13, weight: .regular, design: .rounded))
+                            .foregroundColor(OnboardingColors.mutedForeground)
+                            .lineLimit(1)
+                    }
+                    
+                    HStack(spacing: 8) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(OnboardingColors.mutedForeground)
+                        
+                        Text("12th Nov 2025")
+                            .font(.system(size: 13, weight: .regular, design: .rounded))
+                            .foregroundColor(OnboardingColors.mutedForeground)
+                            .lineLimit(1)
+                    }
+                }
+            }
+            .padding(20)
+            .frame(width: 280, alignment: .leading)
+            .background(OnboardingColors.muted)
+        }
+        .background(OnboardingColors.background)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .strokeBorder(OnboardingColors.border, lineWidth: 1)
+        )
+        .shadow(color: OnboardingColors.background.opacity(0.5), radius: 30, x: 0, y: 15)
+    }
+    
+    private func formatDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        
+        if let date = formatter.date(from: dateString) {
+            formatter.dateFormat = "MMM d, yyyy"
+            return formatter.string(from: date)
+        }
+        
+        return dateString
+    }
+}
+
 // MARK: - Step 1: Location
 struct LocationStep: View {
     @ObservedObject var locationManager: OnboardingLocationManager
@@ -134,31 +388,44 @@ struct LocationStep: View {
         VStack(spacing: 0) {
             Spacer()
 
-            VStack(spacing: 20) {
-                Image(systemName: "location.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.white)
+            VStack(spacing: 24) {
+                // Icon with circular background
+                Circle()
+                    .fill(OnboardingColors.muted)
+                    .frame(width: 120, height: 120)
+                    .overlay(
+                        Image(systemName: "location.circle.fill")
+                            .font(.system(size: 56, weight: .light))
+                            .foregroundColor(OnboardingColors.foreground)
+                    )
 
-                Text("WHERE ARE YOU?")
-                    .font(.custom("Avenir", size: 28).weight(.black))
-                    .foregroundColor(.white)
-                    .tracking(1)
+                VStack(spacing: 12) {
+                    Text("WHERE ARE YOU?")
+                        .font(.system(size: 28, weight: .heavy, design: .rounded))
+                        .foregroundColor(OnboardingColors.foreground)
+                        .tracking(1.5)
 
-                Text("We'll show you events nearby")
-                    .font(.custom("Avenir", size: 16))
-                    .foregroundColor(.white.opacity(0.7))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+                    Text("We'll show you events nearby")
+                        .font(.system(size: 16, weight: .regular, design: .rounded))
+                        .foregroundColor(OnboardingColors.mutedForeground)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
 
                 if let locationName = localPreferences.locationName {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 10) {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundColor(OnboardingColors.foreground)
+                            .font(.system(size: 16))
                         Text(locationName)
-                            .font(.custom("Avenir", size: 16))
-                            .foregroundColor(.white)
+                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                            .foregroundColor(OnboardingColors.foreground)
                     }
-                    .padding(.top, 20)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(OnboardingColors.muted)
+                    .clipShape(Capsule())
+                    .padding(.top, 8)
                 }
             }
 
@@ -176,7 +443,7 @@ struct LocationStep: View {
                     .disabled(isRequestingLocation)
 
                     NavigationButton(
-                        title: "SKIP",
+                        title: "SKIP FOR NOW",
                         style: .secondary,
                         action: {}
                     )
@@ -228,20 +495,28 @@ struct GenreSelectionStep: View {
         VStack(spacing: 0) {
             Spacer()
 
-            VStack(spacing: 20) {
-                Image(systemName: "music.note.list")
-                    .font(.system(size: 80))
-                    .foregroundColor(.white)
+            VStack(spacing: 24) {
+                // Icon with circular background
+                Circle()
+                    .fill(OnboardingColors.muted)
+                    .frame(width: 120, height: 120)
+                    .overlay(
+                        Image(systemName: "music.note.list")
+                            .font(.system(size: 56, weight: .light))
+                            .foregroundColor(OnboardingColors.foreground)
+                    )
 
-                Text("WHAT DO YOU LIKE?")
-                    .font(.custom("Avenir", size: 28).weight(.black))
-                    .foregroundColor(.white)
-                    .tracking(1)
+                VStack(spacing: 12) {
+                    Text("WHAT DO YOU LIKE?")
+                        .font(.system(size: 28, weight: .heavy, design: .rounded))
+                        .foregroundColor(OnboardingColors.foreground)
+                        .tracking(1.5)
 
-                Text("Select your favorite genres")
-                    .font(.custom("Avenir", size: 16))
-                    .foregroundColor(.white.opacity(0.7))
-                    .multilineTextAlignment(.center)
+                    Text("Select your favorite genres")
+                        .font(.system(size: 16, weight: .regular, design: .rounded))
+                        .foregroundColor(OnboardingColors.mutedForeground)
+                        .multilineTextAlignment(.center)
+                }
             }
             .padding(.bottom, 40)
 
@@ -266,9 +541,10 @@ struct GenreSelectionStep: View {
                     style: .primary,
                     action: {}
                 )
+                .opacity(localPreferences.selectedGenres.isEmpty ? 0.5 : 1.0)
 
                 NavigationButton(
-                    title: "SKIP",
+                    title: "SKIP FOR NOW",
                     style: .secondary,
                     action: {}
                 )
@@ -301,31 +577,44 @@ struct NotificationsStep: View {
         VStack(spacing: 0) {
             Spacer()
 
-            VStack(spacing: 20) {
-                Image(systemName: "bell.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.white)
+            VStack(spacing: 24) {
+                // Icon with circular background
+                Circle()
+                    .fill(OnboardingColors.muted)
+                    .frame(width: 120, height: 120)
+                    .overlay(
+                        Image(systemName: "bell.circle.fill")
+                            .font(.system(size: 56, weight: .light))
+                            .foregroundColor(OnboardingColors.foreground)
+                    )
 
-                Text("STAY UPDATED")
-                    .font(.custom("Avenir", size: 28).weight(.black))
-                    .foregroundColor(.white)
-                    .tracking(1)
+                VStack(spacing: 12) {
+                    Text("STAY UPDATED")
+                        .font(.system(size: 28, weight: .heavy, design: .rounded))
+                        .foregroundColor(OnboardingColors.foreground)
+                        .tracking(1.5)
 
-                Text("Get notified about events,\ntickets, and reminders")
-                    .font(.custom("Avenir", size: 16))
-                    .foregroundColor(.white.opacity(0.7))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+                    Text("Get notified about events,\ntickets, and reminders")
+                        .font(.system(size: 16, weight: .regular, design: .rounded))
+                        .foregroundColor(OnboardingColors.mutedForeground)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
 
                 if localPreferences.hasEnabledNotifications {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 10) {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundColor(OnboardingColors.foreground)
+                            .font(.system(size: 16))
                         Text("Notifications enabled")
-                            .font(.custom("Avenir", size: 16))
-                            .foregroundColor(.white)
+                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                            .foregroundColor(OnboardingColors.foreground)
                     }
-                    .padding(.top, 20)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(OnboardingColors.muted)
+                    .clipShape(Capsule())
+                    .padding(.top, 8)
                 }
             }
 
@@ -343,7 +632,7 @@ struct NotificationsStep: View {
                     .disabled(isRequestingPermission)
 
                     NavigationButton(
-                        title: "SKIP",
+                        title: "SKIP FOR NOW",
                         style: .secondary,
                         action: {}
                     )
@@ -382,21 +671,29 @@ struct CompleteStep: View {
         VStack(spacing: 0) {
             Spacer()
 
-            VStack(spacing: 20) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 100))
-                    .foregroundColor(.green)
+            VStack(spacing: 24) {
+                // Success icon with animated circle
+                Circle()
+                    .fill(OnboardingColors.foreground)
+                    .frame(width: 120, height: 120)
+                    .overlay(
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 56, weight: .bold))
+                            .foregroundColor(OnboardingColors.background)
+                    )
 
-                Text("YOU'RE ALL SET!")
-                    .font(.custom("Avenir", size: 32).weight(.black))
-                    .foregroundColor(.white)
-                    .tracking(1)
+                VStack(spacing: 12) {
+                    Text("YOU'RE ALL SET!")
+                        .font(.system(size: 32, weight: .heavy, design: .rounded))
+                        .foregroundColor(OnboardingColors.foreground)
+                        .tracking(1.5)
 
-                Text("Start exploring events\nand discover what's next")
-                    .font(.custom("Avenir", size: 16))
-                    .foregroundColor(.white.opacity(0.7))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+                    Text("Start exploring events\nand discover what's next")
+                        .font(.system(size: 16, weight: .regular, design: .rounded))
+                        .foregroundColor(OnboardingColors.mutedForeground)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
             }
 
             Spacer()
@@ -420,7 +717,7 @@ struct CompleteStep: View {
 
 // MARK: - Supporting Components
 
-// Navigation Button
+// Navigation Button - Monochrome Design
 struct NavigationButton: View {
     let title: String
     let style: ButtonStyle
@@ -434,22 +731,22 @@ struct NavigationButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.custom("Avenir", size: 17).weight(.bold))
-                .foregroundColor(style == .primary ? .black : .white)
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundColor(style == .primary ? OnboardingColors.background : OnboardingColors.foreground)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(style == .primary ? Color.white : Color.white.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .frame(height: 56)
+                .background(style == .primary ? OnboardingColors.foreground : OnboardingColors.muted)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(style == .primary ? Color.clear : OnboardingColors.border, lineWidth: 1)
                 )
         }
         .buttonStyle(PlainButtonStyle())
     }
 }
 
-// Genre Button
+// Genre Button - Pill Style
 struct GenreButton: View {
     let title: String
     let isSelected: Bool
@@ -458,103 +755,18 @@ struct GenreButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.custom("Avenir", size: 14).weight(.semibold))
-                .foregroundColor(isSelected ? .black : .white)
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundColor(isSelected ? OnboardingColors.background : OnboardingColors.foreground)
                 .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(isSelected ? Color.white : Color.white.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .frame(height: 48)
+                .background(isSelected ? OnboardingColors.foreground : OnboardingColors.muted)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? Color.clear : Color.white.opacity(0.2), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(isSelected ? Color.clear : OnboardingColors.border, lineWidth: 1)
                 )
         }
         .buttonStyle(PlainButtonStyle())
-    }
-}
-
-// Featured Events Carousel View
-struct FeaturedEventsCarouselView: View {
-    let events: [Event]
-
-    @State private var currentIndex = 0
-
-    var body: some View {
-        VStack(spacing: 16) {
-            if events.isEmpty {
-                // Placeholder when no featured events
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.05))
-                    .frame(height: 220)
-                    .overlay(
-                        VStack(spacing: 8) {
-                            Image(systemName: "music.note")
-                                .font(.system(size: 50))
-                                .foregroundColor(.white.opacity(0.3))
-                            Text("Loading events...")
-                                .font(.custom("Avenir", size: 14))
-                                .foregroundColor(.white.opacity(0.5))
-                        }
-                    )
-                    .padding(.horizontal, 40)
-            } else {
-                TabView(selection: $currentIndex) {
-                    ForEach(Array(events.prefix(5).enumerated()), id: \.element.id) { index, event in
-                        FeaturedEventCard(event: event)
-                            .tag(index)
-                    }
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .frame(height: 220)
-
-                // Pagination dots
-                HStack(spacing: 8) {
-                    ForEach(0..<min(events.count, 5), id: \.self) { index in
-                        Circle()
-                            .fill(currentIndex == index ? Color.white : Color.white.opacity(0.3))
-                            .frame(width: 6, height: 6)
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Featured Event Card
-struct FeaturedEventCard: View {
-    let event: Event
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Event image
-            KFImage(URL(string: event.imageUrl))
-                .placeholder {
-                    Rectangle()
-                        .fill(Color.white.opacity(0.1))
-                        .overlay(
-                            Image(systemName: "music.note")
-                                .font(.system(size: 40))
-                                .foregroundColor(.white.opacity(0.3))
-                        )
-                }
-                .resizable()
-                .scaledToFill()
-                .frame(height: 140)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(event.name)
-                    .font(.custom("Avenir", size: 16).weight(.bold))
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-
-                Text(event.venue)
-                    .font(.custom("Avenir", size: 14))
-                    .foregroundColor(.white.opacity(0.7))
-                    .lineLimit(1)
-            }
-        }
-        .padding(.horizontal, 40)
     }
 }
 

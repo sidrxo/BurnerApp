@@ -2,6 +2,7 @@ import SwiftUI
 import FirebaseAuth
 import Combine
 import ActivityKit
+import CoreNFC
 
 // MARK: - App State (Single Source of Truth)
 @MainActor

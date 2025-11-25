@@ -12,6 +12,8 @@ struct BurnerModeLockScreen: View {
     @State private var lockScreenOpacity: Double = 0
     @State private var eventEndTime: Date = Date()
     @State private var isExiting = false // Prevent race condition in exit
+    @State private var showNFCScanner = false
+    @State private var nfcScanMessage = ""
 
     // Terminal state
     @State private var showTerminal: Bool = true
@@ -212,6 +214,32 @@ struct BurnerModeLockScreen: View {
                         .buttonStyle(PlainButtonStyle())
                         .transition(.opacity)
                         .padding(.top, 24)
+                        
+                        // NFC Unlock Button (if enabled)
+                        if burnerManager.nfcUnlockEnabled && burnerManager.nfcManager.isNFCAvailable() {
+                            Button(action: { startNFCUnlock() }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "wave.3.right")
+                                        .font(.system(size: 16, weight: .semibold))
+                                    Text("Unlock with NFC Tag")
+                                        .appCaption().fontWeight(.semibold)
+                                }
+                                .foregroundColor(.teal)
+                                .padding(.vertical, 16)
+                                .padding(.horizontal, 24)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.teal.opacity(0.15))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.teal.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .transition(.opacity)
+                            .padding(.top, 12)
+                        }
                     }
                 }
 
@@ -237,6 +265,19 @@ struct BurnerModeLockScreen: View {
                     customContent: EmptyView()
                 )
                 .transition(.opacity)
+            }
+            
+            // NFC Scanner Overlay
+            if showNFCScanner {
+                NFCScannerOverlay(
+                    message: nfcScanMessage,
+                    onCancel: {
+                        burnerManager.nfcManager.stopScanning()
+                        showNFCScanner = false
+                    }
+                )
+                .transition(.opacity)
+                .zIndex(10)
             }
         }
     }
@@ -295,6 +336,20 @@ struct BurnerModeLockScreen: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             burnerManager.disable()
             appState.showingBurnerLockScreen = false
+        }
+    }
+    
+    // MARK: - NFC Unlock
+    private func startNFCUnlock() {
+        showNFCScanner = true
+        nfcScanMessage = "Hold your phone near the unlock tag"
+        
+        burnerManager.nfcManager.startReadingForUnlock {
+            // Success - unlock burner mode
+            DispatchQueue.main.async {
+                showNFCScanner = false
+                exitBurnerMode()
+            }
         }
     }
 }
@@ -374,5 +429,72 @@ struct BlinkingCursor: View {
                     isVisible.toggle()
                 }
             }
+    }
+}
+
+// MARK: - NFC Scanner Overlay
+struct NFCScannerOverlay: View {
+    let message: String
+    let onCancel: () -> Void
+    @State private var pulseScale: CGFloat = 1.0
+    
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.95).ignoresSafeArea()
+            
+            VStack(spacing: 40) {
+                Spacer()
+                
+                // NFC Icon with pulse animation
+                ZStack {
+                    Circle()
+                        .fill(Color.teal.opacity(0.2))
+                        .frame(width: 150, height: 150)
+                        .scaleEffect(pulseScale)
+                        .animation(
+                            .easeInOut(duration: 1.5)
+                            .repeatForever(autoreverses: true),
+                            value: pulseScale
+                        )
+                    
+                    Image(systemName: "wave.3.right.circle.fill")
+                        .font(.system(size: 80))
+                        .foregroundColor(.teal)
+                }
+                .onAppear {
+                    pulseScale = 1.2
+                }
+                
+                VStack(spacing: 12) {
+                    Text("NFC UNLOCK")
+                        .appFont(size: 24, weight: .bold)
+                        .foregroundColor(.white)
+                        .tracking(2)
+                    
+                    Text(message)
+                        .appBody()
+                        .foregroundColor(.white.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+                
+                Spacer()
+                
+                Button(action: onCancel) {
+                    Text("Cancel")
+                        .appBody()
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.15))
+                        )
+                }
+                .padding(.horizontal, 40)
+                .padding(.bottom, 60)
+            }
+        }
     }
 }
