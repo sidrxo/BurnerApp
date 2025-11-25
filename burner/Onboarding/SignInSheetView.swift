@@ -22,9 +22,6 @@ struct SignInSheetView: View {
     // Passwordless auth navigation
     @State private var showingPasswordlessAuth = false
 
-    // Random background image
-    @State private var selectedBackground: String = "Background1"
-    
     // ✅ Account Linking States
     @State private var showingAccountExistsAlert = false
     @State private var showingLinkSuccessAlert = false
@@ -39,71 +36,22 @@ struct SignInSheetView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                // Black background
-                Color.black
-                    .ignoresSafeArea(.all)
-            
-            // Background Image - randomly selected with fixed height
-            GeometryReader { geometry in
-                Image(selectedBackground)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .clipped()
-            }
-            .ignoresSafeArea(.all)
-            
-            // Black gradient overlay - higher coverage
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.black.opacity(0.2),
-                    Color.black.opacity(0.7),
-                    Color.black.opacity(0.9)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea(.all)
-
             VStack(spacing: 0) {
-                // Close button - using CloseButton component
-                HStack {
-                    Spacer()
-                    CloseButton {
-                        if let onSkip = onSkip {
-                            onSkip()
-                        } else {
-                            showingSignIn = false
-                        }
-                    }
-                    .padding(.trailing, 24)
-                    .padding(.top, 16)
-                }
-                
                 Spacer()
-                    .frame(height: UIScreen.main.bounds.height * 0.33 - 150)
-                
-                // Transparent logo image
-                Image("transparent")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 150)
-                    .padding(.bottom, 60)
-                    .clipShape(Circle())
-                    .padding(.bottom, 60)
-                
-                Spacer()
+                    .frame(height: 30)
 
                 // Bottom section with buttons and terms
-                VStack(spacing: 8) {
+                VStack(spacing: 16) {
                     signInButtonsSection
                     footerSection
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 50)
-                .frame(maxWidth: 400)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.white)
+            .presentationDetents([.height(400)])
+            .presentationDragIndicator(.visible)
             
             // Loading overlay
             if isLoading {
@@ -170,80 +118,79 @@ struct SignInSheetView: View {
             .fullScreenCover(isPresented: $showingPasswordlessAuth) {
                 PasswordlessAuthView(showingSignIn: $showingSignIn)
             }
-            .onAppear {
-                selectRandomBackground()
-            }
         }
-    }
-
-    // MARK: - Random Background Selection
-    private func selectRandomBackground() {
-        let backgroundNumber = Int.random(in: 1...5)
-        selectedBackground = "Background\(backgroundNumber)"
     }
 
     private var signInButtonsSection: some View {
         VStack(spacing: 16) {
-            // Google Sign In Button
+            // Apple Sign In Button - Primary (White background, black text)
+            Button {
+                handleAppleSignIn()
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "applelogo")
+                        .font(.system(size: 18, weight: .medium))
+
+                    Text("CONTINUE WITH APPLE")
+                        .appSecondary()
+                }
+                .foregroundColor(.black)
+                .frame(height: 50)
+                .frame(maxWidth: .infinity)
+                .background(Color.black)
+                .clipShape(Capsule())
+            }
+            .disabled(isLoading)
+            .buttonStyle(PlainButtonStyle())
+
+            // Google Sign In Button - Secondary
             Button {
                 handleGoogleSignIn()
             } label: {
                 HStack(spacing: 12) {
                     Image("google_logo")
                         .resizable()
-                        .frame(width: 22, height: 22)
+                        .frame(width: 18, height: 18)
 
-                    Text("SIGN IN WITH GOOGLE")
-                        .font(.appFont(size: 17))
-                }
-                .foregroundColor(.white)
-                .primaryButtonStyle(
-                    backgroundColor: Color.black.opacity(0.7),
-                    foregroundColor: .white,
-                    borderColor: Color.white.opacity(0.2)
-                )
-            }
-            .disabled(isLoading)
-
-            // Apple Sign In Button
-            Button {
-                handleAppleSignIn()
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "applelogo")
-                        .font(.appIcon)
-
-                    Text("SIGN IN WITH APPLE")
-                        .font(.appFont(size: 17))
+                    Text("CONTINUE WITH GOOGLE")
+                        .appSecondary()
                 }
                 .foregroundColor(.black)
-                .primaryButtonStyle(
-                    backgroundColor: .white,
-                    foregroundColor: .black,
-                    borderColor: Color.white.opacity(0.2)
+                .frame(height: 50)
+                .frame(maxWidth: .infinity)
+                .background(Color.gray.opacity(0.15))
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(Color.black.opacity(0.1), lineWidth: 1)
                 )
             }
             .disabled(isLoading)
+            .buttonStyle(PlainButtonStyle())
 
-            // Email Sign In Button
+            // Email Sign In Button - Secondary
             Button {
                 showingPasswordlessAuth = true
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "envelope")
-                        .font(.appIcon)
+                        .font(.system(size: 18, weight: .medium))
 
-                    Text("SIGN IN WITH EMAIL")
-                        .font(.appFont(size: 17))
+                    Text("CONTINUE WITH EMAIL")
+                        .appSecondary()
                 }
-                .foregroundColor(.white)
-                .primaryButtonStyle(
-                    backgroundColor: Color.black.opacity(0.7),
-                    foregroundColor: .white,
-                    borderColor: Color.white.opacity(0.2)
+                .foregroundColor(.black)
+                .frame(height: 50)
+                .frame(maxWidth: .infinity)
+                .background(Color.gray.opacity(0.15))
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(Color.black.opacity(0.1), lineWidth: 1)
                 )
             }
             .disabled(isLoading)
+            .buttonStyle(PlainButtonStyle())
         }
     }
 
@@ -251,25 +198,25 @@ struct SignInSheetView: View {
         VStack(spacing: 8) {
             Text("By continuing, you agree to our")
                 .appCaption()
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(.black.opacity(0.6))
                 .multilineTextAlignment(.center)
 
             HStack(spacing: 4) {
                 NavigationLink(destination: TermsOfServiceView()) {
                     Text("Terms of Service")
                         .appCaption()
-                        .foregroundColor(.white)
+                        .foregroundColor(.black)
                         .underline()
                 }
 
                 Text("&")
                     .appCaption()
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(.black.opacity(0.6))
 
                 NavigationLink(destination: PrivacyPolicyView()) {
                     Text("Privacy Policy")
                         .appCaption()
-                        .foregroundColor(.white)
+                        .foregroundColor(.black)
                         .underline()
                 }
             }
