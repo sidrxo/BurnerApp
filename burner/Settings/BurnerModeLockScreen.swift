@@ -214,32 +214,32 @@ struct BurnerModeLockScreen: View {
                         .buttonStyle(PlainButtonStyle())
                         .transition(.opacity)
                         .padding(.top, 24)
-                        
-                        // NFC Unlock Button (if enabled)
-                        if burnerManager.nfcUnlockEnabled && burnerManager.nfcManager.isNFCAvailable() {
-                            Button(action: { startNFCUnlock() }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "wave.3.right")
-                                        .font(.system(size: 16, weight: .semibold))
-                                    Text("Unlock with NFC Tag")
-                                        .appCaption().fontWeight(.semibold)
-                                }
-                                .foregroundColor(.teal)
-                                .padding(.vertical, 16)
-                                .padding(.horizontal, 24)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.teal.opacity(0.15))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.teal.opacity(0.3), lineWidth: 1)
-                                        )
-                                )
+                    }
+                    
+                    // NFC Unlock Button (only when timer is active)
+                    if timerIsActive && burnerManager.nfcManager.isNFCAvailable() {
+                        Button(action: { startNFCUnlock() }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "wave.3.right")
+                                    .font(.system(size: 16, weight: .semibold))
+                                Text("Unlock with NFC Tag")
+                                    .appCaption().fontWeight(.semibold)
                             }
-                            .buttonStyle(PlainButtonStyle())
-                            .transition(.opacity)
-                            .padding(.top, 12)
+                            .foregroundColor(.teal)
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 24)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.teal.opacity(0.15))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.teal.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
                         }
+                        .buttonStyle(PlainButtonStyle())
+                        .transition(.opacity)
+                        .padding(.top, 12)
                     }
                 }
 

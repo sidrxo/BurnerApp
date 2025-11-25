@@ -6,35 +6,40 @@
     <array>
         <string>comgooglemaps</string>
     </array>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>google-signin</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.8577865405-u9313lunreqchsroqjeb9ktbafqjm67f</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string>com.gas.Burner</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>burner</string>
-			</array>
-		</dict>
-	</array>
-	<key>NSFamilyControlsUsageDescription</key>
-	<string>This app uses Family Controls to help you stay focused during events by blocking distracting apps when Burner Mode is enabled.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We need your location to show you nearby events and help you discover what&apos;s happening around you.</string>
-	<key>NSSupportsAutomaticTermination</key>
-	<true/>
-	<key>UIBackgroundModes</key>
-	<array/>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>google-signin</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>com.googleusercontent.apps.8577865405-u9313lunreqchsroqjeb9ktbafqjm67f</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLName</key>
+            <string>com.gas.Burner</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>burner</string>
+            </array>
+        </dict>
+    </array>
+    <key>NSFamilyControlsUsageDescription</key>
+    <string>This app uses Family Controls to help you stay focused during events by blocking distracting apps when Burner Mode is enabled.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>We need your location to show you nearby events and help you discover what&apos;s happening around you.</string>
+    <key>NFCReaderUsageDescription</key>
+    <string>We use NFC to allow you to unlock Burner Mode using your personal NFC tag for quick and secure access.</string>
+    <key>NSSupportsAutomaticTermination</key>
+    <true/>
+    <key>UIBackgroundModes</key>
+    <array/>
+    <key>com.apple.developer.nfc.readersession.formats</key>
+    <array>
+        <string>NDEF</string>
+    </array>
 </dict>
 </plist>
-

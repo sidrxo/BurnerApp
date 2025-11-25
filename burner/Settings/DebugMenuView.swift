@@ -69,17 +69,6 @@ struct DebugMenuView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(PlainButtonStyle())
-                        
-                        Button(action: {
-                            burnerManager.toggleNFCUnlock()
-                        }) {
-                            MenuItemContent(
-                                title: burnerManager.nfcUnlockEnabled ? "Disable NFC Unlock" : "Enable NFC Unlock",
-                                subtitle: burnerManager.nfcUnlockEnabled ? "NFC tags can unlock Burner Mode" : "Enable NFC tag unlocking"
-                            )
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(PlainButtonStyle())
                     }
 
                     // MARK: - New Menu Section for Flows

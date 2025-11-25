@@ -19,7 +19,6 @@ class BurnerModeManager: ObservableObject {
     @Published var isAuthorized = false
     @Published var hasCompletedSetup: Bool = false
     @Published var isLocked: Bool = false
-    @Published var nfcUnlockEnabled: Bool = false
     
     private let store = ManagedSettingsStore()
     private let center = DeviceActivityCenter()
@@ -36,17 +35,12 @@ class BurnerModeManager: ObservableObject {
     init() {
         loadSelectedApps()
         loadHasCompletedSetup()
-        loadNFCUnlockEnabled()
         setupAuthorizationMonitoring()
         checkSetupCompliance()
     }
 
     private func loadHasCompletedSetup() {
         hasCompletedSetup = UserDefaults.standard.bool(forKey: "hasCompletedBurnerSetup")
-    }
-    
-    private func loadNFCUnlockEnabled() {
-        nfcUnlockEnabled = UserDefaults.standard.bool(forKey: "nfcUnlockEnabled")
     }
     
     private func setupAuthorizationMonitoring() {
@@ -300,11 +294,6 @@ class BurnerModeManager: ObservableObject {
     }
     
     // MARK: - NFC Unlock
-    func toggleNFCUnlock() {
-        nfcUnlockEnabled.toggle()
-        UserDefaults.standard.set(nfcUnlockEnabled, forKey: "nfcUnlockEnabled")
-    }
-    
     func unlockWithNFC() {
         guard isLocked else { return }
         disable()
