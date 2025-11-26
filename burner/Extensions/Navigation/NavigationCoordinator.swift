@@ -55,6 +55,7 @@ enum NavigationDestination: Hashable {
     case bookmarks
     case paymentSettings
     case scanner
+    case notifications
     case support
     case debugMenu
 
@@ -91,6 +92,8 @@ enum NavigationDestination: Hashable {
             hasher.combine("paymentSettings")
         case .scanner:
             hasher.combine("scanner")
+        case .notifications:
+            hasher.combine("notifications")
         case .support:
             hasher.combine("support")
         case .debugMenu:
@@ -123,6 +126,8 @@ enum NavigationDestination: Hashable {
         case (.paymentSettings, .paymentSettings):
             return true
         case (.scanner, .scanner):
+            return true
+        case (.notifications, .notifications):
             return true
         case (.support, .support):
             return true
@@ -161,9 +166,9 @@ enum ModalPresentation: Identifiable {
 
     var isFullScreen: Bool {
         switch self {
-        case .signIn, .burnerSetup, .ticketDetail, .fullScreenQRCode, .passwordlessAuth, .ticketPurchase:
+        case .burnerSetup, .ticketDetail, .fullScreenQRCode, .passwordlessAuth, .ticketPurchase:
             return true
-        case .SetLocation:
+        case .signIn, .SetLocation:
             return false
         default:
             return false

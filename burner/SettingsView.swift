@@ -130,6 +130,17 @@ struct SettingsView: View {
                                 }
 
                                 Button(action: {
+                                    coordinator.navigate(to: .notifications)
+                                }) {
+                                    MenuItemContent(
+                                        title: "Notifications",
+                                        subtitle: "Manage notification preferences"
+                                    )
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(PlainButtonStyle())
+
+                                Button(action: {
                                     coordinator.navigate(to: .support)
                                 }) {
                                     MenuItemContent(

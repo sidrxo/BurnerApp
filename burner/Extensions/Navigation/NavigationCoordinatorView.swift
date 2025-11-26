@@ -196,6 +196,9 @@ struct NavigationDestinationBuilder: View {
             case .scanner:
                 ScannerView()
 
+            case .notifications:
+                NotificationsSettingsView()
+
             case .support:
                 SupportView()
 

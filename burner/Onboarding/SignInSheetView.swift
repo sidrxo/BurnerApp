@@ -917,11 +917,25 @@ struct SignInSheetView: View {
             triggerSuccessFeedback()
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
 
-            // ✅ Sync local preferences to Firebase
-            let syncService = PreferencesSyncService()
-            let localPrefs = LocalPreferences()
-           
-            // Just dismiss - burner setup happens after ticket purchase
+            // ✅ Check if user has existing preferences in Firebase
+            Task { @MainActor in
+                let syncService = PreferencesSyncService()
+                let localPrefs = LocalPreferences()
+
+                // Sync local preferences to Firebase first
+                await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
+
+                // Check if user has any preferences in Firebase
+                if let firebasePrefs = await syncService.loadPreferencesFromFirebase() {
+                    if firebasePrefs.hasAnyPreferences {
+                        // User has existing preferences, skip onboarding
+                        print("✅ User has existing preferences, skipping onboarding")
+                        NotificationCenter.default.post(name: NSNotification.Name("SkipOnboardingToExplore"), object: nil)
+                    }
+                }
+            }
+
+            // Dismiss sign-in sheet
             showingSignIn = false
         }
     }
