@@ -159,6 +159,10 @@ struct OnboardingFlowView: View {
             }
         }
         .environmentObject(localPreferences)
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SkipOnboardingToExplore"))) { _ in
+            // User has existing preferences in Firebase, skip to explore
+            completeOnboarding()
+        }
     }
     
     // Custom Slide Transition Logic
@@ -194,10 +198,26 @@ struct AuthWelcomeSlide: View {
     let onExplore: () -> Void
 
     @State private var showingSignIn = false
+    @EnvironmentObject var appState: AppState
+
+    private var featuredEventsWithImages: [Event] {
+        appState.eventViewModel.events
+            .filter { event in
+                event.imageURL != nil && !event.imageURL!.isEmpty
+            }
+            .prefix(10)
+            .map { $0 }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
+
+            // Event Carousel
+            EventCarousel(events: featuredEventsWithImages)
+                .frame(height: 200)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 40)
 
             VStack(spacing: 0) {
                 Text("WHERE WILL")
@@ -272,9 +292,10 @@ struct AuthHeader: View {
 // MARK: - Slide 1: Location
 struct LocationSlide: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var localPreferences: LocalPreferences
     @State private var showingManualEntry = false
     @State private var isProcessing = false
-    
+
     let onLocationSet: () -> Void
 
     var body: some View {
@@ -353,6 +374,14 @@ struct LocationSlide: View {
                 }
             )
         }
+        .onChange(of: appState.userLocationManager.savedLocation) { _, newLocation in
+            // Save manually entered location to local preferences
+            if let location = newLocation {
+                localPreferences.locationName = location.name
+                localPreferences.locationLat = location.latitude
+                localPreferences.locationLon = location.longitude
+            }
+        }
     }
 
     private func requestCurrentLocation() {
@@ -360,6 +389,14 @@ struct LocationSlide: View {
         appState.userLocationManager.requestCurrentLocation { result in
             DispatchQueue.main.async {
                 isProcessing = false
+
+                // Save location to local preferences
+                if let savedLocation = appState.userLocationManager.savedLocation {
+                    localPreferences.locationName = savedLocation.name
+                    localPreferences.locationLat = savedLocation.latitude
+                    localPreferences.locationLon = savedLocation.longitude
+                }
+
                 onLocationSet()
             }
         }
@@ -368,6 +405,7 @@ struct LocationSlide: View {
 
 // MARK: - Slide 2: Notifications
 struct NotificationsSlide: View {
+    @EnvironmentObject var localPreferences: LocalPreferences
     let onContinue: () -> Void
     @State private var selectedOption: NotificationOption = .all
 
@@ -422,6 +460,8 @@ struct NotificationsSlide: View {
 
                 Button(action: {
                     selectedOption = .myEventsOnly
+                    // Save notification preference as false for saved only
+                    localPreferences.hasEnabledNotifications = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         onContinue()
                     }
@@ -449,6 +489,8 @@ struct NotificationsSlide: View {
     private func requestNotifications() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             DispatchQueue.main.async {
+                // Save notification preference to local preferences
+                localPreferences.hasEnabledNotifications = granted
                 onContinue()
             }
         }
@@ -698,5 +740,114 @@ struct GenrePill: View {
         }
         .buttonStyle(PlainButtonStyle())
         .animation(.easeInOut(duration: 0.2), value: isSelected)
+    }
+}
+
+// MARK: - Event Carousel
+struct EventCarousel: View {
+    let events: [Event]
+    @State private var currentIndex: Int = 0
+    @State private var dragOffset: CGFloat = 0
+
+    private let cardWidth: CGFloat = 280
+    private let cardHeight: CGFloat = 180
+    private let spacing: CGFloat = 16
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
+                    EventCarouselCard(event: event)
+                        .frame(width: cardWidth, height: cardHeight)
+                        .offset(x: cardOffset(for: index, in: geometry), y: 0)
+                        .scaleEffect(cardScale(for: index))
+                        .opacity(cardOpacity(for: index))
+                        .zIndex(cardZIndex(for: index))
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        dragOffset = value.translation.width
+                    }
+                    .onEnded { value in
+                        let threshold: CGFloat = 50
+                        if value.translation.width > threshold && currentIndex > 0 {
+                            withAnimation(.spring()) {
+                                currentIndex -= 1
+                            }
+                        } else if value.translation.width < -threshold && currentIndex < events.count - 1 {
+                            withAnimation(.spring()) {
+                                currentIndex += 1
+                            }
+                        }
+                        dragOffset = 0
+                    }
+            )
+        }
+    }
+
+    private func cardOffset(for index: Int, in geometry: GeometryProxy) -> CGFloat {
+        let centerX = geometry.size.width / 2
+        let baseOffset = CGFloat(index - currentIndex) * (cardWidth + spacing)
+        return centerX - cardWidth / 2 + baseOffset + dragOffset
+    }
+
+    private func cardScale(for index: Int) -> CGFloat {
+        if index == currentIndex {
+            return 1.0
+        } else {
+            return 0.85
+        }
+    }
+
+    private func cardOpacity(for index: Int) -> Double {
+        let distance = abs(index - currentIndex)
+        if distance == 0 {
+            return 1.0
+        } else if distance == 1 {
+            return 0.6
+        } else {
+            return 0.3
+        }
+    }
+
+    private func cardZIndex(for index: Int) -> Double {
+        let distance = abs(index - currentIndex)
+        return Double(100 - distance)
+    }
+}
+
+// MARK: - Event Carousel Card
+struct EventCarouselCard: View {
+    let event: Event
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            // Event Image
+            if let imageURL = event.imageURL {
+                KFImage(URL(string: imageURL))
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
+            } else {
+                Color.gray.opacity(0.3)
+            }
+
+            // Gradient overlay at bottom
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.black.opacity(0.0),
+                    Color.black.opacity(0.7)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 80)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 5)
     }
 }

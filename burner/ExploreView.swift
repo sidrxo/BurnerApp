@@ -14,13 +14,21 @@ struct ExploreView: View {
 
     @State private var searchText = ""
     @State private var showingSignInAlert = false
+    @StateObject private var localPreferences = LocalPreferences()
 
     // Maximum distance for "nearby" events (in meters)
     private let maxNearbyDistance: CLLocationDistance = AppConstants.maxNearbyDistanceMeters
 
-    // MARK: - Dynamic Genres from Firestore
+    // MARK: - Dynamic Genres from Firestore (with user preferences first)
     private var displayGenres: [String] {
-        tagViewModel.displayTags
+        let allGenres = tagViewModel.displayTags
+        let selectedGenres = localPreferences.selectedGenres
+
+        // Put selected genres first, then the rest
+        let selectedSet = Set(selectedGenres)
+        let remainingGenres = allGenres.filter { !selectedSet.contains($0) }
+
+        return selectedGenres + remainingGenres
     }
 
     // MARK: - Featured Events
