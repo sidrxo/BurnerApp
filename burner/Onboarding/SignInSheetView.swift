@@ -39,7 +39,7 @@ struct SignInSheetView: View {
             ZStack {
                 VStack(spacing: 0) {
                     Spacer()
-                        .frame(height: 30)
+                        .frame(height: 20)
 
                     // Bottom section with buttons and terms
                     VStack(spacing: 16) {
@@ -124,18 +124,18 @@ struct SignInSheetView: View {
 
     private var signInButtonsSection: some View {
         VStack(spacing: 16) {
-            // Apple Sign In Button - Primary (White background, black text)
+            // Apple Sign In Button - Black background, white text
             Button {
                 handleAppleSignIn()
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "applelogo")
-                        .font(.system(size: 18, weight: .medium))
+                        .font(.system(size: 20, weight: .medium))
 
                     Text("CONTINUE WITH APPLE")
                         .appSecondary()
                 }
-                .foregroundColor(.black)
+                .foregroundColor(.white)
                 .frame(height: 50)
                 .frame(maxWidth: .infinity)
                 .background(Color.black)
@@ -144,14 +144,14 @@ struct SignInSheetView: View {
             .disabled(isLoading)
             .buttonStyle(PlainButtonStyle())
 
-            // Google Sign In Button - Secondary
+            // Google Sign In Button
             Button {
                 handleGoogleSignIn()
             } label: {
                 HStack(spacing: 12) {
                     Image("google_logo")
                         .resizable()
-                        .frame(width: 18, height: 18)
+                        .frame(width: 22, height: 22)
 
                     Text("CONTINUE WITH GOOGLE")
                         .appSecondary()
@@ -159,23 +159,23 @@ struct SignInSheetView: View {
                 .foregroundColor(.black)
                 .frame(height: 50)
                 .frame(maxWidth: .infinity)
-                .background(Color.gray.opacity(0.15))
+                .background(Color.white)
                 .clipShape(Capsule())
                 .overlay(
                     Capsule()
-                        .stroke(Color.black.opacity(0.1), lineWidth: 1)
+                        .stroke(Color.black.opacity(0.15), lineWidth: 1.5)
                 )
             }
             .disabled(isLoading)
             .buttonStyle(PlainButtonStyle())
 
-            // Email Sign In Button - Secondary
+            // Email Sign In Button
             Button {
                 showingPasswordlessAuth = true
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "envelope")
-                        .font(.system(size: 18, weight: .medium))
+                        .font(.system(size: 20, weight: .medium))
 
                     Text("CONTINUE WITH EMAIL")
                         .appSecondary()
@@ -183,11 +183,11 @@ struct SignInSheetView: View {
                 .foregroundColor(.black)
                 .frame(height: 50)
                 .frame(maxWidth: .infinity)
-                .background(Color.gray.opacity(0.15))
+                .background(Color.white)
                 .clipShape(Capsule())
                 .overlay(
                     Capsule()
-                        .stroke(Color.black.opacity(0.1), lineWidth: 1)
+                        .stroke(Color.black.opacity(0.15), lineWidth: 1.5)
                 )
             }
             .disabled(isLoading)
@@ -196,7 +196,7 @@ struct SignInSheetView: View {
     }
 
     private var footerSection: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             Text("By continuing, you agree to our")
                 .appCaption()
                 .foregroundColor(.black.opacity(0.6))
@@ -223,7 +223,7 @@ struct SignInSheetView: View {
             }
         }
         .padding(.horizontal, 40)
-        .padding(.top, 8)
+        .padding(.top, 4)
     }
     
     // MARK: - Google Sign In Handler (Updated with Linking)
