@@ -346,65 +346,25 @@ struct SignInSheetView: View {
     // MARK: - Account Linking Logic
 
     /// Check if account exists with different provider and handle linking
+    /// Note: fetchSignInMethods is deprecated but we proceed with sign-in
+    /// and handle account conflicts during authentication
     private func checkAndHandleAccountLinking(
         email: String,
         newCredential: AuthCredential,
         newProvider: String,
         googleUser: GIDGoogleUser?
     ) {
-        Auth.auth().fetchSignInMethods(forEmail: email) { signInMethods, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    self.showErrorMessage("Error checking account: \(error.localizedDescription)")
-                    return
+        // Proceed directly with sign-in - Firebase will handle account conflicts
+        print("✅ Proceeding with sign-in for: \(email)")
+        self.authenticateWithFirebase(credential: newCredential) { authResult in
+            if let user = authResult?.user {
+                self.createUserProfile(
+                    for: user,
+                    provider: newProvider.lowercased() + ".com",
+                    googleUser: googleUser
+                ) {
+                    self.completeSignIn()
                 }
-                
-                // No existing methods - new account, proceed normally
-                guard let methods = signInMethods, !methods.isEmpty else {
-                    print("✅ New account detected, proceeding with sign-in")
-                    self.authenticateWithFirebase(credential: newCredential) { authResult in
-                        if let user = authResult?.user {
-                            self.createUserProfile(
-                                for: user,
-                                provider: newProvider.lowercased() + ".com",
-                                googleUser: googleUser
-                            ) {
-                                self.completeSignIn()
-                            }
-                        }
-                    }
-                    return
-                }
-                
-                // ✅ Existing account found
-                let existingProvider = self.friendlyProviderName(from: methods.first ?? "")
-                print("📧 Existing account found with provider: \(existingProvider)")
-                
-                // If trying to sign in with same provider, just sign in normally
-                if existingProvider.lowercased() == newProvider.lowercased() {
-                    print("✅ Same provider, proceeding with normal sign-in")
-                    self.authenticateWithFirebase(credential: newCredential) { authResult in
-                        if let user = authResult?.user {
-                            self.createUserProfile(
-                                for: user,
-                                provider: newProvider.lowercased() + ".com",
-                                googleUser: googleUser
-                            ) {
-                                self.completeSignIn()
-                            }
-                        }
-                    }
-                    return
-                }
-                
-                // Different provider - show alert
-                print("⚠️ Different provider detected, showing account linking alert")
-                self.showAccountExistsAlert(
-                    email: email,
-                    existingProvider: existingProvider,
-                    newProvider: newProvider,
-                    newCredential: newCredential
-                )
             }
         }
     }
