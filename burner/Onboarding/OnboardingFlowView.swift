@@ -17,9 +17,9 @@ struct OnboardingFlowView: View {
     @State private var isRequesting = false
     @State private var isCompleting = false // ✅ ADD: Prevent duplicate completion calls
 
-    // Total screens is 5: AuthWelcome (0) -> Location(1) -> Notifications(2) -> Genres(3) -> Complete(4)
+    // Total screens is 5: AuthWelcome (0) -> Location(1) -> Genres(2) -> Notifications(3) -> Complete(4)
     private let totalSlides = 5
-    private let flowSteps = 3 // Location (1) -> Notifications (2) -> Genres (3)
+    private let flowSteps = 3 // Location (1) -> Genres (2) -> Notifications (3)
 
     // MARK: - Navigation Logic
     private var progressStep: Int {
@@ -28,9 +28,9 @@ struct OnboardingFlowView: View {
 
     private func getSkipText() -> String? {
         switch currentStep {
-        case 1: return "skip"
-        case 2: return "skip"
-        case 3: return "skip"
+        case 1: return "SKIP"
+        case 2: return "SKIP"
+        case 3: return "SKIP"
         default: return nil
         }
     }
@@ -106,7 +106,7 @@ struct OnboardingFlowView: View {
                             Spacer()
                             Button(action: { handleSkip() }) {
                                 Text(skipText)
-                                    .font(.system(size: 17, weight: .medium))
+                                    .font(.system(size: 17, weight: .semibold))
                                     .foregroundColor(.white.opacity(0.6))
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 10)
@@ -131,13 +131,13 @@ struct OnboardingFlowView: View {
                             case 1:
                                 LocationSlide(onLocationSet: { handleNextStep() })
                             case 2:
-                                NotificationsSlide(onContinue: { handleNextStep() })
-                            case 3:
                                 GenreSlide(
                                     localPreferences: localPreferences,
                                     tagViewModel: tagViewModel,
                                     onContinue: { handleNextStep() }
                                 )
+                            case 3:
+                                NotificationsSlide(onContinue: { handleNextStep() })
                             case 4:
                                 CompleteSlide(onComplete: { completeOnboarding() })
                             default:
@@ -247,7 +247,16 @@ struct AuthWelcomeSlide: View {
             .padding(.top, 30)
         }
         .sheet(isPresented: $showingSignIn) {
-            SignInSheetView(showingSignIn: $showingSignIn, onSkip: { onLogin() })
+            SignInSheetView(showingSignIn: $showingSignIn, onSkip: {
+                // When sheet dismisses (either from skip or successful sign-in)
+                // advance to next slide
+                onLogin()
+            })
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
+            // When user successfully signs in, dismiss the sheet and advance
+            showingSignIn = false
+            onLogin()
         }
     }
 }
@@ -307,7 +316,6 @@ struct LocationSlide: View {
                         Text("CURRENT LOCATION")
                             .font(.system(size: 17, weight: .semibold))
                     }
-                    .font(.appFont(size: 16))
                     .foregroundColor(.black)
                     .frame(maxWidth: 220)
                     .padding(.vertical, 12)
@@ -328,7 +336,6 @@ struct LocationSlide: View {
                         Text("ENTER CITY")
                             .font(.system(size: 17, weight: .semibold))
                     }
-                    .font(.appFont(size: 16))
                     .foregroundColor(.white)
                     .frame(maxWidth: 160)
                     .padding(.vertical, 12)
@@ -382,93 +389,7 @@ struct LocationSlide: View {
     }
 }
 
-// MARK: - Slide 2: Notifications
-struct NotificationsSlide: View {
-    @EnvironmentObject var localPreferences: LocalPreferences
-    let onContinue: () -> Void
-    @State private var selectedOption: NotificationOption = .all
-
-    enum NotificationOption {
-        case all
-        case myEventsOnly
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
-
-            // Use reusable TightHeaderText component
-            TightHeaderText("STAY IN", "THE LOOP")
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 16)
-
-            Text("Get notified about new events, recommendations, and updates on shows you're interested in.")
-                .appBody()
-                .foregroundColor(.white.opacity(0.7))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-                .lineSpacing(4)
-                .padding(.bottom, 40)
-
-            // Notification option pills
-            VStack(spacing: 16) {
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    selectedOption = .all
-                    requestNotifications()
-                }) {
-                    Text("I'M IN")
-                        .font(.appFont(size: 16))
-                        .foregroundColor(.black)
-                        .frame(maxWidth: 140)
-                        .padding(.vertical, 12)
-                        .background(Color.white)
-                        .clipShape(Capsule())
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    selectedOption = .myEventsOnly
-                    // Save notification preference as false for saved only
-                    localPreferences.hasEnabledNotifications = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        onContinue()
-                    }
-                }) {
-                    Text("MY TICKETS ONLY")
-                        .font(.appFont(size: 16))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: 200)
-                        .padding(.vertical, 12)
-                        .background(Color.gray.opacity(0.1))
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.white, lineWidth: 1)
-                        )
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            .padding(.horizontal, 40)
-
-            Spacer()
-        }
-    }
-
-    private func requestNotifications() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            DispatchQueue.main.async {
-                // Save notification preference to local preferences
-                localPreferences.hasEnabledNotifications = granted
-                onContinue()
-            }
-        }
-    }
-}
-
-// MARK: - Slide 3: Genres
+// MARK: - Slide 2: Genres
 struct GenreSlide: View {
     @ObservedObject var localPreferences: LocalPreferences
     @ObservedObject var tagViewModel: TagViewModel
@@ -476,7 +397,7 @@ struct GenreSlide: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Spacer().frame(height: 40)
+            Spacer()
 
             // Use reusable TightHeaderText component (aligned left for this slide)
             VStack(alignment: .leading, spacing: 0) {
@@ -550,77 +471,109 @@ struct GenreSlide: View {
     }
 }
 
-// MARK: - Slide 4: Complete (Auto-dismiss loader)
-struct CompleteSlide: View {
-    let onComplete: () -> Void
-    
-    @State private var currentMessageIndex = 0
-    @State private var loadingProgress: CGFloat = 0
-    
-    let loadingMessages = [
-        "Curating your feed...",
-        "Loading your preferences...",
-        "Downloading event database...",
-        "Finding events near you...",
-        "Almost ready..."
-    ]
-    
+// MARK: - Slide 3: Notifications
+struct NotificationsSlide: View {
+    @EnvironmentObject var localPreferences: LocalPreferences
+    let onContinue: () -> Void
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            
-            // Animated loader
-            ZStack {
-                Circle()
-                    .stroke(Color.white.opacity(0.2), lineWidth: 4)
-                    .frame(width: 80, height: 80)
-                
-                Circle()
-                    .trim(from: 0, to: loadingProgress)
-                    .stroke(Color.white, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .frame(width: 80, height: 80)
-                    .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 0.5), value: loadingProgress)
-            }
-            .padding(.bottom, 32)
-            
-            // Loading message
-            Text(loadingMessages[currentMessageIndex])
+
+            // Use reusable TightHeaderText component
+            TightHeaderText("STAY IN", "THE LOOP")
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 16)
+
+            Text("Get notified about new events, recommendations, and updates on shows you're interested in.")
                 .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
-                .animation(.easeInOut, value: currentMessageIndex)
-            
+                .lineSpacing(4)
+                .padding(.bottom, 40)
+
+            // Single notification button
+            Button(action: {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                requestNotifications()
+            }) {
+                Text("I'M IN")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.black)
+                    .frame(maxWidth: 140)
+                    .padding(.vertical, 12)
+                    .background(Color.white)
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.horizontal, 40)
+
             Spacer()
         }
-        .onAppear {
-            print("⏳ [CompleteSlide] Appeared - Starting loading sequence")
-            startLoadingSequence()
+    }
+
+    private func requestNotifications() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            DispatchQueue.main.async {
+                // Save notification preference to local preferences
+                localPreferences.hasEnabledNotifications = granted
+                onContinue()
+            }
         }
     }
-    
-    private func startLoadingSequence() {
-        // Animate progress bar (1.5 seconds for 1-2 second dismissal range)
-        withAnimation(.easeInOut(duration: 1.5)) {
-            loadingProgress = 1.0
-        }
+}
 
-        // Cycle through messages faster
-        Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { timer in
-            if currentMessageIndex < loadingMessages.count - 1 {
-                currentMessageIndex += 1
-            } else {
-                timer.invalidate()
+// MARK: - Slide 4: Complete (Success Screen with ENTER button)
+struct CompleteSlide: View {
+    let onComplete: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            
+            // Success checkmark
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(width: 100, height: 100)
+                
+                Image(systemName: "checkmark")
+                    .font(.system(size: 50, weight: .bold))
+                    .foregroundColor(.white)
             }
-        }
-
-        // Auto-dismiss after 1.5 seconds with fade animation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            print("✅ [CompleteSlide] Loading complete, calling onComplete()")
-            withAnimation(.easeOut(duration: 0.3)) {
+            .padding(.bottom, 32)
+            
+            // Success message
+            TightHeaderText("YOU'RE ALL", "SET!")
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 16)
+            
+            Text("Let's explore what's happening near you.")
+                .appBody()
+                .foregroundColor(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+                .padding(.bottom, 40)
+            
+            // ENTER button
+            Button(action: {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 onComplete()
+            }) {
+                Text("ENTER")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.black)
+                    .frame(maxWidth: 140)
+                    .padding(.vertical, 12)
+                    .background(Color.white)
+                    .clipShape(Capsule())
             }
+            .buttonStyle(PlainButtonStyle())
+            
+            Spacer()
         }
     }
 }

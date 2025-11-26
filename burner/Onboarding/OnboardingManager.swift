@@ -25,9 +25,23 @@ class OnboardingManager: ObservableObject {
         // Set initial state immediately based on current auth status
         let isAuthenticated = authService.currentUser != nil
 
-        // NEW LOGIC: If no user is signed in, ALWAYS show onboarding first slide
-        // regardless of whether they completed it before
-        self.shouldShowOnboarding = !isAuthenticated
+        // LOGIC:
+        // - If signed IN and COMPLETED -> Hide onboarding
+        // - If signed IN but NOT completed -> Show onboarding (they need to finish)
+        // - If signed OUT and COMPLETED -> Hide onboarding
+        // - If signed OUT and NOT completed -> Show onboarding
+        if isAuthenticated {
+            // Signed in - check if they completed onboarding
+            self.shouldShowOnboarding = !hasCompletedOnboarding
+            
+            // If they completed before, load their preferences
+            if hasCompletedOnboarding {
+                // Will load preferences after auth subscription is set up
+            }
+        } else {
+            // Signed out - check if they completed onboarding
+            self.shouldShowOnboarding = !hasCompletedOnboarding
+        }
 
         print("🚀 [OnboardingManager] Initialized - Auth: \(isAuthenticated), Completed Before: \(hasCompletedOnboarding), Show: \(shouldShowOnboarding)")
 
@@ -80,18 +94,26 @@ class OnboardingManager: ObservableObject {
         let isAuthenticated = authService?.currentUser != nil
         let previousValue = shouldShowOnboarding
 
-        // NEW LOGIC:
-        // - If signed IN -> Always hide onboarding (let them into app)
-        // - If signed OUT -> Always show onboarding first slide (even if completed before)
+        // LOGIC:
+        // - If signed IN and COMPLETED onboarding -> Hide onboarding (let them into app)
+        // - If signed IN but NOT completed -> Keep showing onboarding (they need to finish the flow)
+        // - If signed OUT and COMPLETED -> Hide onboarding (let them explore)
+        // - If signed OUT and NOT completed -> Show onboarding
 
         if isAuthenticated {
-            // User is signed in, always dismiss onboarding
-            // Load their preferences from Firestore
-            self.shouldShowOnboarding = false
-            loadUserPreferences()
+            // User is signed in
+            if hasCompletedOnboarding {
+                // They've completed onboarding before, let them in
+                self.shouldShowOnboarding = false
+                loadUserPreferences()
+            } else {
+                // They signed in but haven't completed onboarding yet
+                // Keep them in onboarding to set preferences
+                self.shouldShowOnboarding = true
+            }
         } else {
-            // User is signed out - always show onboarding first slide
-            self.shouldShowOnboarding = true
+            // User is signed out - check if they've completed onboarding
+            self.shouldShowOnboarding = !hasCompletedOnboarding
         }
 
         // Force UI update if value changed
@@ -132,23 +154,13 @@ class OnboardingManager: ObservableObject {
         // Always dismiss when completing onboarding (whether authenticated or not)
         print("✅ [OnboardingManager] Dismissing onboarding after completion...")
         
-        // Use explicit main actor and multiple update strategies to ensure UI updates
-        Task { @MainActor in
-            // First, send objectWillChange to notify SwiftUI
-            self.objectWillChange.send()
-            
-            // Then update the state
-            withAnimation(.easeOut(duration: 0.3)) {
-                self.shouldShowOnboarding = false
-            }
-            
-            // Additional explicit notification after animation starts
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                self.objectWillChange.send()
-            }
-            
-            print("✅ [OnboardingManager] shouldShowOnboarding set to: \(self.shouldShowOnboarding)")
-        }
+        // Force SwiftUI to notice the change by explicitly calling objectWillChange
+        objectWillChange.send()
+        
+        // Simple, direct state update
+        shouldShowOnboarding = false
+        
+        print("✅ [OnboardingManager] shouldShowOnboarding set to: \(self.shouldShowOnboarding)")
     }
 
     // Reset onboarding (useful for testing)

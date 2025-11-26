@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseFirestore
+import FirebaseAuth
 
 struct DebugMenuView: View {
     @ObservedObject var appState: AppState

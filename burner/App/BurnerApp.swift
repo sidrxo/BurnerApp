@@ -102,6 +102,7 @@ struct BurnerApp: App {
             ZStack {
                 ContentView()
                     .environmentObject(appState)
+                    .environmentObject(appState.onboardingManager)
                     .environmentObject(appState.navigationCoordinator)
                     .environmentObject(appState.eventViewModel)
                     .environmentObject(appState.bookmarkManager)
