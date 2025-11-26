@@ -47,11 +47,11 @@ struct SignInSheetView: View {
                         footerSection
                     }
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 50)
+                    .padding(.bottom, 4)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.white)
-                .presentationDetents([.height(400)])
+                .presentationDetents([.height(280)])
                 .presentationDragIndicator(.visible)
 
                 // Loading overlay
@@ -133,7 +133,7 @@ struct SignInSheetView: View {
                         .font(.system(size: 20, weight: .medium))
 
                     Text("CONTINUE WITH APPLE")
-                        .appSecondary()
+                        .appBody()
                 }
                 .foregroundColor(.white)
                 .frame(height: 50)
@@ -151,10 +151,10 @@ struct SignInSheetView: View {
                 HStack(spacing: 12) {
                     Image("google_logo")
                         .resizable()
-                        .frame(width: 22, height: 22)
+                        .frame(width: 26, height: 26)
 
                     Text("CONTINUE WITH GOOGLE")
-                        .appSecondary()
+                        .appBody()
                 }
                 .foregroundColor(.black)
                 .frame(height: 50)
@@ -163,7 +163,7 @@ struct SignInSheetView: View {
                 .clipShape(Capsule())
                 .overlay(
                     Capsule()
-                        .stroke(Color.black.opacity(0.15), lineWidth: 1.5)
+                        .stroke(Color.black.opacity(1), lineWidth: 1.5)
                 )
             }
             .disabled(isLoading)
@@ -187,7 +187,7 @@ struct SignInSheetView: View {
                 .clipShape(Capsule())
                 .overlay(
                     Capsule()
-                        .stroke(Color.black.opacity(0.15), lineWidth: 1.5)
+                        .stroke(Color.black.opacity(1), lineWidth: 1.5)
                 )
             }
             .disabled(isLoading)

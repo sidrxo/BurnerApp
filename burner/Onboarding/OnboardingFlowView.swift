@@ -8,54 +8,32 @@ import Combine
 struct OnboardingFlowView: View {
     @ObservedObject var onboardingManager: OnboardingManager
     @EnvironmentObject var appState: AppState
-    @Environment(\.dismiss) var dismiss // Added for the 'Explore' button
+    @Environment(\.dismiss) var dismiss
 
     @StateObject private var localPreferences = LocalPreferences()
-    @StateObject private var tagViewModel = TagViewModel()
+    @StateObject private var tagViewModel = TagViewModel() // Still needed for genre data
 
     @State private var currentStep = 0
     @State private var isRequesting = false
 
-    // Updated Total Steps: AuthWelcome -> Location -> Genres -> Notifications -> Complete
-    // Total screens is 5: AuthWelcome (0) -> Location(1) -> Genres(2) -> Notifications(3) -> Complete(4)
-    private let totalSlides = 5
-    private let flowSteps = 3 // Location, Genres, Notifications (Steps 1, 2, 3 in terms of flow progress)
+    // Total screens is 4: AuthWelcome (0) -> Location(1) -> Notifications(2) -> Complete(3)
+    private let totalSlides = 4
+    private let flowSteps = 2 // Location (1) -> Notifications (2)
 
     // MARK: - Navigation Logic
-    // Progress bar runs from Location to Notifications
+    // Progress bar runs from Location to Notifications (2 steps)
     private var progressStep: Int {
+        // Steps 1 and 2 are the flow progress steps.
+        // We map currentStep 1 -> 0, currentStep 2 -> 1, currentStep 3 -> 2 (Complete screen has no progress bar)
         return max(0, currentStep - 1)
     }
-
-    private var isCurrentStepValid: Bool {
-        switch currentStep {
-        case 0: return true // AuthWelcome
-        case 1: return true // Location
-        case 2: return !localPreferences.selectedGenres.isEmpty // Genres
-        case 3: return true // Notifications
-        case 4: return true // Complete
-        default: return false
-        }
-    }
-
-    private func getButtonText() -> String {
-        if isRequesting { return "PLEASE WAIT..." }
-
-        switch currentStep {
-        case 0: return "LOG IN / SIGN UP" // Handled by AuthWelcomeSlide
-        case 1: return "CONTINUE"
-        case 2: return localPreferences.selectedGenres.isEmpty ? "SELECT PREFERENCES" : "CONTINUE"
-        case 3: return "CONTINUE"
-        case 4: return "START EXPLORING"
-        default: return "NEXT"
-        }
-    }
+    
+    // Note: The main "Continue" button logic is heavily simplified, only used for final complete step.
 
     private func getSkipText() -> String? {
         switch currentStep {
         case 1: return "skip" // Location
-        case 2: return "skip" // Genres (always show)
-        case 3: return "skip" // Notifications
+        case 2: return "skip" // Notifications/Genres
         default: return nil
         }
     }
@@ -65,13 +43,14 @@ struct OnboardingFlowView: View {
     }
 
     private func handleBackButton() {
-        withAnimation {
+        withAnimation(.easeOut(duration: 0.3)) {
             if currentStep > 0 {
                 currentStep -= 1
             }
         }
     }
 
+    // MARK: - Body
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -87,14 +66,13 @@ struct OnboardingFlowView: View {
                             // Show Auth Header with Logo
                             AuthHeader()
                         } else if currentStep > 0 && currentStep < totalSlides - 1 {
-                            // Show Progress Line
-                            // Centered and shorter progress bar
+                            // Show Progress Line (Steps 1, 2)
                             HStack {
                                 Spacer()
                                 ProgressLineView(
-                                    currentStep: progressStep - 1,
-                                    totalSteps: flowSteps - 1,
-                                    isStepCompleted: isCurrentStepValid
+                                    currentStep: progressStep,
+                                    totalSteps: flowSteps,
+                                    isStepCompleted: progressStep > 0 // Only show completion after first step
                                 )
                                 .frame(width: 120) // Shorter width
                                 Spacer()
@@ -105,6 +83,8 @@ struct OnboardingFlowView: View {
                             Spacer().frame(height: 24)
                         }
                     }
+                    .frame(maxWidth: .infinity)
+
 
                     // Top Left: Back Button
                     if showBackButton {
@@ -129,7 +109,7 @@ struct OnboardingFlowView: View {
                         VStack {
                             HStack {
                                 Spacer()
-                                Button(action: { handleNextStep() }) {
+                                Button(action: { handleSkip() }) {
                                     Text(skipText)
                                         .font(.system(size: 17, weight: .medium))
                                         .foregroundColor(.white.opacity(0.6))
@@ -145,54 +125,57 @@ struct OnboardingFlowView: View {
                 }
                 .frame(height: 50)
 
-                // Content Slides
-                TabView(selection: $currentStep) {
-                    // Step 0: Auth Welcome
-                    AuthWelcomeSlide(onLogin: { handleNextStep() }, onExplore: { handleNextStep() })
-                        .tag(0)
-
-                    // Step 1: Location
-                    LocationSlide()
-                        .tag(1)
-
-                    // Step 2: Genres
-                    GenreSlide(
-                        localPreferences: localPreferences,
-                        tagViewModel: tagViewModel
-                    )
-                    .tag(2)
-
-                    // Step 3: Notifications
-                    NotificationSlide(localPreferences: localPreferences)
-                        .tag(3)
-
-                    // Step 4: Complete
-                    CompleteSlide()
-                        .tag(4)
+                // 🔄 Content Slides using ZStack and Offset (New Slide Animation)
+                ZStack {
+                    // Slides are stacked and offset based on currentStep
+                    ForEach(0..<totalSlides, id: \.self) { step in
+                        Group {
+                            switch step {
+                            case 0:
+                                AuthWelcomeSlide(
+                                    onLogin: { handleNextStep() },
+                                    onExplore: { handleNextStep() }
+                                )
+                            case 1:
+                                LocationSlide(onLocationSet: { handleNextStep() })
+                            case 2:
+                                NotificationGenreSlide( // Combined Notifications and Genres
+                                    localPreferences: localPreferences,
+                                    tagViewModel: tagViewModel,
+                                    onContinue: { handleNextStep() }
+                                )
+                            case 3:
+                                CompleteSlide()
+                            default:
+                                EmptyView()
+                            }
+                        }
+                        .offset(x: slideOffset(for: step))
+                        .opacity(step == currentStep ? 1 : 0) // Hide off-screen content
+                        .zIndex(step == currentStep ? 1 : 0)
+                    }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .allowsHitTesting(false) // Disable swiping
-                .animation(.easeInOut(duration: 0.3), value: currentStep)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .animation(.easeOut(duration: 0.3), value: currentStep) // Apply animation here
 
                 Spacer()
 
-                // Bottom Action Area (Only visible on content slides > 0)
-                if currentStep > 0 {
+                // Bottom Action Area (Only visible on Complete Slide)
+                if currentStep == totalSlides - 1 {
                     VStack(spacing: 16) {
-                        Button(action: { handleMainButton() }) {
-                            Text(getButtonText().uppercased())
-                                .appSecondary() // Use appSecondary for button text
-                                .foregroundColor(canProceed() ? .black : .gray)
+                        Button(action: { completeOnboarding() }) {
+                            Text("START EXPLORING".uppercased())
+                                .appSecondary()
+                                .foregroundColor(.black)
                                 .frame(height: 50)
                                 .frame(maxWidth: .infinity)
-                                .background(canProceed() ? Color.white : Color.gray.opacity(0.3))
+                                .background(Color.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
                                         .stroke(Color.white.opacity(0.2), lineWidth: 1)
                                 )
                         }
-                        .disabled(!canProceed())
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 40)
@@ -201,32 +184,25 @@ struct OnboardingFlowView: View {
         }
         .environmentObject(localPreferences)
     }
+    
+    // Custom Slide Transition Logic
+    private func slideOffset(for step: Int) -> CGFloat {
+        let screenWidth = UIScreen.main.bounds.width
+        return screenWidth * CGFloat(step - currentStep)
+    }
 
     // MARK: - Logic
     
-    private func canProceed() -> Bool {
-        if isRequesting { return false }
-        if currentStep == 2 && localPreferences.selectedGenres.isEmpty { return false }
-        return true
-    }
-
-    private func handleMainButton() {
-        switch currentStep {
-        case 3: // Notifications
-            if !localPreferences.hasEnabledNotifications {
-                requestNotifications()
-            } else {
-                handleNextStep()
-            }
-        case 4: // Complete
-            completeOnboarding()
-        default:
-            handleNextStep()
+    private func handleSkip() {
+        // Special logic for location skip
+        if currentStep == 1 {
+            // Do NOT request or set location, just advance the step
         }
+        handleNextStep()
     }
 
     private func handleNextStep() {
-        withAnimation {
+        withAnimation(.easeOut(duration: 0.3)) {
             if currentStep < totalSlides - 1 {
                 currentStep += 1
             }
@@ -237,19 +213,6 @@ struct OnboardingFlowView: View {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
         onboardingManager.completeOnboarding()
-    }
-
-    private func requestNotifications() {
-        isRequesting = true
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
-            DispatchQueue.main.async {
-                if granted {
-                    localPreferences.hasEnabledNotifications = true
-                    handleNextStep()
-                }
-                isRequesting = false
-            }
-        }
     }
 }
 
@@ -262,8 +225,6 @@ struct AuthWelcomeSlide: View {
 
     var body: some View {
         VStack(spacing: 0) {
-
-            // Text Header
             Spacer()
 
             VStack(spacing: 0) {
@@ -286,38 +247,41 @@ struct AuthWelcomeSlide: View {
             VStack(spacing: 16) {
                 // 1. LOG IN / SIGN UP (Primary: White/Black)
                 Button(action: { showingSignIn = true }) {
-                    Text("LOG IN / SIGN UP")
-                        .appSecondary()
-                        .foregroundColor(.black)
-                        .frame(height: 50)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.white)
-                        .clipShape(Capsule())
-                }
-                .buttonStyle(PlainButtonStyle())
+                                    Text("LOG IN / SIGN UP")
+                                        .appSecondary()
+                                        .foregroundColor(.black)
+                                        .frame(height: 50)
+                                        // ⭐️ FIX: Set a fixed maximum width for the button
+                                        .frame(maxWidth: 200)
+                                        .background(Color.white)
+                                        .clipShape(Capsule())
+                                }
+                                .buttonStyle(PlainButtonStyle())
 
-                // 2. EXPLORE (Secondary: Grey/White)
-                Button(action: onExplore) {
-                    Text("EXPLORE")
-                        .appSecondary()
-                        .foregroundColor(.white)
-                        .frame(height: 50)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.gray.opacity(0.3))
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                        )
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            .padding(.horizontal, 40)
-            .padding(.bottom, 60)
-            .padding(.top, 30)
-        }
-        .sheet(isPresented: $showingSignIn) {
-            SignInSheetView(showingSignIn: $showingSignIn, onSkip: { onLogin() })
+                                // 2. EXPLORE (Secondary: Grey/White)
+                                Button(action: onExplore) {
+                                    Text("EXPLORE")
+                                        .appSecondary()
+                                        .foregroundColor(.white)
+                                        .frame(height: 50)
+                                        // ⭐️ FIX: Set a fixed maximum width for the button
+                                        .frame(maxWidth: 200)
+                                        .background(Color.gray.opacity(0.3))
+                                        .clipShape(Capsule())
+                                        .overlay(
+                                            Capsule()
+                                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                        )
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                            // ⭐️ ADJUST: Increased horizontal padding to center the narrower buttons
+                            .padding(.horizontal, 40)
+                            .padding(.bottom, 60)
+                            .padding(.top, 30)
+                        }
+                        .sheet(isPresented: $showingSignIn) {
+                            SignInSheetView(showingSignIn: $showingSignIn, onSkip: { onLogin() })
         }
     }
 }
@@ -327,13 +291,10 @@ struct AuthHeader: View {
     var body: some View {
         HStack {
             Spacer()
-            // Placeholder Image, centered next to 'BURNER'
-            Image("transparent") // Assuming this image is defined and available
+            Image("transparent")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 28, height: 28)
-
-
             Spacer()
         }
     }
@@ -344,6 +305,8 @@ struct LocationSlide: View {
     @EnvironmentObject var appState: AppState
     @State private var showingManualEntry = false
     @State private var isProcessing = false
+    
+    let onLocationSet: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -365,17 +328,18 @@ struct LocationSlide: View {
             .frame(maxWidth: .infinity)
             .padding(.bottom, 60)
 
-            // Location buttons - centered, narrow pills
-            VStack(spacing: 12) {
+            // Location buttons - centered, narrower pills, capitalized text
+            VStack(spacing: 16) {
                 Button(action: {
                     requestCurrentLocation()
                 }) {
-                    Text("Use Current Location")
-                        .appSecondary()
-                        .foregroundColor(.white)
+                    Text("CURRENT LOCATION")
+                        .appBody()
+                        .foregroundColor(.black)
                         .frame(height: 50)
-                        .frame(maxWidth: 300)
-                        .background(Color.white.opacity(0.15))
+                        // ⭐️ FIX: Set a fixed maximum width for the button
+                        .frame(maxWidth: 200)
+                        .background(Color.white)
                         .clipShape(Capsule())
                         .overlay(
                             Capsule()
@@ -388,12 +352,13 @@ struct LocationSlide: View {
                 Button(action: {
                     showingManualEntry = true
                 }) {
-                    Text("Enter Location")
-                        .appSecondary()
+                    Text("ENTER LOCATION")
+                        .appBody()
                         .foregroundColor(.white)
                         .frame(height: 50)
-                        .frame(maxWidth: 300)
-                        .background(Color.white.opacity(0.15))
+                        // ⭐️ FIX: Set a fixed maximum width for the button
+                        .frame(maxWidth: 200)
+                        .background(Color.gray.opacity(0.3))
                         .clipShape(Capsule())
                         .overlay(
                             Capsule()
@@ -411,6 +376,7 @@ struct LocationSlide: View {
                 locationManager: appState.userLocationManager,
                 onDismiss: {
                     showingManualEntry = false
+                    
                 }
             )
         }
@@ -419,40 +385,45 @@ struct LocationSlide: View {
     private func requestCurrentLocation() {
         isProcessing = true
         appState.userLocationManager.requestCurrentLocation { result in
-            isProcessing = false
+            DispatchQueue.main.async {
+                isProcessing = false
+                // Advance step automatically after location choice (request or not)
+                onLocationSet()
+            }
         }
     }
 }
 
-// MARK: - Slide 2: Genres
-struct GenreSlide: View {
+// MARK: - Slide 2: Notifications & Genres (Combined)
+struct NotificationGenreSlide: View {
     @ObservedObject var localPreferences: LocalPreferences
     @ObservedObject var tagViewModel: TagViewModel
+    let onContinue: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Spacer().frame(height: 40)
 
             VStack(alignment: .leading, spacing: 0) {
-                Text("What do you")
+                Text("GET NOTIFIED")
                     .font(.system(size: 48, weight: .bold))
                     .kerning(-1.5)
                     .foregroundColor(.white)
                     .padding(.bottom, -15)
 
-                Text("like?")
+                Text("Stay Updated")
                     .font(.system(size: 48, weight: .bold))
                     .kerning(-1.5)
                     .foregroundColor(.white)
             }
-
-            Text("Select your vibes. We'll curate the feed for you.")
+            .padding(.bottom, 20)
+            
+            // --- Genre Selection ---
+            Text("Select your vibes to curate your feed.")
                 .font(.system(size: 17))
                 .foregroundColor(.white.opacity(0.7))
                 .lineSpacing(4)
-                .padding(.top, 16)
-
-            Spacer().frame(height: 32)
+                .padding(.bottom, 16)
 
             if tagViewModel.isLoading {
                 HStack {
@@ -461,21 +432,43 @@ struct GenreSlide: View {
                     Spacer()
                 }
             } else {
-                FlowLayout(spacing: 8) {
-                    ForEach(tagViewModel.displayTags, id: \.self) { genre in
-                        GenrePill(
-                            title: genre,
-                            isSelected: localPreferences.selectedGenres.contains(genre),
-                            action: { toggleGenre(genre) }
-                        )
+                ScrollView(.vertical, showsIndicators: false) {
+                    FlowLayout(spacing: 8) {
+                        ForEach(tagViewModel.displayTags, id: \.self) { genre in
+                            GenrePill(
+                                title: genre,
+                                isSelected: localPreferences.selectedGenres.contains(genre),
+                                action: { toggleGenre(genre) }
+                            )
+                        }
                     }
+                    .padding(.bottom, 80) // Padding for scroll view under arrow
                 }
-                .padding(.bottom, 20)
             }
-
+            
             Spacer()
         }
         .padding(.horizontal, 24)
+        .overlay(
+            // Navigation Pill: Only appears if a genre is selected
+            VStack {
+                Spacer()
+                if !localPreferences.selectedGenres.isEmpty {
+                    Button(action: onContinue) {
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.black)
+                            .frame(width: 60, height: 60)
+                            .background(Color.white)
+                            .clipShape(Circle())
+                    }
+                    .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .padding(.bottom, 40)
+            .frame(maxWidth: .infinity)
+            , alignment: .bottom
+        )
     }
 
     private func toggleGenre(_ genre: String) {
@@ -491,40 +484,7 @@ struct GenreSlide: View {
     }
 }
 
-// MARK: - Slide 3: Notifications
-struct NotificationSlide: View {
-    @ObservedObject var localPreferences: LocalPreferences
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer()
-
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Stay")
-                    .font(.system(size: 48, weight: .bold))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
-                    .padding(.bottom, -15)
-
-                Text("Updated")
-                    .font(.system(size: 48, weight: .bold))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
-            }
-
-            Text("Get notified about new events, ticket drops, and lineup announcements.")
-                .font(.system(size: 17))
-                .foregroundColor(.white.opacity(0.7))
-                .lineSpacing(4)
-                .padding(.top, 16)
-
-            Spacer()
-        }
-        .padding(.horizontal, 24)
-    }
-}
-
-// MARK: - Slide 4: Complete
+// MARK: - Slide 3: Complete
 struct CompleteSlide: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -548,7 +508,7 @@ struct CompleteSlide: View {
                     .fill(Color.white.opacity(0.1))
                     .frame(width: 160, height: 160)
                 
-                Image(systemName: "arrow.right")
+                Image(systemName: "hand.wave")
                     .font(.system(size: 60, weight: .light))
                     .foregroundColor(.white)
             }
@@ -625,6 +585,8 @@ struct GenrePill: View {
             HStack(spacing: 6) {
                 Text(title.lowercased())
                     .appSecondary()
+                    .font(.system(size: 16, weight: .medium)) // Adjusted size slightly
+                    .lineLimit(1)
 
                 if isSelected {
                     Image(systemName: "checkmark")
@@ -643,84 +605,5 @@ struct GenrePill: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
-    }
-}
-
-// MARK: - Marquee Components (Reused)
-struct MarqueeImageGrid: View {
-    let events: [Event]
-    
-    var body: some View {
-        GeometryReader { geo in
-            VStack(spacing: 0) {
-                let shuffled = events.shuffled()
-                let third = max(1, shuffled.count / 3)
-                
-                MarqueeRow(
-                    events: Array(shuffled.prefix(third)),
-                    direction: .left,
-                    width: geo.size.width
-                )
-                
-                MarqueeRow(
-                    events: Array(shuffled.dropFirst(third).prefix(third)),
-                    direction: .right,
-                    width: geo.size.width
-                )
-                
-                MarqueeRow(
-                    events: Array(shuffled.dropFirst(third * 2)),
-                    direction: .left,
-                    width: geo.size.width
-                )
-            }
-        }
-        .drawingGroup()
-    }
-}
-
-struct MarqueeRow: View {
-    let events: [Event]
-    let direction: Direction
-    let width: CGFloat
-    
-    enum Direction { case left, right }
-    
-    @State private var offset: CGFloat = 0
-    private let itemSize: CGFloat = 120
-    
-    var body: some View {
-        let displayEvents = events.isEmpty ? [] : (events + events + events + events)
-        
-        HStack(spacing: 0) {
-            ForEach(0..<displayEvents.count, id: \.self) { i in
-                if i < displayEvents.count {
-                    let event = displayEvents[i]
-                    KFImage(URL(string: event.imageUrl))
-                        .placeholder { Color.gray.opacity(0.2) }
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: itemSize, height: itemSize)
-                        .clipped()
-                        .overlay(
-                            Rectangle()
-                                .stroke(Color.black, lineWidth: 1)
-                        )
-                }
-            }
-        }
-        .offset(x: offset)
-        .frame(width: width, height: itemSize, alignment: .leading)
-        .clipped()
-        .onAppear {
-            let totalWidth = CGFloat(displayEvents.count) * itemSize
-            let duration = Double(displayEvents.count) * 2.0
-            
-            offset = direction == .left ? 0 : -totalWidth / 2
-            
-            withAnimation(.linear(duration: duration).repeatForever(autoreverses: false)) {
-                offset = direction == .left ? -totalWidth / 2 : 0
-            }
-        }
     }
 }
