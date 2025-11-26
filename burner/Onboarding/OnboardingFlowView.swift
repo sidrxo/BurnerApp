@@ -16,13 +16,13 @@ struct OnboardingFlowView: View {
     @State private var currentStep = 0
     @State private var isRequesting = false
 
-    // Updated Total Steps: AuthWelcome -> Genres -> Notifications -> Complete
-    // Total screens is 4: AuthWelcome (0) -> Genres(1) -> Notifications(2) -> Complete(3)
-    private let totalSlides = 4 // AuthWelcome (0) -> Genres(1) -> Notifications(2) -> Complete(3)
-    private let flowSteps = 2 // Genres, Notifications (Steps 1, 2 in terms of flow progress)
+    // Updated Total Steps: AuthWelcome -> Location -> Genres -> Notifications -> Complete
+    // Total screens is 5: AuthWelcome (0) -> Location(1) -> Genres(2) -> Notifications(3) -> Complete(4)
+    private let totalSlides = 5
+    private let flowSteps = 3 // Location, Genres, Notifications (Steps 1, 2, 3 in terms of flow progress)
 
     // MARK: - Navigation Logic
-    // Progress bar runs from Genres to Notifications
+    // Progress bar runs from Location to Notifications
     private var progressStep: Int {
         return max(0, currentStep - 1)
     }
@@ -30,9 +30,10 @@ struct OnboardingFlowView: View {
     private var isCurrentStepValid: Bool {
         switch currentStep {
         case 0: return true // AuthWelcome
-        case 1: return !localPreferences.selectedGenres.isEmpty // Genres
-        case 2: return true // Notifications
-        case 3: return true // Complete
+        case 1: return true // Location
+        case 2: return !localPreferences.selectedGenres.isEmpty // Genres
+        case 3: return true // Notifications
+        case 4: return true // Complete
         default: return false
         }
     }
@@ -42,18 +43,32 @@ struct OnboardingFlowView: View {
 
         switch currentStep {
         case 0: return "LOG IN / SIGN UP" // Handled by AuthWelcomeSlide
-        case 1: return localPreferences.selectedGenres.isEmpty ? "SELECT PREFERENCES" : "CONTINUE"
-        case 2: return "CONTINUE"
-        case 3: return "START EXPLORING"
+        case 1: return "CONTINUE"
+        case 2: return localPreferences.selectedGenres.isEmpty ? "SELECT PREFERENCES" : "CONTINUE"
+        case 3: return "CONTINUE"
+        case 4: return "START EXPLORING"
         default: return "NEXT"
         }
     }
 
     private func getSkipText() -> String? {
         switch currentStep {
-        case 1: return localPreferences.selectedGenres.isEmpty ? "Skip for now" : nil
-        case 2: return !localPreferences.hasEnabledNotifications ? "Skip for now" : nil
+        case 1: return "skip" // Location
+        case 2: return "skip" // Genres (always show)
+        case 3: return "skip" // Notifications
         default: return nil
+        }
+    }
+
+    private var showBackButton: Bool {
+        return currentStep > 0 && currentStep < totalSlides - 1
+    }
+
+    private func handleBackButton() {
+        withAnimation {
+            if currentStep > 0 {
+                currentStep -= 1
+            }
         }
     }
 
@@ -62,7 +77,7 @@ struct OnboardingFlowView: View {
             Color.black.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Header Area with Skip Button
+                // Header Area with Back and Skip Buttons
                 ZStack {
                     // Center: Logo or Progress Indicator
                     VStack(spacing: 0) {
@@ -72,7 +87,7 @@ struct OnboardingFlowView: View {
                             // Show Auth Header with Logo
                             AuthHeader()
                         } else if currentStep > 0 && currentStep < totalSlides - 1 {
-                            // Show Progress Line (Starts from Genres, ends before Complete)
+                            // Show Progress Line
                             // Centered and shorter progress bar
                             HStack {
                                 Spacer()
@@ -91,6 +106,24 @@ struct OnboardingFlowView: View {
                         }
                     }
 
+                    // Top Left: Back Button
+                    if showBackButton {
+                        VStack {
+                            HStack {
+                                Button(action: { handleBackButton() }) {
+                                    Image(systemName: "chevron.left")
+                                        .font(.system(size: 20, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .frame(width: 44, height: 44)
+                                }
+                                .padding(.leading, 20)
+                                .padding(.top, 10)
+                                Spacer()
+                            }
+                            Spacer()
+                        }
+                    }
+
                     // Top Right: Skip Button
                     if let skipText = getSkipText() {
                         VStack {
@@ -98,16 +131,10 @@ struct OnboardingFlowView: View {
                                 Spacer()
                                 Button(action: { handleNextStep() }) {
                                     Text(skipText)
-                                        .appSecondary()
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(Color.white.opacity(0.1))
-                                        .clipShape(Capsule())
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                        )
+                                        .font(.system(size: 17, weight: .medium))
+                                        .foregroundColor(.white.opacity(0.6))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 10)
                                 }
                                 .padding(.trailing, 20)
                                 .padding(.top, 10)
@@ -116,7 +143,7 @@ struct OnboardingFlowView: View {
                         }
                     }
                 }
-                .frame(height: 50) // Increased height to accommodate the logo/progress
+                .frame(height: 50)
 
                 // Content Slides
                 TabView(selection: $currentStep) {
@@ -124,23 +151,27 @@ struct OnboardingFlowView: View {
                     AuthWelcomeSlide(onLogin: { handleNextStep() }, onExplore: { handleNextStep() })
                         .tag(0)
 
-                    // Step 1: Genres
+                    // Step 1: Location
+                    LocationSlide()
+                        .tag(1)
+
+                    // Step 2: Genres
                     GenreSlide(
                         localPreferences: localPreferences,
                         tagViewModel: tagViewModel
                     )
-                    .tag(1)
+                    .tag(2)
 
-                    // Step 2: Notifications
+                    // Step 3: Notifications
                     NotificationSlide(localPreferences: localPreferences)
-                        .tag(2)
-
-                    // Step 3: Complete
-                    CompleteSlide()
                         .tag(3)
+
+                    // Step 4: Complete
+                    CompleteSlide()
+                        .tag(4)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .gesture(DragGesture(), including: .all) // Disable swiping only
+                .allowsHitTesting(false) // Disable swiping
                 .animation(.easeInOut(duration: 0.3), value: currentStep)
 
                 Spacer()
@@ -175,19 +206,19 @@ struct OnboardingFlowView: View {
     
     private func canProceed() -> Bool {
         if isRequesting { return false }
-        if currentStep == 1 && localPreferences.selectedGenres.isEmpty { return false }
+        if currentStep == 2 && localPreferences.selectedGenres.isEmpty { return false }
         return true
     }
 
     private func handleMainButton() {
         switch currentStep {
-        case 2: // Notifications
+        case 3: // Notifications
             if !localPreferences.hasEnabledNotifications {
                 requestNotifications()
             } else {
                 handleNextStep()
             }
-        case 3: // Complete
+        case 4: // Complete
             completeOnboarding()
         default:
             handleNextStep()
@@ -301,20 +332,102 @@ struct AuthHeader: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 28, height: 28)
-        
-            
+
+
             Spacer()
         }
     }
 }
 
+// MARK: - Slide 1: Location
+struct LocationSlide: View {
+    @EnvironmentObject var appState: AppState
+    @State private var showingManualEntry = false
+    @State private var isProcessing = false
 
-// MARK: - Slide 1: Genres
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: 0) {
+                Text("WHERE ARE")
+                    .font(.system(size: 48, weight: .bold))
+                    .kerning(-1.5)
+                    .foregroundColor(.white)
+                    .padding(.bottom, -15)
+
+                Text("YOU?")
+                    .font(.system(size: 48, weight: .bold))
+                    .kerning(-1.5)
+                    .foregroundColor(.white)
+            }
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 60)
+
+            // Location buttons - centered, narrow pills
+            VStack(spacing: 12) {
+                Button(action: {
+                    requestCurrentLocation()
+                }) {
+                    Text("Use Current Location")
+                        .appSecondary()
+                        .foregroundColor(.white)
+                        .frame(height: 50)
+                        .frame(maxWidth: 300)
+                        .background(Color.white.opacity(0.15))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(isProcessing)
+
+                Button(action: {
+                    showingManualEntry = true
+                }) {
+                    Text("Enter Location")
+                        .appSecondary()
+                        .foregroundColor(.white)
+                        .frame(height: 50)
+                        .frame(maxWidth: 300)
+                        .background(Color.white.opacity(0.15))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal, 40)
+
+            Spacer()
+        }
+        .sheet(isPresented: $showingManualEntry) {
+            ManualCityEntryView(
+                locationManager: appState.userLocationManager,
+                onDismiss: {
+                    showingManualEntry = false
+                }
+            )
+        }
+    }
+
+    private func requestCurrentLocation() {
+        isProcessing = true
+        appState.userLocationManager.requestCurrentLocation { result in
+            isProcessing = false
+        }
+    }
+}
+
+// MARK: - Slide 2: Genres
 struct GenreSlide: View {
     @ObservedObject var localPreferences: LocalPreferences
     @ObservedObject var tagViewModel: TagViewModel
-    
-    private let columns = [GridItem(.adaptive(minimum: 90, maximum: 180), spacing: 12)]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -332,7 +445,7 @@ struct GenreSlide: View {
                     .kerning(-1.5)
                     .foregroundColor(.white)
             }
-            
+
             Text("Select your vibes. We'll curate the feed for you.")
                 .font(.system(size: 17))
                 .foregroundColor(.white.opacity(0.7))
@@ -348,7 +461,7 @@ struct GenreSlide: View {
                     Spacer()
                 }
             } else {
-                LazyVGrid(columns: columns, spacing: 12) {
+                FlowLayout(spacing: 8) {
                     ForEach(tagViewModel.displayTags, id: \.self) { genre in
                         GenrePill(
                             title: genre,
@@ -359,12 +472,12 @@ struct GenreSlide: View {
                 }
                 .padding(.bottom, 20)
             }
-            
+
             Spacer()
         }
         .padding(.horizontal, 24)
     }
-    
+
     private func toggleGenre(_ genre: String) {
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
@@ -381,11 +494,10 @@ struct GenreSlide: View {
 // MARK: - Slide 3: Notifications
 struct NotificationSlide: View {
     @ObservedObject var localPreferences: LocalPreferences
-    @State private var selectedTypes: Set<String> = ["Tickets", "Lineups"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Spacer().frame(height: 40)
+            Spacer()
 
             VStack(alignment: .leading, spacing: 0) {
                 Text("Stay")
@@ -399,48 +511,16 @@ struct NotificationSlide: View {
                     .kerning(-1.5)
                     .foregroundColor(.white)
             }
-            
-            Text("Choose what you want to be notified about.")
+
+            Text("Get notified about new events, ticket drops, and lineup announcements.")
                 .font(.system(size: 17))
                 .foregroundColor(.white.opacity(0.7))
                 .lineSpacing(4)
                 .padding(.top, 16)
 
-            Spacer().frame(height: 32)
-            
-            VStack(spacing: 12) {
-                NotificationToggleRow(
-                    icon: "ticket.fill",
-                    text: "Ticket Drops",
-                    isSelected: selectedTypes.contains("Tickets")
-                ) { toggleType("Tickets") }
-                
-                NotificationToggleRow(
-                    icon: "music.mic",
-                    text: "Lineup Announcements",
-                    isSelected: selectedTypes.contains("Lineups")
-                ) { toggleType("Lineups") }
-                
-                NotificationToggleRow(
-                    icon: "exclamationmark.triangle.fill",
-                    text: "Venue Changes",
-                    isSelected: selectedTypes.contains("Venue")
-                ) { toggleType("Venue") }
-            }
-
             Spacer()
         }
         .padding(.horizontal, 24)
-    }
-    
-    private func toggleType(_ type: String) {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
-        if selectedTypes.contains(type) {
-            selectedTypes.remove(type)
-        } else {
-            selectedTypes.insert(type)
-        }
     }
 }
 
@@ -482,6 +562,59 @@ struct CompleteSlide: View {
 
 // MARK: - Supporting Views
 
+// FlowLayout for flexible genre pill wrapping
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = FlowResult(
+            in: proposal.replacingUnspecifiedDimensions().width,
+            subviews: subviews,
+            spacing: spacing
+        )
+        return result.size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = FlowResult(
+            in: bounds.width,
+            subviews: subviews,
+            spacing: spacing
+        )
+        for (index, subview) in subviews.enumerated() {
+            subview.place(at: CGPoint(x: bounds.minX + result.positions[index].x, y: bounds.minY + result.positions[index].y), proposal: .unspecified)
+        }
+    }
+
+    struct FlowResult {
+        var size: CGSize = .zero
+        var positions: [CGPoint] = []
+
+        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
+            var currentX: CGFloat = 0
+            var currentY: CGFloat = 0
+            var lineHeight: CGFloat = 0
+
+            for subview in subviews {
+                let size = subview.sizeThatFits(.unspecified)
+
+                if currentX + size.width > maxWidth && currentX > 0 {
+                    // Move to next line
+                    currentX = 0
+                    currentY += lineHeight + spacing
+                    lineHeight = 0
+                }
+
+                positions.append(CGPoint(x: currentX, y: currentY))
+                currentX += size.width + spacing
+                lineHeight = max(lineHeight, size.height)
+                self.size.width = max(self.size.width, currentX - spacing)
+                self.size.height = currentY + lineHeight
+            }
+        }
+    }
+}
+
 struct GenrePill: View {
     let title: String
     let isSelected: Bool
@@ -500,49 +633,13 @@ struct GenrePill: View {
                 }
             }
             .foregroundColor(isSelected ? .black : .white)
-            .padding(.horizontal, 12) // Reduced from 20
+            .padding(.horizontal, 12)
             .padding(.vertical, 14)
             .background(isSelected ? Color.white : Color.clear)
             .clipShape(Capsule())
             .overlay(
                 Capsule()
                     .stroke(isSelected ? Color.clear : Color.white.opacity(0.3), lineWidth: 1.5)
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
-struct NotificationToggleRow: View {
-    let icon: String
-    let text: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 16) {
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(isSelected ? .white : .white.opacity(0.5))
-                    .frame(width: 24)
-                
-                Text(text)
-                    .font(.system(size: 16, weight: isSelected ? .semibold : .regular))
-                    .foregroundColor(isSelected ? .white : .white.opacity(0.7))
-                
-                Spacer()
-                
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20))
-                    .foregroundColor(isSelected ? .white : .white.opacity(0.3))
-            }
-            .padding(16)
-            .background(isSelected ? Color.white.opacity(0.15) : Color.white.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.white.opacity(0.3) : Color.clear, lineWidth: 1)
             )
         }
         .buttonStyle(PlainButtonStyle())
