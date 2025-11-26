@@ -6,15 +6,16 @@ import Combine
 
 // MARK: - Onboarding Flow
 struct OnboardingFlowView: View {
-    @ObservedObject var onboardingManager: OnboardingManager
+    @EnvironmentObject var onboardingManager: OnboardingManager
     @EnvironmentObject var appState: AppState
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) var dismiss // Used for dismissal from Debug Menu
 
     @StateObject private var localPreferences = LocalPreferences()
     @StateObject private var tagViewModel = TagViewModel()
 
     @State private var currentStep = 0
     @State private var isRequesting = false
+    @State private var isCompleting = false // ✅ ADD: Prevent duplicate completion calls
 
     // Total screens is 5: AuthWelcome (0) -> Location(1) -> Notifications(2) -> Genres(3) -> Complete(4)
     private let totalSlides = 5
@@ -39,6 +40,7 @@ struct OnboardingFlowView: View {
     }
 
     private func handleBackButton() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         withAnimation(.easeOut(duration: 0.3)) {
             if currentStep > 0 {
                 currentStep -= 1
@@ -54,10 +56,11 @@ struct OnboardingFlowView: View {
             VStack(spacing: 0) {
                 // Header Area with Back and Skip Buttons
                 ZStack {
-                    // Center: Logo or Progress Indicator
+                    
+                    // 1. Center: Logo or Progress Indicator
                     VStack(spacing: 0) {
                         Spacer().frame(height: 20)
-
+                        
                         if currentStep == 0 {
                             // Show Auth Header with Logo
                             AuthHeader()
@@ -71,6 +74,7 @@ struct OnboardingFlowView: View {
                                     isStepCompleted: progressStep > 0
                                 )
                                 .frame(width: 120)
+                                .padding(.bottom, 3)
                                 Spacer()
                             }
                             .padding(.horizontal, 20)
@@ -80,48 +84,41 @@ struct OnboardingFlowView: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-
-
-                    // Top Left: Back Button
+                    
+                    // 2. Top Left: Back Button
                     if showBackButton {
-                        VStack {
-                            HStack(alignment: .center) {
-                                Button(action: { handleBackButton() }) {
-                                    Image(systemName: "chevron.left")
-                                        .font(.system(size: 20, weight: .medium))
-                                        .foregroundColor(.white.opacity(0.6))
-                                        .frame(width: 44, height: 44)
-                                }
-                                .padding(.leading, 20)
-                                .padding(.top, 10)
-                                Spacer()
+                        HStack {
+                            Button(action: { handleBackButton() }) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.6))
+                                    .frame(width: 44, height: 44)
                             }
+                            .padding(.top, 10)
                             Spacer()
                         }
+                        .padding(.leading, 20)
                     }
 
-                    // Top Right: Skip Button
+                    // 3. Top Right: Skip Button
                     if let skipText = getSkipText() {
-                        VStack {
-                            HStack(alignment: .center) {
-                                Spacer()
-                                Button(action: { handleSkip() }) {
-                                    Text(skipText)
-                                        .font(.system(size: 17, weight: .medium))
-                                        .foregroundColor(.white.opacity(0.6))
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 10)
-                                }
-                                .padding(.trailing, 20)
-                                .padding(.top, 10)
-                            }
+                        HStack {
                             Spacer()
+                            Button(action: { handleSkip() }) {
+                                Text(skipText)
+                                    .font(.system(size: 17, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.6))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 10)
+                            }
+                            .padding(.trailing, 20)
+                            .padding(.top, 10)
                         }
                     }
                 }
-                .frame(height: 50)
+                .frame(height: 60)
 
-                // 🔄 Content Slides using ZStack and Offset
+                // Content Slides using ZStack and Offset
                 ZStack {
                     ForEach(0..<totalSlides, id: \.self) { step in
                         Group {
@@ -163,6 +160,12 @@ struct OnboardingFlowView: View {
             // User has existing preferences in Firebase, skip to explore
             completeOnboarding()
         }
+        .onAppear {
+            print("🎬 [OnboardingFlowView] Appeared - Current step: \(currentStep)")
+        }
+        .onDisappear {
+            print("👋 [OnboardingFlowView] Disappeared")
+        }
     }
     
     // Custom Slide Transition Logic
@@ -174,6 +177,7 @@ struct OnboardingFlowView: View {
     // MARK: - Logic
     
     private func handleSkip() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         handleNextStep()
     }
 
@@ -181,14 +185,28 @@ struct OnboardingFlowView: View {
         withAnimation(.easeOut(duration: 0.3)) {
             if currentStep < totalSlides - 1 {
                 currentStep += 1
+                print("➡️ [OnboardingFlowView] Advanced to step: \(currentStep)")
             }
         }
     }
     
     private func completeOnboarding() {
+        // ✅ FIX: Prevent multiple calls
+        guard !isCompleting else {
+            print("⚠️ [OnboardingFlowView] Already completing, ignoring duplicate call")
+            return
+        }
+        
+        isCompleting = true
+        print("🎯 [OnboardingFlowView] completeOnboarding() called")
+        
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
+        
+        // ✅ FIX: Call onboardingManager which will handle the state change
         onboardingManager.completeOnboarding()
+        
+        print("✅ [OnboardingFlowView] Onboarding completion initiated")
     }
 }
 
@@ -200,24 +218,9 @@ struct AuthWelcomeSlide: View {
     @State private var showingSignIn = false
     @EnvironmentObject var appState: AppState
 
-    private var featuredEventsWithImages: [Event] {
-        appState.eventViewModel.events
-            .filter { event in
-                event.imageURL != nil && !event.imageURL!.isEmpty
-            }
-            .prefix(10)
-            .map { $0 }
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-
-            // Event Carousel
-            EventCarousel(events: featuredEventsWithImages)
-                .frame(height: 200)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 40)
 
             VStack(spacing: 0) {
                 Text("WHERE WILL")
@@ -233,34 +236,40 @@ struct AuthWelcomeSlide: View {
             }
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
-
+            .padding(.top, 100)
 
             // Buttons
             VStack(spacing: 16) {
                 // 1. LOG IN / SIGN UP (Primary: White/Black)
-                Button(action: { showingSignIn = true }) {
-                    Text("LOG IN / SIGN UP")
-                        .appSecondary()
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    showingSignIn = true
+                }) {
+                    Text("LOG IN / REGISTER")
+                        .font(.appFont(size: 16))
                         .foregroundColor(.black)
-                        .frame(height: 50)
                         .frame(maxWidth: 200)
+                        .padding(.vertical, 12)
                         .background(Color.white)
                         .clipShape(Capsule())
                 }
                 .buttonStyle(PlainButtonStyle())
 
                 // 2. EXPLORE (Secondary: Grey/White)
-                Button(action: onExplore) {
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    onExplore()
+                }) {
                     Text("EXPLORE")
-                        .appSecondary()
+                        .font(.appFont(size: 16))
                         .foregroundColor(.white)
-                        .frame(height: 50)
-                        .frame(maxWidth: 200)
-                        .background(Color.gray.opacity(0.3))
+                        .frame(maxWidth: 160)
+                        .padding(.vertical, 12)
+                        .background(Color.gray.opacity(0.1))
                         .clipShape(Capsule())
                         .overlay(
                             Capsule()
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                .stroke(Color.white, lineWidth: 1)
                         )
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -289,6 +298,8 @@ struct AuthHeader: View {
     }
 }
 
+// MARK: - Progress Line View
+
 // MARK: - Slide 1: Location
 struct LocationSlide: View {
     @EnvironmentObject var appState: AppState
@@ -303,13 +314,13 @@ struct LocationSlide: View {
             Spacer()
 
             VStack(spacing: 0) {
-                Text("WHERE ARE")
+                Text("TELL US WHERE")
                     .font(.system(size: 48, weight: .bold))
                     .kerning(-1.5)
                     .foregroundColor(.white)
                     .padding(.bottom, -15)
 
-                Text("YOU?")
+                Text("YOU ARE")
                     .font(.system(size: 48, weight: .bold))
                     .kerning(-1.5)
                     .foregroundColor(.white)
@@ -328,37 +339,47 @@ struct LocationSlide: View {
             // Location buttons
             VStack(spacing: 16) {
                 Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     requestCurrentLocation()
                 }) {
-                    Text("CURRENT LOCATION")
-                        .appBody()
-                        .foregroundColor(.black)
-                        .frame(height: 50)
-                        .frame(maxWidth: 200)
-                        .background(Color.white)
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                        )
+                    HStack {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 14, weight: .bold))
+                        
+                        Text("CURRENT LOCATION")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
+                    .font(.appFont(size: 16))
+                    .foregroundColor(.black)
+                    .frame(maxWidth: 220)
+                    .padding(.vertical, 12)
+                    .background(Color.white)
+                    .clipShape(Capsule())
                 }
                 .buttonStyle(PlainButtonStyle())
                 .disabled(isProcessing)
 
                 Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     showingManualEntry = true
                 }) {
-                    Text("ENTER LOCATION")
-                        .appBody()
-                        .foregroundColor(.white)
-                        .frame(height: 50)
-                        .frame(maxWidth: 200)
-                        .background(Color.gray.opacity(0.3))
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                        )
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 14, weight: .bold))
+
+                        Text("ENTER CITY")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
+                    .font(.appFont(size: 16))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: 160)
+                    .padding(.vertical, 12)
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white, lineWidth: 1)
+                    )
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -445,20 +466,22 @@ struct NotificationsSlide: View {
             // Notification option pills
             VStack(spacing: 16) {
                 Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     selectedOption = .all
                     requestNotifications()
                 }) {
                     Text("I'M IN")
-                        .appBody()
+                        .font(.appFont(size: 16))
                         .foregroundColor(.black)
-                        .frame(height: 50)
-                        .frame(maxWidth: 200)
+                        .frame(maxWidth: 140)
+                        .padding(.vertical, 12)
                         .background(Color.white)
                         .clipShape(Capsule())
                 }
                 .buttonStyle(PlainButtonStyle())
 
                 Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     selectedOption = .myEventsOnly
                     // Save notification preference as false for saved only
                     localPreferences.hasEnabledNotifications = false
@@ -466,16 +489,16 @@ struct NotificationsSlide: View {
                         onContinue()
                     }
                 }) {
-                    Text("SAVED ONLY")
-                        .appBody()
+                    Text("MY TICKETS ONLY")
+                        .font(.appFont(size: 16))
                         .foregroundColor(.white)
-                        .frame(height: 50)
                         .frame(maxWidth: 200)
-                        .background(Color.gray.opacity(0.3))
+                        .padding(.vertical, 12)
+                        .background(Color.gray.opacity(0.1))
                         .clipShape(Capsule())
                         .overlay(
                             Capsule()
-                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                .stroke(Color.white, lineWidth: 1)
                         )
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -556,7 +579,10 @@ struct GenreSlide: View {
             VStack {
                 Spacer()
                 if !localPreferences.selectedGenres.isEmpty {
-                    Button(action: onContinue) {
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        onContinue()
+                    }) {
                         Image(systemName: "arrow.right")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.black)
@@ -629,6 +655,7 @@ struct CompleteSlide: View {
             Spacer()
         }
         .onAppear {
+            print("⏳ [CompleteSlide] Appeared - Starting loading sequence")
             startLoadingSequence()
         }
     }
@@ -650,6 +677,7 @@ struct CompleteSlide: View {
         
         // Auto-dismiss after 2.5 seconds
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            print("✅ [CompleteSlide] Loading complete, calling onComplete()")
             onComplete()
         }
     }
@@ -719,18 +747,12 @@ struct GenrePill: View {
             HStack(spacing: 6) {
                 Text(title.lowercased())
                     .appSecondary()
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 15, weight: .medium))
                     .lineLimit(1)
-
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.black)
-                }
             }
             .foregroundColor(isSelected ? .black : .white)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 12)
             .background(isSelected ? Color.white : Color.clear)
             .clipShape(Capsule())
             .overlay(
@@ -740,114 +762,5 @@ struct GenrePill: View {
         }
         .buttonStyle(PlainButtonStyle())
         .animation(.easeInOut(duration: 0.2), value: isSelected)
-    }
-}
-
-// MARK: - Event Carousel
-struct EventCarousel: View {
-    let events: [Event]
-    @State private var currentIndex: Int = 0
-    @State private var dragOffset: CGFloat = 0
-
-    private let cardWidth: CGFloat = 280
-    private let cardHeight: CGFloat = 180
-    private let spacing: CGFloat = 16
-
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
-                    EventCarouselCard(event: event)
-                        .frame(width: cardWidth, height: cardHeight)
-                        .offset(x: cardOffset(for: index, in: geometry), y: 0)
-                        .scaleEffect(cardScale(for: index))
-                        .opacity(cardOpacity(for: index))
-                        .zIndex(cardZIndex(for: index))
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .gesture(
-                DragGesture()
-                    .onChanged { value in
-                        dragOffset = value.translation.width
-                    }
-                    .onEnded { value in
-                        let threshold: CGFloat = 50
-                        if value.translation.width > threshold && currentIndex > 0 {
-                            withAnimation(.spring()) {
-                                currentIndex -= 1
-                            }
-                        } else if value.translation.width < -threshold && currentIndex < events.count - 1 {
-                            withAnimation(.spring()) {
-                                currentIndex += 1
-                            }
-                        }
-                        dragOffset = 0
-                    }
-            )
-        }
-    }
-
-    private func cardOffset(for index: Int, in geometry: GeometryProxy) -> CGFloat {
-        let centerX = geometry.size.width / 2
-        let baseOffset = CGFloat(index - currentIndex) * (cardWidth + spacing)
-        return centerX - cardWidth / 2 + baseOffset + dragOffset
-    }
-
-    private func cardScale(for index: Int) -> CGFloat {
-        if index == currentIndex {
-            return 1.0
-        } else {
-            return 0.85
-        }
-    }
-
-    private func cardOpacity(for index: Int) -> Double {
-        let distance = abs(index - currentIndex)
-        if distance == 0 {
-            return 1.0
-        } else if distance == 1 {
-            return 0.6
-        } else {
-            return 0.3
-        }
-    }
-
-    private func cardZIndex(for index: Int) -> Double {
-        let distance = abs(index - currentIndex)
-        return Double(100 - distance)
-    }
-}
-
-// MARK: - Event Carousel Card
-struct EventCarouselCard: View {
-    let event: Event
-
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            // Event Image
-            if let imageURL = event.imageURL {
-                KFImage(URL(string: imageURL))
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-            } else {
-                Color.gray.opacity(0.3)
-            }
-
-            // Gradient overlay at bottom
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.black.opacity(0.0),
-                    Color.black.opacity(0.7)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 80)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 5)
     }
 }

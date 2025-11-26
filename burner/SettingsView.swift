@@ -226,7 +226,7 @@ struct SettingsView: View {
                         .frame(maxWidth: 200)
                         .padding(.vertical, 12)
                         .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .clipShape(Capsule())
                 }
                 .buttonStyle(PlainButtonStyle())
             }

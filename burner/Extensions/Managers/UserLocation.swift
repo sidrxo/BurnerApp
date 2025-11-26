@@ -19,6 +19,7 @@ struct UserLocation: Codable, Equatable {
 class UserLocationManager: NSObject, ObservableObject {
     @Published var savedLocation: UserLocation?
     @Published var currentCLLocation: CLLocation?
+    @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
     
     private let locationManager = CLLocationManager()
     private let geocoder = CLGeocoder()
@@ -35,6 +36,10 @@ class UserLocationManager: NSObject, ObservableObject {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
         locationManager.distanceFilter = 100
+        
+        // Set initial authorization status
+        authorizationStatus = locationManager.authorizationStatus
+        
         loadSavedLocation()
     }
     
@@ -58,7 +63,10 @@ class UserLocationManager: NSObject, ObservableObject {
         }
     }
     
-    
+    // MARK: - Request Location Permission
+    func requestLocationPermission() {
+        locationManager.requestWhenInUseAuthorization()
+    }
     
     // MARK: - Clear Location
     func clearLocation() {
@@ -235,6 +243,9 @@ extension UserLocationManager: CLLocationManagerDelegate {
     
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         Task { @MainActor in
+            // Update the published authorization status
+            self.authorizationStatus = manager.authorizationStatus
+            
             switch manager.authorizationStatus {
             case .authorizedWhenInUse, .authorizedAlways:
                 manager.requestLocation()

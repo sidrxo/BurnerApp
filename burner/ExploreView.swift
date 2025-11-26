@@ -225,7 +225,7 @@ struct ExploreView: View {
                         }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 24)
+                    .padding(.top, 14)
                     .padding(.bottom, 30)
 
                     if eventViewModel.isLoading && eventViewModel.events.isEmpty {

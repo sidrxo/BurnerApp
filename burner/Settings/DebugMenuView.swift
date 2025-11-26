@@ -74,8 +74,8 @@ struct DebugMenuView: View {
                     // MARK: - New Menu Section for Flows
                     MenuSection(title: "ONBOARDING & FLOWS") {
                         Button(action: {
-                            // Reset OnboardingManager state before showing the flow for proper testing
-                            OnboardingManager().resetOnboarding()
+                            // ✅ FIX: Use the main AppState's OnboardingManager instance to reset
+                            appState.onboardingManager.resetOnboarding()
                             showOnboardingFlow = true
                         }) {
                             MenuItemContent(
@@ -133,11 +133,9 @@ struct DebugMenuView: View {
         // MARK: - New Full Screen Covers
         .fullScreenCover(isPresented: $showOnboardingFlow) {
             // Instantiate a new manager instance for isolated testing of the flow
-            let temporaryOnboardingManager = OnboardingManager()
-            OnboardingFlowView(
-                onboardingManager: temporaryOnboardingManager,
-            )
-            // Note: Environment objects like AuthenticationService are assumed to be implicitly available
+            OnboardingFlowView() // No need to pass manager in init now
+                .environmentObject(appState.onboardingManager) // <<< Inject via environment
+                .environmentObject(appState) // Ensure AppState is also available
         }
         .fullScreenCover(isPresented: $showBurnerModeSetup) {
             BurnerModeSetupView(
@@ -181,8 +179,10 @@ struct DebugMenuView: View {
                 UserDefaults.standard.removePersistentDomain(forName: bundleID)
             }
             
-            // Explicitly call reset on OnboardingManager via a temporary instance
-            OnboardingManager().resetOnboarding() // This clears the userDefaults flags for onboarding/sign-in
+            // ✅ FIX: Call reset on the AppState's shared OnboardingManager instance
+            await MainActor.run {
+                appState.onboardingManager.resetOnboarding() // This clears the userDefaults flags for onboarding/sign-in
+            }
 
             // Disable burner mode if enabled
             if appState.showingBurnerLockScreen {

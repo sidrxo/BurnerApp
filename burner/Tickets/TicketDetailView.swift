@@ -295,26 +295,21 @@ struct TicketDetailView: View {
                                             .font(.system(size: 60))
                                             .foregroundColor(.white.opacity(0.3))
 
-                                        Text("SETUP REQUIRED")
-                                            .font(.custom("Avenir", size: 15).weight(.black))
-                                            .foregroundColor(.white.opacity(0.8))
-                                            .multilineTextAlignment(.center)
-                                            .tracking(1)
+                                        Button(action: {
+                                            showBurnerSetup = true
+                                        }) {
+                                            Text("COMPLETE SETUP")
+                                                .font(.custom("Avenir", size: 15).weight(.bold))
+                                                .foregroundColor(.black)
+                                                .padding(.horizontal, 32)
+                                                .padding(.vertical, 12)
+                                                .background(Color.white)
+                                                .clipShape(Capsule())
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
                                     }
                                 }
 
-                                Button(action: {
-                                    showBurnerSetup = true
-                                }) {
-                                    Text("COMPLETE SETUP")
-                                        .font(.custom("Avenir", size: 15).weight(.bold))
-                                        .foregroundColor(.black)
-                                        .padding(.horizontal, 32)
-                                        .padding(.vertical, 12)
-                                        .background(Color.white)
-                                        .clipShape(Capsule())
-                                }
-                                .buttonStyle(PlainButtonStyle())
                             }
                         }
 
