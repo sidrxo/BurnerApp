@@ -222,57 +222,25 @@ struct AuthWelcomeSlide: View {
         VStack(spacing: 0) {
             Spacer()
 
-            VStack(spacing: 0) {
-                Text("WHERE WILL")
-                    .font(.system(size: 48, weight: .bold, design: .default))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
-                    .padding(.bottom, -15)
+            // Use reusable TightHeaderText component
+            TightHeaderText("WHERE WILL", "YOU GO?")
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 100)
 
-                Text("YOU GO?")
-                    .font(.system(size: 48, weight: .bold, design: .default))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
-            }
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
-            .padding(.top, 100)
-
-            // Buttons
+            // Buttons using reusable BurnerButton components
             VStack(spacing: 16) {
                 // 1. LOG IN / SIGN UP (Primary: White/Black)
-                Button(action: {
+                BurnerButton("LOG IN / REGISTER", style: .primary, maxWidth: 200) {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     showingSignIn = true
-                }) {
-                    Text("LOG IN / REGISTER")
-                        .font(.appFont(size: 16))
-                        .foregroundColor(.black)
-                        .frame(maxWidth: 200)
-                        .padding(.vertical, 12)
-                        .background(Color.white)
-                        .clipShape(Capsule())
                 }
-                .buttonStyle(PlainButtonStyle())
 
                 // 2. EXPLORE (Secondary: Grey/White)
-                Button(action: {
+                BurnerButton("EXPLORE", style: .secondary, maxWidth: 160) {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     onExplore()
-                }) {
-                    Text("EXPLORE")
-                        .font(.appFont(size: 16))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: 160)
-                        .padding(.vertical, 12)
-                        .background(Color.gray.opacity(0.1))
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.white, lineWidth: 1)
-                        )
                 }
-                .buttonStyle(PlainButtonStyle())
             }
             .padding(.horizontal, 40)
             .padding(.bottom, 60)
@@ -313,24 +281,14 @@ struct LocationSlide: View {
         VStack(spacing: 0) {
             Spacer()
 
-            VStack(spacing: 0) {
-                Text("TELL US WHERE")
-                    .font(.system(size: 48, weight: .bold))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
-                    .padding(.bottom, -15)
+            // Use reusable TightHeaderText component
+            TightHeaderText("TELL US WHERE", "YOU ARE")
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 16)
 
-                Text("YOU ARE")
-                    .font(.system(size: 48, weight: .bold))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
-            }
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
-            .padding(.bottom, 16)
-            
             Text("We'll use this to show you nearby events.")
-                .font(.system(size: 17))
+                .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
@@ -439,24 +397,14 @@ struct NotificationsSlide: View {
         VStack(spacing: 0) {
             Spacer()
 
-            VStack(spacing: 0) {
-                Text("STAY IN")
-                    .font(.system(size: 48, weight: .bold))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
-                    .padding(.bottom, -15)
+            // Use reusable TightHeaderText component
+            TightHeaderText("STAY IN", "THE LOOP")
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 16)
 
-                Text("THE LOOP")
-                    .font(.system(size: 48, weight: .bold))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
-            }
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
-            .padding(.bottom, 16)
-            
             Text("Get notified about new events, recommendations, and updates on shows you're interested in.")
-                .font(.system(size: 17))
+                .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
@@ -530,22 +478,14 @@ struct GenreSlide: View {
         VStack(alignment: .leading, spacing: 0) {
             Spacer().frame(height: 40)
 
+            // Use reusable TightHeaderText component (aligned left for this slide)
             VStack(alignment: .leading, spacing: 0) {
-                Text("WHAT'S YOUR")
-                    .font(.system(size: 48, weight: .bold))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
-                    .padding(.bottom, -15)
-
-                Text("VIBE?")
-                    .font(.system(size: 48, weight: .bold))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
+                TightHeaderText("WHAT'S YOUR", "VIBE?")
             }
             .padding(.bottom, 16)
-            
+
             Text("We'll curate your feed based on your interests.")
-                .font(.system(size: 17))
+                .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .lineSpacing(4)
                 .padding(.bottom, 16)
@@ -646,7 +586,7 @@ struct CompleteSlide: View {
             
             // Loading message
             Text(loadingMessages[currentMessageIndex])
-                .font(.system(size: 17, weight: .medium))
+                .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
@@ -661,24 +601,26 @@ struct CompleteSlide: View {
     }
     
     private func startLoadingSequence() {
-        // Animate progress bar
-        withAnimation(.easeInOut(duration: 2.5)) {
+        // Animate progress bar (1.5 seconds for 1-2 second dismissal range)
+        withAnimation(.easeInOut(duration: 1.5)) {
             loadingProgress = 1.0
         }
-        
-        // Cycle through messages
-        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { timer in
+
+        // Cycle through messages faster
+        Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { timer in
             if currentMessageIndex < loadingMessages.count - 1 {
                 currentMessageIndex += 1
             } else {
                 timer.invalidate()
             }
         }
-        
-        // Auto-dismiss after 2.5 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+
+        // Auto-dismiss after 1.5 seconds with fade animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             print("✅ [CompleteSlide] Loading complete, calling onComplete()")
-            onComplete()
+            withAnimation(.easeOut(duration: 0.3)) {
+                onComplete()
+            }
         }
     }
 }
