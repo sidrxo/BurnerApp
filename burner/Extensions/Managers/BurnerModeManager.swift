@@ -25,7 +25,7 @@ class BurnerModeManager: ObservableObject {
     private var authorizationCancellable: AnyCancellable?
     
     // App Group for sharing data with extension
-    private let appGroupDefaults = UserDefaults(suiteName: "group.com.yourapp.burner")
+    private let appGroupDefaults = UserDefaults(suiteName: "group.com.gas.Burner")
     
     // NFC Manager for unlock functionality
     let nfcManager = NFCUnlockManager()

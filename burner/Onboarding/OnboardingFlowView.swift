@@ -11,29 +11,25 @@ struct OnboardingFlowView: View {
     @Environment(\.dismiss) var dismiss
 
     @StateObject private var localPreferences = LocalPreferences()
-    @StateObject private var tagViewModel = TagViewModel() // Still needed for genre data
+    @StateObject private var tagViewModel = TagViewModel()
 
     @State private var currentStep = 0
     @State private var isRequesting = false
 
-    // Total screens is 4: AuthWelcome (0) -> Location(1) -> Notifications(2) -> Complete(3)
-    private let totalSlides = 4
-    private let flowSteps = 2 // Location (1) -> Notifications (2)
+    // Total screens is 5: AuthWelcome (0) -> Location(1) -> Notifications(2) -> Genres(3) -> Complete(4)
+    private let totalSlides = 5
+    private let flowSteps = 3 // Location (1) -> Notifications (2) -> Genres (3)
 
     // MARK: - Navigation Logic
-    // Progress bar runs from Location to Notifications (2 steps)
     private var progressStep: Int {
-        // Steps 1 and 2 are the flow progress steps.
-        // We map currentStep 1 -> 0, currentStep 2 -> 1, currentStep 3 -> 2 (Complete screen has no progress bar)
         return max(0, currentStep - 1)
     }
-    
-    // Note: The main "Continue" button logic is heavily simplified, only used for final complete step.
 
     private func getSkipText() -> String? {
         switch currentStep {
-        case 1: return "skip" // Location
-        case 2: return "skip" // Notifications/Genres
+        case 1: return "skip"
+        case 2: return "skip"
+        case 3: return "skip"
         default: return nil
         }
     }
@@ -66,15 +62,15 @@ struct OnboardingFlowView: View {
                             // Show Auth Header with Logo
                             AuthHeader()
                         } else if currentStep > 0 && currentStep < totalSlides - 1 {
-                            // Show Progress Line (Steps 1, 2)
+                            // Show Progress Line (Steps 1, 2, 3)
                             HStack {
                                 Spacer()
                                 ProgressLineView(
                                     currentStep: progressStep,
                                     totalSteps: flowSteps,
-                                    isStepCompleted: progressStep > 0 // Only show completion after first step
+                                    isStepCompleted: progressStep > 0
                                 )
-                                .frame(width: 120) // Shorter width
+                                .frame(width: 120)
                                 Spacer()
                             }
                             .padding(.horizontal, 20)
@@ -89,11 +85,11 @@ struct OnboardingFlowView: View {
                     // Top Left: Back Button
                     if showBackButton {
                         VStack {
-                            HStack {
+                            HStack(alignment: .center) {
                                 Button(action: { handleBackButton() }) {
                                     Image(systemName: "chevron.left")
                                         .font(.system(size: 20, weight: .medium))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(.white.opacity(0.6))
                                         .frame(width: 44, height: 44)
                                 }
                                 .padding(.leading, 20)
@@ -107,7 +103,7 @@ struct OnboardingFlowView: View {
                     // Top Right: Skip Button
                     if let skipText = getSkipText() {
                         VStack {
-                            HStack {
+                            HStack(alignment: .center) {
                                 Spacer()
                                 Button(action: { handleSkip() }) {
                                     Text(skipText)
@@ -125,9 +121,8 @@ struct OnboardingFlowView: View {
                 }
                 .frame(height: 50)
 
-                // 🔄 Content Slides using ZStack and Offset (New Slide Animation)
+                // 🔄 Content Slides using ZStack and Offset
                 ZStack {
-                    // Slides are stacked and offset based on currentStep
                     ForEach(0..<totalSlides, id: \.self) { step in
                         Group {
                             switch step {
@@ -139,47 +134,28 @@ struct OnboardingFlowView: View {
                             case 1:
                                 LocationSlide(onLocationSet: { handleNextStep() })
                             case 2:
-                                NotificationGenreSlide( // Combined Notifications and Genres
+                                NotificationsSlide(onContinue: { handleNextStep() })
+                            case 3:
+                                GenreSlide(
                                     localPreferences: localPreferences,
                                     tagViewModel: tagViewModel,
                                     onContinue: { handleNextStep() }
                                 )
-                            case 3:
-                                CompleteSlide()
+                            case 4:
+                                CompleteSlide(onComplete: { completeOnboarding() })
                             default:
                                 EmptyView()
                             }
                         }
                         .offset(x: slideOffset(for: step))
-                        .opacity(step == currentStep ? 1 : 0) // Hide off-screen content
+                        .opacity(step == currentStep ? 1 : 0)
                         .zIndex(step == currentStep ? 1 : 0)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .animation(.easeOut(duration: 0.3), value: currentStep) // Apply animation here
+                .animation(.easeOut(duration: 0.3), value: currentStep)
 
                 Spacer()
-
-                // Bottom Action Area (Only visible on Complete Slide)
-                if currentStep == totalSlides - 1 {
-                    VStack(spacing: 16) {
-                        Button(action: { completeOnboarding() }) {
-                            Text("START EXPLORING".uppercased())
-                                .appSecondary()
-                                .foregroundColor(.black)
-                                .frame(height: 50)
-                                .frame(maxWidth: .infinity)
-                                .background(Color.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                                )
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 40)
-                }
             }
         }
         .environmentObject(localPreferences)
@@ -194,10 +170,6 @@ struct OnboardingFlowView: View {
     // MARK: - Logic
     
     private func handleSkip() {
-        // Special logic for location skip
-        if currentStep == 1 {
-            // Do NOT request or set location, just advance the step
-        }
         handleNextStep()
     }
 
@@ -247,41 +219,38 @@ struct AuthWelcomeSlide: View {
             VStack(spacing: 16) {
                 // 1. LOG IN / SIGN UP (Primary: White/Black)
                 Button(action: { showingSignIn = true }) {
-                                    Text("LOG IN / SIGN UP")
-                                        .appSecondary()
-                                        .foregroundColor(.black)
-                                        .frame(height: 50)
-                                        // ⭐️ FIX: Set a fixed maximum width for the button
-                                        .frame(maxWidth: 200)
-                                        .background(Color.white)
-                                        .clipShape(Capsule())
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                    Text("LOG IN / SIGN UP")
+                        .appSecondary()
+                        .foregroundColor(.black)
+                        .frame(height: 50)
+                        .frame(maxWidth: 200)
+                        .background(Color.white)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(PlainButtonStyle())
 
-                                // 2. EXPLORE (Secondary: Grey/White)
-                                Button(action: onExplore) {
-                                    Text("EXPLORE")
-                                        .appSecondary()
-                                        .foregroundColor(.white)
-                                        .frame(height: 50)
-                                        // ⭐️ FIX: Set a fixed maximum width for the button
-                                        .frame(maxWidth: 200)
-                                        .background(Color.gray.opacity(0.3))
-                                        .clipShape(Capsule())
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                                        )
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                            // ⭐️ ADJUST: Increased horizontal padding to center the narrower buttons
-                            .padding(.horizontal, 40)
-                            .padding(.bottom, 60)
-                            .padding(.top, 30)
-                        }
-                        .sheet(isPresented: $showingSignIn) {
-                            SignInSheetView(showingSignIn: $showingSignIn, onSkip: { onLogin() })
+                // 2. EXPLORE (Secondary: Grey/White)
+                Button(action: onExplore) {
+                    Text("EXPLORE")
+                        .appSecondary()
+                        .foregroundColor(.white)
+                        .frame(height: 50)
+                        .frame(maxWidth: 200)
+                        .background(Color.gray.opacity(0.3))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal, 40)
+            .padding(.bottom, 60)
+            .padding(.top, 30)
+        }
+        .sheet(isPresented: $showingSignIn) {
+            SignInSheetView(showingSignIn: $showingSignIn, onSkip: { onLogin() })
         }
     }
 }
@@ -326,9 +295,16 @@ struct LocationSlide: View {
             }
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
-            .padding(.bottom, 60)
+            .padding(.bottom, 16)
+            
+            Text("We'll use this to show you nearby events.")
+                .font(.system(size: 17))
+                .foregroundColor(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+                .padding(.bottom, 40)
 
-            // Location buttons - centered, narrower pills, capitalized text
+            // Location buttons
             VStack(spacing: 16) {
                 Button(action: {
                     requestCurrentLocation()
@@ -337,7 +313,6 @@ struct LocationSlide: View {
                         .appBody()
                         .foregroundColor(.black)
                         .frame(height: 50)
-                        // ⭐️ FIX: Set a fixed maximum width for the button
                         .frame(maxWidth: 200)
                         .background(Color.white)
                         .clipShape(Capsule())
@@ -356,7 +331,6 @@ struct LocationSlide: View {
                         .appBody()
                         .foregroundColor(.white)
                         .frame(height: 50)
-                        // ⭐️ FIX: Set a fixed maximum width for the button
                         .frame(maxWidth: 200)
                         .background(Color.gray.opacity(0.3))
                         .clipShape(Capsule())
@@ -376,7 +350,6 @@ struct LocationSlide: View {
                 locationManager: appState.userLocationManager,
                 onDismiss: {
                     showingManualEntry = false
-                    
                 }
             )
         }
@@ -387,15 +360,103 @@ struct LocationSlide: View {
         appState.userLocationManager.requestCurrentLocation { result in
             DispatchQueue.main.async {
                 isProcessing = false
-                // Advance step automatically after location choice (request or not)
                 onLocationSet()
             }
         }
     }
 }
 
-// MARK: - Slide 2: Notifications & Genres (Combined)
-struct NotificationGenreSlide: View {
+// MARK: - Slide 2: Notifications
+struct NotificationsSlide: View {
+    let onContinue: () -> Void
+    @State private var selectedOption: NotificationOption = .all
+
+    enum NotificationOption {
+        case all
+        case myEventsOnly
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: 0) {
+                Text("STAY IN")
+                    .font(.system(size: 48, weight: .bold))
+                    .kerning(-1.5)
+                    .foregroundColor(.white)
+                    .padding(.bottom, -15)
+
+                Text("THE LOOP")
+                    .font(.system(size: 48, weight: .bold))
+                    .kerning(-1.5)
+                    .foregroundColor(.white)
+            }
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 16)
+            
+            Text("Get notified about new events, recommendations, and updates on shows you're interested in.")
+                .font(.system(size: 17))
+                .foregroundColor(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+                .lineSpacing(4)
+                .padding(.bottom, 40)
+
+            // Notification option pills
+            VStack(spacing: 16) {
+                Button(action: {
+                    selectedOption = .all
+                    requestNotifications()
+                }) {
+                    Text("I'M IN")
+                        .appBody()
+                        .foregroundColor(.black)
+                        .frame(height: 50)
+                        .frame(maxWidth: 200)
+                        .background(Color.white)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                Button(action: {
+                    selectedOption = .myEventsOnly
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        onContinue()
+                    }
+                }) {
+                    Text("SAVED ONLY")
+                        .appBody()
+                        .foregroundColor(.white)
+                        .frame(height: 50)
+                        .frame(maxWidth: 200)
+                        .background(Color.gray.opacity(0.3))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal, 40)
+
+            Spacer()
+        }
+    }
+
+    private func requestNotifications() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            DispatchQueue.main.async {
+                onContinue()
+            }
+        }
+    }
+}
+
+// MARK: - Slide 3: Genres
+struct GenreSlide: View {
     @ObservedObject var localPreferences: LocalPreferences
     @ObservedObject var tagViewModel: TagViewModel
     let onContinue: () -> Void
@@ -405,21 +466,20 @@ struct NotificationGenreSlide: View {
             Spacer().frame(height: 40)
 
             VStack(alignment: .leading, spacing: 0) {
-                Text("GET NOTIFIED")
+                Text("WHAT'S YOUR")
                     .font(.system(size: 48, weight: .bold))
                     .kerning(-1.5)
                     .foregroundColor(.white)
                     .padding(.bottom, -15)
 
-                Text("Stay Updated")
+                Text("VIBE?")
                     .font(.system(size: 48, weight: .bold))
                     .kerning(-1.5)
                     .foregroundColor(.white)
             }
-            .padding(.bottom, 20)
+            .padding(.bottom, 16)
             
-            // --- Genre Selection ---
-            Text("Select your vibes to curate your feed.")
+            Text("We'll curate your feed based on your interests.")
                 .font(.system(size: 17))
                 .foregroundColor(.white.opacity(0.7))
                 .lineSpacing(4)
@@ -442,7 +502,8 @@ struct NotificationGenreSlide: View {
                             )
                         }
                     }
-                    .padding(.bottom, 80) // Padding for scroll view under arrow
+                    .animation(nil, value: localPreferences.selectedGenres)
+                    .padding(.bottom, 80)
                 }
             }
             
@@ -450,7 +511,6 @@ struct NotificationGenreSlide: View {
         }
         .padding(.horizontal, 24)
         .overlay(
-            // Navigation Pill: Only appears if a genre is selected
             VStack {
                 Spacer()
                 if !localPreferences.selectedGenres.isEmpty {
@@ -474,49 +534,82 @@ struct NotificationGenreSlide: View {
     private func toggleGenre(_ genre: String) {
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-            if localPreferences.selectedGenres.contains(genre) {
-                localPreferences.selectedGenres.removeAll { $0 == genre }
-            } else {
-                localPreferences.selectedGenres.append(genre)
-            }
+        if localPreferences.selectedGenres.contains(genre) {
+            localPreferences.selectedGenres.removeAll { $0 == genre }
+        } else {
+            localPreferences.selectedGenres.append(genre)
         }
     }
 }
 
-// MARK: - Slide 3: Complete
+// MARK: - Slide 4: Complete (Auto-dismiss loader)
 struct CompleteSlide: View {
+    let onComplete: () -> Void
+    
+    @State private var currentMessageIndex = 0
+    @State private var loadingProgress: CGFloat = 0
+    
+    let loadingMessages = [
+        "Curating your feed...",
+        "Loading your preferences...",
+        "Downloading event database...",
+        "Finding events near you...",
+        "Almost ready..."
+    ]
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer().frame(height: 40)
-
-            Text("You're All Set!")
-                .font(.system(size: 48, weight: .bold))
-                .kerning(-1.5)
-                .foregroundColor(.white)
+        VStack(spacing: 0) {
+            Spacer()
             
-            Text("Your feed is ready. Let's find your next experience.")
-                .font(.system(size: 17))
-                .foregroundColor(.white.opacity(0.7))
-                .lineSpacing(4)
-                .padding(.top, 16)
-            
-            Spacer().frame(height: 40)
-            
+            // Animated loader
             ZStack {
                 Circle()
-                    .fill(Color.white.opacity(0.1))
-                    .frame(width: 160, height: 160)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 4)
+                    .frame(width: 80, height: 80)
                 
-                Image(systemName: "hand.wave")
-                    .font(.system(size: 60, weight: .light))
-                    .foregroundColor(.white)
+                Circle()
+                    .trim(from: 0, to: loadingProgress)
+                    .stroke(Color.white, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .frame(width: 80, height: 80)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeInOut(duration: 0.5), value: loadingProgress)
             }
-            .frame(maxWidth: .infinity)
-
+            .padding(.bottom, 32)
+            
+            // Loading message
+            Text(loadingMessages[currentMessageIndex])
+                .font(.system(size: 17, weight: .medium))
+                .foregroundColor(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+                .animation(.easeInOut, value: currentMessageIndex)
+            
             Spacer()
         }
-        .padding(.horizontal, 24)
+        .onAppear {
+            startLoadingSequence()
+        }
+    }
+    
+    private func startLoadingSequence() {
+        // Animate progress bar
+        withAnimation(.easeInOut(duration: 2.5)) {
+            loadingProgress = 1.0
+        }
+        
+        // Cycle through messages
+        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { timer in
+            if currentMessageIndex < loadingMessages.count - 1 {
+                currentMessageIndex += 1
+            } else {
+                timer.invalidate()
+            }
+        }
+        
+        // Auto-dismiss after 2.5 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            onComplete()
+        }
     }
 }
 
@@ -559,7 +652,6 @@ struct FlowLayout: Layout {
                 let size = subview.sizeThatFits(.unspecified)
 
                 if currentX + size.width > maxWidth && currentX > 0 {
-                    // Move to next line
                     currentX = 0
                     currentY += lineHeight + spacing
                     lineHeight = 0
@@ -585,7 +677,7 @@ struct GenrePill: View {
             HStack(spacing: 6) {
                 Text(title.lowercased())
                     .appSecondary()
-                    .font(.system(size: 16, weight: .medium)) // Adjusted size slightly
+                    .font(.system(size: 16, weight: .medium))
                     .lineLimit(1)
 
                 if isSelected {
@@ -605,5 +697,6 @@ struct GenrePill: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
     }
 }
