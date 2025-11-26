@@ -314,33 +314,23 @@ struct WelcomeSlideContent: View {
             // Consistent header spacing
             Spacer()
                 .frame(height: 60)
-            
-            // Large hero text, left aligned with negative padding
+
+            // Use reusable TightHeaderText component (aligned left)
             VStack(alignment: .leading, spacing: 0) {
-                Text("Unlock your")
-                    .font(.system(size: 48, weight: .bold, design: .default))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
-                    .padding(.bottom, -15) // Pulls the next line up
-                
-                Text("tickets.")
-                    .font(.system(size: 48, weight: .bold, design: .default))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
+                TightHeaderText("Unlock your", "tickets.")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            
             Spacer()
                 .frame(height: 24)
-            
+
             // Subtitle with lower opacity
             Text("Complete this quick setup to access your tickets. You'll only need to do this once.")
-                .font(.appFont(size: 17))
+                .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            
+
             Spacer()
         }
         .padding(.horizontal, 24)
@@ -353,29 +343,20 @@ struct WhatIsItSlideContent: View {
             // Consistent header spacing
             Spacer()
                 .frame(height: 60)
-            
-            // Title with negative padding
-            VStack(alignment: .leading, spacing: 0) {
-                Text("How does it")
-                    .font(.system(size: 48, weight: .bold))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
-                    .padding(.bottom, -15)
 
-                Text("work?")
-                    .font(.system(size: 48, weight: .bold))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
+            // Use reusable TightHeaderText component (aligned left)
+            VStack(alignment: .leading, spacing: 0) {
+                TightHeaderText("How does it", "work?")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            
+
             // Subtitle below
             Text("BURNER blocks distracting apps during events.")
-                .font(.appFont(size: 16))
+                .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 16) // ← ADD THIS
+                .padding(.top, 16)
             
             Spacer()
                 .frame(height: 32) // ← CHANGE FROM 10 TO 32← Change from 10 to 32 for consistency
@@ -445,25 +426,16 @@ struct ExitMethodsSlideContent: View {
             // Consistent header spacing
             Spacer()
                 .frame(height: 60)
-            
-            // Title with negative padding
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Need to")
-                    .font(.system(size: 48, weight: .bold))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
-                    .padding(.bottom, -15)
 
-                Text("leave early?")
-                    .font(.system(size: 48, weight: .bold))
-                    .kerning(-1.5)
-                    .foregroundColor(.white)
+            // Use reusable TightHeaderText component (aligned left)
+            VStack(alignment: .leading, spacing: 0) {
+                TightHeaderText("Need to", "leave early?")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            
+
             // Subtitle below
             Text("Three ways to exit BURNER before the event ends.")
-                .font(.appFont(size: 16))
+                .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -541,34 +513,16 @@ struct PermissionSlideContent: View {
             // Consistent header spacing
             Spacer()
                 .frame(height: 60)
-            
-            // Title with negative padding (New Implementation - 2 and 3 lines handled)
+
+            // Use reusable TightHeaderText component (aligned left)
             if authorizationGranted {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Access")
-                        .font(.system(size: 48, weight: .bold))
-                        .kerning(-1.5)
-                        .foregroundColor(.white)
-                        .padding(.bottom, -15)
-                        
-                    Text("Granted")
-                        .font(.system(size: 48, weight: .bold))
-                        .kerning(-1.5)
-                        .foregroundColor(.white)
+                    TightHeaderText("Access", "Granted")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Enable")
-                        .font(.system(size: 48, weight: .bold))
-                        .kerning(-1.5)
-                        .foregroundColor(.white)
-                        .padding(.bottom, -15)
-
-                    Text("Screen Time")
-                        .font(.system(size: 48, weight: .bold))
-                        .kerning(-1.5)
-                        .foregroundColor(.white)
+                    TightHeaderText("Enable", "Screen Time")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -577,11 +531,11 @@ struct PermissionSlideContent: View {
             Text(authorizationGranted
                  ? "Screen Time access enabled. BURNER can now block apps during events."
                  : "Required to block apps during events. We never read or store your data.")
-            .font(.appFont(size: 16))
+            .appBody()
             .foregroundColor(.white.opacity(0.7))
             .lineSpacing(4)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 16) // Add some spacing after the tight title
+            .padding(.top, 16)
             
             Spacer()
                 .frame(height: 32)
@@ -637,34 +591,16 @@ struct CategorySelectionSlideContent: View {
             // Consistent header spacing
             Spacer()
                 .frame(height: 60)
-            
-            // Title with negative padding (New Implementation - 2 and 3 lines handled)
+
+            // Use reusable TightHeaderText component (aligned left)
             if burnerManager.isSetupValid {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Categories")
-                        .font(.system(size: 48, weight: .bold))
-                        .kerning(-1.5)
-                        .foregroundColor(.white)
-                        .padding(.bottom, -15)
-                    
-                    Text("Selected")
-                        .font(.system(size: 48, weight: .bold))
-                        .kerning(-1.5)
-                        .foregroundColor(.white)
+                    TightHeaderText("Categories", "Selected")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Choose")
-                        .font(.system(size: 48, weight: .bold))
-                        .kerning(-1.5)
-                        .foregroundColor(.white)
-                        .padding(.bottom, -15)
-                    
-                    Text("Distractions")
-                        .font(.system(size: 48, weight: .bold))
-                        .kerning(-1.5)
-                        .foregroundColor(.white)
+                    TightHeaderText("Choose", "Distractions")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -673,11 +609,11 @@ struct CategorySelectionSlideContent: View {
             Text(burnerManager.isSetupValid
                  ? "\(categoryCount) categories will be blocked during events."
                  : "Select all categories that distract you. We recommend 10 or more.")
-            .font(.appFont(size: 16))
+            .appBody()
             .foregroundColor(.white.opacity(0.7))
             .lineSpacing(4)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 16) // Add some spacing after the tight title
+            .padding(.top, 16)
             
             Spacer()
                 .frame(height: 32)
@@ -758,7 +694,7 @@ struct ConfirmationSlideContent: View {
             
             // Subtitle below
             Text("BURNER is ready. Your ticket QR code is now on the home screen.")
-                .font(.appFont(size: 16))
+                .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .leading)

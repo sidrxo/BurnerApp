@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseFirestore
 
 struct DebugMenuView: View {
     @ObservedObject var appState: AppState
@@ -169,6 +170,11 @@ struct DebugMenuView: View {
 
     private func resetAppToFirstInstall() {
         Task {
+            // Clear Firestore preferences before signing out
+            if let userId = appState.authService.currentUser?.uid {
+                await clearFirestorePreferences(userId: userId)
+            }
+
             // Sign out the user if signed in
             if appState.authService.currentUser != nil {
                 try? appState.authService.signOut()
@@ -178,10 +184,16 @@ struct DebugMenuView: View {
             if let bundleID = Bundle.main.bundleIdentifier {
                 UserDefaults.standard.removePersistentDomain(forName: bundleID)
             }
-            
+
             // ✅ FIX: Call reset on the AppState's shared OnboardingManager instance
             await MainActor.run {
                 appState.onboardingManager.resetOnboarding() // This clears the userDefaults flags for onboarding/sign-in
+            }
+
+            // Clear local preferences
+            await MainActor.run {
+                let localPrefs = LocalPreferences()
+                localPrefs.reset()
             }
 
             // Disable burner mode if enabled
@@ -194,7 +206,7 @@ struct DebugMenuView: View {
 
             // Clear burner selections
             burnerManager.clearAllSelections()
-            
+
             // Reset user location
             await MainActor.run {
                 appState.userLocationManager.resetLocation()
@@ -205,12 +217,26 @@ struct DebugMenuView: View {
                 appState.navigationCoordinator.resetAllNavigation()
                 appState.navigationCoordinator.selectTab(.home)
             }
-            
+
             // Clear debug event if active
             if eventState != .noEvent {
                 appState.clearDebugEventToday()
                 eventState = .noEvent
             }
+        }
+    }
+
+    // Helper function to clear Firestore preferences
+    private func clearFirestorePreferences(userId: String) async {
+        let db = FirebaseFirestore.Firestore.firestore()
+        let userRef = db.collection("users").document(userId)
+
+        do {
+            // Remove preferences field from Firestore
+            try await userRef.updateData(["preferences": FieldValue.delete()])
+            print("✅ Cleared Firestore preferences for user: \(userId)")
+        } catch {
+            print("❌ Failed to clear Firestore preferences: \(error.localizedDescription)")
         }
     }
 

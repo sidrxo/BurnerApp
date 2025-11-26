@@ -54,11 +54,16 @@ struct TicketPurchaseView: View {
                             VStack(spacing: 20) {
                                 // Price summary
                                 priceSummary
-                                
+
+                                // Burner mode disclaimer if not set up
+                                if !appState.burnerManager.hasCompletedSetup {
+                                    burnerModeDisclaimer
+                                }
+
                                 Divider()
                                     .background(Color.white.opacity(0.05))
                                     .padding(.horizontal, 20)
-                                
+
                                 Spacer(minLength: 0)
                                 
                                 // ✅ UPDATED: Single line terms with clickable links
@@ -234,8 +239,10 @@ struct TicketPurchaseView: View {
                 
                 if showingAlert {
                     CustomAlertView(
-                        title: isSuccess ? "Success!" : "Error",
-                        description: alertMessage,
+                        title: isSuccess ? (!appState.burnerManager.hasCompletedSetup ? "Complete Burner Setup" : "Success!") : "Error",
+                        description: isSuccess && !appState.burnerManager.hasCompletedSetup
+                            ? "You need to complete Burner Mode setup to access your ticket. This only takes a minute."
+                            : alertMessage,
                         primaryAction: {
                             showingAlert = false
                             if isSuccess {
@@ -246,7 +253,7 @@ struct TicketPurchaseView: View {
                                 }
                             }
                         },
-                        primaryActionTitle: "OK",
+                        primaryActionTitle: isSuccess && !appState.burnerManager.hasCompletedSetup ? "Set Up Burner Mode" : "OK",
                         customContent: EmptyView()
                     )
                     .transition(.opacity)
@@ -392,6 +399,23 @@ struct TicketPurchaseView: View {
                 .foregroundColor(.white)
         }
         .padding(20)
+        .background(Color.white.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 20)
+    }
+
+    private var burnerModeDisclaimer: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "info.circle.fill")
+                .font(.system(size: 20))
+                .foregroundColor(.white.opacity(0.7))
+
+            Text("You'll need to complete Burner Mode setup after purchase to access your ticket.")
+                .appBody()
+                .foregroundColor(.white.opacity(0.7))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
         .background(Color.white.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .padding(.horizontal, 20)

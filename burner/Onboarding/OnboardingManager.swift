@@ -21,14 +21,14 @@ class OnboardingManager: ObservableObject {
     init(authService: AuthenticationService) {
         self.authService = authService
         self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
-        
+
         // Set initial state immediately based on current auth status
         let isAuthenticated = authService.currentUser != nil
-        
-        // Show onboarding if: user is NOT authenticated AND has NOT completed onboarding
-        // This allows users who completed onboarding to browse without auth
-        self.shouldShowOnboarding = !isAuthenticated && !hasCompletedOnboarding
-        
+
+        // NEW LOGIC: If no user is signed in, ALWAYS show onboarding first slide
+        // regardless of whether they completed it before
+        self.shouldShowOnboarding = !isAuthenticated
+
         print("🚀 [OnboardingManager] Initialized - Auth: \(isAuthenticated), Completed Before: \(hasCompletedOnboarding), Show: \(shouldShowOnboarding)")
 
         // Setup the subscription to track auth state changes
@@ -79,22 +79,21 @@ class OnboardingManager: ObservableObject {
     private func updateOnboardingStatus() {
         let isAuthenticated = authService?.currentUser != nil
         let previousValue = shouldShowOnboarding
-        
-        // Logic:
+
+        // NEW LOGIC:
         // - If signed IN -> Always hide onboarding (let them into app)
-        // - If signed OUT:
-        //   - If has completed onboarding before -> Hide (let them browse)
-        //   - If has NOT completed onboarding -> Show (force onboarding)
-        
+        // - If signed OUT -> Always show onboarding first slide (even if completed before)
+
         if isAuthenticated {
             // User is signed in, always dismiss onboarding
+            // Load their preferences from Firestore
             self.shouldShowOnboarding = false
+            loadUserPreferences()
         } else {
-            // User is signed out
-            // Only show onboarding if they haven't completed it before
-            self.shouldShowOnboarding = !hasCompletedOnboarding
+            // User is signed out - always show onboarding first slide
+            self.shouldShowOnboarding = true
         }
-        
+
         // Force UI update if value changed
         if previousValue != shouldShowOnboarding {
             print("🔄 [OnboardingManager] State changed: \(previousValue) -> \(shouldShowOnboarding)")
@@ -103,8 +102,20 @@ class OnboardingManager: ObservableObject {
                 self.objectWillChange.send()
             }
         }
-        
+
         print("👤 [OnboardingManager] Auth: \(isAuthenticated ? "✅ Signed In" : "❌ Signed Out") | Completed Before: \(hasCompletedOnboarding ? "✅ Yes" : "❌ No") -> Show Onboarding: \(shouldShowOnboarding ? "✅ YES" : "❌ NO")")
+    }
+
+    // Load user preferences from Firestore when signed in
+    private func loadUserPreferences() {
+        Task {
+            let syncService = PreferencesSyncService()
+            if let firebasePrefs = await syncService.loadPreferencesFromFirebase() {
+                print("✅ [OnboardingManager] Loaded preferences from Firestore")
+                // Apply preferences to local storage
+                firebasePrefs.saveToUserDefaults()
+            }
+        }
     }
 
     // MARK: - Public Methods

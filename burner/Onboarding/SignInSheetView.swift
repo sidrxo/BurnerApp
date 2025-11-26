@@ -178,7 +178,7 @@ struct SignInSheetView: View {
                         .font(.system(size: 20, weight: .medium))
 
                     Text("CONTINUE WITH EMAIL")
-                        .appSecondary()
+                        .appBody() // Use appBody to match other button text size
                 }
                 .foregroundColor(.black)
                 .frame(height: 50)
@@ -917,21 +917,39 @@ struct SignInSheetView: View {
             triggerSuccessFeedback()
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
 
-            // ✅ Check if user has existing preferences in Firebase
+            // ✅ Merge local preferences with Firebase preferences
             Task { @MainActor in
                 let syncService = PreferencesSyncService()
                 let localPrefs = LocalPreferences()
 
-                // Sync local preferences to Firebase first
-                await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
+                // Check if user has local preferences from guest onboarding
+                let hasLocalPrefs = localPrefs.hasAnyPreferences
 
-                // Check if user has any preferences in Firebase
+                // Check if user has existing preferences in Firebase
                 if let firebasePrefs = await syncService.loadPreferencesFromFirebase() {
                     if firebasePrefs.hasAnyPreferences {
-                        // User has existing preferences, skip onboarding
+                        // User has existing preferences
+                        if hasLocalPrefs {
+                            // Merge local + Firebase preferences
+                            print("🔀 Merging local and Firebase preferences")
+                            await syncService.mergePreferences(localPreferences: localPrefs)
+                        } else {
+                            // Just load Firebase preferences
+                            print("✅ Loading Firebase preferences")
+                            firebasePrefs.saveToUserDefaults()
+                        }
+                        // User has preferences, skip onboarding
                         print("✅ User has existing preferences, skipping onboarding")
                         NotificationCenter.default.post(name: NSNotification.Name("SkipOnboardingToExplore"), object: nil)
+                    } else if hasLocalPrefs {
+                        // User has local but no Firebase preferences, sync local to Firebase
+                        print("📤 Syncing local preferences to Firebase")
+                        await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
                     }
+                } else if hasLocalPrefs {
+                    // No Firebase preferences, but has local ones, sync them
+                    print("📤 Syncing local preferences to Firebase (no existing prefs)")
+                    await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
                 }
             }
 
