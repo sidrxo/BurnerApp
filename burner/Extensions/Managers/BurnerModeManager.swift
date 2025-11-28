@@ -37,10 +37,7 @@ class BurnerModeManager: ObservableObject {
     init() {
         // START: FIX - Initialize the appGroupDefaults safely
         self.appGroupDefaults = UserDefaults(suiteName: "group.com.gas.Burner")
-        
-        if self.appGroupDefaults == nil {
-            print("❌ CRITICAL: Failed to initialize UserDefaults for App Group 'group.com.gas.Burner'. Check App Group capability settings.")
-        }
+
         // END: FIX
         
         loadSelectedApps()
@@ -154,18 +151,14 @@ class BurnerModeManager: ObservableObject {
 
             if !setupReminderIDs.isEmpty {
                 UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: setupReminderIDs)
-                print("🔔 Cancelled \(setupReminderIDs.count) setup reminder notifications")
             }
         }
-
-        print("✅ Burner Mode setup completed")
     }
 
     // MARK: - Reset Setup
     func resetSetup() {
         hasCompletedSetup = false
         UserDefaults.standard.set(false, forKey: "hasCompletedBurnerSetup")
-        print("🔄 Burner Mode setup reset")
     }
 
     func enable(appState: AppState) async throws {
@@ -266,9 +259,7 @@ class BurnerModeManager: ObservableObject {
         
         do {
             try center.startMonitoring(activityName, during: schedule)
-            print("✅ Device Activity monitoring started")
         } catch {
-            print("❌ Failed to start monitoring: \(error)")
             throw error
         }
     }

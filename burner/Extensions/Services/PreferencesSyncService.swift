@@ -16,14 +16,12 @@ class PreferencesSyncService {
     // MARK: - Sync Local Preferences to Firebase
     func syncLocalPreferencesToFirebase(localPreferences: LocalPreferences) async {
         guard let userId = Auth.auth().currentUser?.uid else {
-            print("❌ No authenticated user, cannot sync preferences")
             return
         }
 
         let preferencesData = localPreferences.exportDictionary()
 
         if preferencesData.isEmpty {
-            print("⚠️ No local preferences to sync")
             return
         }
 
@@ -31,16 +29,13 @@ class PreferencesSyncService {
 
         do {
             try await userRef.setData(["preferences": preferencesData], merge: true)
-            print("✅ Local preferences synced to Firebase successfully")
         } catch {
-            print("❌ Failed to sync local preferences to Firebase: \(error.localizedDescription)")
         }
     }
 
     // MARK: - Load Preferences from Firebase
     func loadPreferencesFromFirebase() async -> LocalPreferences? {
         guard let userId = Auth.auth().currentUser?.uid else {
-            print("❌ No authenticated user, cannot load preferences")
             return nil
         }
 
@@ -51,7 +46,6 @@ class PreferencesSyncService {
             
             guard let data = snapshot.data(),
                   let preferencesData = data["preferences"] as? [String: Any] else {
-                print("⚠️ No preferences found in Firebase")
                 return nil
             }
 
@@ -78,11 +72,9 @@ class PreferencesSyncService {
                 preferences.hasEnabledNotifications = notificationsEnabled
             }
 
-            print("✅ Preferences loaded from Firebase successfully")
             return preferences
 
         } catch {
-            print("❌ Failed to load preferences from Firebase: \(error.localizedDescription)")
             return nil
         }
     }
@@ -90,7 +82,6 @@ class PreferencesSyncService {
     // MARK: - Merge Preferences (local + Firebase)
     func mergePreferences(localPreferences: LocalPreferences) async {
         guard let userId = Auth.auth().currentUser?.uid else {
-            print("❌ No authenticated user, cannot merge preferences")
             return
         }
 
@@ -133,9 +124,7 @@ class PreferencesSyncService {
 
         do {
             try await userRef.setData(["preferences": mergedData], merge: true)
-            print("✅ Merged preferences saved to Firebase successfully")
         } catch {
-            print("❌ Failed to save merged preferences to Firebase: \(error.localizedDescription)")
         }
     }
 }

@@ -90,18 +90,12 @@ class PasswordlessAuthHandler: ObservableObject {
                     "createdAt": FieldValue.serverTimestamp(),
                     "venuePermissions": []
                 ]) { _, new in new }
-                
+
                 userRef.setData(userData) { error in
-                    if let error = error {
-                        print("Error creating user profile: \(error.localizedDescription)")
-                    }
                 }
             } else {
                 // Existing user - just update last login
                 userRef.updateData(userData) { error in
-                    if let error = error {
-                        print("Error updating user profile: \(error.localizedDescription)")
-                    }
                 }
             }
         }
