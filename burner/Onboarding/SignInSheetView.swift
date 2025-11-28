@@ -599,7 +599,7 @@ struct SignInSheetView: View {
                 
                 // Copy old data to new user (preserving stripeCustomerId!)
                 newUserRef.setData(mergedData, merge: true) { error in
-                    if let error = error {
+                    if error != nil {
                         self.stopLoading()
                         self.showErrorMessage("Failed to merge account data")
                         return
@@ -704,7 +704,7 @@ struct SignInSheetView: View {
         let userRef = db.collection("users").document(user.uid)
         
         userRef.getDocument { snapshot, error in
-            if let error = error {
+            if error != nil {
                 completion()
                 return
             }

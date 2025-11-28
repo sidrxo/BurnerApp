@@ -35,9 +35,9 @@ struct PaymentSettingsView: View {
     private func logFetch(_ message: String) {
         fetchLogStep += 1
         let now = Date()
-        let ts = Self.timeFormatter.string(from: now)
+        _ = Self.timeFormatter.string(from: now)
         let elapsed = fetchLogStart.map { now.timeIntervalSince($0) } ?? 0
-        let elapsedStr = String(format: "%.3fs", elapsed)
+        _ = String(format: "%.3fs", elapsed)
     }
 
     var body: some View {
