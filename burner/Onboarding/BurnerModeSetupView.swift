@@ -283,7 +283,7 @@ struct BurnerModeSetupView: View {
                     authorizationGranted = (status == .approved)
                 }
             } catch {
-                print("Authorization failed: \(error)")
+
                 // Still check status in case user granted in settings
                 await MainActor.run {
                     checkAuthorizationStatus()
