@@ -22,17 +22,6 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: onboardingManager.shouldShowOnboarding)
-        .onAppear {
-            print("📱 [ContentView] Appeared - Show Onboarding: \(onboardingManager.shouldShowOnboarding)")
-            print("📱 [ContentView] Has Completed: \(onboardingManager.hasCompletedOnboarding)")
-            print("📱 [ContentView] Is Authenticated: \(appState.authService.currentUser != nil)")
-        }
-        .onChange(of: onboardingManager.shouldShowOnboarding) { oldValue, newValue in
-            print("📱 [ContentView] Onboarding state changed: \(oldValue) -> \(newValue)")
-        }
-        .onChange(of: appState.authService.currentUser) { oldValue, newValue in
-            print("📱 [ContentView] Auth state changed: \(oldValue?.uid ?? "nil") -> \(newValue?.uid ?? "nil")")
-        }
     }
 }
 

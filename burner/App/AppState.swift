@@ -85,7 +85,7 @@ class AppState: ObservableObject {
     }
     
     init() {
-        print("🚀 [AppState] Initializing...")
+       
         
         // Initialize repositories (shared instances)
         self.eventRepository = EventRepository()
@@ -131,7 +131,7 @@ class AppState: ObservableObject {
         
         // ✅ NOW properly initialize Onboarding Manager with AuthService (replaces temporary init)
         self.onboardingManager = OnboardingManager(authService: self.authService)
-        print("🎯 [AppState] OnboardingManager initialized with authService")
+        
 
         // ✅ Trigger lazy initialization of burnerModeMonitor after all properties are initialized
         _ = burnerModeMonitor
@@ -139,7 +139,7 @@ class AppState: ObservableObject {
         setupObservers()
         setupBurnerModeObserver()
         
-        print("✅ [AppState] Initialization complete")
+        
     }
     
     // MARK: - Setup Observers
@@ -149,17 +149,17 @@ class AppState: ObservableObject {
             .sink { [weak self] user in
                 guard let self = self else { return }
                 
-                print("🔐 [AppState] Auth state changed - User: \(user?.uid ?? "nil")")
+               
                 
                 // Skip showing sign-in sheet on initial load
                 if !self.hasCompletedInitialAuthCheck {
                     self.hasCompletedInitialAuthCheck = true
                     
                     if user != nil {
-                        print("✅ [AppState] Initial auth check - User signed in")
+                       
                         self.handleUserSignedIn()
                     } else {
-                        print("ℹ️ [AppState] Initial auth check - No user")
+                       
                     }
                     // Don't show sign-in sheet on first load - let user browse
                     return
@@ -167,14 +167,14 @@ class AppState: ObservableObject {
                 
                 // After initial check, handle sign-in/sign-out normally
                 if user == nil {
-                    print("🚪 [AppState] User signed out")
+                   
                     // ✅ Only show sign-in sheet if user didn't manually sign out
                     if !self.userDidSignOut {
                         self.isSignInSheetPresented = true
                     }
                     self.handleUserSignedOut()
                 } else {
-                    print("✅ [AppState] User signed in")
+                   
                     // ✅ Reset the sign-out flag when user signs back in
                     self.userDidSignOut = false
                     self.handleUserSignedIn()
@@ -224,7 +224,7 @@ class AppState: ObservableObject {
     
     // MARK: - User Sign In/Out Handlers
     private func handleUserSignedIn() {
-        print("🎉 [AppState] Handling user sign in")
+       
         
         // Fetch data when user signs in
         if !isSimulatingEmptyFirestore {
@@ -248,17 +248,17 @@ class AppState: ObservableObject {
             do {
                 userRole = try await authService.getUserRole() ?? ""
                 isScannerActive = try await authService.isScannerActive()
-                print("👤 [AppState] User role: \(userRole), Scanner active: \(isScannerActive)")
+                
             } catch {
                 userRole = ""
                 isScannerActive = false
-                print("⚠️ [AppState] Failed to fetch user role/scanner status: \(error)")
+                
             }
         }
     }
     
     private func handleUserSignedOut() {
-        print("👋 [AppState] Handling user sign out")
+       
         
         // Clear all user-specific data immediately to prevent errors
         ticketsViewModel.clearTickets()
@@ -281,7 +281,7 @@ class AppState: ObservableObject {
     
     // ✅ Method to handle manual sign out
     func handleManualSignOut() {
-        print("🚪 [AppState] Manual sign out triggered")
+      
         userDidSignOut = true
         isSignInSheetPresented = false
     }
@@ -299,7 +299,7 @@ class AppState: ObservableObject {
     
     // MARK: - Initial Data Load
     func loadInitialData() {
-        print("📊 [AppState] Loading initial data...")
+        
         
         if isSimulatingEmptyFirestore {
             eventViewModel.simulateEmptyData()

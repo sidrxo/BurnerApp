@@ -98,36 +98,41 @@ extension NFCUnlockManager: NFCNDEFReaderSessionDelegate {
         
         let tag = tags[0]
         
-        session.connect(to: tag) { [weak self] error in
+        // Capture session and tag as nonisolated(unsafe) to avoid Sendable warnings
+        // This is safe because NFC operations are properly serialized by the framework
+        nonisolated(unsafe) let capturedSession = session
+        nonisolated(unsafe) let capturedTag = tag
+        
+        capturedSession.connect(to: capturedTag) { [weak self] error in
             guard let self = self else { return }
             
             if let error = error {
                 print("❌ Connection failed: \(error.localizedDescription)")
-                session.alertMessage = "Connection failed: \(error.localizedDescription)"
-                session.invalidate()
+                capturedSession.alertMessage = "Connection failed: \(error.localizedDescription)"
+                capturedSession.invalidate()
                 return
             }
             
             print("✅ Connected to tag, reading NDEF...")
             
             // Read the tag
-            tag.readNDEF { message, error in
+            capturedTag.readNDEF { message, error in
                 if let error = error {
                     print("❌ Read failed: \(error.localizedDescription)")
-                    session.alertMessage = "Read failed: \(error.localizedDescription)"
-                    session.invalidate()
+                    capturedSession.alertMessage = "Read failed: \(error.localizedDescription)"
+                    capturedSession.invalidate()
                     return
                 }
                 
                 if let message = message {
                     print("✅ Successfully read NDEF message")
                     Task { @MainActor in
-                        await self.processMessages([message], session: session)
+                        await self.processMessages([message], session: capturedSession)
                     }
                 } else {
                     print("⚠️ No message found on tag")
-                    session.alertMessage = "No data found on tag"
-                    session.invalidate()
+                    capturedSession.alertMessage = "No data found on tag"
+                    capturedSession.invalidate()
                 }
             }
         }
@@ -148,10 +153,7 @@ extension NFCUnlockManager: NFCNDEFReaderSessionDelegate {
                    String(data: record.type, encoding: .utf8) == "T" {
                     print("✅ Found text record")
                     
-                    // Parse text record - payload format:
-                    // Byte 0: Status byte (bit 7 = encoding, bits 5-0 = language code length)
-                    // Bytes 1-n: Language code (ISO/IANA)
-                    // Bytes n+1-end: Actual text
+                
                     
                     let payloadData = record.payload
                     guard payloadData.count > 0 else {

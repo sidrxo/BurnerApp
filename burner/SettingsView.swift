@@ -217,16 +217,8 @@ struct SettingsView: View {
                         .multilineTextAlignment(.center)
                 }
                 
-                Button {
+                BurnerButton("SIGN IN", style: .primary, maxWidth: 200) {
                     coordinator.showSignIn()
-                } label: {
-                    Text("SIGN IN")
-                        .font(.appFont(size: 17))
-                        .foregroundColor(.black)
-                        .frame(maxWidth: 200)
-                        .padding(.vertical, 12)
-                        .background(Color.white)
-                        .clipShape(Capsule())
                 }
                 .buttonStyle(PlainButtonStyle())
             }

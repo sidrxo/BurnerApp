@@ -124,18 +124,8 @@ struct TicketsView: View {
                         .padding(.horizontal, 40)
                 }
                 
-                Button {
-                    // Navigate to Home tab using coordinator
+                BurnerButton("BROWSE EVENTS", style: .primary, maxWidth: 200) {
                     coordinator.selectTab(.home)
-                } label: {
-                    Text(AppConstants.EmptyState.noTicketsButton)
-                        .font(.appFont(size: 17))
-                        .frame(maxWidth: 200)
-                        .secondaryButtonStyle(
-                            backgroundColor: .white,
-                            foregroundColor: .black,
-                            cornerRadius: 8
-                        )
                 }
                 .buttonStyle(PlainButtonStyle())
             }

@@ -80,7 +80,6 @@ class LocalPreferences: ObservableObject {
         defaults.set(hasEnabledNotifications, forKey: hasEnabledNotificationsKey)
 
         defaults.synchronize()
-        print("✅ Local preferences saved to UserDefaults")
     }
 
     // MARK: - Load from UserDefaults
@@ -104,7 +103,6 @@ class LocalPreferences: ObservableObject {
         // Load notifications
         hasEnabledNotifications = defaults.bool(forKey: hasEnabledNotificationsKey)
 
-        print("✅ Local preferences loaded from UserDefaults")
     }
 
     // MARK: - Export Dictionary (for Firebase sync)
@@ -148,6 +146,6 @@ class LocalPreferences: ObservableObject {
         defaults.removeObject(forKey: hasEnabledNotificationsKey)
         defaults.synchronize()
 
-        print("✅ Local preferences reset")
+        
     }
 }

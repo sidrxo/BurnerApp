@@ -8,14 +8,14 @@ import Combine
 struct OnboardingFlowView: View {
     @EnvironmentObject var onboardingManager: OnboardingManager
     @EnvironmentObject var appState: AppState
-    @Environment(\.dismiss) var dismiss // Used for dismissal from Debug Menu
+    @Environment(\.dismiss) var dismiss
 
     @StateObject private var localPreferences = LocalPreferences()
     @StateObject private var tagViewModel = TagViewModel()
 
     @State private var currentStep = 0
     @State private var isRequesting = false
-    @State private var isCompleting = false // ✅ ADD: Prevent duplicate completion calls
+    @State private var isCompleting = false
 
     // Total screens is 5: AuthWelcome (0) -> Location(1) -> Genres(2) -> Notifications(3) -> Complete(4)
     private let totalSlides = 5
@@ -157,14 +157,13 @@ struct OnboardingFlowView: View {
         }
         .environmentObject(localPreferences)
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SkipOnboardingToExplore"))) { _ in
-            // User has existing preferences in Firebase, skip to explore
             completeOnboarding()
         }
         .onAppear {
-            print("🎬 [OnboardingFlowView] Appeared - Current step: \(currentStep)")
+            // Onboarding flow started
         }
         .onDisappear {
-            print("👋 [OnboardingFlowView] Disappeared")
+            // Onboarding flow ended
         }
     }
     
@@ -185,28 +184,21 @@ struct OnboardingFlowView: View {
         withAnimation(.easeOut(duration: 0.3)) {
             if currentStep < totalSlides - 1 {
                 currentStep += 1
-                print("➡️ [OnboardingFlowView] Advanced to step: \(currentStep)")
             }
         }
     }
     
     private func completeOnboarding() {
-        // ✅ FIX: Prevent multiple calls
         guard !isCompleting else {
-            print("⚠️ [OnboardingFlowView] Already completing, ignoring duplicate call")
             return
         }
         
         isCompleting = true
-        print("🎯 [OnboardingFlowView] completeOnboarding() called")
         
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
         
-        // ✅ FIX: Call onboardingManager which will handle the state change
         onboardingManager.completeOnboarding()
-        
-        print("✅ [OnboardingFlowView] Onboarding completion initiated")
     }
 }
 
@@ -222,39 +214,39 @@ struct AuthWelcomeSlide: View {
         VStack(spacing: 0) {
             Spacer()
 
-            // Use reusable TightHeaderText component
-            TightHeaderText("WHERE WILL", "YOU GO?")
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 100)
+            // Header positioned at consistent height
+            VStack(spacing: 0) {
+                TightHeaderText("MEET ME IN THE", "MOMENT")
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+            }
+            .frame(height: 120)
+            .padding(.bottom, 40)
 
-            // Buttons using reusable BurnerButton components
+            // Buttons
             VStack(spacing: 16) {
-                // 1. LOG IN / SIGN UP (Primary: White/Black)
-                BurnerButton("LOG IN / REGISTER", style: .primary, maxWidth: 200) {
+                BurnerButton("SIGN UP / IN", style: .primary, maxWidth: 200) {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     showingSignIn = true
                 }
+                .buttonStyle(PlainButtonStyle())
 
-                // 2. EXPLORE (Secondary: Grey/White)
                 BurnerButton("EXPLORE", style: .secondary, maxWidth: 160) {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     onExplore()
                 }
+                .buttonStyle(PlainButtonStyle())
             }
             .padding(.horizontal, 40)
-            .padding(.bottom, 60)
-            .padding(.top, 30)
+
+            Spacer()
         }
         .sheet(isPresented: $showingSignIn) {
             SignInSheetView(showingSignIn: $showingSignIn, onSkip: {
-                // When sheet dismisses (either from skip or successful sign-in)
-                // advance to next slide
                 onLogin()
             })
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
-            // When user successfully signs in, dismiss the sheet and advance
             showingSignIn = false
             onLogin()
         }
@@ -275,14 +267,13 @@ struct AuthHeader: View {
     }
 }
 
-// MARK: - Progress Line View
-
 // MARK: - Slide 1: Location
 struct LocationSlide: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var localPreferences: LocalPreferences
     @State private var showingManualEntry = false
     @State private var isProcessing = false
+    @State private var detectedCity: String?
 
     let onLocationSet: () -> Void
 
@@ -290,11 +281,13 @@ struct LocationSlide: View {
         VStack(spacing: 0) {
             Spacer()
 
-            // Use reusable TightHeaderText component
-            TightHeaderText("TELL US WHERE", "YOU ARE")
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 16)
+            // Header positioned at consistent height
+            VStack(spacing: 0) {
+                TightHeaderText("WHERE ARE", "YOU?")
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+            }
+            .frame(height: 120)
 
             Text("We'll use this to show you nearby events.")
                 .appBody()
@@ -309,12 +302,19 @@ struct LocationSlide: View {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     requestCurrentLocation()
                 }) {
-                    HStack {
-                        Image(systemName: "location.fill")
-                            .font(.system(size: 14, weight: .bold))
+                    HStack(spacing: 6) {
+                        if isProcessing {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "location.fill")
+                                .font(.system(size: 14, weight: .bold))
+                        }
                         
-                        Text("CURRENT LOCATION")
-                            .font(.system(size: 17, weight: .semibold))
+                        Text(detectedCity ?? "CURRENT LOCATION")
+                            .font(.system(size: 16, design: .monospaced))
+                            .lineLimit(1)
                     }
                     .foregroundColor(.black)
                     .frame(maxWidth: 220)
@@ -329,12 +329,12 @@ struct LocationSlide: View {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     showingManualEntry = true
                 }) {
-                    HStack {
+                    HStack(spacing: 6) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 14, weight: .bold))
 
                         Text("ENTER CITY")
-                            .font(.system(size: 17, weight: .semibold))
+                            .font(.system(size: 16, design: .monospaced))
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: 160)
@@ -361,7 +361,6 @@ struct LocationSlide: View {
             )
         }
         .onChange(of: appState.userLocationManager.savedLocation) { _, newLocation in
-            // Save manually entered location to local preferences
             if let location = newLocation {
                 localPreferences.locationName = location.name
                 localPreferences.locationLat = location.latitude
@@ -376,14 +375,19 @@ struct LocationSlide: View {
             DispatchQueue.main.async {
                 isProcessing = false
 
-                // Save location to local preferences
                 if let savedLocation = appState.userLocationManager.savedLocation {
                     localPreferences.locationName = savedLocation.name
                     localPreferences.locationLat = savedLocation.latitude
                     localPreferences.locationLon = savedLocation.longitude
+                    
+                    // Show the city name on the button
+                    detectedCity = savedLocation.name.uppercased()
+                    
+                    // Auto-advance after showing city
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        onLocationSet()
+                    }
                 }
-
-                onLocationSet()
             }
         }
     }
@@ -396,49 +400,46 @@ struct GenreSlide: View {
     let onContinue: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(spacing: 0) {
             Spacer()
 
-            // Use reusable TightHeaderText component (aligned left for this slide)
-            VStack(alignment: .leading, spacing: 0) {
+            // Header positioned at consistent height
+            VStack(spacing: 0) {
                 TightHeaderText("WHAT'S YOUR", "VIBE?")
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
             }
-            .padding(.bottom, 16)
+            .frame(height: 120)
 
-            Text("We'll curate your feed based on your interests.")
+            Text("Get personalized event recommendations.")
                 .appBody()
                 .foregroundColor(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
                 .lineSpacing(4)
-                .padding(.bottom, 16)
+                .padding(.bottom, 32)
 
             if tagViewModel.isLoading {
-                HStack {
-                    Spacer()
-                    ProgressView().tint(.white)
-                    Spacer()
-                }
-            } else {
-                ScrollView(.vertical, showsIndicators: false) {
-                    FlowLayout(spacing: 8) {
-                        ForEach(tagViewModel.displayTags, id: \.self) { genre in
-                            GenrePill(
-                                title: genre,
-                                isSelected: localPreferences.selectedGenres.contains(genre),
-                                action: { toggleGenre(genre) }
-                            )
-                        }
-                    }
-                    .animation(nil, value: localPreferences.selectedGenres)
+                ProgressView().tint(.white)
                     .padding(.bottom, 80)
+            } else {
+                // Show genres without scroll view
+                FlowLayout(spacing: 8) {
+                    ForEach(tagViewModel.displayTags, id: \.self) { genre in
+                        GenrePill(
+                            title: genre,
+                            isSelected: localPreferences.selectedGenres.contains(genre),
+                            action: { toggleGenre(genre) }
+                        )
+                    }
                 }
+                .animation(nil, value: localPreferences.selectedGenres)
+                .padding(.horizontal, 40)
+                .padding(.bottom, 32)
             }
             
-            Spacer()
-        }
-        .padding(.horizontal, 24)
-        .overlay(
-            VStack {
-                Spacer()
+            // Continue button
+            Group {
                 if !localPreferences.selectedGenres.isEmpty {
                     Button(action: {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -452,12 +453,13 @@ struct GenreSlide: View {
                             .clipShape(Circle())
                     }
                     .transition(.scale.combined(with: .opacity))
+                } else {
+                    Color.clear.frame(width: 60, height: 60)
                 }
             }
-            .padding(.bottom, 40)
-            .frame(maxWidth: .infinity)
-            , alignment: .bottom
-        )
+            
+            Spacer()
+        }
     }
 
     private func toggleGenre(_ genre: String) {
@@ -480,13 +482,15 @@ struct NotificationsSlide: View {
         VStack(spacing: 0) {
             Spacer()
 
-            // Use reusable TightHeaderText component
-            TightHeaderText("STAY IN", "THE LOOP")
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 16)
+            // Header positioned at consistent height
+            VStack(spacing: 0) {
+                TightHeaderText("STAY IN", "THE LOOP")
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+            }
+            .frame(height: 120)
 
-            Text("Get notified about new events, recommendations, and updates on shows you're interested in.")
+            Text("Get alerts for new events and updates on shows you're interested in.")
                 .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
@@ -494,18 +498,9 @@ struct NotificationsSlide: View {
                 .lineSpacing(4)
                 .padding(.bottom, 40)
 
-            // Single notification button
-            Button(action: {
+            BurnerButton("I'M IN", style: .primary, maxWidth: 140) {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 requestNotifications()
-            }) {
-                Text("I'M IN")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.black)
-                    .frame(maxWidth: 140)
-                    .padding(.vertical, 12)
-                    .background(Color.white)
-                    .clipShape(Capsule())
             }
             .buttonStyle(PlainButtonStyle())
             .padding(.horizontal, 40)
@@ -517,7 +512,6 @@ struct NotificationsSlide: View {
     private func requestNotifications() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             DispatchQueue.main.async {
-                // Save notification preference to local preferences
                 localPreferences.hasEnabledNotifications = granted
                 onContinue()
             }
@@ -525,9 +519,10 @@ struct NotificationsSlide: View {
     }
 }
 
-// MARK: - Slide 4: Complete (Success Screen with ENTER button)
+// MARK: - Slide 4: Complete (Success Screen with auto-advance)
 struct CompleteSlide: View {
     let onComplete: () -> Void
+    @State private var hasTriggeredCompletion = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -545,35 +540,30 @@ struct CompleteSlide: View {
             }
             .padding(.bottom, 32)
             
-            // Success message
-            TightHeaderText("YOU'RE ALL", "SET!")
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 16)
+            // Header positioned at consistent height
+            VStack(spacing: 0) {
+                TightHeaderText("YOU'RE ALL", "SET!")
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+            }
+            .frame(height: 120)
             
             Text("Let's explore what's happening near you.")
                 .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
-                .padding(.bottom, 40)
-            
-            // ENTER button
-            Button(action: {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                onComplete()
-            }) {
-                Text("ENTER")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.black)
-                    .frame(maxWidth: 140)
-                    .padding(.vertical, 12)
-                    .background(Color.white)
-                    .clipShape(Capsule())
-            }
-            .buttonStyle(PlainButtonStyle())
             
             Spacer()
+        }
+        .onAppear {
+            // Auto-advance after 1 second
+            if !hasTriggeredCompletion {
+                hasTriggeredCompletion = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    onComplete()
+                }
+            }
         }
     }
 }

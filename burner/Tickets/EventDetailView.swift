@@ -347,7 +347,11 @@ struct EventDetailView: View {
                     Spacer()
 
                     VStack(spacing: 0) {
-                        Button(action: {
+                        BurnerButton(
+                            buttonText,
+                            style: (availableTickets > 0 && !isEventPast && !hasEventStarted && !userHasTicket) ? .primary : .secondary,
+                            maxWidth: .infinity
+                        ) {
                             if userHasTicket {
                                 // already have ticket
                             } else if availableTickets > 0 {
@@ -357,19 +361,10 @@ struct EventDetailView: View {
                                     coordinator.purchaseTicket(for: event)
                                 }
                             }
-                        }) {
-                            HStack(spacing: 12) {
-                                Text(buttonText)
-                                    .font(.appFont(size: 17))
-                            }
-                            .foregroundColor(buttonTextColor)
-                            .primaryButtonStyle(
-                                backgroundColor: buttonColor,
-                                foregroundColor: buttonTextColor,
-                                borderColor: Color.white.opacity(0.2)
-                            )
                         }
+                        .buttonStyle(PlainButtonStyle())
                         .disabled(isButtonDisabled)
+                        .opacity(isButtonDisabled ? 0.5 : 1.0)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 20)
                         .padding(.top, 40)

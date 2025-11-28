@@ -24,50 +24,53 @@ struct SetLocationModal: View {
                 Button(action: {
                     requestCurrentLocation()
                 }) {
-                    HStack {
+                    HStack(spacing: 12) {
                         if isProcessing {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 .scaleEffect(0.9)
                         } else {
                             Image(systemName: "location.fill")
-                                .appCard()
+                                .font(.system(size: 16, weight: .semibold))
                         }
                         Text("Use Current Location")
-                            .appBody()
+                            .font(.system(size: 16, design: .monospaced))
                         Spacer()
                         Image(systemName: "chevron.right")
-                            .appSecondary()
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.gray)
                     }
                     .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.white.opacity(0.05))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+                .buttonStyle(PlainButtonStyle())
                 .disabled(isProcessing)
 
                 Button(action: {
                     showingManualEntry = true
                 }) {
-                    HStack {
+                    HStack(spacing: 12) {
                         Image(systemName: "magnifyingglass")
-                            .appCard()
+                            .font(.system(size: 16, weight: .semibold))
                         Text("Search for a City")
-                            .appBody()
+                            .font(.system(size: 16, design: .monospaced))
                         Spacer()
                         Image(systemName: "chevron.right")
-                            .appSecondary()
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.gray)
                     }
                     .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.white.opacity(0.05))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+                .buttonStyle(PlainButtonStyle())
             }
             .padding(.horizontal, 20)
-
             // Optional error (kept minimal; below buttons)
             if let error = errorMessage {
                 Text(error)
@@ -80,8 +83,8 @@ struct SetLocationModal: View {
             Spacer()
         }
         .background(Color.black)
-        .presentationDetents([.height(200)])              // match MapsOptionsSheet
-        .presentationDragIndicator(.visible)              // match MapsOptionsSheet
+        .presentationDetents([.height(200)])
+        .presentationDragIndicator(.visible)
         .sheet(isPresented: $showingManualEntry) {
             ManualCityEntryView(locationManager: appState.userLocationManager, onDismiss: {
                 showingManualEntry = false
@@ -145,28 +148,17 @@ struct ManualCityEntryView: View {
                 
                 Spacer()
                 
-                // Updated Save Location Button - matching sign-in sheet style
-                Button(action: {
+                // Updated Save Location Button using BurnerButton
+                BurnerButton(
+                    isProcessing ? "SAVING..." : "SAVE LOCATION",
+                    style: .primary,
+                    maxWidth: nil
+                ) {
                     geocodeCity()
-                }) {
-                    HStack(spacing: 12) {
-                        if isProcessing {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                        } else {
-                            
-                            Text("SAVE LOCATION")
-                                .font(.appFont(size: 17))
-                        }
-                    }
-                    .foregroundColor(.black)
-                    .primaryButtonStyle(
-                        backgroundColor: cityInput.isEmpty ? Color.gray : Color.white,
-                        foregroundColor: .black,
-                        borderColor: Color.white.opacity(0.2)
-                    )
                 }
+                .buttonStyle(PlainButtonStyle())
                 .disabled(cityInput.isEmpty || isProcessing)
+                .opacity((cityInput.isEmpty || isProcessing) ? 0.5 : 1.0)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }

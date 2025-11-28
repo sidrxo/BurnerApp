@@ -43,8 +43,6 @@ class OnboardingManager: ObservableObject {
             self.shouldShowOnboarding = !hasCompletedOnboarding
         }
 
-        print("🚀 [OnboardingManager] Initialized - Auth: \(isAuthenticated), Completed Before: \(hasCompletedOnboarding), Show: \(shouldShowOnboarding)")
-
         // Setup the subscription to track auth state changes
         self.setupAuthSubscription()
     }
@@ -53,7 +51,6 @@ class OnboardingManager: ObservableObject {
     init() {
         self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
         self.shouldShowOnboarding = !hasCompletedOnboarding
-        print("🚀 [OnboardingManager] Initialized (no auth) - Show: \(shouldShowOnboarding)")
     }
 
     // MARK: - Subscription Setup
@@ -63,7 +60,6 @@ class OnboardingManager: ObservableObject {
         authService?.$currentUser
             .dropFirst() // Skip the initial value since we handle it in init
             .sink { [weak self] user in
-                print("👤 [OnboardingManager] Auth state changed - User: \(user?.uid ?? "nil")")
                 self?.updateOnboardingStatus()
             }
             .store(in: &cancellables)
@@ -71,7 +67,6 @@ class OnboardingManager: ObservableObject {
         // Also listen for explicit sign-in notifications
         NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))
             .sink { [weak self] _ in
-                print("✅ [OnboardingManager] Received UserSignedIn notification")
                 // Small delay to ensure auth state is fully updated
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     self?.updateOnboardingStatus()
@@ -82,7 +77,6 @@ class OnboardingManager: ObservableObject {
         // Listen for sign-out notifications
         NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedOut"))
             .sink { [weak self] _ in
-                print("🚪 [OnboardingManager] Received UserSignedOut notification")
                 self?.updateOnboardingStatus()
             }
             .store(in: &cancellables)
@@ -118,14 +112,11 @@ class OnboardingManager: ObservableObject {
 
         // Force UI update if value changed
         if previousValue != shouldShowOnboarding {
-            print("🔄 [OnboardingManager] State changed: \(previousValue) -> \(shouldShowOnboarding)")
             // Force explicit UI update
             Task { @MainActor in
                 self.objectWillChange.send()
             }
         }
-
-        print("👤 [OnboardingManager] Auth: \(isAuthenticated ? "✅ Signed In" : "❌ Signed Out") | Completed Before: \(hasCompletedOnboarding ? "✅ Yes" : "❌ No") -> Show Onboarding: \(shouldShowOnboarding ? "✅ YES" : "❌ NO")")
     }
 
     // Load user preferences from Firestore when signed in
@@ -133,7 +124,6 @@ class OnboardingManager: ObservableObject {
         Task {
             let syncService = PreferencesSyncService()
             if let firebasePrefs = await syncService.loadPreferencesFromFirebase() {
-                print("✅ [OnboardingManager] Loaded preferences from Firestore")
                 // Apply preferences to local storage
                 firebasePrefs.saveToUserDefaults()
             }
@@ -143,24 +133,16 @@ class OnboardingManager: ObservableObject {
     // MARK: - Public Methods
     
     func completeOnboarding() {
-        print("🎯 [OnboardingManager] completeOnboarding() called")
-        
         // Save completion state
         hasCompletedOnboarding = true
         userDefaults.set(true, forKey: onboardingCompletedKey)
         userDefaults.synchronize() // Force immediate save
-        print("✅ [OnboardingManager] Onboarding marked as completed and saved")
-        
-        // Always dismiss when completing onboarding (whether authenticated or not)
-        print("✅ [OnboardingManager] Dismissing onboarding after completion...")
         
         // Force SwiftUI to notice the change by explicitly calling objectWillChange
         objectWillChange.send()
         
         // Simple, direct state update
         shouldShowOnboarding = false
-        
-        print("✅ [OnboardingManager] shouldShowOnboarding set to: \(self.shouldShowOnboarding)")
     }
 
     // Reset onboarding (useful for testing)
@@ -169,12 +151,10 @@ class OnboardingManager: ObservableObject {
         userDefaults.set(false, forKey: onboardingCompletedKey)
         userDefaults.synchronize()
         updateOnboardingStatus()
-        print("🔄 [OnboardingManager] Onboarding reset")
     }
     
     // Manual refresh method for debugging
     func refreshState() {
-        print("🔄 [OnboardingManager] Manual refresh requested")
         updateOnboardingStatus()
     }
 }

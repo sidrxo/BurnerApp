@@ -18,7 +18,7 @@ struct BurnerModeSetupView: View {
     // Check authorization status on appear
     private func checkAuthorizationStatus() {
         Task {
-            let status = await AuthorizationCenter.shared.authorizationStatus
+            let status = AuthorizationCenter.shared.authorizationStatus
             await MainActor.run {
                 authorizationGranted = (status == .approved)
             }
@@ -236,7 +236,7 @@ struct BurnerModeSetupView: View {
                 // Wait a moment for the system to update
                 try await Task.sleep(nanoseconds: 500_000_000)
                 // Check the actual authorization status
-                let status = await AuthorizationCenter.shared.authorizationStatus
+                let status = AuthorizationCenter.shared.authorizationStatus
                 await MainActor.run {
                     authorizationGranted = (status == .approved)
                 }
