@@ -210,7 +210,6 @@ struct BurnerApp: App {
 
         // ✅ SECURITY: Validate URL scheme strictly
         guard url.scheme?.lowercased() == "burner" else {
-            print("⚠️ [DeepLink] Invalid scheme: \(url.scheme ?? "nil")")
             return nil
         }
 
@@ -223,7 +222,6 @@ struct BurnerApp: App {
                       (authScheme == "https" || authScheme == "http"),
                       let host = authURL.host,
                       (host.hasSuffix("firebaseapp.com") || host.hasSuffix("burnerapp.com")) else {
-                    print("⚠️ [DeepLink] Invalid auth link: \(linkParam)")
                     return nil
                 }
                 return .auth(linkParam)
@@ -236,7 +234,6 @@ struct BurnerApp: App {
             let id = url.lastPathComponent
             // ✅ SECURITY: Validate ID format (alphanumeric + hyphens/underscores only)
             guard !id.isEmpty, isValidID(id) else {
-                print("⚠️ [DeepLink] Invalid event ID: \(id)")
                 return nil
             }
             return .event(id)
@@ -247,7 +244,6 @@ struct BurnerApp: App {
             let id = url.lastPathComponent
             // ✅ SECURITY: Validate ID format
             guard !id.isEmpty, isValidID(id) else {
-                print("⚠️ [DeepLink] Invalid ticket ID: \(id)")
                 return nil
             }
             return .ticket(id)
@@ -260,14 +256,12 @@ struct BurnerApp: App {
             if parts[0] == "event" {
                 let id = parts[1]
                 guard !id.isEmpty, isValidID(id) else {
-                    print("⚠️ [DeepLink] Invalid event ID: \(id)")
                     return nil
                 }
                 return .event(id)
             } else if parts[0] == "ticket" {
                 let id = parts[1]
                 guard !id.isEmpty, isValidID(id) else {
-                    print("⚠️ [DeepLink] Invalid ticket ID: \(id)")
                     return nil
                 }
                 return .ticket(id)

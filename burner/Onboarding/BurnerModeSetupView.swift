@@ -296,7 +296,6 @@ struct BurnerModeSetupView: View {
                     self.authorizationGranted = (postStatus == .approved)
                 }
             } catch {
-                print("Authorization failed: \(error)")
                 // Fallback check in case user cancels or navigates to settings
                 let finalStatus = AuthorizationCenter.shared.authorizationStatus
                 await MainActor.run {

@@ -212,7 +212,6 @@ struct AccountDetailsView: View {
                     }
                 }
             } catch {
-                print("Error fetching custom claims: \(error)")
                 // On error, default to "user"
                 await MainActor.run {
                     self.userRole = "user"

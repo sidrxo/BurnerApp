@@ -71,11 +71,9 @@ struct BurnerButton: View {
         Color.black.ignoresSafeArea()
         VStack(spacing: 20) {
             BurnerButton("LOG IN / REGISTER", style: .primary, maxWidth: 200) {
-                print("Primary button tapped")
             }
 
             BurnerButton("EXPLORE", style: .secondary, maxWidth: 200) {
-                print("Secondary button tapped")
             }
 
             Text("CONTINUE WITH EMAIL")
