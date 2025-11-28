@@ -23,23 +23,18 @@ class BurnerModeManager: ObservableObject {
     private let store = ManagedSettingsStore()
     private let center = DeviceActivityCenter()
     private var authorizationCancellable: AnyCancellable?
-    
-    // START: FIX - Made appGroupDefaults optional and initialized it defensively
-    // App Group for sharing data with extension
-    private let appGroupDefaults: UserDefaults?
-    // END: FIX
-    
-    // NFC Manager for unlock functionality
-    let nfcManager = NFCUnlockManager() // Assumes NFCUnlockManager is defined elsewhere
-    
-    let minimumCategoriesRequired = 8
-    
-    init() {
-        // START: FIX - Initialize the appGroupDefaults safely
-        self.appGroupDefaults = UserDefaults(suiteName: "group.com.gas.Burner")
 
-        // END: FIX
-        
+    // App Group for sharing data with extension - lazy to avoid init warnings
+    private lazy var appGroupDefaults: UserDefaults? = {
+        UserDefaults(suiteName: "group.com.gas.Burner")
+    }()
+
+    // NFC Manager for unlock functionality
+    let nfcManager = NFCUnlockManager()
+
+    let minimumCategoriesRequired = 8
+
+    init() {
         loadSelectedApps()
         loadHasCompletedSetup()
         setupAuthorizationMonitoring()
