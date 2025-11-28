@@ -28,9 +28,11 @@ class BurnerModeMonitor: ObservableObject {
     // MARK: - Start Monitoring
     func startMonitoring() {
         guard let userId = Auth.auth().currentUser?.uid else {
+            print("❌ BurnerModeMonitor: No user logged in")
             return
         }
 
+        print("✅ BurnerModeMonitor: Started monitoring")
 
         // Stop any existing listener first
         stopMonitoring()
@@ -43,6 +45,7 @@ class BurnerModeMonitor: ObservableObject {
                 guard let self = self else { return }
 
                 if let error = error {
+                    print("❌ BurnerModeMonitor: Error - \(error.localizedDescription)")
                     return
                 }
 
@@ -74,6 +77,7 @@ class BurnerModeMonitor: ObservableObject {
                 continue
             }
 
+            print("✅ BurnerModeMonitor: Event scanned today, enabling Burner Mode")
             await enableBurnerMode()
             return
         }
@@ -82,6 +86,7 @@ class BurnerModeMonitor: ObservableObject {
     // MARK: - Enable Burner Mode
     private func enableBurnerMode() async {
         guard burnerManager.isSetupValid else {
+            print("❌ BurnerModeMonitor: Setup invalid")
             return
         }
 
@@ -93,14 +98,18 @@ class BurnerModeMonitor: ObservableObject {
             try await burnerManager.enable(appState: appState)
             shouldEnableBurnerMode = true
 
+            print("✅ BurnerModeMonitor: Burner Mode enabled")
 
             NotificationCenter.default.post(
                 name: NSNotification.Name("BurnerModeAutoEnabled"),
                 object: nil
             )
         } catch BurnerModeError.notAuthorized {
+            print("❌ BurnerModeMonitor: Not authorized")
         } catch BurnerModeError.invalidSetup(let message) {
+            print("❌ BurnerModeMonitor: \(message)")
         } catch {
+            print("❌ BurnerModeMonitor: \(error)")
         }
     }
     
@@ -113,6 +122,7 @@ class BurnerModeMonitor: ObservableObject {
     // MARK: - Manual Check
     func checkNow() async {
         guard let userId = Auth.auth().currentUser?.uid else {
+            print("❌ BurnerModeMonitor: No user logged in")
             return
         }
 
@@ -124,6 +134,7 @@ class BurnerModeMonitor: ObservableObject {
 
             await checkForTodayScannedTickets(documents: snapshot.documents)
         } catch {
+            print("❌ BurnerModeMonitor: \(error.localizedDescription)")
         }
     }
 

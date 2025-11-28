@@ -235,7 +235,9 @@ struct DebugMenuView: View {
         do {
             // Remove preferences field from Firestore
             try await userRef.updateData(["preferences": FieldValue.delete()])
+            print("✅ Cleared Firestore preferences for user: \(userId)")
         } catch {
+            print("❌ Failed to clear Firestore preferences: \(error.localizedDescription)")
         }
     }
 

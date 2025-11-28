@@ -3,27 +3,25 @@ import FamilyControls
 import ManagedSettings
 
 // NOTE: You will need to define your custom extensions (e.g., .appFont, .appIcon, .appSecondary)
-// for this to compile fully in your project environment.
+// and the BurnerModeManager/TightHeaderText structures for this to compile fully in your project environment.
+
+// MARK: - Main View
 
 struct BurnerModeSetupView: View {
     @Environment(\.dismiss) var dismiss
     @State private var currentStep = 0
+    
+    // START: FIX - Authorization status must start as false to prevent unwanted auto-advance.
     @State private var authorizationGranted = false
+    // END: FIX
+    
     @State private var showingAppPicker = false
-    @ObservedObject var burnerManager: BurnerModeManager
+    @ObservedObject var burnerManager: BurnerModeManager // Assume BurnerModeManager is defined elsewhere
     var onSkip: (() -> Void)? = nil
     
     private let totalSteps = 6
     
-    // Check authorization status on appear
-    private func checkAuthorizationStatus() {
-        Task {
-            let status = AuthorizationCenter.shared.authorizationStatus
-            await MainActor.run {
-                authorizationGranted = (status == .approved)
-            }
-        }
-    }
+    // START: FIX - Removed checkAuthorizationStatus() call from onAppear/initialization
     
     // Track completion state of current step
     private var isCurrentStepCompleted: Bool {
@@ -212,9 +210,9 @@ struct BurnerModeSetupView: View {
             isPresented: $showingAppPicker,
             selection: $burnerManager.selectedApps
         )
-        .interactiveDismissDisabled(true)  // Prevent swipe to dismiss
+        .interactiveDismissDisabled(true)
         .onAppear {
-            checkAuthorizationStatus()
+            // START: FIX - Removed call to checkAuthorizationStatus()
         }
     }
     
@@ -241,7 +239,7 @@ struct BurnerModeSetupView: View {
     
     private func handleNextButton() {
         if currentStep == 3 && !authorizationGranted {
-            // Request authorization (will auto-advance on success)
+            // Request authorization (will check status first, and auto-advance on success)
             requestAuthorization()
         } else if currentStep == 4 && !burnerManager.isSetupValid {
             // Show app picker (will auto-advance on valid selection)
@@ -271,26 +269,43 @@ struct BurnerModeSetupView: View {
         }
     }
     
+    // START: FIX - Modified requestAuthorization to check status first
     private func requestAuthorization() {
         Task {
+            // 1. Check current status
+            let preStatus = AuthorizationCenter.shared.authorizationStatus
+            
+            if preStatus == .approved {
+                // Already approved: Set state to true to trigger auto-advance without showing the system dialog
+                await MainActor.run {
+                    self.authorizationGranted = true
+                }
+                return
+            }
+            
+            // 2. If not approved, request it
             do {
                 try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
-                // Wait a moment for the system to update
+                
+                // Wait briefly for the system to process/update
                 try await Task.sleep(nanoseconds: 500_000_000)
-                // Check the actual authorization status
-                let status = AuthorizationCenter.shared.authorizationStatus
+                
+                // 3. Check the final authorization status
+                let postStatus = AuthorizationCenter.shared.authorizationStatus
                 await MainActor.run {
-                    authorizationGranted = (status == .approved)
+                    self.authorizationGranted = (postStatus == .approved)
                 }
             } catch {
-
-                // Still check status in case user granted in settings
+                print("Authorization failed: \(error)")
+                // Fallback check in case user cancels or navigates to settings
+                let finalStatus = AuthorizationCenter.shared.authorizationStatus
                 await MainActor.run {
-                    checkAuthorizationStatus()
+                    self.authorizationGranted = (finalStatus == .approved)
                 }
             }
         }
     }
+    // END: FIX
 }
 
 // MARK: - Progress Line with Glow
@@ -349,15 +364,19 @@ struct ProgressLineView: View {
     }
 }
 
-// MARK: - Welcome Slide Content (Hero Style)
+// MARK: - Slide Content Structures (No Changes)
+
+// Assuming these helper types are defined elsewhere:
+// - struct TightHeaderText: View
+// - extension View { func appBody() -> some View; func appFont(size: CGFloat) -> Font }
+// - final class BurnerModeManager: ObservableObject { var selectedApps: FamilyActivitySelection { get set } ... }
+
 struct WelcomeSlideContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Consistent header spacing
             Spacer()
                 .frame(height: 60)
 
-            // Use reusable TightHeaderText component (aligned left)
             VStack(alignment: .leading, spacing: 0) {
                 TightHeaderText("UNLOCK YOUR", "TICKETS.")
             }
@@ -366,7 +385,6 @@ struct WelcomeSlideContent: View {
             Spacer()
                 .frame(height: 24)
 
-            // Subtitle with lower opacity
             Text("Complete this quick setup to access your tickets. You'll only need to do this once.")
                 .appBody()
                 .foregroundColor(.white.opacity(0.7))
@@ -382,17 +400,14 @@ struct WelcomeSlideContent: View {
 struct WhatIsItSlideContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Consistent header spacing
             Spacer()
                 .frame(height: 60)
 
-            // Use reusable TightHeaderText component (aligned left)
             VStack(alignment: .leading, spacing: 0) {
                 TightHeaderText("HOW DOES IT", "WORK?")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Subtitle below
             Text("BURNER blocks distracting apps during events.")
                 .appBody()
                 .foregroundColor(.white.opacity(0.7))
@@ -403,7 +418,6 @@ struct WhatIsItSlideContent: View {
             Spacer()
                 .frame(height: 32)
             
-            // Three steps
             VStack(spacing: 20) {
                 StepCard(
                     number: "1",
@@ -465,17 +479,14 @@ struct StepCard: View {
 struct ExitMethodsSlideContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Consistent header spacing
             Spacer()
                 .frame(height: 60)
 
-            // Use reusable TightHeaderText component (aligned left)
             VStack(alignment: .leading, spacing: 0) {
                 TightHeaderText("NEED TO", "LEAVE EARLY?")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Subtitle below
             Text("Three ways to exit BURNER before the event ends.")
                 .appBody()
                 .foregroundColor(.white.opacity(0.7))
@@ -546,6 +557,7 @@ struct ExitMethodCard: View {
 }
 
 // MARK: - Permission Slide Content
+
 struct PermissionSlideContent: View {
     @Binding var authorizationGranted: Bool
     let onGrantPermission: () -> Void
@@ -572,13 +584,13 @@ struct PermissionSlideContent: View {
 
             // Subtitle below
             Text(authorizationGranted
-                 ? "Screen Time access enabled. BURNER can now block apps during events."
-                 : "Required to block apps during events. We never read or store your data.")
-            .appBody()
-            .foregroundColor(.white.opacity(0.7))
-            .lineSpacing(4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 16)
+                    ? "Screen Time access enabled. BURNER can now block apps during events."
+                    : "Required to block apps during events. We never read or store your data.")
+                .appBody()
+                .foregroundColor(.white.opacity(0.7))
+                .lineSpacing(4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 16)
             
             Spacer()
                 .frame(height: 32)
@@ -618,6 +630,7 @@ struct PermissionSlideContent: View {
         }
         .padding(.horizontal, 24)
         .onChange(of: authorizationGranted) { oldValue, newValue in
+            // This is the auto-advance that triggers after the user explicitly taps "Grant Access"
             if newValue == true {
                 // Auto-advance after showing success briefly
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
@@ -631,6 +644,7 @@ struct PermissionSlideContent: View {
 }
 
 // MARK: - Category Selection Slide Content
+
 struct CategorySelectionSlideContent: View {
     @ObservedObject var burnerManager: BurnerModeManager
     @Binding var showingAppPicker: Bool
@@ -662,13 +676,13 @@ struct CategorySelectionSlideContent: View {
 
             // Subtitle below
             Text(burnerManager.isSetupValid
-                 ? "\(categoryCount) categories will be blocked during events."
-                 : "Select all categories that distract you. We recommend 10 or more.")
-            .appBody()
-            .foregroundColor(.white.opacity(0.7))
-            .lineSpacing(4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 16)
+                    ? "\(categoryCount) categories will be blocked during events."
+                    : "Select all categories that distract you. We recommend 10 or more.")
+                .appBody()
+                .foregroundColor(.white.opacity(0.7))
+                .lineSpacing(4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 16)
             
             Spacer()
                 .frame(height: 32)
@@ -721,6 +735,7 @@ struct CategorySelectionSlideContent: View {
 }
 
 // MARK: - Confirmation Slide Content
+
 struct ConfirmationSlideContent: View {
     @ObservedObject var burnerManager: BurnerModeManager
     

@@ -38,6 +38,7 @@ struct PaymentSettingsView: View {
         let ts = Self.timeFormatter.string(from: now)
         let elapsed = fetchLogStart.map { now.timeIntervalSince($0) } ?? 0
         let elapsedStr = String(format: "%.3fs", elapsed)
+        print("⏱️ [\(ts)] [+\(elapsedStr)] [step \(fetchLogStep)] PaymentSettingsView: \(message)")
     }
 
     var body: some View {
@@ -374,9 +375,11 @@ struct PaymentMethodRow: View {
             titleVisibility: .visible
         ) {
             Button("Delete", role: .destructive) {
+                print("🔴 Delete confirmed, calling onDelete()")
                 onDelete()
             }
             Button("Cancel", role: .cancel) {
+                print("⚪️ Delete cancelled")
             }
         } message: {
             Text("Are you sure you want to delete this payment method?")

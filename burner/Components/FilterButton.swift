@@ -16,23 +16,18 @@ struct FilterButton: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Text(title)
-                    .font(.system(size: 16, design: .monospaced))
+                    .appSecondary()
                 
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .font(.appCaption)
                 }
             }
-            .foregroundColor(isSelected ? .black : .white)
+            .foregroundColor(.white)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(isSelected ? Color.white : Color.gray.opacity(0.1))
+            .background(Color(red: 33/255, green: 33/255, blue: 35/255))
             .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(isSelected ? Color.clear : Color.white, lineWidth: 1)
-            )
         }
-        .buttonStyle(PlainButtonStyle())
     }
 }
