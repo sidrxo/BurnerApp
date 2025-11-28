@@ -9,6 +9,7 @@ struct TightHeaderText: View {
     let color: Color
     let kerning: CGFloat
     let lineSpacing: CGFloat
+    let alignment: HorizontalAlignment
 
     init(
         _ lines: [String],
@@ -16,7 +17,8 @@ struct TightHeaderText: View {
         fontWeight: Font.Weight = .bold,
         color: Color = .white,
         kerning: CGFloat = -1.5,
-        lineSpacing: CGFloat = -15
+        lineSpacing: CGFloat = -15,
+        alignment: HorizontalAlignment = .leading
     ) {
         self.lines = lines
         self.fontSize = fontSize
@@ -24,15 +26,17 @@ struct TightHeaderText: View {
         self.color = color
         self.kerning = kerning
         self.lineSpacing = lineSpacing
+        self.alignment = alignment
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: alignment, spacing: 0) {
             ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                 Text(line)
                     .font(.system(size: fontSize, weight: fontWeight, design: .default))
                     .kerning(kerning)
                     .foregroundColor(color)
+                    .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .center)
                     .padding(.bottom, index < lines.count - 1 ? lineSpacing : 0)
             }
         }
@@ -48,7 +52,8 @@ extension TightHeaderText {
         fontWeight: Font.Weight = .bold,
         color: Color = .white,
         kerning: CGFloat = -1.5,
-        lineSpacing: CGFloat = -15
+        lineSpacing: CGFloat = -15,
+        alignment: HorizontalAlignment = .leading
     ) {
         self.init(
             [line1, line2],
@@ -56,21 +61,9 @@ extension TightHeaderText {
             fontWeight: fontWeight,
             color: color,
             kerning: kerning,
-            lineSpacing: lineSpacing
+            lineSpacing: lineSpacing,
+            alignment: alignment
         )
     }
 }
 
-#Preview {
-    ZStack {
-        Color.black.ignoresSafeArea()
-        VStack(spacing: 40) {
-            TightHeaderText("WHERE WILL", "YOU GO?")
-            TightHeaderText(
-                ["WELCOME TO", "BURNER"],
-                fontSize: 40,
-                color: .white
-            )
-        }
-    }
-}

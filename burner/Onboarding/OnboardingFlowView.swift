@@ -213,16 +213,16 @@ struct AuthWelcomeSlide: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
+                  .frame(minHeight: 200)
 
             // Header positioned at consistent height
             VStack(spacing: 0) {
-                TightHeaderText("MEET ME IN THE", "MOMENT")
-                    .multilineTextAlignment(.center)
+                TightHeaderText("MEET ME IN THE", "MOMENT", alignment: .center)
                     .frame(maxWidth: .infinity)
             }
             .frame(height: 120)
             .padding(.bottom, 40)
-
+            .padding(.top, 200)
             // Buttons
             VStack(spacing: 16) {
                 BurnerButton("SIGN UP / IN", style: .primary, maxWidth: 200) {
@@ -240,6 +240,7 @@ struct AuthWelcomeSlide: View {
             .padding(.horizontal, 40)
 
             Spacer()
+                .frame(minHeight: 30)
         }
         .sheet(isPresented: $showingSignIn) {
             SignInSheetView(showingSignIn: $showingSignIn, onSkip: {
@@ -279,12 +280,12 @@ struct LocationSlide: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
+            // Fixed top spacing for consistent alignment
+            Color.clear.frame(height: 100)
 
             // Header positioned at consistent height
             VStack(spacing: 0) {
-                TightHeaderText("WHERE ARE", "YOU?")
-                    .multilineTextAlignment(.center)
+                TightHeaderText("WHERE ARE", "YOU?", alignment: .center)
                     .frame(maxWidth: .infinity)
             }
             .frame(height: 120)
@@ -401,12 +402,12 @@ struct GenreSlide: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
+            // Fixed top spacing for consistent alignment
+            Color.clear.frame(height: 100)
 
             // Header positioned at consistent height
             VStack(spacing: 0) {
-                TightHeaderText("WHAT'S YOUR", "VIBE?")
-                    .multilineTextAlignment(.center)
+                TightHeaderText("WHAT'S YOUR", "VIBE?", alignment: .center)
                     .frame(maxWidth: .infinity)
             }
             .frame(height: 120)
@@ -480,12 +481,12 @@ struct NotificationsSlide: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
+            // Fixed top spacing for consistent alignment
+            Color.clear.frame(height: 100)
 
             // Header positioned at consistent height
             VStack(spacing: 0) {
-                TightHeaderText("STAY IN", "THE LOOP")
-                    .multilineTextAlignment(.center)
+                TightHeaderText("STAY IN", "THE LOOP", alignment: .center)
                     .frame(maxWidth: .infinity)
             }
             .frame(height: 120)
@@ -542,8 +543,7 @@ struct CompleteSlide: View {
             
             // Header positioned at consistent height
             VStack(spacing: 0) {
-                TightHeaderText("YOU'RE ALL", "SET!")
-                    .multilineTextAlignment(.center)
+                TightHeaderText("YOU'RE ALL", "SET!", alignment: .center)
                     .frame(maxWidth: .infinity)
             }
             .frame(height: 120)

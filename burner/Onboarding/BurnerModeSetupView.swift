@@ -38,45 +38,85 @@ struct BurnerModeSetupView: View {
         }
     }
     
+    private var showBackButton: Bool {
+        return currentStep > 0 && currentStep < totalSteps - 1
+    }
+    
+    private func handleBackButton() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        withAnimation(.easeOut(duration: 0.3)) {
+            if currentStep > 0 {
+                currentStep -= 1
+            }
+        }
+    }
+    
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Close button in top right for all steps
-                HStack {
-                    Spacer()
-                    CloseButton {
-                        if let onSkip = onSkip {
-                            onSkip()
+                // Header Area with Back and Close Buttons
+                ZStack {
+                    // 1. Center: Progress Indicator
+                    VStack(spacing: 0) {
+                        Spacer().frame(height: 20)
+                        
+                        if currentStep > 0 {
+                            HStack {
+                                Spacer()
+                                ProgressLineView(
+                                    currentStep: currentStep - 1,
+                                    totalSteps: totalSteps - 1,
+                                    isStepCompleted: isCurrentStepCompleted
+                                )
+                                .frame(width: 120)
+                                .padding(.bottom, 3)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
                         } else {
-                            dismiss()
+                            // Invisible spacer to maintain height
+                            Spacer().frame(height: 24)
                         }
                     }
-                    .padding(.trailing, 24)
-                    .padding(.top, 16)
-                }
-                
-                // Consistent top spacing area - always same height
-                VStack(spacing: 0) {
-                    Spacer()
-                        .frame(height: 20)
+                    .frame(maxWidth: .infinity)
                     
-                    // Progress line (only visible after welcome)
-                    if currentStep > 0 {
-                        ProgressLineView(
-                            currentStep: currentStep - 1,
-                            totalSteps: totalSteps - 1,
-                            isStepCompleted: isCurrentStepCompleted
-                        )
-                        .padding(.horizontal, 20)
-                    } else {
-                        // Invisible spacer to maintain consistent height
+                    // 2. Top Left: Back Button
+                    if showBackButton {
+                        HStack {
+                            Button(action: { handleBackButton() }) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.6))
+                                    .frame(width: 44, height: 44)
+                            }
+                            .padding(.top, 10)
+                            Spacer()
+                        }
+                        .padding(.leading, 20)
+                    }
+                    
+                    // 3. Top Right: Close Button
+                    HStack {
                         Spacer()
-                            .frame(height: 4)
+                        Button(action: {
+                            if let onSkip = onSkip {
+                                onSkip()
+                            } else {
+                                dismiss()
+                            }
+                        }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.6))
+                                .frame(width: 44, height: 44)
+                        }
+                        .padding(.trailing, 20)
+                        .padding(.top, 10)
                     }
                 }
-                .frame(height: 24)  // Fixed height container
+                .frame(height: 60)
                 
                 // Sliding content area
                 TabView(selection: $currentStep) {
@@ -107,7 +147,8 @@ struct BurnerModeSetupView: View {
                     // Step 3: Grant Permission
                     PermissionSlideContent(
                         authorizationGranted: $authorizationGranted,
-                        onGrantPermission: requestAuthorization
+                        onGrantPermission: requestAuthorization,
+                        currentStep: $currentStep
                     )
                     .tag(3)
                     .transition(.asymmetric(
@@ -118,7 +159,8 @@ struct BurnerModeSetupView: View {
                     // Step 4: Select Categories
                     CategorySelectionSlideContent(
                         burnerManager: burnerManager,
-                        showingAppPicker: $showingAppPicker
+                        showingAppPicker: $showingAppPicker,
+                        currentStep: $currentStep
                     )
                     .tag(4)
                     .transition(.asymmetric(
@@ -138,7 +180,7 @@ struct BurnerModeSetupView: View {
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .disabled(true)  // Disable swipe navigation
-                .animation(.easeInOut(duration: 0.3), value: currentStep)
+                .animation(.easeOut(duration: 0.3), value: currentStep)
                 
                 Spacer()
                 
@@ -199,10 +241,10 @@ struct BurnerModeSetupView: View {
     
     private func handleNextButton() {
         if currentStep == 3 && !authorizationGranted {
-            // Request authorization
+            // Request authorization (will auto-advance on success)
             requestAuthorization()
         } else if currentStep == 4 && !burnerManager.isSetupValid {
-            // Show app picker
+            // Show app picker (will auto-advance on valid selection)
             showingAppPicker = true
         } else if currentStep < totalSteps - 1 {
             // Advance to next step
@@ -317,7 +359,7 @@ struct WelcomeSlideContent: View {
 
             // Use reusable TightHeaderText component (aligned left)
             VStack(alignment: .leading, spacing: 0) {
-                TightHeaderText("Unlock your", "tickets.")
+                TightHeaderText("UNLOCK YOUR", "TICKETS.")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -346,7 +388,7 @@ struct WhatIsItSlideContent: View {
 
             // Use reusable TightHeaderText component (aligned left)
             VStack(alignment: .leading, spacing: 0) {
-                TightHeaderText("How does it", "work?")
+                TightHeaderText("HOW DOES IT", "WORK?")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -359,7 +401,7 @@ struct WhatIsItSlideContent: View {
                 .padding(.top, 16)
             
             Spacer()
-                .frame(height: 32) // ← CHANGE FROM 10 TO 32← Change from 10 to 32 for consistency
+                .frame(height: 32)
             
             // Three steps
             VStack(spacing: 20) {
@@ -429,7 +471,7 @@ struct ExitMethodsSlideContent: View {
 
             // Use reusable TightHeaderText component (aligned left)
             VStack(alignment: .leading, spacing: 0) {
-                TightHeaderText("Need to", "leave early?")
+                TightHeaderText("NEED TO", "LEAVE EARLY?")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -507,6 +549,7 @@ struct ExitMethodCard: View {
 struct PermissionSlideContent: View {
     @Binding var authorizationGranted: Bool
     let onGrantPermission: () -> Void
+    @Binding var currentStep: Int
     
     var body: some View {
         VStack(spacing: 0) {
@@ -517,12 +560,12 @@ struct PermissionSlideContent: View {
             // Use reusable TightHeaderText component (aligned left)
             if authorizationGranted {
                 VStack(alignment: .leading, spacing: 0) {
-                    TightHeaderText("Access", "Granted")
+                    TightHeaderText("ACCESS", "GRANTED")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 VStack(alignment: .leading, spacing: 0) {
-                    TightHeaderText("Enable", "Screen Time")
+                    TightHeaderText("ENABLE", "SCREEN TIME")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -546,8 +589,8 @@ struct PermissionSlideContent: View {
                         .font(.system(size: 24))
                         .foregroundColor(.white)
                     
-                    Text("Ready to continue")
-                        .font(.appFont(size: 17))
+                    Text("READY TO CONTINUE")
+                        .appBody()
                         .foregroundColor(.white)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -574,6 +617,16 @@ struct PermissionSlideContent: View {
             Spacer()
         }
         .padding(.horizontal, 24)
+        .onChange(of: authorizationGranted) { oldValue, newValue in
+            if newValue == true {
+                // Auto-advance after showing success briefly
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    withAnimation {
+                        currentStep += 1
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -581,6 +634,8 @@ struct PermissionSlideContent: View {
 struct CategorySelectionSlideContent: View {
     @ObservedObject var burnerManager: BurnerModeManager
     @Binding var showingAppPicker: Bool
+    @Binding var currentStep: Int
+    @State private var hasAutoAdvanced = false
     
     private var categoryCount: Int {
         burnerManager.selectedApps.categoryTokens.count
@@ -629,7 +684,7 @@ struct CategorySelectionSlideContent: View {
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
                         
-                        Text("Tap below to modify")
+                        Text("Ready to continue")
                             .font(.appFont(size: 14))
                             .kerning(-0.3)
                             .foregroundColor(.white.opacity(0.6))
@@ -639,35 +694,29 @@ struct CategorySelectionSlideContent: View {
                 .padding(16)
                 .background(Color.white.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
-                
-                Spacer()
-                    .frame(height: 16)
-                
-                Button(action: {
-                    showingAppPicker = true
-                }) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "pencil.circle.fill")
-                            .font(.system(size: 20))
-                        Text("MODIFY CATEGORIES")
-                            .font(.appFont(size: 17))
-                    }
-                    .foregroundColor(.white)
-                    .frame(height: 50)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.white.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
             }
             
             Spacer()
         }
         .padding(.horizontal, 24)
+        .onChange(of: burnerManager.isSetupValid) { oldValue, newValue in
+            // Only auto-advance the first time categories are selected
+            if newValue == true && !hasAutoAdvanced {
+                hasAutoAdvanced = true
+                // Auto-advance after showing success briefly
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    withAnimation {
+                        currentStep += 1
+                    }
+                }
+            }
+        }
+        .onAppear {
+            // Reset the auto-advance flag when returning to this slide
+            if !burnerManager.isSetupValid {
+                hasAutoAdvanced = false
+            }
+        }
     }
 }
 
@@ -698,7 +747,7 @@ struct ConfirmationSlideContent: View {
                 .foregroundColor(.white.opacity(0.7))
                 .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 16) // Add some spacing after the title
+                .padding(.top, 16)
             
             Spacer()
                 .frame(height: 32)
@@ -743,7 +792,7 @@ struct ConfirmationItem: View {
             
             Text(text)
                 .font(.appFont(size: 16))
-                .kerning(-0.3)  // Reduced tracking
+                .kerning(-0.3)
                 .foregroundColor(.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -15,7 +15,7 @@ struct BurnerButtonStyle: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .font(.system(size: 16, design: .monospaced)) // Monospaced for buttons
+            .appBody() // Monospaced for buttons
             .foregroundColor(style == .primary ? .black : .white)
             .frame(maxWidth: maxWidth)
             .padding(.vertical, 12)
