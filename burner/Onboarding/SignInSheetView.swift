@@ -355,7 +355,6 @@ struct SignInSheetView: View {
         googleUser: GIDGoogleUser?
     ) {
         // Proceed directly with sign-in - Firebase will handle account conflicts
-        print("✅ Proceeding with sign-in for: \(email)")
         self.authenticateWithFirebase(credential: newCredential) { authResult in
             if let user = authResult?.user {
                 self.createUserProfile(
@@ -402,7 +401,6 @@ struct SignInSheetView: View {
         self.showingAccountExistsAlert = false
         self.shouldLinkAfterSignIn = true
         
-        print("🔄 User chose to sign in with existing \(provider) account")
         
         // Trigger appropriate sign-in based on provider
         if provider == "Google" {
@@ -525,7 +523,6 @@ struct SignInSheetView: View {
     
     /// Link new credential to existing account
     private func linkCredentialToAccount(user: User, credential: AuthCredential) {
-        print("🔗 Linking \(pendingNewProvider ?? "new") account to existing user")
         
         user.link(with: credential) { authResult, error in
             DispatchQueue.main.async {
@@ -537,7 +534,6 @@ struct SignInSheetView: View {
                     
                     // Check if already linked
                     if nsError.code == AuthErrorCode.credentialAlreadyInUse.rawValue {
-                        print("⚠️ Credential already in use, attempting to merge accounts")
                         self.handleCredentialAlreadyInUse(credential: credential, existingUser: user)
                     } else if nsError.code == AuthErrorCode.emailAlreadyInUse.rawValue {
                         self.showErrorMessage("This email is already in use with a different account.")
@@ -547,7 +543,6 @@ struct SignInSheetView: View {
                     return
                 }
                 
-                print("✅ Successfully linked accounts")
                 
                 // Update user profile with linked provider
                 self.updateUserProfileWithLinkedProvider(user: user)
@@ -575,7 +570,6 @@ struct SignInSheetView: View {
                     return
                 }
                 
-                print("📦 Merging account data from \(existingUser.uid) to \(newUser.uid)")
                 
                 // Merge data from old account to new account
                 self.mergeAccountData(
@@ -603,7 +597,6 @@ struct SignInSheetView: View {
                     return
                 }
                 
-                print("📋 Copying data from old account")
                 var mergedData = oldData
                 mergedData["lastLoginAt"] = FieldValue.serverTimestamp()
                 mergedData["linkedProviders"] = FieldValue.arrayUnion([self.pendingNewProvider?.lowercased() ?? "unknown"])
@@ -611,13 +604,11 @@ struct SignInSheetView: View {
                 // Copy old data to new user (preserving stripeCustomerId!)
                 newUserRef.setData(mergedData, merge: true) { error in
                     if let error = error {
-                        print("❌ Error merging account data: \(error)")
                         self.stopLoading()
                         self.showErrorMessage("Failed to merge account data")
                         return
                     }
                     
-                    print("✅ Account data merged successfully")
                     
                     // Mark old document as merged
                     oldUserRef.updateData([
@@ -648,12 +639,10 @@ struct SignInSheetView: View {
             .whereField("userId", isEqualTo: oldUserId)
             .getDocuments { snapshot, error in
                 guard let documents = snapshot?.documents, !documents.isEmpty else {
-                    print("ℹ️ No tickets to migrate")
                     completion()
                     return
                 }
                 
-                print("🎫 Migrating \(documents.count) tickets to new account")
                 
                 let batch = db.batch()
                 for doc in documents {
@@ -662,9 +651,7 @@ struct SignInSheetView: View {
                 
                 batch.commit { error in
                     if let error = error {
-                        print("❌ Error migrating tickets: \(error)")
                     } else {
-                        print("✅ Successfully migrated \(documents.count) tickets")
                     }
                     completion()
                 }
@@ -681,9 +668,7 @@ struct SignInSheetView: View {
             "lastLoginAt": FieldValue.serverTimestamp()
         ]) { error in
             if let error = error {
-                print("❌ Error updating linked providers: \(error)")
             } else {
-                print("✅ Updated user profile with linked provider")
             }
         }
     }
@@ -732,7 +717,6 @@ struct SignInSheetView: View {
         
         userRef.getDocument { snapshot, error in
             if let error = error {
-                print("❌ Error fetching user document: \(error.localizedDescription)")
                 completion()
                 return
             }
@@ -761,15 +745,12 @@ struct SignInSheetView: View {
                     "venuePermissions": []
                 ]) { _, new in new }
                 
-                print("🆕 Creating new user profile for \(user.uid)")
             } else {
-                print("✅ Updating existing user profile for \(user.uid)")
             }
             
             // ✅ ALWAYS use setData with merge:true to preserve fields like stripeCustomerId
             userRef.setData(userData, merge: true) { error in
                 if let error = error {
-                    print("❌ Error saving user profile: \(error.localizedDescription)")
                 }
                 completion()
             }
@@ -891,24 +872,19 @@ struct SignInSheetView: View {
                         // User has existing preferences
                         if hasLocalPrefs {
                             // Merge local + Firebase preferences
-                            print("🔀 Merging local and Firebase preferences")
                             await syncService.mergePreferences(localPreferences: localPrefs)
                         } else {
                             // Just load Firebase preferences
-                            print("✅ Loading Firebase preferences")
                             firebasePrefs.saveToUserDefaults()
                         }
                         // User has preferences, skip onboarding
-                        print("✅ User has existing preferences, skipping onboarding")
                         NotificationCenter.default.post(name: NSNotification.Name("SkipOnboardingToExplore"), object: nil)
                     } else if hasLocalPrefs {
                         // User has local but no Firebase preferences, sync local to Firebase
-                        print("📤 Syncing local preferences to Firebase")
                         await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
                     }
                 } else if hasLocalPrefs {
                     // No Firebase preferences, but has local ones, sync them
-                    print("📤 Syncing local preferences to Firebase (no existing prefs)")
                     await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
                 }
             }
