@@ -41,7 +41,7 @@ class BurnerModeMonitor: ObservableObject {
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self else { return }
 
-                if let error = error {
+                if error != nil {
                     return
                 }
 
@@ -97,7 +97,7 @@ class BurnerModeMonitor: ObservableObject {
                 object: nil
             )
         } catch BurnerModeError.notAuthorized {
-        } catch BurnerModeError.invalidSetup(let message) {
+        } catch BurnerModeError.invalidSetup {
         } catch {
         }
     }
