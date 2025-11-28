@@ -166,6 +166,11 @@ struct EventDetailView: View {
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.leading)
                                     .frame(maxWidth: .infinity, alignment: .leading)
+                                    .if(namespace != nil && event.id != nil) { view in
+                                        view.matchedTransitionSource(id: "heroName-\(event.id!)", in: namespace!) { source in
+                                            source
+                                        }
+                                    }
 
                                 HStack(spacing: 10) {
                                     Button(action: {
@@ -563,6 +568,3 @@ struct EventMapView: View {
         .mapStyle(.standard)
     }
 }
-
-
-
