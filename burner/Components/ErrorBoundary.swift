@@ -83,14 +83,8 @@ struct ErrorBoundary<Content: View>: View {
             }) {
                 Text("TRY AGAIN")
                     .font(.appFont(size: 17))
-                    .frame(maxWidth: 200)
-                    .secondaryButtonStyle(
-                        backgroundColor: .white,
-                        foregroundColor: .black,
-                        cornerRadius: 8
-                    )
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(SecondaryButton(backgroundColor: .white, foregroundColor: .black))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
