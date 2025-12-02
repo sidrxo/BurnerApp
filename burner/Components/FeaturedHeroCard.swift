@@ -108,7 +108,7 @@ struct FeaturedHeroCard: View {
                                     }
                                 }
                             }) {
-                                Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                                Image(systemName: isBookmarked ? "heart.fill" : "heart")
                                     .appSectionHeader()
                                     .foregroundColor(isBookmarked ? .white : .white.opacity(0.7))
                                     .scaleEffect(isBookmarked ? 1.1 : 1.0)

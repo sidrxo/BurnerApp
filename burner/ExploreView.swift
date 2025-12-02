@@ -205,21 +205,18 @@ struct ExploreView: View {
                             .foregroundColor(.white)
                             .padding(.bottom, 2)
 
+
                         Spacer()
                         Button(action: {
                             coordinator.activeModal = .SetLocation
                         }) {
                             ZStack {
-                                Circle()
-                                    .stroke(
-                                        userLocationManager.savedLocation != nil ? Color.white : Color.gray.opacity(0.5),
-                                        lineWidth: 1
-                                    )
-                                    .frame(width: 44, height: 44)
-
-                                Image(systemName: "map")
+    
+                                Image("map")
                                     .appCard()
                                     .foregroundColor(userLocationManager.savedLocation != nil ? .white : .gray.opacity(0.5))
+                                    .frame(width: 38, height: 38)
+
                             }
                         }
                     }

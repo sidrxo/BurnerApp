@@ -151,7 +151,7 @@ struct TicketDetailView: View {
                 .zIndex(1001)
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarHidden(true)
         .if(namespace != nil && ticketWithEvent.ticket.id != nil) { view in
             view.navigationTransition(.zoom(sourceID: "ticketImage-\(ticketWithEvent.ticket.id!)", in: namespace!))
         }

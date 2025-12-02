@@ -24,11 +24,8 @@ struct BookmarksView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header Section
-            HeaderSection(title: "Bookmarks")
-                .padding(.horizontal, 10)
-                .padding(.top, 20)
-
-
+            HeaderSection(title: "Saves")
+           
 
             if !bookmarkManager.bookmarkedEvents.isEmpty {
 
@@ -97,7 +94,7 @@ struct BookmarksView: View {
                 .padding(.bottom, 30)
             
             VStack(spacing: 8) {
-                Text("No Bookmarks Yet")
+                Text("NOTHING SAVED YET")
                     .appSectionHeader()
                     .foregroundColor(.white)
 
@@ -108,17 +105,10 @@ struct BookmarksView: View {
                     .padding(.horizontal, 40)
             }
             
-            Button("BROWSE EVENTS") {
-                // Navigate to Home tab (Explore view)
+            BurnerButton("BROWSE EVENTS", style: .primary, maxWidth: 200) {
                 coordinator.selectTab(.home)
-                dismiss()
             }
-            .font(.appFont(size: 17))
-            .foregroundColor(.black)
-            .frame(maxWidth: 200)
-            .padding(.vertical, 12)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .buttonStyle(PlainButtonStyle())
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)

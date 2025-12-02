@@ -27,6 +27,7 @@ struct EventDetailView: View {
     @State private var didAppear = false
     @State private var mapReady = false           // Lazy load map
     @State private var interactionEnabled = false // Lock interaction during transition
+    @State private var dismissalEnabled = false   // Lock dismissal separately from interaction
 
     private let screenHeight = UIScreen.main.bounds.height
 
@@ -188,7 +189,7 @@ struct EventDetailView: View {
                                                 }
                                             }
                                         }) {
-                                            Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                                            Image(systemName: isBookmarked ? "heart.fill" : "heart")
                                                 .appSectionHeader()
                                                 .foregroundColor(.white)
                                                 .iconButtonStyle(
@@ -436,6 +437,7 @@ struct EventDetailView: View {
         .if(namespace != nil && event.id != nil) { view in
             view.navigationTransition(.zoom(sourceID: "heroImage-\(event.id!)", in: namespace!))
         }
+        .interactiveDismissDisabled(!dismissalEnabled)
         .sheet(isPresented: $showingMapsSheet) {
             if let coordinates = event.coordinates {
                 MapsOptionsSheet(
@@ -449,6 +451,7 @@ struct EventDetailView: View {
         }
         // PERFORMANCE: Freeze interaction during entrance transition
         .allowsHitTesting(interactionEnabled)
+        .interactiveDismissDisabled(!dismissalEnabled)
         .onAppear {
             checkUserTicketStatus()
             
@@ -457,10 +460,15 @@ struct EventDetailView: View {
                 didAppear = true
             }
             
-            // 2. Unlock Interaction & Load Map AFTER transition finishes
-            // This prevents "Exit while Entering" lag/crashes
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+            // 2. Quick interaction unlock (0.2s) - user can scroll and interact
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 interactionEnabled = true
+            }
+            
+            // 3. Delayed dismissal unlock (0.6s) - prevents accidental back navigation during transition
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                dismissalEnabled = true
+                // Also load map after user can interact
                 withAnimation {
                     mapReady = true
                 }

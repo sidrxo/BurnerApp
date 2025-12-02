@@ -10,30 +10,51 @@ struct TicketGridItem: View {
     var namespace: Namespace.ID?
 
     var body: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 0) {
-                if let url = URL(string: ticketWithEvent.event.imageUrl), !ticketWithEvent.event.imageUrl.isEmpty {
-                    KFImage(url)
-                        .placeholder {
-                            imagePlaceholder
-                        }
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: geometry.size.width, height: geometry.size.width)
-                        .clipped()
-                        .if(namespace != nil && ticketWithEvent.event.id != nil) { view in
-                            view.matchedTransitionSource(id: "ticketImage-\(ticketWithEvent.ticket.id ?? "")", in: namespace!) { source in
-                                source
+        VStack(spacing: 0) {
+            // Image section
+            GeometryReader { geometry in
+                ZStack {
+                    if let url = URL(string: ticketWithEvent.event.imageUrl), !ticketWithEvent.event.imageUrl.isEmpty {
+                        KFImage(url)
+                            .placeholder {
+                                imagePlaceholder
                             }
-                        }
-                } else {
-                    imagePlaceholder
-                        .frame(width: geometry.size.width, height: geometry.size.width)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geometry.size.width, height: geometry.size.width)
+                            .clipped()
+                            .if(namespace != nil && ticketWithEvent.event.id != nil) { view in
+                                view.matchedTransitionSource(id: "ticketImage-\(ticketWithEvent.ticket.id ?? "")", in: namespace!) { source in
+                                    source
+                                }
+                            }
+                    } else {
+                        imagePlaceholder
+                            .frame(width: geometry.size.width, height: geometry.size.width)
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .aspectRatio(1, contentMode: .fit)
+            
+            // Event info below image
+            VStack(alignment: .leading, spacing: 4) {
+                Text(ticketWithEvent.event.name)
+                    .appBody()
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.9)
+                
+                if let startTime = ticketWithEvent.event.startTime {
+                    Text(formatDate(startTime))
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(.gray)
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 8)
+            .padding(.horizontal, 4)
         }
-        .aspectRatio(1, contentMode: .fit)
     }
 
     private var imagePlaceholder: some View {
@@ -44,6 +65,12 @@ struct TicketGridItem: View {
                     .font(.system(size: 24))
                     .foregroundColor(.gray)
             )
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: date)
     }
 }
 
@@ -164,17 +191,20 @@ struct TicketsView: View {
             Spacer()
             Button(action: {
                 coordinator.ticketsPath.append(NavigationDestination.settings)
+
+                coordinator.activeModal = .SetLocation
             }) {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+                ZStack {
+
+                    Image("settings")
+                        .appCard()
+                        .frame(width: 38, height: 38)
+
+                }
             }
-            .buttonStyle(PlainButtonStyle())
         }
         .padding(.horizontal, 10)
-        .padding(.top, 20)
+        .padding(.top, 14)
         .padding(.bottom, 30)
     }
     
@@ -254,6 +284,8 @@ struct TicketsView: View {
     // MARK: - Filters Section
     private var filtersSection: some View {
         HStack(spacing: 12) {
+            Spacer()
+
             ForEach(TicketsFilter.allCases, id: \.self) { filter in
                 FilterButton(title: filter.displayName, isSelected: selectedFilter == filter) {
                     // Haptic feedback for filter change

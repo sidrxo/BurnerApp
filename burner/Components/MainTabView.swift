@@ -61,14 +61,14 @@ struct MainTabView: View {
                 .opacity(coordinator.selectedTab == .settings ? 1 : 0)
                 .zIndex(coordinator.selectedTab == .settings ? 1 : 0)
                 
-                // Custom tab bar overlay
+                // Custom tab bar overlay - always rendered but offset when hidden
                 VStack {
                     Spacer()
-                    if shouldShowTabBar {
-                        CustomTabBar()
-                            .transition(.move(edge: .bottom))
-                    }
+                    CustomTabBar()
+                        .offset(y: shouldShowTabBar ? 0 : 100)
+                        .opacity(shouldShowTabBar ? 1 : 0)
                 }
+                .animation(.spring(response: 0.3, dampingFraction: 0.85), value: shouldShowTabBar)
                 .zIndex(100)
                 .ignoresSafeArea(.keyboard)
             }
@@ -92,6 +92,7 @@ struct MainTabView: View {
         }
     }
 }
+
 struct CustomTabBar: View {
     @EnvironmentObject var coordinator: NavigationCoordinator
 
@@ -117,10 +118,9 @@ struct CustomTabBar: View {
 
             Spacer()
             
-            // 3. Bookmarks (Formerly Settings position, moved to 3rd slot)
-            // Note: You need to add .bookmarks to your Tab enum in NavigationCoordinator
+            // 3. Bookmarks
             TabBarButton(
-                icon: "bookmarkicon",
+                icon: "heart",
                 isSelected: coordinator.selectedTab == .settings
             ) {
                 coordinator.selectTab(.settings)
@@ -128,7 +128,7 @@ struct CustomTabBar: View {
 
             Spacer()
 
-            // 4. Tickets (Now the final tab, containing the nested settings)
+            // 4. Tickets
             TabBarButton(
                 icon: "ticketicon",
                 isSelected: coordinator.selectedTab == .tickets,
@@ -152,15 +152,31 @@ struct TabBarButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(icon)
-                .renderingMode(.template) // Crucial: Allows .foregroundColor to work
-                .resizable()              // Crucial: Allows SVG to resize
-                .aspectRatio(contentMode: .fit)
-                .foregroundColor(isSelected ? .white : .gray)
-                .rotationEffect(.degrees(rotationDegrees))
-                .frame(width: 24, height: 24) // Visual size of the icon
-                .frame(width: 44, height: 30) // Touch target size
-                .contentShape(Rectangle())
+            ZStack {
+                // Outline (always visible)
+                Image(icon)
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundColor(.gray)
+                    .rotationEffect(.degrees(rotationDegrees))
+                    .frame(width: 24, height: 24)
+                    .opacity(isSelected ? 0 : 1)
+                
+                // Filled version (animated)
+                Image(icon)
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundColor(.white)
+                    .rotationEffect(.degrees(rotationDegrees))
+                    .frame(width: 24, height: 24)
+                    .scaleEffect(isSelected ? 1.0 : 0.5)
+                    .opacity(isSelected ? 1.0 : 0.0)
+            }
+            .frame(width: 44, height: 30)
+            .contentShape(Rectangle())
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
     }

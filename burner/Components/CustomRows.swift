@@ -328,7 +328,7 @@ struct BookmarkButton: View {
                         .scaleEffect(0.7)
                         .tint(.white)
                 } else {
-                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                    Image(systemName: isBookmarked ? "heart.fill" : "heart")
                         .font(.appIcon)
                         .foregroundColor(isBookmarked ? .white : .gray)
                         .scaleEffect(isBookmarked ? 1.1 : 1.0)
