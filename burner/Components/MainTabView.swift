@@ -10,15 +10,6 @@ struct MainTabView: View {
     @Namespace private var bookmarksHeroNamespace
     @Namespace private var ticketsHeroNamespace
 
-    @State private var dragOffset: CGFloat = 0
-    @State private var isDragging: Bool = false
-
-    private var slideDirection: SlideDirection {
-        let currentIndex = coordinator.selectedTab.rawValue
-        let previousIndex = coordinator.previousTab.rawValue
-        return currentIndex > previousIndex ? .fromRight : .fromLeft
-    }
-
     var body: some View {
         NavigationCoordinatorView {
             ZStack {
@@ -85,32 +76,6 @@ struct MainTabView: View {
                 .ignoresSafeArea(.keyboard)
             }
             .animation(.spring(response: 0.35, dampingFraction: 0.8), value: coordinator.selectedTab)
-            .gesture(
-                DragGesture(minimumDistance: 30)
-                    .onChanged { value in
-                        if !isDragging && shouldShowTabBar {
-                            isDragging = true
-                        }
-                        dragOffset = value.translation.width
-                    }
-                    .onEnded { value in
-                        let threshold: CGFloat = 50
-                        let velocity = value.predictedEndTranslation.width - value.translation.width
-
-                        if abs(value.translation.width) > threshold || abs(velocity) > 100 {
-                            if value.translation.width > 0 {
-                                // Swipe right - go to previous tab (lower index)
-                                swipeToPreviousTab()
-                            } else {
-                                // Swipe left - go to next tab (higher index)
-                                swipeToNextTab()
-                            }
-                        }
-
-                        isDragging = false
-                        dragOffset = 0
-                    }
-            )
         }
     }
     
@@ -134,39 +99,11 @@ struct MainTabView: View {
     private func slideTransition(for tab: AppTab) -> AnyTransition {
         let isMovingForward = coordinator.selectedTab.rawValue > coordinator.previousTab.rawValue
 
-        if tab == coordinator.selectedTab {
-            // Entering tab
-            return AnyTransition.asymmetric(
-                insertion: .move(edge: isMovingForward ? .trailing : .leading),
-                removal: .move(edge: isMovingForward ? .leading : .trailing)
-            )
-        } else {
-            // Exiting tab
-            return AnyTransition.asymmetric(
-                insertion: .move(edge: isMovingForward ? .trailing : .leading),
-                removal: .move(edge: isMovingForward ? .leading : .trailing)
-            )
-        }
+        return AnyTransition.asymmetric(
+            insertion: .move(edge: isMovingForward ? .trailing : .leading),
+            removal: .move(edge: isMovingForward ? .leading : .trailing)
+        )
     }
-
-    private func swipeToNextTab() {
-        let currentIndex = coordinator.selectedTab.rawValue
-        let tabs = AppTab.allCases
-        guard currentIndex < tabs.count - 1 else { return }
-        coordinator.selectTab(tabs[currentIndex + 1])
-    }
-
-    private func swipeToPreviousTab() {
-        let currentIndex = coordinator.selectedTab.rawValue
-        let tabs = AppTab.allCases
-        guard currentIndex > 0 else { return }
-        coordinator.selectTab(tabs[currentIndex - 1])
-    }
-}
-
-enum SlideDirection {
-    case fromLeft
-    case fromRight
 }
 
 struct CustomTabBar: View {
