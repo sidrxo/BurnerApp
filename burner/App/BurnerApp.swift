@@ -10,14 +10,33 @@ import ActivityKit
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        // Configure Firebase
         FirebaseApp.configure()
 
         // Enable Firestore offline persistence for better caching and reduced reads
+        // This also helps prevent early network connection warnings
         let firestoreSettings = Firestore.firestore().settings
         firestoreSettings.cacheSettings = PersistentCacheSettings(
             sizeBytes: FirestoreCacheSizeUnlimited as NSNumber
         )
+        firestoreSettings.isSSLEnabled = true
         Firestore.firestore().settings = firestoreSettings
+
+        // Disable automatic network connectivity checks to prevent early connection warnings
+        // Network will still be used when needed, but won't attempt immediate connection
+        Firestore.firestore().disableNetwork { error in
+            if let error = error {
+                print("⚠️ Error disabling network: \(error.localizedDescription)")
+            }
+            // Re-enable network after a brief delay to allow app to fully initialize
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                Firestore.firestore().enableNetwork { error in
+                    if let error = error {
+                        print("⚠️ Error enabling network: \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
 
         // Configure Kingfisher for optimized image loading
         let cache = ImageCache.default
