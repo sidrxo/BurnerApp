@@ -112,7 +112,7 @@ struct TicketsView: View {
                 .foregroundColor(.white)
             Spacer()
             Button(action: {
-                coordinator.settingsPath.append(NavigationDestination.settings)
+                coordinator.ticketsPath.append(NavigationDestination.settings)
             }) {
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 20))
