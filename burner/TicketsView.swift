@@ -130,7 +130,6 @@ struct TicketsView: View {
     }
     
     var body: some View {
-        // ❌ Removed NavigationView - now handled by MainTabView
         VStack(spacing: 0) {
             // Custom header with settings gear
             ticketsHeader
@@ -160,6 +159,8 @@ struct TicketsView: View {
             Text("Tickets")
                 .appPageHeader()
                 .foregroundColor(.white)
+                .padding(.bottom, 2)
+
             Spacer()
             Button(action: {
                 coordinator.ticketsPath.append(NavigationDestination.settings)
@@ -172,7 +173,7 @@ struct TicketsView: View {
             }
             .buttonStyle(PlainButtonStyle())
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 10)
         .padding(.top, 20)
         .padding(.bottom, 30)
     }

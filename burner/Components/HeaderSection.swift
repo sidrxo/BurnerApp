@@ -19,7 +19,7 @@ struct HeaderSection: View {
                 .foregroundColor(.white)
             Spacer()
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 10)
         .padding(.top, 20)
         .padding(.bottom, 30)
     }

@@ -206,7 +206,6 @@ struct ExploreView: View {
                             .padding(.bottom, 2)
 
                         Spacer()
-
                         Button(action: {
                             coordinator.activeModal = .SetLocation
                         }) {

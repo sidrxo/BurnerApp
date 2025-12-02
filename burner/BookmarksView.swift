@@ -24,8 +24,8 @@ struct BookmarksView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header Section
-            SettingsHeaderSection(title: "Bookmarks")
-                .padding(.horizontal, 20)
+            HeaderSection(title: "Bookmarks")
+                .padding(.horizontal, 10)
                 .padding(.top, 20)
 
 
