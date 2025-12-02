@@ -240,7 +240,7 @@ struct ScannerView: View {
     // MARK: - Event Selection View
     private var eventSelectionView: some View {
         VStack(spacing: 0) {
-            SettingsHeaderSection(title: "Select Event")
+            HeaderSection(title: "Select Event", includeTopPadding: false, includeHorizontalPadding: false)
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
             

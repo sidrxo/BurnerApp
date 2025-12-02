@@ -11,7 +11,7 @@ import SwiftUI
 struct SupportView: View {
     var body: some View {
         VStack(spacing: 0) {
-            SettingsHeaderSection(title: "Support")
+            HeaderSection(title: "Support", includeTopPadding: false, includeHorizontalPadding: false)
                 .padding(.top, 20)
             MenuSection(title: "HELP") {
                 Button(action: { openURL("mailto:support@burner.app") }) {

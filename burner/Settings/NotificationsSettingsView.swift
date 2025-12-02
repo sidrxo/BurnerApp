@@ -19,7 +19,7 @@ struct NotificationsSettingsView: View {
                 .edgesIgnoringSafeArea(.all)
 
             VStack(spacing: 0) {
-                SettingsHeaderSection(title: "Notifications")
+                HeaderSection(title: "Notifications", includeTopPadding: false, includeHorizontalPadding: false)
 
                 ScrollView {
                     VStack(spacing: 0) {

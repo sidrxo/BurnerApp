@@ -15,7 +15,7 @@ struct FilteredEventsView: View {
             if events.isEmpty {
                 emptyStateView
             } else {
-                SettingsHeaderSection(title: title)
+                HeaderSection(title: title, includeTopPadding: false, includeHorizontalPadding: false)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                 

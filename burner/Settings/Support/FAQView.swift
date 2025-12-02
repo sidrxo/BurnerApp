@@ -13,7 +13,7 @@ struct FAQView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                SettingsHeaderSection(title: "FAQ")
+                HeaderSection(title: "FAQ", includeTopPadding: false, includeHorizontalPadding: false)
                     .padding(.horizontal, 16)
                     .padding(.top, 20)
 

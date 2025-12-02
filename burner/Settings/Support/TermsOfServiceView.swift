@@ -11,7 +11,7 @@ struct TermsOfServiceView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                SettingsHeaderSection(title: "Terms of Service")
+                HeaderSection(title: "Terms of Service", includeTopPadding: false, includeHorizontalPadding: false)
                     .padding(.horizontal, 16)
                     .padding(.top, 20)
 

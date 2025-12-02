@@ -45,7 +45,7 @@ struct PaymentSettingsView: View {
             Color.black.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                SettingsHeaderSection(title: "Payment Methods")
+                HeaderSection(title: "Payment Methods", includeTopPadding: false, includeHorizontalPadding: false)
                     .padding(.horizontal, 16)
                     .padding(.top, 20)
 
