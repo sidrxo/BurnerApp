@@ -9,31 +9,6 @@ struct MainTabView: View {
     @Namespace private var searchHeroNamespace
     @Namespace private var bookmarksHeroNamespace
     @Namespace private var ticketsHeroNamespace
-    
-    // ✅ FIX: Calculate transition for the SPECIFIC tab instance
-    // This ensures that an outgoing view gets the correct removal transition
-    // regardless of what its previous state was.
-    private func getTransition(for tab: AppTab) -> AnyTransition {
-        let selected = coordinator.selectedTab
-        let previous = coordinator.previousTab
-        
-        // CASE A: I am the Outgoing View (I am 'tab', but selected is someone else)
-        if selected != tab {
-            if selected.rawValue > tab.rawValue {
-                return .move(edge: .leading) // We are moving Forward, so I Exit Left
-            } else {
-                return .move(edge: .trailing) // We are moving Backward, so I Exit Right
-            }
-        }
-        // CASE B: I am the Incoming View (I am 'tab', and I am selected)
-        else {
-            if tab.rawValue > previous.rawValue {
-                return .move(edge: .trailing) // We came from Left, so I Enter from Right
-            } else {
-                return .move(edge: .leading) // We came from Right, so I Enter from Left
-            }
-        }
-    }
 
     var body: some View {
         NavigationCoordinatorView {
@@ -48,8 +23,6 @@ struct MainTabView: View {
                                     .environment(\.heroNamespace, exploreHeroNamespace)
                             }
                     }
-                    .transition(getTransition(for: .explore))
-                    .zIndex(coordinator.selectedTab == .explore ? 1 : 0)
                 }
 
                 // SEARCH (Index 1)
@@ -62,8 +35,6 @@ struct MainTabView: View {
                                     .environment(\.heroNamespace, searchHeroNamespace)
                             }
                     }
-                    .transition(getTransition(for: .search))
-                    .zIndex(coordinator.selectedTab == .search ? 1 : 0)
                 }
 
                 // BOOKMARKS (Index 2)
@@ -76,8 +47,6 @@ struct MainTabView: View {
                                     .environment(\.heroNamespace, bookmarksHeroNamespace)
                             }
                     }
-                    .transition(getTransition(for: .bookmarks))
-                    .zIndex(coordinator.selectedTab == .bookmarks ? 1 : 0)
                 }
                 
                 // TICKETS (Index 3)
@@ -90,8 +59,6 @@ struct MainTabView: View {
                                     .environment(\.heroNamespace, ticketsHeroNamespace)
                             }
                     }
-                    .transition(getTransition(for: .tickets))
-                    .zIndex(coordinator.selectedTab == .tickets ? 1 : 0)
                 }
 
                 VStack {
@@ -104,8 +71,6 @@ struct MainTabView: View {
                 .zIndex(100)
                 .ignoresSafeArea(.keyboard)
             }
-            // ✅ IMPORTANT: Animate based on the atomic state change
-            .animation(.easeInOut(duration: 0.25), value: coordinator.selectedTab)
         }
     }
     
