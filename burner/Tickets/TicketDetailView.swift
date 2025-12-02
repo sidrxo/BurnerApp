@@ -28,11 +28,24 @@ struct TicketDetailView: View {
 
             Color.black
                 .ignoresSafeArea()
-            
+
             VStack {
                 // Main ticket design
                 simpleTicketView
                     .padding(.horizontal, 20)
+            }
+
+            // Close button
+            VStack {
+                HStack {
+                    Spacer()
+                    CloseButton(action: {
+                        coordinator.navigateBack()
+                    }, isDark: true)
+                    .padding(.top, 60)
+                    .padding(.trailing, 20)
+                }
+                Spacer()
             }
 
             if showTransferSuccess {
@@ -125,20 +138,15 @@ struct TicketDetailView: View {
             // 3. --- QR Code Section ---
             VStack(spacing: 20) {
                 if appState.burnerManager.hasCompletedSetup {
-                    // QR Code
-                    Button(action: {
-                        coordinator.showFullScreenQRCode(for: ticketWithEvent.ticket)
-                    }) {
-                        QRCodeView(
-                            data: qrCodeData,
-                            size: 300,
-                            backgroundColor: .black,
-                            foregroundColor: .white
-                        )
-                        .padding(5)
-                        .background(.white)
-                    }
-                    .buttonStyle(PlainButtonStyle())
+                    // QR Code (non-interactive)
+                    QRCodeView(
+                        data: qrCodeData,
+                        size: 300,
+                        backgroundColor: .black,
+                        foregroundColor: .white
+                    )
+                    .padding(5)
+                    .background(.white)
                 } else {
                     // Locked state with setup button
                     VStack(spacing: 16) {
@@ -273,106 +281,6 @@ struct TicketDetailView: View {
         withAnimation(.easeInOut(duration: 0.3)) {
             isLiveActivityActive = hasActiveActivity
         }
-    }
-}
-
-// MARK: - Full Screen QR Code View
-struct FullScreenQRCodeView: View {
-    let ticketWithEvent: TicketWithEventData
-    let qrCodeData: String
-    @Environment(\.presentationMode) var presentationMode
-    @State private var originalBrightness: CGFloat = 0
-
-    var body: some View {
-        ZStack {
-            Color.black
-                .ignoresSafeArea()
-
-            VStack(spacing: 32) {
-                Spacer()
-
-                VStack(spacing: 12) {
-                    Text(ticketWithEvent.event.name.uppercased())
-                        .font(.custom("Helvetica", size: 24))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .tracking(1)
-                        .padding(.horizontal, 40)
-
-                    Text(ticketWithEvent.event.venue.uppercased())
-                        .font(.custom("Helvetica", size: 12).weight(.semibold))
-                        .foregroundColor(.white.opacity(0.5))
-                        .tracking(2)
-                }
-
-                // QR Code with white border
-                QRCodeView(
-                    data: qrCodeData,
-                    size: min(UIScreen.main.bounds.width - 60, 340),
-                    backgroundColor: .white,
-                    foregroundColor: .black
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                )
-
-                // Ticket number (without "TICKET №" label)
-                Text(ticketWithEvent.ticket.ticketNumber ?? "")
-                    .font(.custom("Helvetica", size: 18))
-                    .foregroundColor(.white.opacity(0.7))
-                    .tracking(3)
-
-                Spacer()
-
-                // Close button
-                Button(action: {
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Text("CLOSE")
-                        .font(.custom("Helvetica", size: 15))
-                        .foregroundColor(.black)
-                        .tracking(1.5)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 20)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .padding(.horizontal, 40)
-                }
-                .padding(.bottom, 40)
-            }
-        }
-        .onAppear {
-            originalBrightness = UIScreen.main.brightness
-            UIScreen.main.brightness = 1.0
-        }
-        .onDisappear {
-            UIScreen.main.brightness = originalBrightness
-        }
-    }
-}
-
-// MARK: - Ticket QR Code View (for reuse elsewhere)
-struct TicketQRCodeView: View {
-    let ticketWithEvent: TicketWithEventData
-    @EnvironmentObject var coordinator: NavigationCoordinator
-
-    private var qrCodeData: String {
-        return ticketWithEvent.ticket.qrCode ?? "INVALID_TICKET"
-    }
-
-    var body: some View {
-        Button(action: {
-            coordinator.showFullScreenQRCode(for: ticketWithEvent.ticket)
-        }) {
-            QRCodeView(
-                data: qrCodeData,
-                size: 200,
-                backgroundColor: .white,
-                foregroundColor: .black
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
