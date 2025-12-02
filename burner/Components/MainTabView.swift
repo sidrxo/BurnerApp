@@ -5,63 +5,95 @@ import Combine
 struct MainTabView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
-    @Namespace private var homeHeroNamespace
     @Namespace private var exploreHeroNamespace
+    @Namespace private var searchHeroNamespace
+    @Namespace private var bookmarksHeroNamespace
     @Namespace private var ticketsHeroNamespace
-    @Namespace private var settingsHeroNamespace
+    
+    // ✅ FIX: Calculate transition for the SPECIFIC tab instance
+    // This ensures that an outgoing view gets the correct removal transition
+    // regardless of what its previous state was.
+    private func getTransition(for tab: AppTab) -> AnyTransition {
+        let selected = coordinator.selectedTab
+        let previous = coordinator.previousTab
+        
+        // CASE A: I am the Outgoing View (I am 'tab', but selected is someone else)
+        if selected != tab {
+            if selected.rawValue > tab.rawValue {
+                return .move(edge: .leading) // We are moving Forward, so I Exit Left
+            } else {
+                return .move(edge: .trailing) // We are moving Backward, so I Exit Right
+            }
+        }
+        // CASE B: I am the Incoming View (I am 'tab', and I am selected)
+        else {
+            if tab.rawValue > previous.rawValue {
+                return .move(edge: .trailing) // We came from Left, so I Enter from Right
+            } else {
+                return .move(edge: .leading) // We came from Right, so I Enter from Left
+            }
+        }
+    }
 
     var body: some View {
         NavigationCoordinatorView {
             ZStack {
-                // Home Tab
-                NavigationStack(path: $coordinator.homePath) {
-                    ExploreView()
-                        .environment(\.heroNamespace, homeHeroNamespace)
-                        .navigationDestination(for: NavigationDestination.self) { destination in
-                            NavigationDestinationBuilder(destination: destination)
-                                .environment(\.heroNamespace, homeHeroNamespace)
-                        }
+                // EXPLORE (Index 0)
+                if coordinator.selectedTab == .explore {
+                    NavigationStack(path: $coordinator.explorePath) {
+                        ExploreView()
+                            .environment(\.heroNamespace, exploreHeroNamespace)
+                            .navigationDestination(for: NavigationDestination.self) { destination in
+                                NavigationDestinationBuilder(destination: destination)
+                                    .environment(\.heroNamespace, exploreHeroNamespace)
+                            }
+                    }
+                    .transition(getTransition(for: .explore))
+                    .zIndex(coordinator.selectedTab == .explore ? 1 : 0)
                 }
-                .opacity(coordinator.selectedTab == .home ? 1 : 0)
-                .zIndex(coordinator.selectedTab == .home ? 1 : 0)
 
-                // Explore Tab
-                NavigationStack(path: $coordinator.explorePath) {
-                    SearchView()
-                        .environment(\.heroNamespace, exploreHeroNamespace)
-                        .navigationDestination(for: NavigationDestination.self) { destination in
-                            NavigationDestinationBuilder(destination: destination)
-                                .environment(\.heroNamespace, exploreHeroNamespace)
-                        }
+                // SEARCH (Index 1)
+                if coordinator.selectedTab == .search {
+                    NavigationStack(path: $coordinator.searchPath) {
+                        SearchView()
+                            .environment(\.heroNamespace, searchHeroNamespace)
+                            .navigationDestination(for: NavigationDestination.self) { destination in
+                                NavigationDestinationBuilder(destination: destination)
+                                    .environment(\.heroNamespace, searchHeroNamespace)
+                            }
+                    }
+                    .transition(getTransition(for: .search))
+                    .zIndex(coordinator.selectedTab == .search ? 1 : 0)
                 }
-                .opacity(coordinator.selectedTab == .explore ? 1 : 0)
-                .zIndex(coordinator.selectedTab == .explore ? 1 : 0)
 
-                // Tickets Tab
-                NavigationStack(path: $coordinator.ticketsPath) {
-                    TicketsView()
-                        .environment(\.heroNamespace, ticketsHeroNamespace)
-                        .navigationDestination(for: NavigationDestination.self) { destination in
-                            NavigationDestinationBuilder(destination: destination)
-                                .environment(\.heroNamespace, ticketsHeroNamespace)
-                        }
+                // BOOKMARKS (Index 2)
+                if coordinator.selectedTab == .bookmarks {
+                    NavigationStack(path: $coordinator.bookmarksPath) {
+                        BookmarksView()
+                             .environment(\.heroNamespace, bookmarksHeroNamespace)
+                            .navigationDestination(for: NavigationDestination.self) { destination in
+                                NavigationDestinationBuilder(destination: destination)
+                                    .environment(\.heroNamespace, bookmarksHeroNamespace)
+                            }
+                    }
+                    .transition(getTransition(for: .bookmarks))
+                    .zIndex(coordinator.selectedTab == .bookmarks ? 1 : 0)
                 }
-                .opacity(coordinator.selectedTab == .tickets ? 1 : 0)
-                .zIndex(coordinator.selectedTab == .tickets ? 1 : 0)
-
-                // Bookmarks Tab
-                NavigationStack(path: $coordinator.settingsPath) {
-                    BookmarksView()
-                        .environment(\.heroNamespace, settingsHeroNamespace)
-                        .navigationDestination(for: NavigationDestination.self) { destination in
-                            NavigationDestinationBuilder(destination: destination)
-                                .environment(\.heroNamespace, settingsHeroNamespace)
-                        }
-                }
-                .opacity(coordinator.selectedTab == .settings ? 1 : 0)
-                .zIndex(coordinator.selectedTab == .settings ? 1 : 0)
                 
-                // Custom tab bar overlay - always rendered but offset when hidden
+                // TICKETS (Index 3)
+                if coordinator.selectedTab == .tickets {
+                    NavigationStack(path: $coordinator.ticketsPath) {
+                        TicketsView()
+                            .environment(\.heroNamespace, ticketsHeroNamespace)
+                            .navigationDestination(for: NavigationDestination.self) { destination in
+                                NavigationDestinationBuilder(destination: destination)
+                                    .environment(\.heroNamespace, ticketsHeroNamespace)
+                            }
+                    }
+                    .transition(getTransition(for: .tickets))
+                    .zIndex(coordinator.selectedTab == .tickets ? 1 : 0)
+                }
+
                 VStack {
                     Spacer()
                     CustomTabBar()
@@ -72,6 +104,8 @@ struct MainTabView: View {
                 .zIndex(100)
                 .ignoresSafeArea(.keyboard)
             }
+            // ✅ IMPORTANT: Animate based on the atomic state change
+            .animation(.easeInOut(duration: 0.25), value: coordinator.selectedTab)
         }
     }
     
@@ -81,14 +115,14 @@ struct MainTabView: View {
         }
         
         switch coordinator.selectedTab {
-        case .home:
-            return coordinator.homePath.count == 0
         case .explore:
             return coordinator.explorePath.count == 0
+        case .search:
+            return coordinator.searchPath.count == 0
+        case .bookmarks:
+            return coordinator.bookmarksPath.count == 0
         case .tickets:
             return coordinator.ticketsPath.count == 0
-        case .settings:
-            return coordinator.settingsPath.count == 0
         }
     }
 }
@@ -98,37 +132,37 @@ struct CustomTabBar: View {
 
     var body: some View {
         HStack {
-            // 1. Home
+            // 0: Explore
             TabBarButton(
                 icon: "homeicon",
-                isSelected: coordinator.selectedTab == .home
-            ) {
-                coordinator.selectTab(.home)
-            }
-
-            Spacer()
-
-            // 2. Explore
-            TabBarButton(
-                icon: "searchicon",
                 isSelected: coordinator.selectedTab == .explore
             ) {
                 coordinator.selectTab(.explore)
             }
 
             Spacer()
+
+            // 1: Search
+            TabBarButton(
+                icon: "searchicon",
+                isSelected: coordinator.selectedTab == .search
+            ) {
+                coordinator.selectTab(.search)
+            }
+
+            Spacer()
             
-            // 3. Bookmarks
+            // 2: Bookmarks
             TabBarButton(
                 icon: "heart",
-                isSelected: coordinator.selectedTab == .settings
+                isSelected: coordinator.selectedTab == .bookmarks
             ) {
-                coordinator.selectTab(.settings)
+                coordinator.selectTab(.bookmarks)
             }
 
             Spacer()
 
-            // 4. Tickets
+            // 3: Tickets
             TabBarButton(
                 icon: "ticketicon",
                 isSelected: coordinator.selectedTab == .tickets,
@@ -153,7 +187,6 @@ struct TabBarButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                // Outline (always visible)
                 Image(icon)
                     .renderingMode(.template)
                     .resizable()
@@ -163,7 +196,6 @@ struct TabBarButton: View {
                     .frame(width: 24, height: 24)
                     .opacity(isSelected ? 0 : 1)
                 
-                // Filled version (animated)
                 Image(icon)
                     .renderingMode(.template)
                     .resizable()

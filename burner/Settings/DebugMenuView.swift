@@ -216,7 +216,7 @@ struct DebugMenuView: View {
             // Reset navigation
             await MainActor.run {
                 appState.navigationCoordinator.resetAllNavigation()
-                appState.navigationCoordinator.selectTab(.home)
+                appState.navigationCoordinator.selectTab(.explore)
             }
 
             // Clear debug event if active

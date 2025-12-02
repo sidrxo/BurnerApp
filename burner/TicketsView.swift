@@ -256,7 +256,7 @@ struct TicketsView: View {
                 }
                 
                 BurnerButton("EXPLORE EVENTS", style: .primary, maxWidth: 200) {
-                    coordinator.selectedTab = .home
+                    coordinator.selectTab(.explore)
                 }
                 .buttonStyle(PlainButtonStyle())
             }

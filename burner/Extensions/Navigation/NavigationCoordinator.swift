@@ -11,26 +11,26 @@ import Combine
 // MARK: - Tab Selection
 
 enum AppTab: Int, CaseIterable {
-    case home = 0
-    case explore = 1
-    case tickets = 2
-    case settings = 3
+    case explore = 0
+    case search = 1
+    case bookmarks = 2
+    case tickets = 3
 
     var title: String {
         switch self {
-        case .home: return "Home"
         case .explore: return "Explore"
+        case .search: return "Search"
+        case .bookmarks: return "Saves"
         case .tickets: return "Tickets"
-        case .settings: return "Settings"
         }
     }
 
     var icon: String {
         switch self {
-        case .home: return "house.fill"
-        case .explore: return "magnifyingglass"
+        case .explore: return "house.fill"
+        case .search: return "magnifyingglass"
+        case .bookmarks: return "heart.fill"
         case .tickets: return "ticket.fill"
-        case .settings: return "gearshape.fill"
         }
     }
 }
@@ -205,19 +205,31 @@ struct AlertPresentation: Identifiable {
     }
 }
 
+// MARK: - Navigation State Helper
+struct NavigationState {
+    var selectedTab: AppTab = .explore
+    var previousTab: AppTab = .explore
+}
+
 // MARK: - Navigation Coordinator
 
 @MainActor
 class NavigationCoordinator: ObservableObject {
     // MARK: - Tab Navigation
-    @Published var selectedTab: AppTab = .home
+    // ✅ FIX: Use a single struct to ensure atomic updates
+    @Published private var navState = NavigationState()
+    
+    // Computed properties for easy access
+    var selectedTab: AppTab { navState.selectedTab }
+    var previousTab: AppTab { navState.previousTab }
+    
     @Published var shouldHideTabBar: Bool = false
 
     // MARK: - Navigation Paths (one per tab)
-    @Published var homePath = NavigationPath()
     @Published var explorePath = NavigationPath()
+    @Published var searchPath = NavigationPath()
     @Published var ticketsPath = NavigationPath()
-    @Published var settingsPath = NavigationPath()
+    @Published var bookmarksPath = NavigationPath()
 
     // MARK: - Modal Presentations
     @Published var activeModal: ModalPresentation?
@@ -232,7 +244,12 @@ class NavigationCoordinator: ObservableObject {
     // MARK: - Tab Navigation Methods
 
     func selectTab(_ tab: AppTab) {
-        selectedTab = tab
+        if tab != navState.selectedTab {
+            // ✅ FIX: Update both previous and current in ONE transaction
+            // This prevents the view from rendering an intermediate state with the wrong transition
+            navState = NavigationState(selectedTab: tab, previousTab: navState.selectedTab)
+            print("🚀 [Coordinator] Atomic Update: \(navState.previousTab.title) -> \(navState.selectedTab.title)")
+        }
     }
 
     func hideTabBar() {
@@ -246,21 +263,19 @@ class NavigationCoordinator: ObservableObject {
     // MARK: - Navigation Methods
 
     func navigate(to destination: NavigationDestination, in tab: AppTab? = nil) {
-        // Switch to the specified tab if provided
         if let tab = tab {
-            selectedTab = tab
+            selectTab(tab)
         }
 
-        // Add to the appropriate navigation path
         switch selectedTab {
-        case .home:
-            homePath.append(destination)
         case .explore:
             explorePath.append(destination)
+        case .search:
+            searchPath.append(destination)
         case .tickets:
             ticketsPath.append(destination)
-        case .settings:
-            settingsPath.append(destination)
+        case .bookmarks:
+            bookmarksPath.append(destination)
         }
     }
 
@@ -268,22 +283,14 @@ class NavigationCoordinator: ObservableObject {
         let targetTab = tab ?? selectedTab
 
         switch targetTab {
-        case .home:
-            if !homePath.isEmpty {
-                homePath.removeLast(homePath.count)
-            }
         case .explore:
-            if !explorePath.isEmpty {
-                explorePath.removeLast(explorePath.count)
-            }
+            if !explorePath.isEmpty { explorePath.removeLast(explorePath.count) }
+        case .search:
+            if !searchPath.isEmpty { searchPath.removeLast(searchPath.count) }
         case .tickets:
-            if !ticketsPath.isEmpty {
-                ticketsPath.removeLast(ticketsPath.count)
-            }
-        case .settings:
-            if !settingsPath.isEmpty {
-                settingsPath.removeLast(settingsPath.count)
-            }
+            if !ticketsPath.isEmpty { ticketsPath.removeLast(ticketsPath.count) }
+        case .bookmarks:
+            if !bookmarksPath.isEmpty { bookmarksPath.removeLast(bookmarksPath.count) }
         }
     }
 
@@ -291,14 +298,14 @@ class NavigationCoordinator: ObservableObject {
         let targetTab = tab ?? selectedTab
 
         switch targetTab {
-        case .home:
-            if !homePath.isEmpty { homePath.removeLast() }
         case .explore:
             if !explorePath.isEmpty { explorePath.removeLast() }
+        case .search:
+            if !searchPath.isEmpty { searchPath.removeLast() }
         case .tickets:
             if !ticketsPath.isEmpty { ticketsPath.removeLast() }
-        case .settings:
-            if !settingsPath.isEmpty { settingsPath.removeLast() }
+        case .bookmarks:
+            if !bookmarksPath.isEmpty { bookmarksPath.removeLast() }
         }
     }
 
@@ -312,13 +319,10 @@ class NavigationCoordinator: ObservableObject {
         activeModal = nil
     }
 
-
     // MARK: - Alert Methods
 
     func showAlert(_ alert: AlertPresentation) {
         activeAlert = alert
-
-        // Auto-dismiss after 3 seconds
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
             if self?.activeAlert?.id == alert.id {
                 self?.activeAlert = nil
@@ -349,35 +353,23 @@ class NavigationCoordinator: ObservableObject {
     // MARK: - Deep Linking
 
     func handleDeepLink(eventId: String) {
-        // Switch to explore tab
-        selectedTab = .explore
-
-        // Clear any existing navigation
+        selectTab(.explore)
         if !explorePath.isEmpty {
             explorePath.removeLast(explorePath.count)
         }
-
-        // Set pending deep link (will be picked up by SearchView)
         pendingDeepLink = eventId
-
-        // Navigate to event
         navigate(to: .eventById(eventId), in: .explore)
     }
 
     func handleTicketDeepLink(ticketId: String) {
-        // Switch to tickets tab
-        selectedTab = .tickets
-
-        // Clear any existing navigation
+        selectTab(.tickets)
         if !ticketsPath.isEmpty {
             ticketsPath.removeLast(ticketsPath.count)
         }
-
-        // Navigate to ticket
         navigate(to: .ticketById(ticketId), in: .tickets)
     }
 
-    // MARK: - Convenience Methods for Common Flows
+    // MARK: - Convenience Methods
 
     func showSignIn() {
         present(.signIn)
@@ -406,13 +398,14 @@ class NavigationCoordinator: ObservableObject {
     // MARK: - Reset
 
     func resetAllNavigation() {
-        homePath = NavigationPath()
         explorePath = NavigationPath()
+        searchPath = NavigationPath()
         ticketsPath = NavigationPath()
-        settingsPath = NavigationPath()
+        bookmarksPath = NavigationPath()
         activeModal = nil
         activeAlert = nil
-        selectedTab = .home
+        // Reset state via selectTab to ensure consistency or manual reset
+        navState = NavigationState()
         shouldHideTabBar = false
     }
 }

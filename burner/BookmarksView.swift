@@ -120,7 +120,7 @@ struct BookmarksView: View {
             }
             
             BurnerButton("BROWSE EVENTS", style: .primary, maxWidth: 200) {
-                coordinator.selectTab(.home)
+                coordinator.selectTab(.explore)
             }
             .buttonStyle(PlainButtonStyle())
         }
@@ -137,7 +137,7 @@ struct BookmarksView: View {
             LazyVStack(spacing: 12) {
                 ForEach(filteredBookmarks) { event in
                     Button {
-                        coordinator.navigate(to: .eventDetail(event), in: .settings)
+                        coordinator.navigate(to: .eventDetail(event), in: .tickets)
                     } label: {
                         EventRow(
                             event: event,
