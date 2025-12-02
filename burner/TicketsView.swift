@@ -9,7 +9,8 @@ struct TicketsView: View {
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var coordinator: NavigationCoordinator
-    
+    @Environment(\.settingsTransitionNamespace) private var settingsTransition
+
     @State private var searchText = ""
     @State private var selectedFilter: TicketsFilter = .upcoming
     @FocusState private var isSearchFocused: Bool
@@ -112,13 +113,26 @@ struct TicketsView: View {
                 .foregroundColor(.white)
             Spacer()
             Button(action: {
-                coordinator.ticketsPath.append(NavigationDestination.settings)
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    coordinator.ticketsPath.append(NavigationDestination.settings)
+                }
             }) {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+                Group {
+                    if let namespace = settingsTransition {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                            .matchedGeometryEffect(id: "settingsGear", in: namespace)
+                    } else {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                }
             }
             .buttonStyle(PlainButtonStyle())
         }

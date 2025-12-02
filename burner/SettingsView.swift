@@ -9,6 +9,7 @@ import Combine
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
+    @Environment(\.settingsTransitionNamespace) private var settingsTransition
     @State private var currentUser: FirebaseAuth.User?
     @State private var showingAppPicker = false
     
@@ -41,9 +42,9 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 // Only show header when signed in
                 if currentUser != nil {
-                    HeaderSection(title: "Settings")
+                    settingsHeaderView
                 }
-                
+
                 if currentUser != nil {
                     ScrollView {
                         VStack(spacing: 0) {
@@ -195,6 +196,35 @@ struct SettingsView: View {
             )
         )
     }
+
+    // MARK: - Settings Header with Matched Geometry Effect
+    private var settingsHeaderView: some View {
+        HStack {
+            Text("Settings")
+                .appPageHeader()
+                .foregroundColor(.white)
+            Spacer()
+            Group {
+                if let namespace = settingsTransition {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .matchedGeometryEffect(id: "settingsGear", in: namespace)
+                } else {
+                    // Invisible placeholder to maintain layout
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.clear)
+                        .frame(width: 44, height: 44)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+        .padding(.bottom, 30)
+    }
+
     // MARK: - Not signed in view
     private var notSignedInSection: some View {
         GeometryReader { geometry in

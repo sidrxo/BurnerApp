@@ -18,3 +18,15 @@ extension EnvironmentValues {
         set { self[HeroNamespaceKey.self] = newValue }
     }
 }
+
+// MARK: - Settings Transition Namespace Environment Key
+struct SettingsTransitionNamespaceKey: EnvironmentKey {
+    static let defaultValue: Namespace.ID? = nil
+}
+
+extension EnvironmentValues {
+    var settingsTransitionNamespace: Namespace.ID? {
+        get { self[SettingsTransitionNamespaceKey.self] }
+        set { self[SettingsTransitionNamespaceKey.self] = newValue }
+    }
+}
