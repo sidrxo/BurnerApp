@@ -25,7 +25,7 @@ struct TicketDetailView: View {
 
     var body: some View {
         ZStack {
-            // Background is simplified for the card look
+
             Color.black
                 .ignoresSafeArea()
             
