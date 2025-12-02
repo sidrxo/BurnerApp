@@ -39,11 +39,6 @@ struct SettingsView: View {
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
-                // Only show header when signed in
-                if currentUser != nil {
-                    HeaderSection(title: "Settings")
-                }
-                
                 if currentUser != nil {
                     ScrollView {
                         VStack(spacing: 0) {
@@ -177,7 +172,11 @@ struct SettingsView: View {
                 }
             }
         }
-        .navigationBarHidden(true)
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color.black, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .onAppear {
             currentUser = Auth.auth().currentUser
         }

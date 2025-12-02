@@ -44,7 +44,7 @@ enum NavigationDestination: Hashable {
     case filteredEvents(EventSectionDestination)
 
     // Ticket Navigation
-    case ticketDetail(Ticket)
+    case ticketDetail(TicketWithEventData)
     case ticketById(String)
     case ticketPurchase(Event)
     case transferTicket(Ticket)
@@ -71,9 +71,9 @@ enum NavigationDestination: Hashable {
         case .filteredEvents(let destination):
             hasher.combine("filteredEvents")
             hasher.combine(destination.title)
-        case .ticketDetail(let ticket):
+        case .ticketDetail(let ticketWithEvent):
             hasher.combine("ticketDetail")
-            hasher.combine(ticket.id)
+            hasher.combine(ticketWithEvent.ticket.id)
         case .ticketById(let id):
             hasher.combine("ticketById")
             hasher.combine(id)
@@ -112,8 +112,8 @@ enum NavigationDestination: Hashable {
             return lId == rId
         case (.filteredEvents(let lDest), .filteredEvents(let rDest)):
             return lDest == rDest
-        case (.ticketDetail(let lTicket), .ticketDetail(let rTicket)):
-            return lTicket.id == rTicket.id
+        case (.ticketDetail(let lTicketWithEvent), .ticketDetail(let rTicketWithEvent)):
+            return lTicketWithEvent.ticket.id == rTicketWithEvent.ticket.id
         case (.ticketById(let lId), .ticketById(let rId)):
             return lId == rId
         case (.ticketPurchase(let lEvent), .ticketPurchase(let rEvent)):

@@ -4,15 +4,77 @@ import FirebaseAuth
 import FirebaseFirestore
 import Combine
 
+// MARK: - Ticket Grid Item
+struct TicketGridItem: View {
+    let ticketWithEvent: TicketWithEventData
+    var namespace: Namespace.ID?
+
+    var body: some View {
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                if let url = URL(string: ticketWithEvent.event.imageUrl), !ticketWithEvent.event.imageUrl.isEmpty {
+                    KFImage(url)
+                        .placeholder {
+                            imagePlaceholder
+                        }
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geometry.size.width, height: geometry.size.width)
+                        .clipped()
+                        .if(namespace != nil && ticketWithEvent.event.id != nil) { view in
+                            view.matchedTransitionSource(id: "ticketImage-\(ticketWithEvent.ticket.id ?? "")", in: namespace!) { source in
+                                source
+                            }
+                        }
+                } else {
+                    imagePlaceholder
+                        .frame(width: geometry.size.width, height: geometry.size.width)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .aspectRatio(1, contentMode: .fit)
+    }
+
+    private var imagePlaceholder: some View {
+        Rectangle()
+            .fill(Color.gray.opacity(0.3))
+            .overlay(
+                Image(systemName: "music.note")
+                    .font(.system(size: 24))
+                    .foregroundColor(.gray)
+            )
+    }
+}
+
+// MARK: - View Extension for Conditional Modifiers
+extension View {
+    @ViewBuilder
+    func `if`<Transform: View>(_ condition: Bool, transform: (Self) -> Transform) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
+    }
+}
+
 struct TicketsView: View {
     // ✅ Use shared ViewModels from environment
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var coordinator: NavigationCoordinator
-    
+    @Environment(\.heroNamespace) private var heroNamespace
+
     @State private var searchText = ""
     @State private var selectedFilter: TicketsFilter = .upcoming
     @FocusState private var isSearchFocused: Bool
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
     
     private var ticketsWithEvents: [TicketWithEventData] {
         var result: [TicketWithEventData] = []
@@ -255,49 +317,15 @@ struct TicketsView: View {
     
     private var ticketsList: some View {
         ScrollView {
-            LazyVStack(spacing: 20) {
-                // Upcoming Events Section
-                if !upcomingTickets.isEmpty {
-                    LazyVStack(spacing: 12) {
-                        ForEach(upcomingTickets, id: \.id) { ticketWithEvent in
-                            NavigationLink(
-                                destination: TicketDetailView(ticketWithEvent: ticketWithEvent)
-                            ) {
-                                EventRow(
-                                    ticketWithEvent: ticketWithEvent,
-                                    isPast: false,
-                                    onCancel: {
-                                        // Handle ticket cancellation
-                                    }
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
+            LazyVGrid(columns: columns, spacing: 12) {
+                ForEach(filteredTickets, id: \.id) { ticketWithEvent in
+                    NavigationLink(value: NavigationDestination.ticketDetail(ticketWithEvent)) {
+                        TicketGridItem(ticketWithEvent: ticketWithEvent, namespace: heroNamespace)
                     }
-                }
-                
-                // Past Events Section
-                if !pastTickets.isEmpty {
-                    VStack(alignment: .leading, spacing: 16) {
-                        LazyVStack(spacing: 12) {
-                            ForEach(pastTickets, id: \.id) { ticketWithEvent in
-                                NavigationLink(
-                                    destination: TicketDetailView(ticketWithEvent: ticketWithEvent)
-                                ) {
-                                    EventRow(
-                                        ticketWithEvent: ticketWithEvent,
-                                        isPast: true,
-                                        onCancel: {
-                                            // No longer used
-                                        }
-                                    )
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                        }
-                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
+            .padding(.horizontal, 20)
             .padding(.bottom, 100)
         }
         .refreshable {
