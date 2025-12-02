@@ -25,8 +25,13 @@ class BurnerModeManager: ObservableObject {
     private var authorizationCancellable: AnyCancellable?
 
     // App Group for sharing data with extension - lazy to avoid init warnings
+    // Note: CFPrefsPlistSource warning is a known iOS system behavior and is harmless
     private lazy var appGroupDefaults: UserDefaults? = {
-        UserDefaults(suiteName: "group.com.gas.Burner")
+        guard let defaults = UserDefaults(suiteName: "group.com.gas.Burner") else {
+            print("⚠️ Unable to initialize app group defaults")
+            return nil
+        }
+        return defaults
     }()
 
     // NFC Manager for unlock functionality
