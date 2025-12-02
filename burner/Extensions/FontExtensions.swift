@@ -86,7 +86,7 @@ extension View {
     /// Conditionally applies a transformation to a view
     /// Usage: .if(condition) { view in view.modifier(...) }
     @ViewBuilder
-    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+    func `if`<TransformedView: View>(_ condition: Bool, @ViewBuilder transform: (Self) -> TransformedView) -> some View {
         if condition {
             transform(self)
         } else {
