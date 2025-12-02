@@ -51,6 +51,7 @@ enum NavigationDestination: Hashable {
     case transferTicketsList
 
     // Settings Navigation
+    case settings
     case accountDetails
     case bookmarks
     case paymentSettings
@@ -84,6 +85,8 @@ enum NavigationDestination: Hashable {
             hasher.combine(ticket.id)
         case .transferTicketsList:
             hasher.combine("transferTicketsList")
+        case .settings:
+            hasher.combine("settings")
         case .accountDetails:
             hasher.combine("accountDetails")
         case .bookmarks:
@@ -118,6 +121,8 @@ enum NavigationDestination: Hashable {
         case (.transferTicket(let lTicket), .transferTicket(let rTicket)):
             return lTicket.id == rTicket.id
         case (.transferTicketsList, .transferTicketsList):
+            return true
+        case (.settings, .settings):
             return true
         case (.accountDetails, .accountDetails):
             return true

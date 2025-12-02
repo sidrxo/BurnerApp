@@ -49,9 +49,9 @@ struct MainTabView: View {
                 .opacity(coordinator.selectedTab == .tickets ? 1 : 0)
                 .zIndex(coordinator.selectedTab == .tickets ? 1 : 0)
 
-                // Settings Tab
+                // Bookmarks Tab
                 NavigationStack(path: $coordinator.settingsPath) {
-                    SettingsView()
+                    BookmarksView()
                         .environment(\.heroNamespace, settingsHeroNamespace)
                         .navigationDestination(for: NavigationDestination.self) { destination in
                             NavigationDestinationBuilder(destination: destination)

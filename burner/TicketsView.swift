@@ -82,12 +82,14 @@ struct TicketsView: View {
     var body: some View {
         // ❌ Removed NavigationView - now handled by MainTabView
         VStack(spacing: 0) {
+            // Custom header with settings gear
+            ticketsHeader
+
             if !ticketsViewModel.tickets.isEmpty || ticketsViewModel.isLoading {
-                HeaderSection(title: "Tickets")
                 searchSection
                 filtersSection
             }
-            
+
             if ticketsViewModel.isLoading && ticketsViewModel.tickets.isEmpty {
                 loadingView
             } else if ticketsViewModel.tickets.isEmpty {
@@ -100,6 +102,29 @@ struct TicketsView: View {
         }
         .background(Color.black)
         .navigationBarHidden(true)
+    }
+
+    // MARK: - Tickets Header with Settings Gear
+    private var ticketsHeader: some View {
+        HStack {
+            Text("Tickets")
+                .appPageHeader()
+                .foregroundColor(.white)
+            Spacer()
+            Button(action: {
+                coordinator.settingsPath.append(NavigationDestination.settings)
+            }) {
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+        .padding(.bottom, 30)
     }
     
     private var emptyStateView: some View {

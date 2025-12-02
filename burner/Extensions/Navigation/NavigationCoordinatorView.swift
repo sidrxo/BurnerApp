@@ -184,6 +184,9 @@ struct NavigationDestinationBuilder: View {
                 TransferTicketsListView()
 
             // Settings Navigation
+            case .settings:
+                SettingsView()
+
             case .accountDetails:
                 AccountDetailsView()
 
