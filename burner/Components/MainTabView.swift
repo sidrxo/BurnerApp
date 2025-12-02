@@ -101,7 +101,7 @@ struct MainTabView: View {
 
         return AnyTransition.asymmetric(
             insertion: .move(edge: isMovingForward ? .trailing : .leading),
-            removal: .move(edge: isMovingForward ? .trailing : .leading)
+            removal: .move(edge: isMovingForward ? .leading : .trailing)
         )
     }
 }
