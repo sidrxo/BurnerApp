@@ -1,6 +1,35 @@
 import SwiftUI
 import CoreLocation
 
+// MARK: - LOCAL Modal Button Style (No Stroke, Lighter Fill, 50pt Height)
+
+/// Dedicated style for the SetLocationModal: Translucent background, NO stroke/outline,
+/// fixed 50pt height without relying on global padding settings.
+struct ModalLocationSecondaryButtonStyle: ButtonStyle {
+    // Background opacity changed from 0.05 to 0.1 for a slightly lighter look
+    var backgroundColor: Color = Color.white.opacity(0.05)
+    var foregroundColor: Color = .white
+    var maxWidth: CGFloat? = .infinity
+    
+    // NOTE: This style achieves 50pt height because it doesn't add vertical padding
+    // and explicitly sets the container height.
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundColor(foregroundColor)
+            .frame(maxWidth: maxWidth)
+            .frame(height: 50) // Explicitly set the container height to 50pt
+            .background(backgroundColor)
+            .clipShape(Capsule())
+            // NO STROKE OVERLAY
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+
+// MARK: - SetLocationModal View
+
 struct SetLocationModal: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
@@ -11,66 +40,51 @@ struct SetLocationModal: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Title — match MapsOptionsSheet
-            Text("Set Your Location")
-                .appBody()
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .padding(.top, 30)
-                .padding(.bottom, 16)
+            
+            // Removed "Set Your Location" title for cleaner UX.
+            Spacer()
+                .frame(height: 30)
 
-            // Buttons — same layout & styling as MapsOptionsSheet
-            VStack(spacing: 12) {
+            // Buttons — now 50pts tall, centered, with translucent background, NO STROKE
+            VStack(spacing: 16) {
+                // 1. Use Current Location Button
                 Button(action: {
                     requestCurrentLocation()
                 }) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: 12) { // Centering icon and text
                         if isProcessing {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 .scaleEffect(0.9)
                         } else {
+                            // Icon added back
                             Image(systemName: "location.fill")
-                                .font(.system(size: 16, weight: .semibold))
+                                .appBody()
                         }
-                        Text("Use Current Location")
-                            .font(.system(size: 16, design: .monospaced))
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.gray)
+                        Text(isProcessing ? "LOCATING..." : "USE CURRENT LOCATION")
+                            .appBody()
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(ModalLocationSecondaryButtonStyle(maxWidth: .infinity))
                 .disabled(isProcessing)
-
+                .opacity(isProcessing ? 0.5 : 1.0)
+                
+                // 2. Search for a City Button
                 Button(action: {
                     showingManualEntry = true
                 }) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: 12) { // Centering icon and text
+                        // Icon added back
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 16, weight: .semibold))
-                        Text("Search for a City")
-                            .font(.system(size: 16, design: .monospaced))
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.gray)
+                            .appBody()
+                        Text("SEARCH FOR A CITY")
+                            .appBody()
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(ModalLocationSecondaryButtonStyle(maxWidth: .infinity))
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 24)
+
             // Optional error (kept minimal; below buttons)
             if let error = errorMessage {
                 Text(error)
@@ -83,7 +97,8 @@ struct SetLocationModal: View {
             Spacer()
         }
         .background(Color.black)
-        .presentationDetents([.height(200)])
+        // Detent adjusted to a smaller height (170) to fit content tightly
+        .presentationDetents([.height(170)])
         .presentationDragIndicator(.visible)
         .sheet(isPresented: $showingManualEntry) {
             ManualCityEntryView(locationManager: appState.userLocationManager, onDismiss: {
@@ -148,15 +163,14 @@ struct ManualCityEntryView: View {
                 
                 Spacer()
                 
-                // Updated Save Location Button using BurnerButton
+                // Updated Save Location Button using BurnerButton (Primary Style)
                 BurnerButton(
                     isProcessing ? "SAVING..." : "SAVE LOCATION",
                     style: .primary,
-                    maxWidth: nil
+                    maxWidth: .infinity
                 ) {
                     geocodeCity()
                 }
-                .buttonStyle(PlainButtonStyle())
                 .disabled(cityInput.isEmpty || isProcessing)
                 .opacity((cityInput.isEmpty || isProcessing) ? 0.5 : 1.0)
                 .padding(.horizontal, 20)

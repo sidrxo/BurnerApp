@@ -5,9 +5,14 @@ import FirebaseFunctions
 import Firebase
 import PassKit
 import MapKit
+import CoreLocation
+
+// NOTE: This file assumes the existence of all data models, environment objects,
+// and custom extensions (e.g., .appBody(), .appHero(), etc.) defined elsewhere,
+// as well as the button styles defined in the previous section.
 
 struct EventDetailView: View {
-    let event: Event
+    let event: Event // Event must conform to Identifiable and contain all required properties
     var namespace: Namespace.ID?
 
     @Environment(\.dismiss) private var dismiss
@@ -25,9 +30,9 @@ struct EventDetailView: View {
     
     // MARK: - Animation & Performance State
     @State private var didAppear = false
-    @State private var mapReady = false           // Lazy load map
+    @State private var mapReady = false       // Lazy load map
     @State private var interactionEnabled = false // Lock interaction during transition
-    @State private var dismissalEnabled = false   // Lock dismissal separately from interaction
+    @State private var dismissalEnabled = false  // Lock dismissal separately from interaction
 
     private let screenHeight = UIScreen.main.bounds.height
 
@@ -36,6 +41,7 @@ struct EventDetailView: View {
         return max(350, min(calculatedHeight, 550))
     }
 
+    // Assumes Event has maxTickets and ticketsSold properties
     var availableTickets: Int {
         max(0, event.maxTickets - event.ticketsSold)
     }
@@ -45,16 +51,19 @@ struct EventDetailView: View {
         return bookmarkManager.isBookmarked(eventId)
     }
 
+    // Assumes Ticket has eventId property
     private var userTicket: Ticket? {
         guard let eventId = event.id else { return nil }
         return ticketsViewModel.tickets.first { $0.eventId == eventId }
     }
 
+    // Assumes Event has startTime property
     private var hasEventStarted: Bool {
         guard let startTime = event.startTime else { return false }
         return Date() >= startTime
     }
 
+    // Assumes Event has startTime and endTime properties
     private var isEventPast: Bool {
         guard let endTime = event.endTime else {
             guard let startTime = event.startTime else { return false }
@@ -78,27 +87,20 @@ struct EventDetailView: View {
         }
     }
 
-    private var buttonColor: Color {
-        if isEventPast || hasEventStarted {
-            return .gray
-        } else if userHasTicket {
-            return .gray
-        } else if availableTickets > 0 {
-            return .white
+    // Determines the style and custom color based on event status
+    private var buttonStatus: (style: BurnerButton.Style, color: Color?) {
+        if availableTickets > 0 && !isEventPast && !hasEventStarted && !userHasTicket {
+            // Active 'GET TICKET' state
+            return (.primary, nil)
+        } else if availableTickets == 0 && !isEventPast && !hasEventStarted {
+            // 'SOLD OUT' state (Dimmed fill, Red outline/text)
+            return (.dimmed, .red)
+        } else if userHasTicket && !isEventPast && !hasEventStarted {
+            // 'TICKET PURCHASED' state (Dimmed fill, White outline/text)
+            return (.dimmed, .white)
         } else {
-            return .red
-        }
-    }
-
-    private var buttonTextColor: Color {
-        if isEventPast || hasEventStarted {
-            return .white
-        } else if userHasTicket {
-            return .white
-        } else if availableTickets > 0 {
-            return .black
-        } else {
-            return .white
+            // Default inactive/past state (Dimmed fill, Gray outline/text)
+            return (.dimmed, .gray)
         }
     }
 
@@ -106,6 +108,7 @@ struct EventDetailView: View {
         isEventPast || hasEventStarted || userHasTicket || availableTickets == 0
     }
 
+    // Assumes Event has startTime property
     private var headerDateString: String {
         guard let startTime = event.startTime else { return "TBA" }
         let dateFormatter = DateFormatter()
@@ -149,7 +152,7 @@ struct EventDetailView: View {
                                         .fill(Color.gray.opacity(0.3))
                                         .overlay(
                                             Image(systemName: "music.note")
-                                                .appHero()
+                                                .appHero() // Custom View Extension
                                                 .foregroundColor(.gray)
                                         )
                                 }
@@ -174,7 +177,7 @@ struct EventDetailView: View {
                             VStack(spacing: 0) {
                                 HStack(alignment: .center, spacing: 12) {
                                     Text(event.name)
-                                        .appHero()
+                                        .appHero() // Custom View Extension
                                         .foregroundColor(.white)
                                         .multilineTextAlignment(.leading)
                                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -190,7 +193,7 @@ struct EventDetailView: View {
                                             }
                                         }) {
                                             Image(systemName: isBookmarked ? "heart.fill" : "heart")
-                                                .appSectionHeader()
+                                                .appSectionHeader() // Custom View Extension
                                                 .foregroundColor(.white)
                                         }
                                         .buttonStyle(IconButton(size: 60, backgroundColor: Color.white.opacity(0.1), cornerRadius: 10))
@@ -199,7 +202,7 @@ struct EventDetailView: View {
                                             coordinator.shareEvent(event)
                                         }) {
                                             Image(systemName: "square.and.arrow.up")
-                                                .appSectionHeader()
+                                                .appSectionHeader() // Custom View Extension
                                                 .foregroundColor(.white)
                                         }
                                         .buttonStyle(IconButton(size: 60, backgroundColor: Color.white.opacity(0.1), cornerRadius: 10))
@@ -214,12 +217,12 @@ struct EventDetailView: View {
                                     if let description = event.description, !description.isEmpty {
                                         VStack(alignment: .leading, spacing: 8) {
                                             Text("About")
-                                                .appBody()
+                                                .appBody() // Custom View Extension
                                                 .foregroundColor(.white)
 
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(description)
-                                                    .appBody()
+                                                    .appBody() // Custom View Extension
                                                     .foregroundColor(.gray)
                                                     .lineSpacing(2)
                                                     .lineLimit(isDescriptionExpanded ? nil : 6)
@@ -227,6 +230,7 @@ struct EventDetailView: View {
                                                         GeometryReader { textGeometry in
                                                             Color.clear
                                                                 .onAppear {
+                                                                    // The text size calculation relies on UIKit/Font details
                                                                     let textSize = description.boundingRect(
                                                                         with: CGSize(
                                                                             width: textGeometry.size.width,
@@ -251,7 +255,7 @@ struct EventDetailView: View {
                                                         }
                                                     }) {
                                                         Text(isDescriptionExpanded ? "Read Less" : "Read More")
-                                                            .appCaption()
+                                                            .appCaption() // Custom View Extension
                                                             .foregroundColor(.gray)
                                                             .padding(.top, 2)
                                                     }
@@ -266,7 +270,7 @@ struct EventDetailView: View {
                                     // Event details
                                     VStack(spacing: 12) {
                                         Text("Event Details")
-                                            .appBody()
+                                            .appBody() // Custom View Extension
                                             .foregroundColor(.white)
                                             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -350,7 +354,7 @@ struct EventDetailView: View {
                 VStack {
                     HStack {
                         Spacer()
-                        CloseButton(action: {
+                        CloseButton(action: { // Custom View
                             dismiss()
                         }, isDark: true)
                         .padding(.top, 80)
@@ -369,11 +373,12 @@ struct EventDetailView: View {
                     VStack(spacing: 0) {
                         BurnerButton(
                             buttonText,
-                            style: (availableTickets > 0 && !isEventPast && !hasEventStarted && !userHasTicket) ? .primary : .secondary,
-                            maxWidth: .infinity
+                            style: buttonStatus.style,
+                            maxWidth: .infinity,
+                            customColor: buttonStatus.color // Pass color for .dimmed style
                         ) {
                             if userHasTicket {
-                                // already have ticket
+                                // already have ticket - do nothing or show ticket
                             } else if availableTickets > 0 {
                                 if Auth.auth().currentUser == nil {
                                     showingSignInAlert = true
@@ -384,7 +389,6 @@ struct EventDetailView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         .disabled(isButtonDisabled)
-                        .opacity(isButtonDisabled ? 0.5 : 1.0)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 20)
                         .padding(.top, 40)
@@ -405,7 +409,7 @@ struct EventDetailView: View {
                 }
 
                 if showingSignInAlert {
-                    CustomAlertView(
+                    CustomAlertView( // Custom View
                         title: "Sign In Required",
                         description: "You need to be signed in to purchase tickets.",
                         cancelAction: {
@@ -426,13 +430,13 @@ struct EventDetailView: View {
             }
         }
         .navigationBarHidden(true)
-        .if(namespace != nil && event.id != nil) { view in
-            view.navigationTransition(.zoom(sourceID: "heroImage-\(event.id!)", in: namespace!))
+        .if(namespace != nil && event.id != nil) { view in // Custom View Extension
+            view.navigationTransition(.zoom(sourceID: "heroImage-\(event.id!)", in: namespace!)) // Custom Transition
         }
         .interactiveDismissDisabled(!dismissalEnabled)
         .sheet(isPresented: $showingMapsSheet) {
             if let coordinates = event.coordinates {
-                MapsOptionsSheet(
+                MapsOptionsSheet( // Custom View
                     latitude: coordinates.latitude,
                     longitude: coordinates.longitude,
                     venueName: event.venue
@@ -466,12 +470,15 @@ struct EventDetailView: View {
                 }
             }
         }
+        // Assumes TicketsViewModel publishes changes to tickets
         .onChange(of: ticketsViewModel.tickets.count) { _, _ in
             checkUserTicketStatus()
         }
+        // Assumes Event is observable or updates trigger a view refresh
         .onChange(of: event.ticketsSold) { _, _ in
             checkUserTicketStatus()
         }
+        // Assumes EventViewModel publishes error/success messages
         .onReceive(eventViewModel.$errorMessage) { errorMessage in
             if let errorMessage = errorMessage {
                 coordinator.showError(title: "Error", message: errorMessage)
@@ -490,6 +497,7 @@ struct EventDetailView: View {
     private func checkUserTicketStatus() {
         guard let eventId = event.id else { return }
 
+        // Assumes EventViewModel has this method
         eventViewModel.checkUserTicketStatus(for: eventId) { hasTicket in
             DispatchQueue.main.async {
                 self.userHasTicket = hasTicket
@@ -515,6 +523,7 @@ struct EventDetailView: View {
         }
     }
 
+    // Unused, but kept for completeness
     private func generateShareText() -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .medium
@@ -532,6 +541,7 @@ struct EventDetailView: View {
         """
     }
 
+    // Unused, but kept for completeness
     private func generateShareURL() -> URL {
         guard let eventId = event.id else {
             return URL(string: "burner://events")!
@@ -549,16 +559,16 @@ struct EventDetailRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.appIcon)
+                .font(.appIcon) // Custom Font Extension
                 .frame(width: 16)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
-                    .appSecondary()
+                    .appSecondary() // Custom View Extension
                     .foregroundColor(.gray)
 
                 Text(value)
-                    .appBody()
+                    .appBody() // Custom View Extension
                     .foregroundColor(.white)
                     .lineLimit(2)
             }
