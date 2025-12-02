@@ -22,7 +22,7 @@ struct AccountDetailsView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                SettingsHeaderSection(title: "Account Details")
+                HeaderSection(title: "Account Details", includeTopPadding: false, includeHorizontalPadding: false)
                 MenuSection(title: "PROFILE") {
                     // Name first, then Email
                     HStack {

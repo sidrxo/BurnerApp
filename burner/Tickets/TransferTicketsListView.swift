@@ -38,7 +38,7 @@ struct TransferTicketsListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SettingsHeaderSection(title: "Transfer Tickets")
+            HeaderSection(title: "Transfer Tickets", includeTopPadding: false, includeHorizontalPadding: false)
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
 

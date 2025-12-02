@@ -11,7 +11,8 @@ class BaseRepository: ObservableObject {
     private var listener: ListenerRegistration?
 
     deinit {
-        stopObserving()
+        // Directly remove listener without calling @MainActor method
+        listener?.remove()
     }
 
     /// Store a Firestore listener
