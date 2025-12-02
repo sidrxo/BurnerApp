@@ -22,6 +22,11 @@ struct EventDetailView: View {
     @State private var showingMapsSheet = false
     @State private var isDescriptionExpanded = false
     @State private var needsReadMore = false
+    
+    // MARK: - Animation & Performance State
+    @State private var didAppear = false
+    @State private var mapReady = false           // Lazy load map
+    @State private var interactionEnabled = false // Lock interaction during transition
 
     private let screenHeight = UIScreen.main.bounds.height
 
@@ -122,18 +127,21 @@ struct EventDetailView: View {
                 // Scrollable content
                 ScrollView {
                     ZStack(alignment: .top) {
-                        // Image-based gradient background (scrolls with content)
-                        KFImage(URL(string: event.imageUrl))
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: geometry.size.width,
-                                   height: heroHeight * 0.9) // Increased from 0.7 to 0.9
-                            .clipped()
-                            .blur(radius: 40)
-                            .allowsHitTesting(false)
+                        // PERFORMANCE: Heavy blurred background delayed until appearance
+                        if didAppear {
+                            KFImage(URL(string: event.imageUrl))
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: geometry.size.width,
+                                       height: heroHeight * 0.9)
+                                .clipped()
+                                .blur(radius: 40)
+                                .allowsHitTesting(false)
+                                .transition(.opacity)
+                        }
                         
                         VStack(spacing: 0) {
-                            // Hero card
+                            // Hero card (Anchor for Zoom Transition)
                             KFImage(URL(string: event.imageUrl))
                                 .placeholder {
                                     Rectangle()
@@ -147,7 +155,7 @@ struct EventDetailView: View {
                                 .resizable()
                                 .scaledToFill()
                                 .frame(
-                                    width: max(0, geometry.size.width - 32), // avoid negative width
+                                    width: max(0, geometry.size.width - 32),
                                     height: heroHeight
                                 )
                                 .clipped()
@@ -159,180 +167,193 @@ struct EventDetailView: View {
                                 .shadow(radius: 18, y: 10)
                                 .padding(.top, 24)
                                 .padding(.bottom, 28)
+                                .zIndex(100) // Keep image on top of text for transition
 
-                            HStack(alignment: .center, spacing: 12) {
-                                Text(event.name)
-                                    .appHero()
-                                    .foregroundColor(.white)
-                                    .multilineTextAlignment(.leading)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .if(namespace != nil && event.id != nil) { view in
-                                        view.matchedTransitionSource(id: "heroName-\(event.id!)", in: namespace!) { source in
-                                            source
-                                        }
-                                    }
+                            // Content Container
+                            VStack(spacing: 0) {
+                                HStack(alignment: .center, spacing: 12) {
+                                    Text(event.name)
+                                        .appHero()
+                                        .foregroundColor(.white)
+                                        .multilineTextAlignment(.leading)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                                HStack(spacing: 10) {
-                                    Button(action: {
-                                        if Auth.auth().currentUser == nil {
-                                            showingSignInAlert = true
-                                        } else {
-                                            Task {
-                                                await bookmarkManager.toggleBookmark(for: event)
+                                    HStack(spacing: 10) {
+                                        Button(action: {
+                                            if Auth.auth().currentUser == nil {
+                                                showingSignInAlert = true
+                                            } else {
+                                                Task {
+                                                    await bookmarkManager.toggleBookmark(for: event)
+                                                }
                                             }
+                                        }) {
+                                            Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                                                .appSectionHeader()
+                                                .foregroundColor(.white)
+                                                .iconButtonStyle(
+                                                    size: 60,
+                                                    backgroundColor: Color.white.opacity(0.1),
+                                                    cornerRadius: 10
+                                                )
                                         }
-                                    }) {
-                                        Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                                            .appSectionHeader()
-                                            .foregroundColor(.white)
-                                            .iconButtonStyle(
-                                                size: 60,
-                                                backgroundColor: Color.white.opacity(0.1),
-                                                cornerRadius: 10
-                                            )
-                                    }
 
-                                    Button(action: {
-                                        coordinator.shareEvent(event)
-                                    }) {
-                                        Image(systemName: "square.and.arrow.up")
-                                            .appSectionHeader()
-                                            .foregroundColor(.white)
-                                            .iconButtonStyle(
-                                                size: 60,
-                                                backgroundColor: Color.white.opacity(0.1),
-                                                cornerRadius: 10
-                                            )
+                                        Button(action: {
+                                            coordinator.shareEvent(event)
+                                        }) {
+                                            Image(systemName: "square.and.arrow.up")
+                                                .appSectionHeader()
+                                                .foregroundColor(.white)
+                                                .iconButtonStyle(
+                                                    size: 60,
+                                                    backgroundColor: Color.white.opacity(0.1),
+                                                    cornerRadius: 10
+                                                )
+                                        }
                                     }
                                 }
-                            }
-                            .padding(.bottom, 24)
-                            .padding(.horizontal, 20)
+                                .padding(.bottom, 24)
+                                .padding(.horizontal, 20)
 
 
-                            // Content Section
-                            VStack(spacing: 16) {
-                                if let description = event.description, !description.isEmpty {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text("About")
-                                            .appBody()
-                                            .foregroundColor(.white)
-
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(description)
+                                // Content Section
+                                VStack(spacing: 16) {
+                                    if let description = event.description, !description.isEmpty {
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            Text("About")
                                                 .appBody()
-                                                .foregroundColor(.gray)
-                                                .lineSpacing(2)
-                                                .lineLimit(isDescriptionExpanded ? nil : 6)
-                                                .background(
-                                                    GeometryReader { textGeometry in
-                                                        Color.clear
-                                                            .onAppear {
-                                                                let textSize = description.boundingRect(
-                                                                    with: CGSize(
-                                                                        width: textGeometry.size.width,
-                                                                        height: .greatestFiniteMagnitude
-                                                                    ),
-                                                                    options: .usesLineFragmentOrigin,
-                                                                    attributes: [.font: UIFont.preferredFont(forTextStyle: .body)],
-                                                                    context: nil
-                                                                )
-                                                                let lineHeight: CGFloat = 20
-                                                                let maxHeight = lineHeight * 6
-                                                                needsReadMore = textSize.height > maxHeight
-                                                            }
-                                                    }
-                                                )
-                                                .animation(.easeInOut, value: isDescriptionExpanded)
+                                                .foregroundColor(.white)
 
-                                            if needsReadMore {
-                                                Button(action: {
-                                                    withAnimation {
-                                                        isDescriptionExpanded.toggle()
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(description)
+                                                    .appBody()
+                                                    .foregroundColor(.gray)
+                                                    .lineSpacing(2)
+                                                    .lineLimit(isDescriptionExpanded ? nil : 6)
+                                                    .background(
+                                                        GeometryReader { textGeometry in
+                                                            Color.clear
+                                                                .onAppear {
+                                                                    let textSize = description.boundingRect(
+                                                                        with: CGSize(
+                                                                            width: textGeometry.size.width,
+                                                                            height: .greatestFiniteMagnitude
+                                                                        ),
+                                                                        options: .usesLineFragmentOrigin,
+                                                                        attributes: [.font: UIFont.preferredFont(forTextStyle: .body)],
+                                                                        context: nil
+                                                                    )
+                                                                    let lineHeight: CGFloat = 20
+                                                                    let maxHeight = lineHeight * 6
+                                                                    needsReadMore = textSize.height > maxHeight
+                                                                }
+                                                        }
+                                                    )
+                                                    .animation(.easeInOut, value: isDescriptionExpanded)
+
+                                                if needsReadMore {
+                                                    Button(action: {
+                                                        withAnimation {
+                                                            isDescriptionExpanded.toggle()
+                                                        }
+                                                    }) {
+                                                        Text(isDescriptionExpanded ? "Read Less" : "Read More")
+                                                            .appCaption()
+                                                            .foregroundColor(.gray)
+                                                            .padding(.top, 2)
                                                     }
-                                                }) {
-                                                    Text(isDescriptionExpanded ? "Read Less" : "Read More")
-                                                        .appCaption()
-                                                        .foregroundColor(.gray)
-                                                        .padding(.top, 2)
                                                 }
                                             }
                                         }
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, 20)
-                                    .padding(.bottom, 8)
-                                }
-
-                                // Event details
-                                VStack(spacing: 12) {
-                                    Text("Event Details")
-                                        .appBody()
-                                        .foregroundColor(.white)
                                         .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, 20)
+                                        .padding(.bottom, 8)
+                                    }
 
-                                    VStack(spacing: 8) {
-                                        EventDetailRow(
-                                            icon: "calendar",
-                                            title: "Date",
-                                            value: (event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month().year())
-                                        )
+                                    // Event details
+                                    VStack(spacing: 12) {
+                                        Text("Event Details")
+                                            .appBody()
+                                            .foregroundColor(.white)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
 
-                                        EventDetailRow(
-                                            icon: "clock",
-                                            title: "Time",
-                                            value: formatTimeRange()
-                                        )
-
-                                        EventDetailRow(
-                                            icon: "location",
-                                            title: "Venue",
-                                            value: event.venue
-                                        )
-
-                                        EventDetailRow(
-                                            icon: "creditcard",
-                                            title: "Price",
-                                            value: "£\(String(format: "%.2f", event.price))"
-                                        )
-
-                                        if let tags = event.tags, !tags.isEmpty {
+                                        VStack(spacing: 8) {
                                             EventDetailRow(
-                                                icon: "tag",
-                                                title: "Genre",
-                                                value: tags.joined(separator: ", ")
+                                                icon: "calendar",
+                                                title: "Date",
+                                                value: (event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month().year())
                                             )
+
+                                            EventDetailRow(
+                                                icon: "clock",
+                                                title: "Time",
+                                                value: formatTimeRange()
+                                            )
+
+                                            EventDetailRow(
+                                                icon: "location",
+                                                title: "Venue",
+                                                value: event.venue
+                                            )
+
+                                            EventDetailRow(
+                                                icon: "creditcard",
+                                                title: "Price",
+                                                value: "£\(String(format: "%.2f", event.price))"
+                                            )
+
+                                            if let tags = event.tags, !tags.isEmpty {
+                                                EventDetailRow(
+                                                    icon: "tag",
+                                                    title: "Genre",
+                                                    value: tags.joined(separator: ", ")
+                                                )
+                                            }
                                         }
                                     }
-                                }
-                                .padding(.horizontal, 20)
-
-                                // Map section
-                                if let coordinates = event.coordinates {
-                                    Button(action: {
-                                        showingMapsSheet = true
-                                    }) {
-                                        EventMapView(
-                                            coordinate: CLLocationCoordinate2D(
-                                                latitude: coordinates.latitude,
-                                                longitude: coordinates.longitude
-                                            ),
-                                            venueName: event.venue
-                                        )
-                                        .frame(height: 200)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
                                     .padding(.horizontal, 20)
-                                    .padding(.top, 8)
+
+                                    // Map section - PERFORMANCE: Lazy Loaded
+                                    if let coordinates = event.coordinates {
+                                        if mapReady {
+                                            Button(action: {
+                                                showingMapsSheet = true
+                                            }) {
+                                                EventMapView(
+                                                    coordinate: CLLocationCoordinate2D(
+                                                        latitude: coordinates.latitude,
+                                                        longitude: coordinates.longitude
+                                                    ),
+                                                    venueName: event.venue
+                                                )
+                                                .frame(height: 200)
+                                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                            .padding(.horizontal, 20)
+                                            .padding(.top, 8)
+                                            .transition(.opacity)
+                                        } else {
+                                            // Lightweight placeholder
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(Color.white.opacity(0.05))
+                                                .frame(height: 200)
+                                                .padding(.horizontal, 20)
+                                                .padding(.top, 8)
+                                        }
+                                    }
+                                    Spacer(minLength: 100)
                                 }
-                                Spacer(minLength: 100)
                             }
+                            // Visual: Initially hidden, slides up and fades in
+                            .opacity(didAppear ? 1 : 0)
+                            .offset(y: didAppear ? 0 : 40)
+                            .zIndex(1) // Keep content below image layer
                         }
                     }
                 }
 
-                // Fixed close button on top-right — updated to use CloseButton
+                // Close button
                 VStack {
                     HStack {
                         Spacer()
@@ -341,6 +362,7 @@ struct EventDetailView: View {
                         }
                         .padding(.top, 80)
                         .padding(.trailing, 30)
+                        .opacity(didAppear ? 1 : 0)
                     }
                     Spacer()
                 }
@@ -385,9 +407,10 @@ struct EventDetailView: View {
                             endPoint: .bottom
                         )
                     )
+                    .opacity(didAppear ? 1 : 0)
+                    .offset(y: didAppear ? 0 : 50)
                 }
 
-                // Sign-in alert
                 if showingSignInAlert {
                     CustomAlertView(
                         title: "Sign In Required",
@@ -424,8 +447,24 @@ struct EventDetailView: View {
                 .presentationDragIndicator(.visible)
             }
         }
+        // PERFORMANCE: Freeze interaction during entrance transition
+        .allowsHitTesting(interactionEnabled)
         .onAppear {
             checkUserTicketStatus()
+            
+            // 1. Trigger Visual Animations (Text/Buttons fade in)
+            withAnimation(.easeOut(duration: 0.4).delay(0.15)) {
+                didAppear = true
+            }
+            
+            // 2. Unlock Interaction & Load Map AFTER transition finishes
+            // This prevents "Exit while Entering" lag/crashes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                interactionEnabled = true
+                withAnimation {
+                    mapReady = true
+                }
+            }
         }
         .onChange(of: ticketsViewModel.tickets.count) { _, _ in
             checkUserTicketStatus()

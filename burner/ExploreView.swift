@@ -224,7 +224,7 @@ struct ExploreView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 10)
                     .padding(.top, 14)
                     .padding(.bottom, 30)
 
@@ -373,7 +373,7 @@ struct ExploreView: View {
 
                 Spacer()
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 10)
         }
 
     }
@@ -416,7 +416,7 @@ struct ExploreView: View {
                 showingSignInAlert: $showingSignInAlert,
                 namespace: heroNamespace
             )
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 10)
             .padding(.bottom, 40)
         }
         .buttonStyle(.noHighlight)
@@ -431,7 +431,7 @@ struct ExploreView: View {
                     .foregroundColor(.white)
                 Spacer()
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 10)
 
             LazyVStack(spacing: 0) {
                 ForEach(Array(nearbyEventsPreview.enumerated()), id: \.element.event.id) { _, item in
@@ -460,7 +460,7 @@ struct ExploreView: View {
                     .foregroundColor(.white)
                 Spacer()
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 10)
 
             HStack {
                 Spacer()
@@ -487,7 +487,7 @@ struct ExploreView: View {
             }
             .background(Color.white.opacity(0.05))
             .cornerRadius(12)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 10)
         }
         .padding(.bottom, 40)
     }
@@ -575,7 +575,7 @@ struct EventSection: View {
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 10)
 
             LazyVStack(spacing: 0) {
                 ForEach(events) { event in
@@ -613,7 +613,7 @@ struct GenreCardsScrollRow: View {
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 10)
         }
         .padding(.bottom, 40)
     }

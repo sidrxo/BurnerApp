@@ -92,14 +92,14 @@ struct MainTabView: View {
         }
     }
 }
-
 struct CustomTabBar: View {
     @EnvironmentObject var coordinator: NavigationCoordinator
 
     var body: some View {
         HStack {
+            // 1. Home
             TabBarButton(
-                icon: "house",
+                icon: "homeicon",
                 isSelected: coordinator.selectedTab == .home
             ) {
                 coordinator.selectTab(.home)
@@ -107,34 +107,38 @@ struct CustomTabBar: View {
 
             Spacer()
 
+            // 2. Explore
             TabBarButton(
-                icon: "magnifyingglass",
+                icon: "searchicon",
                 isSelected: coordinator.selectedTab == .explore
             ) {
                 coordinator.selectTab(.explore)
             }
 
             Spacer()
-
+            
+            // 3. Bookmarks (Formerly Settings position, moved to 3rd slot)
+            // Note: You need to add .bookmarks to your Tab enum in NavigationCoordinator
             TabBarButton(
-                icon: "ticket",
+                icon: "bookmarkicon",
+                isSelected: coordinator.selectedTab == .settings
+            ) {
+                coordinator.selectTab(.settings)
+            }
+
+            Spacer()
+
+            // 4. Tickets (Now the final tab, containing the nested settings)
+            TabBarButton(
+                icon: "ticketicon",
                 isSelected: coordinator.selectedTab == .tickets,
                 rotationDegrees: 90
             ) {
                 coordinator.selectTab(.tickets)
             }
-
-            Spacer()
-
-            TabBarButton(
-                icon: "gear",
-                isSelected: coordinator.selectedTab == .settings
-            ) {
-                coordinator.selectTab(.settings)
-            }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 10)
+        .padding(.top, 8)
         .background(Color.black)
         .ignoresSafeArea(.all, edges: .bottom)
     }
@@ -148,11 +152,14 @@ struct TabBarButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .appSectionHeader()
+            Image(icon)
+                .renderingMode(.template) // Crucial: Allows .foregroundColor to work
+                .resizable()              // Crucial: Allows SVG to resize
+                .aspectRatio(contentMode: .fit)
                 .foregroundColor(isSelected ? .white : .gray)
                 .rotationEffect(.degrees(rotationDegrees))
-                .frame(width: 44, height: 44)
+                .frame(width: 24, height: 24) // Visual size of the icon
+                .frame(width: 44, height: 30) // Touch target size
                 .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())

@@ -70,6 +70,7 @@ extension View {
 
     func appPageHeader() -> some View {
         self.font(.appPageHeader)
+            .kerning(-1.5)
     }
 
     func appHero() -> some View {

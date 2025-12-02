@@ -20,7 +20,7 @@ struct FeaturedHeroCard: View {
             let imageHeight: CGFloat = 420
 
             ZStack(alignment: .top) {
-                // Base image
+                // 1. Base image
                 KFImage(URL(string: event.imageUrl))
                     .placeholder {
                         Rectangle()
@@ -30,58 +30,40 @@ struct FeaturedHeroCard: View {
                     .scaledToFill()
                     .frame(width: geometry.size.width, height: imageHeight)
                     .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .applyIf(namespace != nil && event.id != nil) { view in
-                        view.matchedTransitionSource(id: "heroImage-\(event.id!)", in: namespace!) { source in
-                            source
-                                .clipShape(RoundedRectangle(cornerRadius: 20))
-                        }
-                    }
 
-                // Gentle progressive blur overlay
+                // 2. The Blur + Gradient Stack
                 ZStack {
-                    // Variable blur with more gradual progression
+                    // Custom Variable Blur (The internal curve now starts higher)
                     VariableBlurView(
-                        maxBlurRadius: 20, // Reduced back to 20 for subtlety
-                        direction: .blurredBottomClearTop,
-                        startOffset: 0.7 // Much earlier start for gentler ramp
+                        maxBlurRadius: 20,
+                        direction: .blurredBottomClearTop
                     )
                     .frame(width: geometry.size.width, height: imageHeight)
                     
-                    // Very subtle gradient to enhance the gentle progression
+                    // Darkening Gradient
                     LinearGradient(
                         gradient: Gradient(colors: [
                             Color.clear,
-                            Color.black.opacity(0.05),
-                            Color.black.opacity(0.15)
+                            Color.black.opacity(0.1),
+                            Color.black.opacity(0.6)
                         ]),
-                        startPoint: .top,
+                        // EDITED: Raised the start point to match the higher blur transition
+                        startPoint: UnitPoint(x: 0.5, y: 0.3),
                         endPoint: .bottom
                     )
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 20))
 
-                // Soft dark overlay for text readability
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.clear,
-                        Color.black.opacity(0.1),
-                        Color.black.opacity(0.4)
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(width: geometry.size.width, height: imageHeight)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-
-                // Content
+                // 3. Content
                 VStack {
                     HStack {
                         Spacer()
                         Text("FEATURED")
                             .appCaption()
+                            .tracking(1.5)
                             .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
                             .background(Color.black.opacity(0.6))
                             .clipShape(Capsule())
                     }
@@ -94,7 +76,8 @@ struct FeaturedHeroCard: View {
                         HStack(alignment: .bottom, spacing: 12) {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(event.name)
-                                    .appHero()
+    
+                                    .appPageHeader()
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.leading)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -141,12 +124,16 @@ struct FeaturedHeroCard: View {
                 }
                 .frame(width: geometry.size.width, height: imageHeight)
             }
+            .applyIf(namespace != nil && event.id != nil) { view in
+                view.matchedTransitionSource(id: "heroImage-\(event.id!)", in: namespace!) { source in
+                    source.clipShape(RoundedRectangle(cornerRadius: 20))
+                }
+            }
         }
         .frame(height: 420)
     }
 }
 
-// Helper extension remains the same
 extension View {
     @ViewBuilder
     func applyIf<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {

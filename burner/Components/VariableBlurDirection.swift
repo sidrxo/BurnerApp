@@ -7,8 +7,6 @@
 
 import SwiftUI
 import UIKit
-import CoreImage.CIFilterBuiltins
-import QuartzCore
 
 public enum VariableBlurDirection {
     case blurredTopClearBottom
@@ -19,137 +17,100 @@ public struct VariableBlurView: UIViewRepresentable {
     
     public var maxBlurRadius: CGFloat
     public var direction: VariableBlurDirection
-    /// For `.blurredBottomClearTop`:
-    ///   startOffset = 0.7  -> bottom (1 - 0.7) = 30% is blurred, top 70% clear.
-    /// For `.blurredTopClearBottom` it's mirrored.
-    public var startOffset: CGFloat
     
     public init(
         maxBlurRadius: CGFloat = 20,
-        direction: VariableBlurDirection = .blurredTopClearBottom,
-        startOffset: CGFloat = 0
+        direction: VariableBlurDirection = .blurredBottomClearTop
     ) {
         self.maxBlurRadius = maxBlurRadius
         self.direction = direction
-        self.startOffset = startOffset
     }
     
     public func makeUIView(context: Context) -> VariableBlurUIView {
         VariableBlurUIView(
             maxBlurRadius: maxBlurRadius,
-            direction: direction,
-            startOffset: startOffset
+            direction: direction
         )
     }
 
     public func updateUIView(_ uiView: VariableBlurUIView, context: Context) {
-        // If you later want dynamic updates, you can add an update API on VariableBlurUIView.
+        uiView.update(
+            maxBlurRadius: maxBlurRadius,
+            direction: direction
+        )
     }
 }
 
-/// credit https://github.com/jtrivedi/VariableBlurView
 open class VariableBlurUIView: UIVisualEffectView {
-
+    
+    private let gradientMaskLayer = CAGradientLayer()
+    
     public init(
         maxBlurRadius: CGFloat = 20,
-        direction: VariableBlurDirection = .blurredTopClearBottom,
-        startOffset: CGFloat = 0
+        direction: VariableBlurDirection = .blurredBottomClearTop
     ) {
-        super.init(effect: UIBlurEffect(style: .regular))
-
-        let clsName = String("retliFAC".reversed()) // "CAFilter"
-        guard let Cls = NSClassFromString(clsName) as? NSObject.Type else {
-            return
-        }
-        let selName = String(":epyThtiWretlif".reversed()) // "filterWithType:"
-        guard let variableBlur = Cls.self
-            .perform(NSSelectorFromString(selName), with: "variableBlur")
-            .takeUnretainedValue() as? NSObject else {
-            return
-        }
-
-        // Mask decides blur radius: alpha 1 → maxBlurRadius, alpha 0 → no blur.
-        let gradientImage = makeGradientImage(
-            width: 200,
-            height: 400,
-            startOffset: startOffset,
-            direction: direction
-        )
-
-        variableBlur.setValue(maxBlurRadius, forKey: "inputRadius")
-        variableBlur.setValue(gradientImage, forKey: "inputMaskImage")
-        variableBlur.setValue(true, forKey: "inputNormalizeEdges")
-
-        // Use CABackdropLayer from UIVisualEffectView to apply the filter to content underneath.
-        let backdropLayer = subviews.first?.layer
-        backdropLayer?.filters = [variableBlur]
+        // Use .dark for a heavier, contrasty look
+        super.init(effect: UIBlurEffect(style: .dark))
         
-        // Remove extra dimming/tint views so there’s no hard overlay.
-        for subview in subviews.dropFirst() {
-            subview.alpha = 0
-        }
+        self.layer.mask = gradientMaskLayer
+        
+        update(maxBlurRadius: maxBlurRadius, direction: direction)
     }
-
+    
     required public init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    open override func didMoveToWindow() {
-        // fixes visible pixelization at unblurred edge (https://github.com/nikstar/VariableBlur/issues/1)
-        guard let window, let backdropLayer = subviews.first?.layer else { return }
-        backdropLayer.setValue(window.traitCollection.displayScale, forKey: "scale")
+    open override func layoutSubviews() {
+        super.layoutSubviews()
+        gradientMaskLayer.frame = bounds
     }
     
-    open override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        // `super.traitCollectionDidChange(previousTraitCollection)` crashes the app
-    }
-    
-    /// Creates a blur mask where only the bottom `(1 - startOffset)` or top `(1 - startOffset)` is blurred,
-    /// with a gentle ramp using smoothLinearGradient + gamma easing.
-    private func makeGradientImage(
-        width: CGFloat = 100,
-        height: CGFloat = 100,
-        startOffset: CGFloat,
+    public func update(
+        maxBlurRadius: CGFloat,
         direction: VariableBlurDirection
-    ) -> CGImage {
-        let gradient = CIFilter.smoothLinearGradient()
-        gradient.color0 = CIColor.black   // full blur
-        gradient.color1 = CIColor.clear   // no blur
-
-        // Clamp startOffset to [0, 1]. For bottom blur: 0.7 => bottom 30% blurred.
-        let clampedOffset = max(0.0, min(1.0, startOffset))
-        let blurFraction = max(0.0, min(1.0, 1.0 - clampedOffset)) // portion of height that will be blurred
-
-        let blurHeight = height * blurFraction
-
+    ) {
+        // Configure the Gradient Mask with a custom curve
+        let stops = makeEasingStops(direction: direction)
+        
+        gradientMaskLayer.colors = stops.map { $0.color }
+        gradientMaskLayer.locations = stops.map { $0.location }
+        
+        gradientMaskLayer.startPoint = CGPoint(x: 0.5, y: 0)
+        gradientMaskLayer.endPoint = CGPoint(x: 0.5, y: 1)
+    }
+    
+    /// Creates a custom "S-Curve" gradient
+    private func makeEasingStops(
+        direction: VariableBlurDirection
+    ) -> [(color: CGColor, location: NSNumber)] {
+        
+        let clear = UIColor.clear.cgColor
+        let opaque = UIColor.black.cgColor // In a mask, black = visible blur
+        
         switch direction {
         case .blurredBottomClearTop:
-            // Bottom blurred: black at y = 0, clear at y = blurHeight
-            gradient.point0 = CGPoint(x: 0, y: 0)
-            gradient.point1 = CGPoint(x: 0, y: blurHeight)
-
+            // EDITED: Adjusted stops to make the blur start higher up.
+            // It now starts transitioning at 25% down instead of 40%.
+            return [
+                (clear, 0.0),                       // Top: Clear
+                (clear, 0.25),                      // 25% down: Start transition (was 0.4)
+                (opaque.copy(alpha: 0.15)!, 0.4),   // 40%: Noticeable start
+                (opaque.copy(alpha: 0.5)!, 0.6),    // 60%: Significant blur
+                (opaque.copy(alpha: 0.85)!, 0.85),  // 85%: Heavy blur
+                (opaque, 1.0)                       // Bottom: Full blur
+            ]
+            
         case .blurredTopClearBottom:
-            // Top blurred: black at y = height, clear at y = height - blurHeight
-            gradient.point0 = CGPoint(x: 0, y: height)
-            gradient.point1 = CGPoint(x: 0, y: height - blurHeight)
+            // Mirrored logic (not strictly necessary for this specific card design but good practice)
+            return [
+                (opaque, 0.0),
+                (opaque.copy(alpha: 0.85)!, 0.15),
+                (opaque.copy(alpha: 0.5)!, 0.4),
+                (opaque.copy(alpha: 0.15)!, 0.6),
+                (clear, 0.75),
+                (clear, 1.0)
+            ]
         }
-
-        let context = CIContext()
-        let rect = CGRect(x: 0, y: 0, width: width, height: height)
-        guard let baseImage = gradient.outputImage else {
-            fatalError("[VariableBlur] Failed to create gradient output image")
-        }
-
-        // Apply gamma to make the transition softer (non-linear falloff).
-        let gamma = CIFilter.gammaAdjust()
-        gamma.inputImage = baseImage
-        gamma.power = 2.2   // tweak 1.6–3.0 for different softness
-
-        guard let easedImage = gamma.outputImage,
-              let cgImage = context.createCGImage(easedImage, from: rect) else {
-            fatalError("[VariableBlur] Failed to create CGImage for gradient mask")
-        }
-
-        return cgImage
     }
 }

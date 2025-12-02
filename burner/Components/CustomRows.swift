@@ -216,7 +216,7 @@ extension EventRow {
             showVenue: true,
             showDetailedDate: false,
             bookmarkSize: 18,
-            horizontalPadding: 20,
+            horizontalPadding: 14,
             verticalPadding: 8,
             backgroundColor: Color.clear,
             cornerRadius: 0
