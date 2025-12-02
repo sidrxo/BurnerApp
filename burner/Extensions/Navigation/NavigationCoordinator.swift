@@ -205,24 +205,12 @@ struct AlertPresentation: Identifiable {
     }
 }
 
-// MARK: - Navigation State Helper
-struct NavigationState {
-    var selectedTab: AppTab = .explore
-    var previousTab: AppTab = .explore
-}
-
 // MARK: - Navigation Coordinator
 
 @MainActor
 class NavigationCoordinator: ObservableObject {
     // MARK: - Tab Navigation
-    // ✅ FIX: Use a single struct to ensure atomic updates
-    @Published private var navState = NavigationState()
-    
-    // Computed properties for easy access
-    var selectedTab: AppTab { navState.selectedTab }
-    var previousTab: AppTab { navState.previousTab }
-    
+    @Published var selectedTab: AppTab = .explore
     @Published var shouldHideTabBar: Bool = false
 
     // MARK: - Navigation Paths (one per tab)
@@ -244,12 +232,7 @@ class NavigationCoordinator: ObservableObject {
     // MARK: - Tab Navigation Methods
 
     func selectTab(_ tab: AppTab) {
-        if tab != navState.selectedTab {
-            // ✅ FIX: Update both previous and current in ONE transaction
-            // This prevents the view from rendering an intermediate state with the wrong transition
-            navState = NavigationState(selectedTab: tab, previousTab: navState.selectedTab)
-            print("🚀 [Coordinator] Atomic Update: \(navState.previousTab.title) -> \(navState.selectedTab.title)")
-        }
+        selectedTab = tab
     }
 
     func hideTabBar() {
@@ -404,8 +387,8 @@ class NavigationCoordinator: ObservableObject {
         bookmarksPath = NavigationPath()
         activeModal = nil
         activeAlert = nil
-        // Reset state via selectTab to ensure consistency or manual reset
-        navState = NavigationState()
+        selectedTab = .explore
         shouldHideTabBar = false
     }
 }
+

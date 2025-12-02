@@ -13,56 +13,54 @@ struct MainTabView: View {
     var body: some View {
         NavigationCoordinatorView {
             ZStack {
-                // EXPLORE (Index 0)
-                if coordinator.selectedTab == .explore {
-                    NavigationStack(path: $coordinator.explorePath) {
-                        ExploreView()
-                            .environment(\.heroNamespace, exploreHeroNamespace)
-                            .navigationDestination(for: NavigationDestination.self) { destination in
-                                NavigationDestinationBuilder(destination: destination)
-                                    .environment(\.heroNamespace, exploreHeroNamespace)
-                            }
-                    }
-                    .transition(slideTransition(for: .explore))
-                }
+                GeometryReader { geometry in
+                    HStack(spacing: 0) {
+                        NavigationStack(path: $coordinator.explorePath) {
+                            ExploreView()
+                                .environment(\.heroNamespace, exploreHeroNamespace)
+                                .navigationDestination(for: NavigationDestination.self) { destination in
+                                    NavigationDestinationBuilder(destination: destination)
+                                        .environment(\.heroNamespace, exploreHeroNamespace)
+                                }
+                        }
+                        .frame(width: geometry.size.width)
+                        .tag(AppTab.explore)
 
-                // SEARCH (Index 1)
-                if coordinator.selectedTab == .search {
-                    NavigationStack(path: $coordinator.searchPath) {
-                        SearchView()
-                            .environment(\.heroNamespace, searchHeroNamespace)
-                            .navigationDestination(for: NavigationDestination.self) { destination in
-                                NavigationDestinationBuilder(destination: destination)
-                                    .environment(\.heroNamespace, searchHeroNamespace)
-                            }
-                    }
-                    .transition(slideTransition(for: .search))
-                }
+                        NavigationStack(path: $coordinator.searchPath) {
+                            SearchView()
+                                .environment(\.heroNamespace, searchHeroNamespace)
+                                .navigationDestination(for: NavigationDestination.self) { destination in
+                                    NavigationDestinationBuilder(destination: destination)
+                                        .environment(\.heroNamespace, searchHeroNamespace)
+                                }
+                        }
+                        .frame(width: geometry.size.width)
+                        .tag(AppTab.search)
 
-                // BOOKMARKS (Index 2)
-                if coordinator.selectedTab == .bookmarks {
-                    NavigationStack(path: $coordinator.bookmarksPath) {
-                        BookmarksView()
-                             .environment(\.heroNamespace, bookmarksHeroNamespace)
-                            .navigationDestination(for: NavigationDestination.self) { destination in
-                                NavigationDestinationBuilder(destination: destination)
-                                    .environment(\.heroNamespace, bookmarksHeroNamespace)
-                            }
-                    }
-                    .transition(slideTransition(for: .bookmarks))
-                }
+                        NavigationStack(path: $coordinator.bookmarksPath) {
+                            BookmarksView()
+                                 .environment(\.heroNamespace, bookmarksHeroNamespace)
+                                .navigationDestination(for: NavigationDestination.self) { destination in
+                                    NavigationDestinationBuilder(destination: destination)
+                                        .environment(\.heroNamespace, bookmarksHeroNamespace)
+                                }
+                        }
+                        .frame(width: geometry.size.width)
+                        .tag(AppTab.bookmarks)
 
-                // TICKETS (Index 3)
-                if coordinator.selectedTab == .tickets {
-                    NavigationStack(path: $coordinator.ticketsPath) {
-                        TicketsView()
-                            .environment(\.heroNamespace, ticketsHeroNamespace)
-                            .navigationDestination(for: NavigationDestination.self) { destination in
-                                NavigationDestinationBuilder(destination: destination)
-                                    .environment(\.heroNamespace, ticketsHeroNamespace)
-                            }
+                        NavigationStack(path: $coordinator.ticketsPath) {
+                            TicketsView()
+                                .environment(\.heroNamespace, ticketsHeroNamespace)
+                                .navigationDestination(for: NavigationDestination.self) { destination in
+                                    NavigationDestinationBuilder(destination: destination)
+                                        .environment(\.heroNamespace, ticketsHeroNamespace)
+                                }
+                        }
+                        .frame(width: geometry.size.width)
+                        .tag(AppTab.tickets)
                     }
-                    .transition(slideTransition(for: .tickets))
+                    .offset(x: -CGFloat(coordinator.selectedTab.rawValue) * geometry.size.width)
+                    .animation(.easeInOut(duration: 0.3), value: coordinator.selectedTab)
                 }
 
                 VStack {
@@ -75,7 +73,6 @@ struct MainTabView: View {
                 .zIndex(100)
                 .ignoresSafeArea(.keyboard)
             }
-            .animation(.easeInOut(duration: 0.25), value: coordinator.selectedTab)
         }
     }
 
@@ -95,15 +92,6 @@ struct MainTabView: View {
             return coordinator.ticketsPath.count == 0
         }
     }
-
-    private func slideTransition(for tab: AppTab) -> AnyTransition {
-        let isMovingForward = coordinator.selectedTab.rawValue > coordinator.previousTab.rawValue
-
-        return AnyTransition.asymmetric(
-            insertion: .move(edge: isMovingForward ? .trailing : .leading),
-            removal: .move(edge: isMovingForward ? .trailing : .leading)
-        )
-    }
 }
 
 struct CustomTabBar: View {
@@ -111,7 +99,6 @@ struct CustomTabBar: View {
 
     var body: some View {
         HStack {
-            // 0: Explore
             TabBarButton(
                 icon: "homeicon",
                 isSelected: coordinator.selectedTab == .explore
@@ -121,7 +108,6 @@ struct CustomTabBar: View {
 
             Spacer()
 
-            // 1: Search
             TabBarButton(
                 icon: "searchicon",
                 isSelected: coordinator.selectedTab == .search
@@ -131,7 +117,6 @@ struct CustomTabBar: View {
 
             Spacer()
             
-            // 2: Bookmarks
             TabBarButton(
                 icon: "heart",
                 isSelected: coordinator.selectedTab == .bookmarks
@@ -141,7 +126,6 @@ struct CustomTabBar: View {
 
             Spacer()
 
-            // 3: Tickets
             TabBarButton(
                 icon: "ticketicon",
                 isSelected: coordinator.selectedTab == .tickets,
