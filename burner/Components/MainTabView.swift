@@ -75,10 +75,10 @@ struct MainTabView: View {
                 .zIndex(100)
                 .ignoresSafeArea(.keyboard)
             }
-            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: coordinator.selectedTab)
+            .animation(.easeInOut(duration: 0.25), value: coordinator.selectedTab)
         }
     }
-    
+
     private var shouldShowTabBar: Bool {
         guard !coordinator.shouldHideTabBar else {
             return false
@@ -101,7 +101,7 @@ struct MainTabView: View {
 
         return AnyTransition.asymmetric(
             insertion: .move(edge: isMovingForward ? .trailing : .leading),
-            removal: .move(edge: isMovingForward ? .leading : .trailing)
+            removal: .move(edge: isMovingForward ? .trailing : .leading)
         )
     }
 }
