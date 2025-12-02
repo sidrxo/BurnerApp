@@ -192,12 +192,8 @@ struct EventDetailView: View {
                                             Image(systemName: isBookmarked ? "heart.fill" : "heart")
                                                 .appSectionHeader()
                                                 .foregroundColor(.white)
-                                                .iconButtonStyle(
-                                                    size: 60,
-                                                    backgroundColor: Color.white.opacity(0.1),
-                                                    cornerRadius: 10
-                                                )
                                         }
+                                        .buttonStyle(IconButton(size: 60, backgroundColor: Color.white.opacity(0.1), cornerRadius: 10))
 
                                         Button(action: {
                                             coordinator.shareEvent(event)
@@ -205,12 +201,8 @@ struct EventDetailView: View {
                                             Image(systemName: "square.and.arrow.up")
                                                 .appSectionHeader()
                                                 .foregroundColor(.white)
-                                                .iconButtonStyle(
-                                                    size: 60,
-                                                    backgroundColor: Color.white.opacity(0.1),
-                                                    cornerRadius: 10
-                                                )
                                         }
+                                        .buttonStyle(IconButton(size: 60, backgroundColor: Color.white.opacity(0.1), cornerRadius: 10))
                                     }
                                 }
                                 .padding(.bottom, 24)
@@ -358,9 +350,9 @@ struct EventDetailView: View {
                 VStack {
                     HStack {
                         Spacer()
-                        CloseButtonDark {
+                        CloseButton(action: {
                             dismiss()
-                        }
+                        }, isDark: true)
                         .padding(.top, 80)
                         .padding(.trailing, 30)
                         .opacity(didAppear ? 1 : 0)
