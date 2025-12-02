@@ -124,23 +124,12 @@ struct FeaturedHeroCard: View {
                 }
                 .frame(width: geometry.size.width, height: imageHeight)
             }
-            .applyIf(namespace != nil && event.id != nil) { view in
+            .if(namespace != nil && event.id != nil) { view in
                 view.matchedTransitionSource(id: "heroImage-\(event.id!)", in: namespace!) { source in
                     source.clipShape(RoundedRectangle(cornerRadius: 20))
                 }
             }
         }
         .frame(height: 420)
-    }
-}
-
-extension View {
-    @ViewBuilder
-    func applyIf<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
     }
 }

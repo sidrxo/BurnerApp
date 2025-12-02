@@ -70,3 +70,34 @@ struct Ticket: Identifiable, Codable, Sendable {
     var updatedAt: Date?
 
 }
+
+// MARK: - Supporting Types
+
+/// Combined ticket and event data for display purposes
+struct TicketWithEventData: Codable, Identifiable {
+    let ticket: Ticket
+    let event: Event
+    var id: String {
+        ticket.id ?? UUID().uuidString
+    }
+}
+
+// MARK: - Event Extensions
+
+extension Event {
+    /// Determines if the event is considered "past" (more than 6 hours after the event's start day)
+    var isPast: Bool {
+        guard let startTime = startTime else { return true }
+        let calendar = Calendar.current
+        let nextDayEnd = calendar.dateInterval(of: .day, for: startTime)?.end ?? startTime
+        let nextDay6AM = calendar.date(byAdding: .hour, value: 6, to: nextDayEnd) ?? startTime
+        return Date() > nextDay6AM
+    }
+
+    /// Determines if the event has started
+    var hasStarted: Bool {
+        guard let startTime = startTime else { return false }
+        return Date() >= startTime
+    }
+}
+
