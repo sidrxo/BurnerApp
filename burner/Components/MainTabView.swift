@@ -17,6 +17,7 @@ struct MainTabView: View {
                 NavigationStack(path: $coordinator.homePath) {
                     ExploreView()
                         .environment(\.heroNamespace, homeHeroNamespace)
+                        .navigationTransition(.slide)
                         .navigationDestination(for: NavigationDestination.self) { destination in
                             NavigationDestinationBuilder(destination: destination)
                                 .environment(\.heroNamespace, homeHeroNamespace)
@@ -29,6 +30,7 @@ struct MainTabView: View {
                 NavigationStack(path: $coordinator.explorePath) {
                     SearchView()
                         .environment(\.heroNamespace, exploreHeroNamespace)
+                        .navigationTransition(.slide)
                         .navigationDestination(for: NavigationDestination.self) { destination in
                             NavigationDestinationBuilder(destination: destination)
                                 .environment(\.heroNamespace, exploreHeroNamespace)
@@ -41,6 +43,7 @@ struct MainTabView: View {
                 NavigationStack(path: $coordinator.ticketsPath) {
                     TicketsView()
                         .environment(\.heroNamespace, ticketsHeroNamespace)
+                        .navigationTransition(.slide)
                         .navigationDestination(for: NavigationDestination.self) { destination in
                             NavigationDestinationBuilder(destination: destination)
                                 .environment(\.heroNamespace, ticketsHeroNamespace)
@@ -53,6 +56,7 @@ struct MainTabView: View {
                 NavigationStack(path: $coordinator.settingsPath) {
                     BookmarksView()
                         .environment(\.heroNamespace, settingsHeroNamespace)
+                        .navigationTransition(.slide)
                         .navigationDestination(for: NavigationDestination.self) { destination in
                             NavigationDestinationBuilder(destination: destination)
                                 .environment(\.heroNamespace, settingsHeroNamespace)

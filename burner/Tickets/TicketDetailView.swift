@@ -96,6 +96,8 @@ struct DashedSeparator: View {
 // MARK: - Ticket Detail View
 struct TicketDetailView: View {
     let ticketWithEvent: TicketWithEventData
+    var namespace: Namespace.ID?
+
     @State private var hasStartedLiveActivity = false
     @State private var isLiveActivityActive = false
     @State private var showTransferSuccess = false
@@ -115,6 +117,11 @@ struct TicketDetailView: View {
                     .blur(radius: 80)
                     .opacity(0.3)
                     .ignoresSafeArea()
+                    .if(namespace != nil && ticketWithEvent.ticket.id != nil) { view in
+                        view.matchedTransitionSource(id: "ticketImage-\(ticketWithEvent.ticket.id!)", in: namespace!) { source in
+                            source
+                        }
+                    }
             }
             
             // Solid black background
@@ -145,6 +152,9 @@ struct TicketDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .if(namespace != nil && ticketWithEvent.ticket.id != nil) { view in
+            view.navigationTransition(.zoom(sourceID: "ticketImage-\(ticketWithEvent.ticket.id!)", in: namespace!))
+        }
         .fullScreenCover(isPresented: $showBurnerSetup) {
             BurnerModeSetupView(
                 burnerManager: appState.burnerManager,
@@ -452,6 +462,18 @@ struct TicketDetailView: View {
 
         withAnimation(.easeInOut(duration: 0.3)) {
             isLiveActivityActive = hasActiveActivity
+        }
+    }
+}
+
+// MARK: - View Extension for Conditional Modifiers
+extension View {
+    @ViewBuilder
+    func `if`<Transform: View>(_ condition: Bool, transform: (Self) -> Transform) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
         }
     }
 }
