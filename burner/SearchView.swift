@@ -103,7 +103,26 @@ struct SearchView: View {
 
     private var mainContent: some View {
         VStack(spacing: 0) {
-            HeaderSection(title: "Search")
+            HStack {
+                Text("Search")
+                    .appPageHeader()
+                    .foregroundColor(.white)
+                    .padding(.bottom, 2)
+
+                Spacer()
+                Button(action: {
+                }) {
+                    ZStack {
+                        Rectangle()
+                            .fill(.black) // This colors the shape itself
+                            .frame(width: 38, height: 38)
+                    }
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.top, 14)
+            .padding(.bottom, 30)
+            
             searchSection
             filtersSection
             contentSection

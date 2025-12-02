@@ -191,8 +191,6 @@ struct TicketsView: View {
             Spacer()
             Button(action: {
                 coordinator.ticketsPath.append(NavigationDestination.settings)
-
-                coordinator.activeModal = .SetLocation
             }) {
                 ZStack {
 
@@ -209,10 +207,20 @@ struct TicketsView: View {
     }
     
     private var emptyStateView: some View {
+        Group {
+            if Auth.auth().currentUser == nil {
+                signedOutEmptyState
+            } else {
+                noTicketsEmptyState
+            }
+        }
+    }
+    
+    private var signedOutEmptyState: some View {
         GeometryReader { geometry in
             VStack(spacing: 20) {
                 // ✅ Fixed-height frame for image
-                Image("ticket")
+                Image("user")
                     .resizable()
                     .scaledToFit()
                     .frame(height: 140) // fixed height
@@ -220,18 +228,50 @@ struct TicketsView: View {
                     .padding(.bottom, 30)
                 
                 VStack(spacing: 8) {
-                    Text(AppConstants.EmptyState.meetMeInTheMoment)
-                        .appSectionHeader()
-                        .foregroundColor(.white)
-                    Text(AppConstants.EmptyState.noTickets)
-                        .appBody()
+                    TightHeaderText("WHERE WILL", "YOU GO?", alignment: .center)
+                        .frame(maxWidth: .infinity)
+                    Text("Be part of the change.")
+                        .appCard()
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
                 }
                 
-                BurnerButton("BROWSE EVENTS", style: .primary, maxWidth: 200) {
-                    coordinator.selectTab(.home)
+                BurnerButton("SIGN UP / IN", style: .primary, maxWidth: 180) {
+                    coordinator.showSignIn()
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .position(x: geometry.size.width / 2, y: geometry.size.height / 2 - 50)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
+    }
+    
+    private var noTicketsEmptyState: some View {
+        GeometryReader { geometry in
+            VStack(spacing: 20) {
+                // ✅ Fixed-height frame for image
+                Image("user")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 140) // fixed height
+                    .frame(maxWidth: .infinity) // center horizontally
+                    .padding(.bottom, 30)
+                
+                VStack(spacing: 8) {
+                    TightHeaderText("NO TICKETS", "YET", alignment: .center)
+                        .frame(maxWidth: .infinity)
+                    Text("Your next experience is waiting.")
+                        .appCard()
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+                
+                BurnerButton("EXPLORE EVENTS", style: .primary, maxWidth: 200) {
+                    coordinator.selectedTab = .home
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -362,8 +402,8 @@ enum TicketsFilter: CaseIterable {
     case upcoming, past
     var displayName: String {
         switch self {
-        case .upcoming: return "UPCOMING"
-        case .past: return "PAST"
+        case .upcoming: return "NEXT UP"
+        case .past: return "HISTORY"
         }
     }
     static var allCases: [TicketsFilter] { [.upcoming, .past] }

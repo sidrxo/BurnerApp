@@ -24,8 +24,25 @@ struct BookmarksView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header Section
-            HeaderSection(title: "Saves")
-           
+            HStack {
+                Text("Saves")
+                    .appPageHeader()
+                    .foregroundColor(.white)
+                    .padding(.bottom, 2)
+
+                Spacer()
+                Button(action: {
+                }) {
+                    ZStack {
+                        Rectangle()
+                            .fill(.black) // This colors the shape itself
+                            .frame(width: 38, height: 38)
+                    }
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.top, 14)
+            .padding(.bottom, 30)
 
             if !bookmarkManager.bookmarkedEvents.isEmpty {
 
@@ -94,12 +111,11 @@ struct BookmarksView: View {
                 .padding(.bottom, 30)
             
             VStack(spacing: 8) {
-                Text("NOTHING SAVED YET")
-                    .appSectionHeader()
-                    .foregroundColor(.white)
+                TightHeaderText("NOTHING HERE", "YET", alignment: .center)
+                    .frame(maxWidth: .infinity)
 
-                Text(AppConstants.EmptyState.noBookmarks)
-                    .appBody()
+                Text("Tap \(Image(systemName: "heart")) on any event to save it here.")
+                    .appCard()
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)

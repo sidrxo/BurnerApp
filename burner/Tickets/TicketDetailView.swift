@@ -9,89 +9,6 @@ import Kingfisher
 import ActivityKit
 import FirebaseFunctions
 
-// MARK: - Modern Ticket Shape with Notches
-struct ModernTicketShape: Shape {
-    let notchSize: CGFloat = 24
-    
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let cornerRadius: CGFloat = 32
-        
-        // Start from top-left, after corner radius
-        path.move(to: CGPoint(x: cornerRadius, y: 0))
-        
-        // Top edge to top-right corner
-        path.addLine(to: CGPoint(x: rect.width - cornerRadius, y: 0))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.width, y: cornerRadius),
-            control: CGPoint(x: rect.width, y: 0)
-        )
-        
-        // Right edge to middle (before notch)
-        let middleY = rect.height / 2
-        path.addLine(to: CGPoint(x: rect.width, y: middleY - notchSize))
-        
-        // Right notch
-        path.addArc(
-            center: CGPoint(x: rect.width, y: middleY),
-            radius: notchSize,
-            startAngle: .degrees(270),
-            endAngle: .degrees(90),
-            clockwise: true
-        )
-        
-        // Continue right edge to bottom
-        path.addLine(to: CGPoint(x: rect.width, y: rect.height - cornerRadius))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.width - cornerRadius, y: rect.height),
-            control: CGPoint(x: rect.width, y: rect.height)
-        )
-        
-        // Bottom edge
-        path.addLine(to: CGPoint(x: cornerRadius, y: rect.height))
-        path.addQuadCurve(
-            to: CGPoint(x: 0, y: rect.height - cornerRadius),
-            control: CGPoint(x: 0, y: rect.height)
-        )
-        
-        // Left edge to middle (before notch)
-        path.addLine(to: CGPoint(x: 0, y: middleY + notchSize))
-        
-        // Left notch
-        path.addArc(
-            center: CGPoint(x: 0, y: middleY),
-            radius: notchSize,
-            startAngle: .degrees(90),
-            endAngle: .degrees(270),
-            clockwise: true
-        )
-        
-        // Continue left edge to top
-        path.addLine(to: CGPoint(x: 0, y: cornerRadius))
-        path.addQuadCurve(
-            to: CGPoint(x: cornerRadius, y: 0),
-            control: CGPoint(x: 0, y: 0)
-        )
-        
-        path.closeSubpath()
-        return path
-    }
-}
-
-// MARK: - Dashed Separator Line
-struct DashedSeparator: View {
-    var body: some View {
-        GeometryReader { geometry in
-            Path { path in
-                path.move(to: CGPoint(x: 0, y: 0))
-                path.addLine(to: CGPoint(x: geometry.size.width, y: 0))
-            }
-            .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [8, 8]))
-            .foregroundColor(Color.white.opacity(0.5))
-        }
-        .frame(height: 1)
-    }
-}
 
 // MARK: - Ticket Detail View
 struct TicketDetailView: View {
@@ -108,35 +25,14 @@ struct TicketDetailView: View {
 
     var body: some View {
         ZStack {
-            // Dynamic background based on event image
-            if !ticketWithEvent.event.imageUrl.isEmpty {
-                KFImage(URL(string: ticketWithEvent.event.imageUrl))
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
-                    .blur(radius: 80)
-                    .opacity(0.3)
-                    .ignoresSafeArea()
-                    .if(namespace != nil && ticketWithEvent.ticket.id != nil) { view in
-                        view.matchedTransitionSource(id: "ticketImage-\(ticketWithEvent.ticket.id!)", in: namespace!) { source in
-                            source
-                        }
-                    }
-            }
-            
-            // Solid black background
+            // Background is simplified for the card look
             Color.black
-                .opacity(0.7)
                 .ignoresSafeArea()
-
+            
             VStack {
-                Spacer()
-                
                 // Main ticket design
-                modernTicketView
+                simpleTicketView
                     .padding(.horizontal, 20)
-                
-                Spacer()
             }
 
             if showTransferSuccess {
@@ -180,200 +76,108 @@ struct TicketDetailView: View {
         }
     }
 
-    // MARK: - Modern Ticket View
+    // MARK: - Simple Ticket View (Modified to look like a vertical business card)
 
-    private var modernTicketView: some View {
-        GeometryReader { geometry in
-            let ticketHeight = geometry.size.height * 0.75
-            let topSectionHeight = ticketHeight / 2
-            let bottomSectionHeight = ticketHeight / 2
+    private var simpleTicketView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // 1. --- Logo/Title Top Section ---
             
-            ZStack {
-                // Ticket shape background
-                ModernTicketShape()
-                    .fill(Color.black)
-                    .shadow(color: Color.white.opacity(0.05), radius: 30, y: 20)
+            // 2. --- Event Details Section (Left-Aligned Stack) ---
+            VStack(alignment: .leading, spacing: 20) {
                 
-                // Border overlay
-                ModernTicketShape()
-                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                
-                VStack(spacing: 0) {
-                    // Top section - Event details
-                    VStack(spacing: 14) {
-                        // Status badge
-                        HStack {
-                            Spacer()
-                            statusBadge
-                            Spacer()
-                        }
-                        .padding(.top, 16)
-                        
-                        // Event name - Large and bold
-                        Text(ticketWithEvent.event.name.uppercased())
-                            .font(.custom("Avenir", size: 28))
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.7)
-                            .padding(.horizontal, 28)
-                            .tracking(1)
-                        
-                        // Venue
-                        Text(ticketWithEvent.event.venue.uppercased())
-                            .font(.custom("Avenir", size: 12).weight(.semibold))
-                            .foregroundColor(.white.opacity(0.6))
-                            .tracking(2)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 28)
-                        
-                        // Date and time display
-                        HStack(spacing: 0) {
-                            // Date block
-                            VStack(spacing: 4) {
-                                Text("\(formatDateDay(ticketWithEvent.event.startTime ?? Date())) \(formatDateMonth(ticketWithEvent.event.startTime ?? Date()))")
-                                    .font(.custom("Avenir", size: 24))
-                                    .foregroundColor(.white)
-                                
-                                Text("DATE")
-                                    .font(.custom("Avenir", size: 12))
-                                    .foregroundColor(.white.opacity(0.5))
-                                    .tracking(2)
-                            }
-                            .frame(maxWidth: .infinity)
-                            
-                            // Vertical divider
-                            Rectangle()
-                                .fill(Color.white.opacity(0.15))
-                                .frame(width: 1, height: 70)
-                            
-                            // Time block
-                            VStack(spacing: 4) {
-                                Text(formatTime(ticketWithEvent.event.startTime ?? Date()))
-                                    .font(.custom("Avenir", size: 24))
-                                    .foregroundColor(.white)
-                                
-                                Text("DOORS OPEN")
-                                    .font(.custom("Avenir", size: 12))
-                                    .foregroundColor(.white.opacity(0.5))
-                                    .tracking(2)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal, 32)
-                        .padding(.bottom, 16)
-                    }
-                    .frame(height: topSectionHeight)
+                // Date & Time Block
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(ticketWithEvent.event.name.uppercased())
+                        .font(.custom("Helvetica", size: 20).weight(.bold))
+                        .kerning(-1.5)
+                        .foregroundColor(.black)
+
+            
+                    Text(ticketWithEvent.event.venue.uppercased())
+                        .appCard()
+                        .foregroundColor(.black)
+
                     
-                    // Dashed separator - positioned at the notch level
-                    DashedSeparator()
-                        .padding(.horizontal, 24)
+                    Text("\(formatDateDay(ticketWithEvent.event.startTime ?? Date())) \(formatDateMonth(ticketWithEvent.event.startTime ?? Date())) \(formatDateYear(ticketWithEvent.event.startTime ?? Date()))")
+                        .appCard()
+                        .foregroundColor(.black)
                     
-                    // Bottom section - QR code
-                    VStack(spacing: 10) {
-                        if appState.burnerManager.hasCompletedSetup {
-                            // QR Code section
-                            Button(action: {
-                                coordinator.showFullScreenQRCode(for: ticketWithEvent.ticket)
-                            }) {
-                                VStack(spacing: 12) {
-                                    QRCodeView(
-                                        data: qrCodeData,
-                                        size: 190,
-                                        backgroundColor: .white,
-                                        foregroundColor: .black
-                                    )
-                                    .padding(5)
-                                    .background(.white)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                    )
-                                }
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        } else {
-                            // Locked state with setup button
-                            VStack(spacing: 16) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.white.opacity(0.05))
-                                        .frame(width: 200, height: 200)
-
-                                    VStack(spacing: 10) {
-                                        Image(systemName: "lock.fill")
-                                            .font(.system(size: 60))
-                                            .foregroundColor(.white.opacity(0.3))
-
-                                        Button(action: {
-                                            showBurnerSetup = true
-                                        }) {
-                                            Text("COMPLETE SETUP")
-                                                .font(.custom("Avenir", size: 15).weight(.bold))
-                                                .foregroundColor(.black)
-                                                .padding(.horizontal, 32)
-                                                .padding(.vertical, 12)
-                                                .background(Color.white)
-                                                .clipShape(Capsule())
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                    }
-                                }
-
-                            }
-                        }
-
-                        // Ticket number - only show if burner mode is setup
-                        if appState.burnerManager.hasCompletedSetup {
-                            Text(ticketWithEvent.ticket.ticketNumber ?? "N/A")
-                                .font(.custom("Avenir", size: 15).weight(.black))
-                                .foregroundColor(.white)
-                                .tracking(3)
-                                .padding(.bottom, 8)
-                        }
-                    }
-                    .frame(height: bottomSectionHeight)
+                    Text(formatTime(ticketWithEvent.event.startTime ?? Date()))
+                        .appCard()
+                        .foregroundColor(.black)
+                    
+       
+                    Text((ticketWithEvent.ticket.status.uppercased()))
+                        .appCard()
+                            .foregroundColor(.black)
+                    
+                    Text(ticketWithEvent.ticket.ticketNumber ?? "N/A")
+                        .appCard()
+                        .foregroundColor(.black)
                 }
             }
-            .frame(width: geometry.size.width, height: ticketHeight)
-            .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+            .padding(.top, 24)
+            .padding(.horizontal, 32)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.white)
+
+            
+            // 3. --- QR Code Section ---
+            VStack(spacing: 20) {
+                if appState.burnerManager.hasCompletedSetup {
+                    // QR Code
+                    Button(action: {
+                        coordinator.showFullScreenQRCode(for: ticketWithEvent.ticket)
+                    }) {
+                        QRCodeView(
+                            data: qrCodeData,
+                            size: 300,
+                            backgroundColor: .black,
+                            foregroundColor: .white
+                        )
+                        .padding(5)
+                        .background(.white)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                } else {
+                    // Locked state with setup button
+                    VStack(spacing: 16) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.05))
+                                .frame(width: 220, height: 220)
+
+                            VStack(spacing: 15) {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 70))
+                                    .foregroundColor(.white.opacity(0.3))
+
+                                Button(action: {
+                                    showBurnerSetup = true
+                                }) {
+                                    Text("COMPLETE SETUP")
+                                        .font(.custom("Helvetica", size: 15).weight(.bold))
+                                        .foregroundColor(.black)
+                                        .padding(.horizontal, 32)
+                                        .padding(.vertical, 12)
+                                        .background(Color.white)
+                                        .clipShape(Capsule())
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.top, 40)
+            .padding(.bottom, 40)
+            .frame(maxWidth: .infinity)
+            .background(Color.white) // Dark card background
         }
-        .padding(.bottom, 68)
-    }
-    
-    // MARK: - Status Badge
-    
-    private var statusBadge: some View {
-        Text(ticketWithEvent.ticket.status.uppercased())
-            .font(.custom("Avenir", size: 10))
-            .foregroundColor(statusColor)
-            .tracking(2)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 6)
-            .background(
-                Capsule()
-                    .fill(statusColor.opacity(0.15))
-            )
-            .overlay(
-                Capsule()
-                    .stroke(statusColor.opacity(0.3), lineWidth: 1)
-            )
-    }
-    
-    private var statusColor: Color {
-        switch ticketWithEvent.ticket.status.lowercased() {
-        case "confirmed":
-            return Color.green
-        case "pending":
-            return Color.yellow
-        case "cancelled":
-            return Color.red
-        default:
-            return Color.white
-        }
+
+        .padding(.vertical, 32)
     }
 
-    // MARK: - Helper Methods
 
     private var qrCodeData: String {
         return ticketWithEvent.ticket.qrCode ?? "INVALID_TICKET"
@@ -384,11 +188,17 @@ struct TicketDetailView: View {
         formatter.dateFormat = "dd"
         return formatter.string(from: date)
     }
-    
+
     private func formatDateMonth(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM"
         return formatter.string(from: date).uppercased()
+    }
+    
+    private func formatDateYear(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy"
+        return formatter.string(from: date)
     }
 
     private func formatTime(_ date: Date) -> String {
@@ -480,17 +290,17 @@ struct FullScreenQRCodeView: View {
 
             VStack(spacing: 32) {
                 Spacer()
-                
+
                 VStack(spacing: 12) {
                     Text(ticketWithEvent.event.name.uppercased())
-                        .font(.custom("Avenir", size: 24))
+                        .font(.custom("Helvetica", size: 24))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .tracking(1)
                         .padding(.horizontal, 40)
-                    
+
                     Text(ticketWithEvent.event.venue.uppercased())
-                        .font(.custom("Avenir", size: 12).weight(.semibold))
+                        .font(.custom("Helvetica", size: 12).weight(.semibold))
                         .foregroundColor(.white.opacity(0.5))
                         .tracking(2)
                 }
@@ -509,7 +319,7 @@ struct FullScreenQRCodeView: View {
 
                 // Ticket number (without "TICKET №" label)
                 Text(ticketWithEvent.ticket.ticketNumber ?? "")
-                    .font(.custom("Avenir", size: 18))
+                    .font(.custom("Helvetica", size: 18))
                     .foregroundColor(.white.opacity(0.7))
                     .tracking(3)
 
@@ -520,7 +330,7 @@ struct FullScreenQRCodeView: View {
                     presentationMode.wrappedValue.dismiss()
                 }) {
                     Text("CLOSE")
-                        .font(.custom("Avenir", size: 15))
+                        .font(.custom("Helvetica", size: 15))
                         .foregroundColor(.black)
                         .tracking(1.5)
                         .frame(maxWidth: .infinity)
@@ -576,7 +386,7 @@ struct TicketViews_Previews: PreviewProvider {
             name: "Burner Nights",
             venue: "Lakota, Bristol",
             venueId: "venue001",
-            startTime: Date(),
+            startTime: Calendar.current.date(byAdding: .hour, value: 1, to: Date())!, // Set to near future for Live Activity logic
             endTime: Calendar.current.date(byAdding: .hour, value: 3, to: Date()),
             price: 15.0,
             maxTickets: 100,
@@ -599,7 +409,7 @@ struct TicketViews_Previews: PreviewProvider {
             ticketNumber: "BNR-001",
             eventName: "Burner Nights",
             venue: "Lakota, Bristol",
-            startTime: Date(),
+            startTime: Calendar.current.date(byAdding: .hour, value: 1, to: Date())!,
             totalPrice: 15.0,
             purchaseDate: Date(),
             status: "confirmed",
@@ -619,4 +429,3 @@ struct TicketViews_Previews: PreviewProvider {
         .preferredColorScheme(.dark)
     }
 }
-
