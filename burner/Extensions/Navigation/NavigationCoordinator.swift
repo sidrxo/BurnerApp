@@ -153,7 +153,6 @@ enum ModalPresentation: Identifiable {
     case ticketDetail(Ticket)
     case shareSheet(items: [Any])
     case passwordlessAuth
-    case fullScreenQRCode(Ticket)
     case SetLocation
 
     var id: String {
@@ -164,14 +163,13 @@ enum ModalPresentation: Identifiable {
         case .ticketDetail(let ticket): return "ticketDetail-\(ticket.id ?? "")"
         case .shareSheet: return "shareSheet"
         case .passwordlessAuth: return "passwordlessAuth"
-        case .fullScreenQRCode(let ticket): return "fullScreenQRCode-\(ticket.id ?? "")"
         case .SetLocation: return "SetLocation"
         }
     }
 
     var isFullScreen: Bool {
         switch self {
-        case .burnerSetup, .ticketDetail, .fullScreenQRCode, .passwordlessAuth, .ticketPurchase:
+        case .burnerSetup, .ticketDetail, .passwordlessAuth, .ticketPurchase:
             return true
         case .signIn, .SetLocation:
             return false
@@ -403,10 +401,6 @@ class NavigationCoordinator: ObservableObject {
             URL(string: "burner://event/\(event.id ?? "")") as Any
         ].compactMap { $0 }
         present(.shareSheet(items: items))
-    }
-
-    func showFullScreenQRCode(for ticket: Ticket) {
-        present(.fullScreenQRCode(ticket))
     }
 
     // MARK: - Reset

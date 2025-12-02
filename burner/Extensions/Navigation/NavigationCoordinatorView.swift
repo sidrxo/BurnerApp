@@ -117,15 +117,6 @@ struct NavigationCoordinatorView<Content: View>: View {
                     }
                 }
             ))
-
-        case .fullScreenQRCode(let ticket):
-            FullScreenQRCodeView(
-                ticketWithEvent: TicketWithEventData(
-                    ticket: ticket,
-                    event: createPlaceholderEvent(from: ticket)
-                ),
-                qrCodeData: ticket.qrCode ?? ""
-            )
         }
     }
 }
