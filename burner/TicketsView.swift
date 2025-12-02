@@ -190,7 +190,11 @@ struct TicketsView: View {
 
             Spacer()
             Button(action: {
-                coordinator.ticketsPath.append(NavigationDestination.settings)
+                if Auth.auth().currentUser == nil {
+                       coordinator.showSignIn()
+                   } else {
+                       coordinator.ticketsPath.append(NavigationDestination.settings)
+                   }
             }) {
                 ZStack {
 
@@ -253,7 +257,7 @@ struct TicketsView: View {
         GeometryReader { geometry in
             VStack(spacing: 20) {
                 // ✅ Fixed-height frame for image
-                Image("user")
+                Image("ticket")
                     .resizable()
                     .scaledToFit()
                     .frame(height: 140) // fixed height
