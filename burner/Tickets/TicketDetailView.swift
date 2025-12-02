@@ -22,6 +22,7 @@ struct TicketDetailView: View {
     @State private var liveActivityUpdateTimer: Timer?
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack {
@@ -40,7 +41,7 @@ struct TicketDetailView: View {
                 HStack {
                     Spacer()
                     CloseButton(action: {
-                        coordinator.navigateBack()
+                        dismiss()
                     }, isDark: true)
                     .padding(.top, 60)
                     .padding(.trailing, 20)

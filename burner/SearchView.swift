@@ -110,13 +110,11 @@ struct SearchView: View {
                     .padding(.bottom, 2)
 
                 Spacer()
-                Button(action: {
-                }) {
-                    ZStack {
-                        Rectangle()
-                            .fill(.black) // This colors the shape itself
-                            .frame(width: 38, height: 38)
-                    }
+
+                ZStack {
+                    Rectangle()
+                        .fill(.black)
+                        .frame(width: 38, height: 38)
                 }
             }
             .padding(.horizontal, 10)
