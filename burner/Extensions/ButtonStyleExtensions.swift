@@ -1,95 +1,51 @@
 import SwiftUI
 
-// MARK: - Button Style Modifiers
-extension View {
-    /// Primary button style - used for main action buttons like sign-in buttons
-    /// Background with border and full width
-    func primaryButtonStyle(
-        backgroundColor: Color = Color.black.opacity(0.7),
-        foregroundColor: Color = .white,
-        borderColor: Color = Color.white.opacity(0.2)
-    ) -> some View {
-        self
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(borderColor, lineWidth: 1)
-            )
-    }
-    /// Secondary button style - used for call-to-action buttons
-    /// Solid background, no border
-    func secondaryButtonStyle(
-        backgroundColor: Color = .white,
-        foregroundColor: Color = .black,
-        cornerRadius: CGFloat = 8
-    ) -> some View {
-        self
-            .padding(.vertical, 12)
-            .background(backgroundColor)
-            .foregroundColor(foregroundColor) // ✅ Fix
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-    }
-
-    /// Icon button style - used for icon-only buttons like bookmark/share
-    /// Square/rounded button with background
-    func iconButtonStyle(
-        size: CGFloat = 50,
-        backgroundColor: Color = Color.white.opacity(0.1),
-        cornerRadius: CGFloat = 12
-    ) -> some View {
-        self
-            .frame(width: size, height: size)
-            .background(backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-    }
-    
-}
-
-// MARK: - Button Styles (ButtonStyle protocol implementations)
+// MARK: - Unified Button Styles (ButtonStyle protocol implementations)
 
 /// Primary button style with scaling effect on press
+/// Used for main action buttons - white background with black text
 struct PrimaryButton: ButtonStyle {
-    var backgroundColor: Color = Color.black.opacity(0.7)
-    var foregroundColor: Color = .white
-    var borderColor: Color = Color.white.opacity(0.2)
+    var backgroundColor: Color = .white
+    var foregroundColor: Color = .black
+    var maxWidth: CGFloat? = nil
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .appBody()
             .foregroundColor(foregroundColor)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
+            .frame(maxWidth: maxWidth)
+            .padding(.vertical, 12)
             .background(backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(borderColor, lineWidth: 1)
-            )
+            .clipShape(Capsule())
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
 /// Secondary button style with scaling effect on press
+/// Used for outlined buttons - transparent background with border
 struct SecondaryButton: ButtonStyle {
-    var backgroundColor: Color = .white
-    var foregroundColor: Color = .black
-    var cornerRadius: CGFloat = 8
+    var backgroundColor: Color = Color.gray.opacity(0.1)
+    var foregroundColor: Color = .white
+    var borderColor: Color = .white
+    var maxWidth: CGFloat? = nil
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .appBody()
             .foregroundColor(foregroundColor)
+            .frame(maxWidth: maxWidth)
             .padding(.vertical, 12)
             .background(backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(borderColor, lineWidth: 1))
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
 /// Icon button style with scaling effect on press
+/// Used for icon-only buttons like bookmark/share
 struct IconButton: ButtonStyle {
     var size: CGFloat = 50
     var backgroundColor: Color = Color.white.opacity(0.05)
@@ -116,5 +72,57 @@ struct NoHighlightButtonStyle: ButtonStyle {
 extension ButtonStyle where Self == NoHighlightButtonStyle {
     static var noHighlight: NoHighlightButtonStyle {
         NoHighlightButtonStyle()
+    }
+}
+
+// MARK: - Convenience Button Component
+
+/// Convenience button component with primary/secondary variants
+struct BurnerButton: View {
+    enum Style {
+        case primary    // White background, black text
+        case secondary  // Outlined, white text
+    }
+
+    let title: String
+    let style: Style
+    let maxWidth: CGFloat?
+    let action: () -> Void
+
+    init(
+        _ title: String,
+        style: Style = .primary,
+        maxWidth: CGFloat? = nil,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.style = style
+        self.maxWidth = maxWidth
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+        }
+        .buttonStyle(style == .primary
+            ? AnyButtonStyle(PrimaryButton(maxWidth: maxWidth))
+            : AnyButtonStyle(SecondaryButton(maxWidth: maxWidth))
+        )
+    }
+}
+
+// Helper to erase ButtonStyle type
+struct AnyButtonStyle: ButtonStyle {
+    private let _makeBody: (Configuration) -> AnyView
+
+    init<S: ButtonStyle>(_ style: S) {
+        _makeBody = { configuration in
+            AnyView(style.makeBody(configuration: configuration))
+        }
+    }
+
+    func makeBody(configuration: Configuration) -> some View {
+        _makeBody(configuration)
     }
 }

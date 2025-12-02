@@ -17,7 +17,7 @@ struct TicketGridItem: View {
                     if let url = URL(string: ticketWithEvent.event.imageUrl), !ticketWithEvent.event.imageUrl.isEmpty {
                         KFImage(url)
                             .placeholder {
-                                imagePlaceholder
+                                ImagePlaceholder(size: geometry.size.width, cornerRadius: 12, iconSize: 24)
                             }
                             .resizable()
                             .scaledToFill()
@@ -29,7 +29,7 @@ struct TicketGridItem: View {
                                 }
                             }
                     } else {
-                        imagePlaceholder
+                        ImagePlaceholder(size: geometry.size.width, cornerRadius: 12, iconSize: 24)
                             .frame(width: geometry.size.width, height: geometry.size.width)
                     }
                 }
@@ -57,16 +57,6 @@ struct TicketGridItem: View {
         }
     }
 
-    private var imagePlaceholder: some View {
-        Rectangle()
-            .fill(Color.gray.opacity(0.3))
-            .overlay(
-                Image(systemName: "music.note")
-                    .font(.system(size: 24))
-                    .foregroundColor(.gray)
-            )
-    }
-    
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
@@ -116,23 +106,14 @@ struct TicketsView: View {
         }
         return result
     }
-    
-    // Helper function to determine if an event should be considered "past"
-    private func isEventPast(_ event: Event) -> Bool {
-        guard let startTime = event.startTime else { return true }
-        let calendar = Calendar.current
-        let nextDayEnd = calendar.dateInterval(of: .day, for: startTime)?.end ?? startTime
-        let nextDay6AM = calendar.date(byAdding: .hour, value: 6, to: nextDayEnd) ?? startTime
-        return Date() > nextDay6AM
-    }
-    
+
     private var filteredTickets: [TicketWithEventData] {
         var result = ticketsWithEvents
         switch selectedFilter {
         case .upcoming:
-            result = result.filter { !isEventPast($0.event) }
+            result = result.filter { !$0.event.isPast }
         case .past:
-            result = result.filter { isEventPast($0.event) }
+            result = result.filter { $0.event.isPast }
         }
         if !searchText.isEmpty {
             result = result.filter { ticketWithEvent in
@@ -144,14 +125,14 @@ struct TicketsView: View {
             ($0.event.startTime ?? Date.distantFuture) < ($1.event.startTime ?? Date.distantFuture)
         }
     }
-    
+
     private var upcomingTickets: [TicketWithEventData] {
-        filteredTickets.filter { !isEventPast($0.event) }
+        filteredTickets.filter { !$0.event.isPast }
     }
-    
+
     private var pastTickets: [TicketWithEventData] {
         filteredTickets.filter { ticketWithEvent in
-            isEventPast(ticketWithEvent.event) &&
+            ticketWithEvent.event.isPast &&
             ticketWithEvent.ticket.status != "cancelled"
         }
     }

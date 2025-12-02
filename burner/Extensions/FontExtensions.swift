@@ -80,4 +80,17 @@ extension View {
     func appButton() -> some View {
         self.font(.appButton)
     }
+
+    // MARK: - Conditional View Modifier
+
+    /// Conditionally applies a transformation to a view
+    /// Usage: .if(condition) { view in view.modifier(...) }
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
+    }
 }

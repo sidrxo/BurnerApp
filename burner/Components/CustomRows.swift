@@ -66,7 +66,7 @@ struct EventRow: View {
             if let url = URL(string: event.imageUrl), !event.imageUrl.isEmpty {
                 KFImage(url)
                     .placeholder {
-                        imagePlaceholder
+                        ImagePlaceholder(size: 60, cornerRadius: 8)
                     }
                     .resizable()
                     .scaledToFill()
@@ -79,20 +79,9 @@ struct EventRow: View {
                         }
                     }
             } else {
-                imagePlaceholder
+                ImagePlaceholder(size: 60, cornerRadius: 8)
             }
         }
-    }
-
-    private var imagePlaceholder: some View {
-        RoundedRectangle(cornerRadius: 8)
-            .fill(Color.gray.opacity(0.3))
-            .frame(width: 60, height: 60)
-            .overlay(
-                Image(systemName: "music.note")
-                    .font(.appIcon)
-                    .foregroundColor(.gray)
-            )
     }
     
     // MARK: - Event Details
@@ -180,20 +169,10 @@ struct EventRow: View {
                 if ticket.status == "confirmed" || ticket.status == "used" {
                     Image(systemName: "qrcode")
                         .font(.appIcon)
-                        .foregroundColor(isPastEvent ? .gray : .white)
+                        .foregroundColor(event.isPast ? .gray : .white)
                 }
             }
         }
-    }
-    
-    // MARK: - Helper Properties
-    private var isPastEvent: Bool {
-        guard let startTime = event.startTime else { return false }
-        
-        let calendar = Calendar.current
-        let nextDayEnd = calendar.dateInterval(of: .day, for: startTime)?.end ?? startTime
-        let nextDay6AM = calendar.date(byAdding: .hour, value: 6, to: nextDayEnd) ?? startTime
-        return Date() > nextDay6AM
     }
 }
 
@@ -348,15 +327,5 @@ struct BookmarkButton: View {
     private var isToggling: Bool {
         guard let eventId = event.id else { return false }
         return bookmarkManager.isTogglingBookmark[eventId] ?? false
-    }
-}
-
-
-// MARK: - Supporting Types
-struct TicketWithEventData: Codable, Identifiable {
-    let ticket: Ticket
-    let event: Event
-    var id: String {
-        ticket.id ?? UUID().uuidString
     }
 }
