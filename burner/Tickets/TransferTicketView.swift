@@ -74,11 +74,19 @@ struct TransferTicketView: View {
                             .autocorrectionDisabled(true)
                             .keyboardType(.emailAddress)
                             .textContentType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .submitLabel(.continue)
                             .padding()
                             .background(Color.white.opacity(0.1))
                             .cornerRadius(12)
                             .foregroundColor(.white)
                             .appBody()
+                            .onSubmit {
+                                if !recipientEmail.isEmpty {
+                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                    showConfirmation = true
+                                }
+                            }
                     }
                     .padding(.horizontal, 40)
                     .padding(.bottom, 30)

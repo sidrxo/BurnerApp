@@ -840,41 +840,47 @@ struct SignInSheetView: View {
             }
 
             triggerSuccessFeedback()
-            NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
 
-            // ✅ Merge local preferences with Firebase preferences
-            Task { @MainActor in
-                let syncService = PreferencesSyncService()
-                let localPrefs = LocalPreferences()
+            // ✅ Delay notification to allow UI to update before modal dismisses
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
 
-                // Check if user has local preferences from guest onboarding
-                let hasLocalPrefs = localPrefs.hasAnyPreferences
+                // ✅ Merge local preferences with Firebase preferences
+                Task { @MainActor in
+                    let syncService = PreferencesSyncService()
+                    let localPrefs = LocalPreferences()
 
-                // Check if user has existing preferences in Firebase
-                if let firebasePrefs = await syncService.loadPreferencesFromFirebase() {
-                    if firebasePrefs.hasAnyPreferences {
-                        // User has existing preferences
-                        if hasLocalPrefs {
-                            // Merge local + Firebase preferences
-                            await syncService.mergePreferences(localPreferences: localPrefs)
-                        } else {
-                            // Just load Firebase preferences
-                            firebasePrefs.saveToUserDefaults()
+                    // Check if user has local preferences from guest onboarding
+                    let hasLocalPrefs = localPrefs.hasAnyPreferences
+
+                    // Check if user has existing preferences in Firebase
+                    if let firebasePrefs = await syncService.loadPreferencesFromFirebase() {
+                        if firebasePrefs.hasAnyPreferences {
+                            // User has existing preferences
+                            if hasLocalPrefs {
+                                // Merge local + Firebase preferences
+                                await syncService.mergePreferences(localPreferences: localPrefs)
+                            } else {
+                                // Just load Firebase preferences
+                                firebasePrefs.saveToUserDefaults()
+                            }
+                            // User has preferences, skip onboarding
+                            NotificationCenter.default.post(name: NSNotification.Name("SkipOnboardingToExplore"), object: nil)
+                        } else if hasLocalPrefs {
+                            // User has local but no Firebase preferences, sync local to Firebase
+                            await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
                         }
-                        // User has preferences, skip onboarding
-                        NotificationCenter.default.post(name: NSNotification.Name("SkipOnboardingToExplore"), object: nil)
                     } else if hasLocalPrefs {
-                        // User has local but no Firebase preferences, sync local to Firebase
+                        // No Firebase preferences, but has local ones, sync them
                         await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
                     }
-                } else if hasLocalPrefs {
-                    // No Firebase preferences, but has local ones, sync them
-                    await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
+                }
+
+                // ✅ Dismiss sign-in sheet with additional delay for smooth transition
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.showingSignIn = false
                 }
             }
-
-            // Dismiss sign-in sheet
-            showingSignIn = false
         }
     }
     

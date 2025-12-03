@@ -115,25 +115,21 @@ struct TicketPurchaseView: View {
                                             HStack(spacing: 12) {
                                                 Image(systemName: "applelogo")
                                                     .font(.appIcon)
-                                                
+
                                                 Text("BUY WITH APPLE PAY")
-                                                    .font(.appFont(size: 17))
+                                                    .appBody()
                                             }
                                             .foregroundColor(.black)
                                             .frame(height: 50)
                                             .frame(maxWidth: .infinity)
                                             .background(Color.white)
-                                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                                            )
+                                            .clipShape(Capsule())
                                         }
                                         .buttonStyle(PlainButtonStyle())
                                         .accessibilityLabel("Buy with Apple Pay")
                                         .disabled(hasInitiatedPurchase)
                                     }
-                                    
+
                                     Button(action: {
                                         withAnimation {
                                             if !paymentService.paymentMethods.isEmpty {
@@ -146,18 +142,18 @@ struct TicketPurchaseView: View {
                                         HStack(spacing: 12) {
                                             Image(systemName: "creditcard.fill")
                                                 .font(.appIcon)
-                                            
+
                                             Text("BUY WITH CARD")
-                                                .font(.appFont(size: 17))
+                                                .appBody()
                                         }
                                         .foregroundColor(.white)
                                         .frame(height: 50)
                                         .frame(maxWidth: .infinity)
-                                        .background(Color.black.opacity(0.7))
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .background(Color.black.opacity(0.8))
+                                        .clipShape(Capsule())
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                            Capsule()
+                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
                                         )
                                     }
                                     .buttonStyle(PlainButtonStyle())
@@ -199,17 +195,13 @@ struct TicketPurchaseView: View {
                                                     HStack(spacing: 12) {
                                                         Image(systemName: "creditcard.fill").font(.appIcon)
                                                         Text("PAY £\(String(format: "%.2f", event.price))")
-                                                            .font(.appFont(size: 17))
+                                                            .appBody()
                                                     }
                                                     .foregroundColor(isCardValid ? .black : .gray)
                                                     .frame(height: 50)
                                                     .frame(maxWidth: .infinity)
                                                     .background(isCardValid ? .white : Color.gray.opacity(0.5))
-                                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                                    .overlay(
-                                                        RoundedRectangle(cornerRadius: 12)
-                                                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                                                    )
+                                                    .clipShape(Capsule())
                                                 }
                                                 .disabled(!isCardValid || hasInitiatedPurchase)
                                             } else if currentStep == .savedCards {
@@ -221,17 +213,13 @@ struct TicketPurchaseView: View {
                                                     HStack(spacing: 12) {
                                                         Image(systemName: "creditcard.fill").font(.appIcon)
                                                         Text("PAY £\(String(format: "%.2f", event.price))")
-                                                            .font(.appFont(size: 17))
+                                                            .appBody()
                                                     }
                                                     .foregroundColor(selectedSavedCard != nil ? .black : .gray)
                                                     .frame(height: 50)
                                                     .frame(maxWidth: .infinity)
                                                     .background(selectedSavedCard != nil ? .white : Color.gray.opacity(0.5))
-                                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                                    .overlay(
-                                                        RoundedRectangle(cornerRadius: 12)
-                                                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                                                    )
+                                                    .clipShape(Capsule())
                                                 }
                                                 .disabled(selectedSavedCard == nil || hasInitiatedPurchase)
                                             }

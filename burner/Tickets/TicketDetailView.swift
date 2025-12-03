@@ -30,9 +30,9 @@ struct TicketDetailView: View {
             Color.black
                 .ignoresSafeArea()
 
-            VStack(spacing: 24) {
+            VStack(spacing: 0) {
                 Spacer()
-                
+
                 // Flippable ticket card
                 ZStack {
                     // Back of card (Event Image)
@@ -42,7 +42,7 @@ struct TicketDetailView: View {
                             flipped ? Angle(degrees: 0) : Angle(degrees: -180),
                             axis: (x: 0, y: 1, z: 0)
                         )
-                    
+
                     // Front of card (Ticket Details)
                     simpleTicketView
                         .opacity(flipped ? 0 : 1)
@@ -50,10 +50,27 @@ struct TicketDetailView: View {
                             flipped ? Angle(degrees: 180) : Angle(degrees: 0),
                             axis: (x: 0, y: 1, z: 0)
                         )
+
+                    // Close button positioned on the card (only on details side)
+                    if !flipped {
+                        VStack {
+                            HStack {
+                                Spacer()
+                                CloseButton(action: {
+                                    dismiss()
+                                }, isDark: false)
+                                .padding(.top, 20)
+                                .padding(.trailing, 20)
+                            }
+                            Spacer()
+                        }
+                    }
                 }
                 .frame(height: 550)
                 .padding(.horizontal, 20)
-                
+
+                Spacer()
+
                 // Fixed-height container for transfer button (keeps layout stable)
                 VStack {
                     if !flipped && appState.burnerManager.hasCompletedSetup && ticketWithEvent.ticket.status == "confirmed" {
@@ -76,24 +93,10 @@ struct TicketDetailView: View {
                     }
                 }
                 .frame(height: 40) // Fixed height to maintain spacing
-                .padding(.top, 8)
-                
-                Spacer()
-            }
+                .padding(.top, 16)
+                .padding(.bottom, 40)
 
-            // Close button (only on details side)
-            if !flipped {
-                VStack {
-                    HStack {
-                        Spacer()
-                        CloseButton(action: {
-                            dismiss()
-                        }, isDark: true)
-                        .padding(.top, 100)
-                        .padding(.trailing, 40)
-                    }
-                    Spacer()
-                }
+                Spacer()
             }
 
             if showTransferSuccess {

@@ -339,21 +339,56 @@ struct TicketsView: View {
     }
     
     private var emptyFilteredView: some View {
-        VStack(spacing: 16) {
-            VStack(spacing: 8) {
-                Text("No Results Found")
-                    .appSectionHeader()
-                    .foregroundColor(.white)
-                Text("Try adjusting your search terms")
-                    .appBody()
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+        Group {
+            // Show custom empty state for past tickets filter
+            if selectedFilter == .past && !searchText.isEmpty == false {
+                noPastTicketsEmptyState
+            } else {
+                // Generic search results empty state
+                VStack(spacing: 16) {
+                    VStack(spacing: 8) {
+                        Text("No Results Found")
+                            .appSectionHeader()
+                            .foregroundColor(.white)
+                        Text("Try adjusting your search terms")
+                            .appBody()
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.black)
+                .padding(.bottom, 16)
             }
+        }
+    }
+
+    private var noPastTicketsEmptyState: some View {
+        GeometryReader { geometry in
+            VStack(spacing: 20) {
+                Image("ticket")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 140)
+                    .frame(maxWidth: .infinity)
+                    .padding(.bottom, 30)
+
+                VStack(spacing: 8) {
+                    TightHeaderText("NO PAST", "TICKETS", alignment: .center)
+                        .frame(maxWidth: .infinity)
+                    Text("Your ticket history will appear here.")
+                        .appCard()
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .position(x: geometry.size.width / 2, y: geometry.size.height / 2 - 50)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
-        .padding(.bottom, 16)
     }
     
     private var ticketsList: some View {

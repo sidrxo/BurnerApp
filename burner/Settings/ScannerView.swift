@@ -255,23 +255,26 @@ struct ScannerView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if todaysEvents.isEmpty {
-                VStack(spacing: 20) {
-                    Image(systemName: "calendar.badge.exclamationmark")
-                        .font(.system(size: 60))
-                        .foregroundColor(.gray)
-                        .padding(.top, 60)
-
-                    VStack(spacing: 8) {
-                        Text("No Events Today")
-                            .appSectionHeader()
-                            .foregroundColor(.white)
-
-                        Text("There are no events scheduled for today")
-                            .appBody()
+                GeometryReader { geometry in
+                    VStack(spacing: 20) {
+                        Image(systemName: "calendar.badge.exclamationmark")
+                            .font(.system(size: 60))
                             .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
+
+                        VStack(spacing: 8) {
+                            Text("No Events Today")
+                                .appSectionHeader()
+                                .foregroundColor(.white)
+
+                            Text("There are no events scheduled for today")
+                                .appBody()
+                                .foregroundColor(.gray)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 40)
+                        }
                     }
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
