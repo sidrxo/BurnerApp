@@ -11,6 +11,7 @@ struct SettingsView: View {
     @EnvironmentObject var coordinator: NavigationCoordinator
     @State private var currentUser: FirebaseAuth.User?
     @State private var showingAppPicker = false
+    @Environment(\.presentationMode) var presentationMode
     
     private let db = Firestore.firestore()
     
@@ -37,138 +38,134 @@ struct SettingsView: View {
         ZStack {
             Color.black
                 .edgesIgnoringSafeArea(.all)
-            
+
             VStack(spacing: 0) {
-                if currentUser != nil {
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            // ACCOUNT Section
-                            MenuSection(title: "ACCOUNT") {
-                                Button(action: {
-                                    coordinator.navigate(to: .accountDetails)
-                                }) {
-                                    MenuItemContent(
-                                        title: "Account Details",
-                                        subtitle: currentUser?.email ?? "View Account"
-                                    )
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(PlainButtonStyle())
-
-                                Button(action: {
-                                    coordinator.navigate(to: .bookmarks)
-                                }) {
-                                    MenuItemContent(
-                                        title: "Bookmarks",
-                                        subtitle: "Saved events"
-                                    )
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(PlainButtonStyle())
-
-                                Button(action: {
-                                    coordinator.navigate(to: .paymentSettings)
-                                }) {
-                                    MenuItemContent(
-                                        title: "Payment",
-                                        subtitle: "Cards & billing"
-                                    )
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(PlainButtonStyle())
-
-                                Button(action: {
-                                    coordinator.navigate(to: .transferTicketsList)
-                                }) {
-                                    MenuItemContent(
-                                        title: "Transfer Tickets",
-                                        subtitle: "Transfer your ticket to another user"
-                                    )
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(PlainButtonStyle())
-
-                                // Scanner access for authorized roles
-                                if (userRole == "scanner" && isScannerActive) ||
-                                    userRole == "siteAdmin" ||
-                                    userRole == "venueAdmin" ||
-                                    userRole == "subAdmin" {
-                                    Button(action: {
-                                        coordinator.navigate(to: .scanner)
-                                    }) {
-                                        MenuItemContent(
-                                            title: "Scanner",
-                                            subtitle: "Scan QR codes"
-                                        )
-                                        .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
+                ScrollView {
+                    VStack(spacing: 0) {
+                        // ACCOUNT Section
+                        MenuSection(title: "ACCOUNT") {
+                            Button(action: {
+                                coordinator.navigate(to: .accountDetails)
+                            }) {
+                                MenuItemContent(
+                                    title: "Account Details",
+                                    subtitle: currentUser?.email ?? "View Account"
+                                )
+                                .contentShape(Rectangle())
                             }
+                            .buttonStyle(PlainButtonStyle())
 
-                            // APP Section
-                            MenuSection(title: "APP") {
-                                // Show Setup Guide Button only when needed
-                                if needsBurnerSetup {
-                                    Button(action: {
-                                        coordinator.showBurnerSetup()
-                                    }) {
-                                        MenuItemContent(
-                                            title: "Setup Burner Mode",
-                                            subtitle: burnerManager.isSetupValid
-                                            ? "Configure app blocking"
-                                            : "Screen Time permissions needed"
-                                        )
-                                        .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
+                            Button(action: {
+                                coordinator.navigate(to: .bookmarks)
+                            }) {
+                                MenuItemContent(
+                                    title: "Bookmarks",
+                                    subtitle: "Saved events"
+                                )
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
 
+                            Button(action: {
+                                coordinator.navigate(to: .paymentSettings)
+                            }) {
+                                MenuItemContent(
+                                    title: "Payment",
+                                    subtitle: "Cards & billing"
+                                )
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            Button(action: {
+                                coordinator.navigate(to: .transferTicketsList)
+                            }) {
+                                MenuItemContent(
+                                    title: "Transfer Tickets",
+                                    subtitle: "Transfer your ticket to another user"
+                                )
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            // Scanner access for authorized roles
+                            if (userRole == "scanner" && isScannerActive) ||
+                                userRole == "siteAdmin" ||
+                                userRole == "venueAdmin" ||
+                                userRole == "subAdmin" {
                                 Button(action: {
-                                    coordinator.navigate(to: .notifications)
+                                    coordinator.navigate(to: .scanner)
                                 }) {
                                     MenuItemContent(
-                                        title: "Notifications",
-                                        subtitle: "Manage notification preferences"
-                                    )
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(PlainButtonStyle())
-
-                                Button(action: {
-                                    coordinator.navigate(to: .support)
-                                }) {
-                                    MenuItemContent(
-                                        title: "Help & Support",
-                                        subtitle: "Get help, terms, privacy"
+                                        title: "Scanner",
+                                        subtitle: "Scan QR codes"
                                     )
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
-
-                            // DEBUG Section - Only for siteadmin
-                            if userRole == "siteAdmin" {
-                                MenuSection(title: "DEBUG") {
-                                    Button(action: {
-                                        coordinator.navigate(to: .debugMenu)
-                                    }) {
-                                        MenuItemContent(
-                                            title: "Debug Menu",
-                                            subtitle: "Development tools"
-                                        )
-                                        .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                            }
-
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 100)
+
+                        // APP Section
+                        MenuSection(title: "APP") {
+                            // Show Setup Guide Button only when needed
+                            if needsBurnerSetup {
+                                Button(action: {
+                                    coordinator.showBurnerSetup()
+                                }) {
+                                    MenuItemContent(
+                                        title: "Setup Burner Mode",
+                                        subtitle: burnerManager.isSetupValid
+                                        ? "Configure app blocking"
+                                        : "Screen Time permissions needed"
+                                    )
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+
+                            Button(action: {
+                                coordinator.navigate(to: .notifications)
+                            }) {
+                                MenuItemContent(
+                                    title: "Notifications",
+                                    subtitle: "Manage notification preferences"
+                                )
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            Button(action: {
+                                coordinator.navigate(to: .support)
+                            }) {
+                                MenuItemContent(
+                                    title: "Help & Support",
+                                    subtitle: "Get help, terms, privacy"
+                                )
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+
+                        // DEBUG Section - Only for siteadmin
+                        if userRole == "siteAdmin" {
+                            MenuSection(title: "DEBUG") {
+                                Button(action: {
+                                    coordinator.navigate(to: .debugMenu)
+                                }) {
+                                    MenuItemContent(
+                                        title: "Debug Menu",
+                                        subtitle: "Development tools"
+                                    )
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+
                     }
-                } else {
-                    notSignedInSection
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 100)
                 }
             }
         }
@@ -185,6 +182,8 @@ struct SettingsView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedOut"))) { _ in
             currentUser = nil
+            // Dismiss settings view when user signs out
+            presentationMode.wrappedValue.dismiss()
         }
         .familyActivityPicker(
             isPresented: $showingAppPicker,
@@ -193,38 +192,5 @@ struct SettingsView: View {
                 set: { burnerManager.selectedApps = $0 }
             )
         )
-    }
-    // MARK: - Not signed in view
-    private var notSignedInSection: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 20) {
-                // ✅ Add fixed-height frame around image
-                Image("user")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 140) // ← fixed height
-                    .frame(maxWidth: .infinity) // center horizontally
-                    .padding(.bottom, 30)
-                
-                VStack(spacing: 8) {
-                    Text("WHERE WILL YOU GO")
-                        .appSectionHeader()
-                        .foregroundColor(.white)
-                    Text("Be part of what's next in music.")
-                        .appBody()
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                }
-                
-                BurnerButton("SIGN IN", style: .primary, maxWidth: 200) {
-                    coordinator.showSignIn()
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            .frame(width: geometry.size.width, height: geometry.size.height)
-            .position(x: geometry.size.width / 2, y: geometry.size.height / 2 - 50)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
     }
 }
