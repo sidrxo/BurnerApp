@@ -1,6 +1,6 @@
 //
 //  TicketDetailView.swift
-//  Updated with flip animation and fixed card positioning
+//  Updated with flip animation and fixed card width to match original
 //
 
 import SwiftUI
@@ -30,9 +30,9 @@ struct TicketDetailView: View {
             Color.black
                 .ignoresSafeArea()
 
-            VStack(spacing: 0) {
+            VStack(spacing: 24) {
                 Spacer()
-
+                
                 // Flippable ticket card
                 ZStack {
                     // Back of card (Event Image)
@@ -42,7 +42,7 @@ struct TicketDetailView: View {
                             flipped ? Angle(degrees: 0) : Angle(degrees: -180),
                             axis: (x: 0, y: 1, z: 0)
                         )
-
+                    
                     // Front of card (Ticket Details)
                     simpleTicketView
                         .opacity(flipped ? 0 : 1)
@@ -50,53 +50,47 @@ struct TicketDetailView: View {
                             flipped ? Angle(degrees: 180) : Angle(degrees: 0),
                             axis: (x: 0, y: 1, z: 0)
                         )
-
-                    // Close button positioned on the card (only on details side)
-                    if !flipped {
-                        VStack {
-                            HStack {
-                                Spacer()
-                                CloseButton(action: {
-                                    dismiss()
-                                }, isDark: false)
-                                .padding(.top, 20)
-                                .padding(.trailing, 20)
-                            }
-                            Spacer()
-                        }
-                    }
                 }
                 .frame(height: 550)
                 .padding(.horizontal, 20)
-
-                Spacer()
-
-                // Fixed-height container for transfer button (keeps layout stable)
-                VStack {
-                    if !flipped && appState.burnerManager.hasCompletedSetup && ticketWithEvent.ticket.status == "confirmed" {
-                        Button(action: {
-                            if ticketWithEvent.ticket.id != nil {
-                                coordinator.navigate(to: .transferTicket(ticketWithEvent.ticket))
-                            }
-                        }) {
-                            HStack(spacing: 6) {
-                                Text("TRANSFER TICKET")
-                                    .font(.custom("Helvetica", size: 14).weight(.bold))
-                                    .foregroundColor(.white)
-
-                                Image(systemName: "arrow.up.forward")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.white)
-                            }
+                
+                // Transfer ticket text below card
+                if !flipped && appState.burnerManager.hasCompletedSetup && ticketWithEvent.ticket.status == "confirmed" {
+                    Button(action: {
+                        if let ticketId = ticketWithEvent.ticket.id {
+                            coordinator.navigate(to: .transferTicket(ticketWithEvent.ticket))
                         }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                .frame(height: 40) // Fixed height to maintain spacing
-                .padding(.top, 16)
-                .padding(.bottom, 40)
+                    }) {
+                        HStack(spacing: 6) {
+                            Text("TRANSFER TICKET")
+                                .font(.custom("Helvetica", size: 14).weight(.bold))
+                                .foregroundColor(.white)
 
+                            Image(systemName: "arrow.up.forward")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.top, 8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                
                 Spacer()
+            }
+
+            // Close button (only on details side)
+            if !flipped {
+                VStack {
+                    HStack {
+                        Spacer()
+                        CloseButton(action: {
+                            dismiss()
+                        }, isDark: true)
+                        .padding(.top, 100)
+                        .padding(.trailing, 40)
+                    }
+                    Spacer()
+                }
             }
 
             if showTransferSuccess {

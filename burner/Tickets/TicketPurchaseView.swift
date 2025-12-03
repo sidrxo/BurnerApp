@@ -23,7 +23,8 @@ struct TicketPurchaseView: View {
     @State private var showSignIn = false
     @State private var pendingPaymentAction: (() -> Void)?
     @State private var showBurnerSetup = false
-    @State private var purchasePhase: PurchasePhase = .idle
+    @State private var isLoadingPayment = true
+    @State private var showLoadingSuccess = false
 
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var coordinator: NavigationCoordinator
@@ -33,12 +34,6 @@ struct TicketPurchaseView: View {
         case paymentMethod
         case cardInput
         case savedCards
-    }
-    
-    enum PurchasePhase {
-        case idle
-        case processing
-        case success
     }
     
     private var availableTickets: Int {
@@ -233,63 +228,7 @@ struct TicketPurchaseView: View {
                         }
                     }
                 }
-                .opacity(purchasePhase == .idle ? 1 : 0)
-                .animation(.easeInOut(duration: 0.2), value: purchasePhase)
-                
-                // ✅ IMPROVED: Immediate loading state
-                if purchasePhase == .processing {
-                    ZStack {
-                        Color.black.ignoresSafeArea()
-                        
-                        VStack(spacing: 24) {
-                            ProgressView()
-                                .scaleEffect(1.5)
-                                .tint(.white)
-                            
-                            Text("Processing Payment...")
-                                .font(.appFont(size: 18))
-                                .foregroundColor(.white.opacity(0.7))
-                        }
-                    }
-                    .transition(.opacity)
-                    .zIndex(1002)
-                }
-                
-                // ✅ IMPROVED: Success animation with smooth transition
-                if purchasePhase == .success {
-                    ZStack {
-                        Color.black.ignoresSafeArea()
-                        
-                        VStack(spacing: 24) {
-                            SuccessVideoPlayer(
-                                videoName: "success",
-                                onComplete: {
-                                    // Delay slightly to show final frame
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                        if !appState.burnerManager.hasCompletedSetup {
-                                            showBurnerSetup = true
-                                        } else {
-                                            presentationMode.wrappedValue.dismiss()
-                                        }
-                                    }
-                                }
-                            )
-                            .frame(width: 250, height: 250)
-                            
-                            VStack(spacing: 8) {
-                                Text("Payment Successful!")
-                                    .font(.appFont(size: 24))
-                                    .foregroundColor(.white)
-                                
-                                Text("Your ticket is ready")
-                                    .font(.appFont(size: 16))
-                                    .foregroundColor(.white.opacity(0.7))
-                            }
-                        }
-                    }
-                    .transition(.opacity)
-                    .zIndex(1003)
-                }
+                .opacity(showLoadingSuccess ? 0 : 1)
                 
                 // ✅ ERROR ALERT (only shown for errors)
                 if showingAlert && !isSuccess {
@@ -336,6 +275,18 @@ struct TicketPurchaseView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $showLoadingSuccess) {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                
+                LoadingSuccessView(
+                    isLoading: $isLoadingPayment,
+                    size: 60,
+                    lineWidth: 4,
+                    color: .white
+                )
+            }
+        }
         .sheet(isPresented: $showSignIn) {
             SignInSheetView(
                 showingSignIn: $showSignIn,
@@ -358,6 +309,19 @@ struct TicketPurchaseView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     action()
                     pendingPaymentAction = nil
+                }
+            }
+        }
+        .onChange(of: isLoadingPayment) { oldValue, newValue in
+            // When loading completes (success), wait for animation to finish then show next step
+            if !newValue {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                    showLoadingSuccess = false
+                    if !appState.burnerManager.hasCompletedSetup {
+                        showBurnerSetup = true
+                    } else {
+                        presentationMode.wrappedValue.dismiss()
+                    }
                 }
             }
         }
@@ -597,10 +561,9 @@ struct TicketPurchaseView: View {
 
         hasInitiatedPurchase = true
         
-        // ✅ Show processing immediately
-        withAnimation(.easeInOut(duration: 0.2)) {
-            purchasePhase = .processing
-        }
+        // ✅ Show loading animation
+        isLoadingPayment = true
+        showLoadingSuccess = true
 
         paymentService.processApplePayPayment(
             eventName: event.name,
@@ -612,15 +575,11 @@ struct TicketPurchaseView: View {
                 
                 if result.success {
                     self.viewModel.fetchEvents()
-                    // ✅ Smooth transition to success
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        self.purchasePhase = .success
-                    }
+                    // ✅ Trigger success animation
+                    self.isLoadingPayment = false
                 } else {
-                    // ✅ Return to idle and show error
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        self.purchasePhase = .idle
-                    }
+                    // ✅ Hide loading and show error
+                    self.showLoadingSuccess = false
                     if !result.message.isEmpty {
                         self.showError(result.message)
                     }
@@ -646,10 +605,9 @@ struct TicketPurchaseView: View {
 
         hasInitiatedPurchase = true
         
-        // ✅ Show processing immediately
-        withAnimation(.easeInOut(duration: 0.2)) {
-            purchasePhase = .processing
-        }
+        // ✅ Show loading animation
+        isLoadingPayment = true
+        showLoadingSuccess = true
 
         paymentService.processCardPayment(
             cardParams: cardParams,
@@ -662,13 +620,11 @@ struct TicketPurchaseView: View {
                 
                 if result.success {
                     self.viewModel.fetchEvents()
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        self.purchasePhase = .success
-                    }
+                    // ✅ Trigger success animation
+                    self.isLoadingPayment = false
                 } else {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        self.purchasePhase = .idle
-                    }
+                    // ✅ Hide loading and show error
+                    self.showLoadingSuccess = false
                     self.showError(result.message)
                 }
             }
@@ -691,10 +647,9 @@ struct TicketPurchaseView: View {
 
         hasInitiatedPurchase = true
         
-        // ✅ Show processing immediately
-        withAnimation(.easeInOut(duration: 0.2)) {
-            purchasePhase = .processing
-        }
+        // ✅ Show loading animation
+        isLoadingPayment = true
+        showLoadingSuccess = true
 
         paymentService.processSavedCardPayment(
             paymentMethodId: savedCard.id,
@@ -707,13 +662,11 @@ struct TicketPurchaseView: View {
                 
                 if result.success {
                     self.viewModel.fetchEvents()
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        self.purchasePhase = .success
-                    }
+                    // ✅ Trigger success animation
+                    self.isLoadingPayment = false
                 } else {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        self.purchasePhase = .idle
-                    }
+                    // ✅ Hide loading and show error
+                    self.showLoadingSuccess = false
                     self.showError(result.message)
                 }
             }
@@ -725,62 +678,5 @@ struct TicketPurchaseView: View {
         alertMessage = message
         isSuccess = false
         showingAlert = true
-    }
-}
-
-// MARK: - Success Video Player Component
-struct SuccessVideoPlayer: View {
-    let videoName: String
-    let onComplete: () -> Void
-    
-    @State private var player: AVPlayer?
-    
-    var body: some View {
-        ZStack {
-            if let player = player {
-                VideoPlayer(player: player)
-                    .disabled(true)
-                    .aspectRatio(contentMode: .fit)
-            } else {
-                ProgressView()
-                    .tint(.white)
-                    .scaleEffect(1.5)
-            }
-        }
-        .onAppear {
-            loadAndPlayVideo()
-        }
-        .onDisappear {
-            player?.pause()
-            NotificationCenter.default.removeObserver(self)
-        }
-    }
-    
-    private func loadAndPlayVideo() {
-        guard let videoURL = Bundle.main.url(forResource: videoName, withExtension: "mp4") else {
-            print("❌ Could not find video file: \(videoName).mp4")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                onComplete()
-            }
-            return
-        }
-        
-        let playerItem = AVPlayerItem(url: videoURL)
-        let newPlayer = AVPlayer(playerItem: playerItem)
-        newPlayer.isMuted = true
-        
-        // ✅ Start playing immediately
-        newPlayer.play()
-        
-        // ✅ Observe completion
-        NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime,
-            object: playerItem,
-            queue: .main
-        ) { _ in
-            onComplete()
-        }
-        
-        player = newPlayer
     }
 }

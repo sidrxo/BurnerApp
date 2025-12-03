@@ -13,6 +13,8 @@ struct DebugMenuView: View {
     // MARK: - New State for Presentation
     @State private var showBurnerModeSetup = false
     @State private var showOnboardingFlow = false
+    @State private var showLoadingSuccess = false
+    @State private var isLoadingSuccess = true
 
     // Three states: no event, before event starts, during event
     enum EventState {
@@ -100,6 +102,20 @@ struct DebugMenuView: View {
                         .buttonStyle(PlainButtonStyle())
                     }
 
+                    MenuSection(title: "UI COMPONENTS") {
+                        Button(action: {
+                            isLoadingSuccess = true
+                            showLoadingSuccess = true
+                        }) {
+                            MenuItemContent(
+                                title: "Show Loading Success Animation",
+                                subtitle: "Test spinner → circle fill → checkmark"
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+
                     MenuSection(title: "LIVE ACTIVITY") {
                         Button(action: {
                             cycleEventState()
@@ -144,6 +160,48 @@ struct DebugMenuView: View {
                 burnerManager: burnerManager,
                 onSkip: { showBurnerModeSetup = false }
             )
+        }
+        .fullScreenCover(isPresented: $showLoadingSuccess) {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                
+                VStack(spacing: 40) {
+                    LoadingSuccessView(
+                        isLoading: $isLoadingSuccess,
+                      
+                    )
+                    
+                    Button(action: {
+                        if isLoadingSuccess {
+                            isLoadingSuccess = false
+                            // Reset after animation completes
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                                showLoadingSuccess = false
+                            }
+                        } else {
+                            isLoadingSuccess = true
+                        }
+                    }) {
+                        Text(isLoadingSuccess ? "Complete Loading" : "Loading...")
+                            .font(.headline)
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(12)
+                    }
+                    .padding(.horizontal, 40)
+                    .disabled(!isLoadingSuccess)
+                    
+                    Button(action: {
+                        showLoadingSuccess = false
+                    }) {
+                        Text("Close")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
         }
     }
     
