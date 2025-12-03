@@ -17,82 +17,68 @@ struct TransferTicketView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                Spacer()
+                // Fixed top spacing for consistent alignment
+                Color.clear.frame(height: 100)
 
-                VStack(spacing: 24) {
-                    // Icon
-                    Image(systemName: "arrow.right.circle.fill")
-                        .font(.system(size: 60))
+                // Header positioned at consistent height
+                VStack(spacing: 0) {
+                    TightHeaderText("TRANSFER", "TICKET", alignment: .center)
+                        .frame(maxWidth: .infinity)
+                }
+                .frame(height: 120)
+
+                Text("Enter the recipient's email address")
+                    .appBody()
+                    .foregroundColor(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                    .lineSpacing(4)
+                    .padding(.bottom, 40)
+
+                // Email Input
+                VStack(alignment: .leading, spacing: 8) {
+                    TextField("Recipient Email", text: $recipientEmail)
+                        .textFieldStyle(.plain)
+                        .autocapitalization(.none)
+                        .keyboardType(.emailAddress)
+                        .padding()
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(12)
+                        .foregroundColor(.white)
+                        .appBody()
+
+                    if let error = transferError {
+                        Text(error)
+                            .appCaption()
+                            .foregroundColor(.red)
+                    }
+                }
+                .padding(.horizontal, 40)
+                .padding(.bottom, 24)
+
+                // Disclaimer
+                VStack(spacing: 8) {
+                    Text("Important")
+                        .appCaption()
                         .foregroundColor(.white)
 
-                    // Title
-                    VStack(spacing: 8) {
-                        Text("Transfer Ticket")
-                            .appHero()
-                            .foregroundColor(.white)
-
-                        Text("Enter the recipient's email address")
-                            .appBody()
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                    }
-
-                    // Email Input
-                    VStack(alignment: .leading, spacing: 8) {
-                        TextField("Recipient Email", text: $recipientEmail)
-                            .textFieldStyle(.plain)
-                            .autocapitalization(.none)
-                            .keyboardType(.emailAddress)
-                            .padding()
-                            .background(Color.white.opacity(0.1))
-                            .cornerRadius(12)
-                            .foregroundColor(.white)
-
-                        if let error = transferError {
-                            Text(error)
-                                .appCaption()
-                                .foregroundColor(.red)
-                        }
-                    }
-                    .padding(.horizontal, 24)
-
-                    // Disclaimer
-                    VStack(spacing: 8) {
-                        Text("Important")
-                            .appCaption()
-                            .foregroundColor(.white)
-
-                        Text("Once transferred, you will no longer have access to this ticket. The recipient will receive a notification and the ticket will appear in their account.")
-                            .appCaption()
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 32)
-                    }
-                    .padding(.horizontal, 24)
-
-                    // Transfer Button
-                    Button(action: {
-                        showConfirmation = true
-                    }) {
-                        ZStack {
-                            if isTransferring {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                            } else {
-                                Text("Transfer")
-                                    .appBody()
-                                    .foregroundColor(.black)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                    }
-                    .disabled(isTransferring || recipientEmail.isEmpty)
-                    .padding(.horizontal, 24)
+                    Text("Once transferred, you will no longer have access to this ticket. The recipient will receive a notification and the ticket will appear in their account.")
+                        .appCaption()
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
                 }
+                .padding(.horizontal, 40)
+                .padding(.bottom, 40)
+
+                // Transfer Button
+                BurnerButton("TRANSFER", style: .primary, maxWidth: 140) {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    showConfirmation = true
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(isTransferring || recipientEmail.isEmpty)
+                .opacity(recipientEmail.isEmpty ? 0.5 : 1.0)
 
                 Spacer()
             }

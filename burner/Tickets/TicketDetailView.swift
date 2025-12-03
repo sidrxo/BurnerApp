@@ -20,6 +20,7 @@ struct TicketDetailView: View {
     @State private var showTransferView = false
     @State private var liveActivityUpdateTimer: Timer?
     @State private var flipped = true // Start with image side showing
+    @State private var qrCodeImage: UIImage? = nil // Pre-generated QR code
     
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
@@ -56,26 +57,39 @@ struct TicketDetailView: View {
                 
                 // Transfer ticket text below card
                 if !flipped && appState.burnerManager.hasCompletedSetup && ticketWithEvent.ticket.status == "confirmed" {
-                    Text("TRANSFER TICKET")
-                        .font(.custom("Helvetica", size: 14).weight(.bold))
-                        .foregroundColor(.white)
+                    Button(action: {
+                        showTransferView = true
+                    }) {
+                        HStack(spacing: 6) {
+                            Text("TRANSFER TICKET")
+                                .font(.custom("Helvetica", size: 14).weight(.bold))
+                                .foregroundColor(.white)
+                            
+                            Image(systemName: "arrow.up.forward")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                        }
                         .padding(.top, 8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
                 
                 Spacer()
             }
 
-            // Close button
-            VStack {
-                HStack {
+            // Close button (only on details side)
+            if !flipped {
+                VStack {
+                    HStack {
+                        Spacer()
+                        CloseButton(action: {
+                            dismiss()
+                        }, isDark: true)
+                        .padding(.top, 100)
+                        .padding(.trailing, 40)
+                    }
                     Spacer()
-                    CloseButton(action: {
-                        dismiss()
-                    }, isDark: true)
-                    .padding(.top, 80)
-                    .padding(.trailing, 20)
                 }
-                Spacer()
             }
 
             if showTransferSuccess {
@@ -106,6 +120,11 @@ struct TicketDetailView: View {
             }
         }
         .onAppear {
+            // Pre-generate QR code in background
+            Task {
+                qrCodeImage = await generateQRCode(from: qrCodeData, size: 300)
+            }
+            
             autoStartLiveActivityForEventDay()
             checkLiveActivityStatus()
             updateLiveActivityIfNeeded()
@@ -116,7 +135,7 @@ struct TicketDetailView: View {
             }
             
             // Automatically flip to show ticket details after a brief delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                     flipped = false
                 }
@@ -226,34 +245,24 @@ struct TicketDetailView: View {
             // QR Code Section
             VStack(spacing: 12) {
                 if appState.burnerManager.hasCompletedSetup {
-                    // QR Code (non-interactive)
-                    QRCodeView(
-                        data: qrCodeData,
-                        size: 300,
-                        backgroundColor: .black,
-                        foregroundColor: .white
-                    )
-                    .padding(5)
-                    .background(.white)
-                    
-                    // Transfer Ticket Button
-                    if ticketWithEvent.ticket.status == "confirmed" {
-                        Button(action: {
-                            showTransferView = true
-                        }) {
-                            HStack(spacing: 8) {
-                                Text("TRANSFER TICKET")
-                                    .font(.custom("Helvetica", size: 14).weight(.bold))
-                                    .foregroundColor(.black)
-                                
-                                Image(systemName: "arrow.up.forward")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.black)
-                            }
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                    // QR Code (non-interactive) - use pre-generated image if available
+                    if let qrImage = qrCodeImage {
+                        Image(uiImage: qrImage)
+                            .resizable()
+                            .interpolation(.none)
+                            .frame(width: 300, height: 300)
+                            .padding(5)
+                            .background(.white)
+                    } else {
+                        // Fallback to original QRCodeView while generating
+                        QRCodeView(
+                            data: qrCodeData,
+                            size: 300,
+                            backgroundColor: .black,
+                            foregroundColor: .white
+                        )
+                        .padding(5)
+                        .background(.white)
                     }
                 } else {
                     // Locked state with setup button
@@ -298,6 +307,28 @@ struct TicketDetailView: View {
 
     private var qrCodeData: String {
         return ticketWithEvent.ticket.qrCode ?? "INVALID_TICKET"
+    }
+    
+    // Generate QR code asynchronously to avoid main thread blocking
+    private func generateQRCode(from string: String, size: CGFloat) async -> UIImage? {
+        return await Task.detached(priority: .userInitiated) {
+            let data = string.data(using: .utf8)
+            guard let filter = CIFilter(name: "CIQRCodeGenerator") else { return nil }
+            
+            filter.setValue(data, forKey: "inputMessage")
+            filter.setValue("H", forKey: "inputCorrectionLevel")
+            
+            guard let ciImage = filter.outputImage else { return nil }
+            
+            let scale = size / ciImage.extent.width
+            let transform = CGAffineTransform(scaleX: scale, y: scale)
+            let scaledImage = ciImage.transformed(by: transform)
+            
+            let context = CIContext()
+            guard let cgImage = context.createCGImage(scaledImage, from: scaledImage.extent) else { return nil }
+            
+            return UIImage(cgImage: cgImage)
+        }.value
     }
 
     private func formatDateDay(_ date: Date) -> String {
