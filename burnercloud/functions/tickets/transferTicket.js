@@ -68,6 +68,18 @@ exports.transferTicket = onCall({ region: "europe-west2" }, async (request) => {
       throw new HttpsError("invalid-argument", "Cannot transfer ticket to yourself");
     }
 
+    // Check if recipient already has a ticket for this event
+    const eventId = ticketData.eventId;
+    const recipientTicketsSnapshot = await db.collection("tickets")
+      .where("eventId", "==", eventId)
+      .where("userId", "==", recipientUserId)
+      .where("status", "==", "confirmed")
+      .get();
+
+    if (!recipientTicketsSnapshot.empty) {
+      throw new HttpsError("already-exists", "This user already has a ticket for this event");
+    }
+
     // Update ticket with new owner
     await ticketDoc.ref.update({
       userId: recipientUserId,

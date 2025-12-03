@@ -6,10 +6,12 @@ struct TransferTicketView: View {
     let ticketWithEvent: TicketWithEventData
     @State private var recipientEmail = ""
     @State private var isTransferring = false
-    @State private var transferError: String?
     @State private var showTransferSuccess = false
     @State private var showConfirmation = false
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var coordinator: NavigationCoordinator
 
     var body: some View {
         ZStack {
@@ -40,18 +42,14 @@ struct TransferTicketView: View {
                     TextField("Recipient Email", text: $recipientEmail)
                         .textFieldStyle(.plain)
                         .autocapitalization(.none)
+                        .autocorrectionDisabled(true)
                         .keyboardType(.emailAddress)
+                        .textContentType(.emailAddress)
                         .padding()
                         .background(Color.white.opacity(0.1))
                         .cornerRadius(12)
                         .foregroundColor(.white)
                         .appBody()
-
-                    if let error = transferError {
-                        Text(error)
-                            .appCaption()
-                            .foregroundColor(.red)
-                    }
                 }
                 .padding(.horizontal, 40)
                 .padding(.bottom, 24)
@@ -106,7 +104,26 @@ struct TransferTicketView: View {
                     description: "Ticket has been transferred successfully!",
                     primaryAction: {
                         showTransferSuccess = false
+                        // Dismiss transfer view and navigate back to tickets list
                         presentationMode.wrappedValue.dismiss()
+                        // Also dismiss the ticket detail view by popping the navigation stack
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            coordinator.pop()
+                        }
+                    },
+                    primaryActionTitle: "OK",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1001)
+            }
+
+            if showErrorAlert {
+                CustomAlertView(
+                    title: "Transfer Failed",
+                    description: errorMessage,
+                    primaryAction: {
+                        showErrorAlert = false
                     },
                     primaryActionTitle: "OK",
                     customContent: EmptyView()
@@ -122,15 +139,14 @@ struct TransferTicketView: View {
         guard !recipientEmail.isEmpty else { return }
 
         isTransferring = true
-        transferError = nil
 
         let functions = Functions.functions()
         let transferFunction = functions.httpsCallable("transferTicket")
 
-        // The backend function should:
-        // 1. Validate that the recipient doesn't already have a ticket for this event
-        // 2. Send a push notification to the recipient when transfer is successful
-        // 3. Update the ticket ownership
+        // The backend function:
+        // 1. Validates that the recipient doesn't already have a ticket for this event
+        // 2. Validates ticket ownership and status
+        // 3. Updates the ticket ownership
 
         transferFunction.call([
             "ticketId": ticketWithEvent.ticket.id ?? "",
@@ -141,16 +157,17 @@ struct TransferTicketView: View {
                 isTransferring = false
 
                 if let error = error as NSError? {
-                    // Handle error
-                    if let errorMessage = error.userInfo["message"] as? String {
-                        transferError = errorMessage
+                    // Handle error - show in custom alert
+                    if let message = error.userInfo["message"] as? String {
+                        errorMessage = message
                     } else {
-                        transferError = "Transfer failed. Please try again."
+                        errorMessage = "Transfer failed. Please try again."
                     }
+                    showErrorAlert = true
                     return
                 }
 
-                // Success - push notification is sent by the backend
+                // Success
                 showTransferSuccess = true
                 recipientEmail = ""
             }
