@@ -68,7 +68,6 @@ struct TicketsView: View {
 
     @State private var searchText = ""
     @State private var selectedFilter: TicketsFilter = .upcoming
-    @State private var selectedTicket: TicketWithEventData?
     @FocusState private var isSearchFocused: Bool
 
     private let columns = [
@@ -362,7 +361,7 @@ struct TicketsView: View {
             LazyVGrid(columns: columns, spacing: 12) {
                 ForEach(filteredTickets, id: \.id) { ticketWithEvent in
                     Button(action: {
-                        selectedTicket = ticketWithEvent
+                        coordinator.navigate(to: .ticketDetail(ticketWithEvent))
                     }) {
                         TicketGridItem(ticketWithEvent: ticketWithEvent)
                     }
@@ -377,13 +376,6 @@ struct TicketsView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .background(Color.black)
-        .sheet(item: $selectedTicket) { ticketWithEvent in
-            TicketDetailView(ticketWithEvent: ticketWithEvent)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.hidden)
-                .presentationBackgroundInteraction(.enabled)
-                .interactiveDismissDisabled(false)
-        }
     }
 }
 
