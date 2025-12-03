@@ -10,6 +10,7 @@ struct TransferTicketView: View {
     @State private var showConfirmation = false
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
+    @State private var showDisclaimerSlide = true
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var coordinator: NavigationCoordinator
 
@@ -18,68 +19,86 @@ struct TransferTicketView: View {
             Color.black
                 .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // Fixed top spacing for consistent alignment
-                Color.clear.frame(height: 100)
-
-                // Header positioned at consistent height
+            // Slides using ZStack and Offset for smooth transitions
+            ZStack {
+                // Slide 0: Disclaimer
                 VStack(spacing: 0) {
-                    TightHeaderText("TRANSFER", "TICKET", alignment: .center)
-                        .frame(maxWidth: .infinity)
-                }
-                .frame(height: 120)
+                    Spacer()
 
-                Text("Enter the recipient's email address")
-                    .appBody()
-                    .foregroundColor(.white.opacity(0.7))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-                    .lineSpacing(4)
-                    .padding(.bottom, 40)
-
-                // Email Input
-                VStack(alignment: .leading, spacing: 8) {
-                    TextField("Recipient Email", text: $recipientEmail)
-                        .textFieldStyle(.plain)
-                        .autocapitalization(.none)
-                        .autocorrectionDisabled(true)
-                        .keyboardType(.emailAddress)
-                        .textContentType(.emailAddress)
-                        .padding()
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(12)
-                        .foregroundColor(.white)
-                        .appBody()
-                }
-                .padding(.horizontal, 40)
-                .padding(.bottom, 24)
-
-                // Disclaimer
-                VStack(spacing: 8) {
-                    Text("Important")
-                        .appCaption()
-                        .foregroundColor(.white)
+                    // Header
+                    VStack(spacing: 0) {
+                        TightHeaderText("NOT COMING", "ANYMORE?", alignment: .center)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .frame(height: 120)
 
                     Text("Once transferred, you will no longer have access to this ticket. The recipient will receive a notification and the ticket will appear in their account.")
-                        .appCaption()
-                        .foregroundColor(.gray)
+                        .appBody()
+                        .foregroundColor(.white.opacity(0.7))
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-                }
-                .padding(.horizontal, 40)
-                .padding(.bottom, 40)
+                        .padding(.horizontal, 40)
+                        .lineSpacing(4)
+                        .padding(.bottom, 30)
 
-                // Transfer Button
-                BurnerButton("TRANSFER", style: .primary, maxWidth: 140) {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    showConfirmation = true
-                }
-                .buttonStyle(PlainButtonStyle())
-                .disabled(isTransferring || recipientEmail.isEmpty)
-                .opacity(recipientEmail.isEmpty ? 0.5 : 1.0)
+                    // Continue Button
+                    BurnerButton("CONTINUE", style: .primary, maxWidth: 140) {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            showDisclaimerSlide = false
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
 
-                Spacer()
+                    Spacer()
+                }
+                .offset(x: slideOffset(for: 0))
+                .opacity(showDisclaimerSlide ? 1 : 0)
+                .zIndex(showDisclaimerSlide ? 1 : 0)
+
+                // Slide 1: Transfer Form
+                VStack(spacing: 0) {
+                    Spacer()
+
+                    // Header
+                    VStack(spacing: 0) {
+                        TightHeaderText("TRANSFER", "TICKET", alignment: .center)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .frame(height: 120)
+
+                    // Email Input
+                    VStack(alignment: .leading, spacing: 8) {
+                        TextField("Recipient Email", text: $recipientEmail)
+                            .textFieldStyle(.plain)
+                            .autocapitalization(.none)
+                            .autocorrectionDisabled(true)
+                            .keyboardType(.emailAddress)
+                            .textContentType(.emailAddress)
+                            .padding()
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(12)
+                            .foregroundColor(.white)
+                            .appBody()
+                    }
+                    .padding(.horizontal, 40)
+                    .padding(.bottom, 30)
+
+                    // Transfer Button
+                    BurnerButton("TRANSFER", style: .primary, maxWidth: 140) {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        showConfirmation = true
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .disabled(isTransferring || recipientEmail.isEmpty)
+                    .opacity(recipientEmail.isEmpty ? 0.5 : 1.0)
+
+                    Spacer()
+                }
+                .offset(x: slideOffset(for: 1))
+                .opacity(showDisclaimerSlide ? 0 : 1)
+                .zIndex(showDisclaimerSlide ? 0 : 1)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if showConfirmation {
                 CustomAlertView(
@@ -133,6 +152,13 @@ struct TransferTicketView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    // Custom Slide Transition Logic
+    private func slideOffset(for slide: Int) -> CGFloat {
+        let screenWidth = UIScreen.main.bounds.width
+        let currentSlide = showDisclaimerSlide ? 0 : 1
+        return screenWidth * CGFloat(slide - currentSlide)
     }
 
     private func transferTicket() {
