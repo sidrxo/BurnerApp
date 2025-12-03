@@ -1,6 +1,6 @@
 //
 //  TicketDetailView.swift
-//  Updated with flip animation and fixed card width to match original
+//  Updated with flip animation and fixed card positioning
 //
 
 import SwiftUI
@@ -54,26 +54,29 @@ struct TicketDetailView: View {
                 .frame(height: 550)
                 .padding(.horizontal, 20)
                 
-                // Transfer ticket text below card
-                if !flipped && appState.burnerManager.hasCompletedSetup && ticketWithEvent.ticket.status == "confirmed" {
-                    Button(action: {
-                        if let ticketId = ticketWithEvent.ticket.id {
-                            coordinator.navigate(to: .transferTicket(ticketWithEvent.ticket))
-                        }
-                    }) {
-                        HStack(spacing: 6) {
-                            Text("TRANSFER TICKET")
-                                .font(.custom("Helvetica", size: 14).weight(.bold))
-                                .foregroundColor(.white)
+                // Fixed-height container for transfer button (keeps layout stable)
+                VStack {
+                    if !flipped && appState.burnerManager.hasCompletedSetup && ticketWithEvent.ticket.status == "confirmed" {
+                        Button(action: {
+                            if ticketWithEvent.ticket.id != nil {
+                                coordinator.navigate(to: .transferTicket(ticketWithEvent.ticket))
+                            }
+                        }) {
+                            HStack(spacing: 6) {
+                                Text("TRANSFER TICKET")
+                                    .font(.custom("Helvetica", size: 14).weight(.bold))
+                                    .foregroundColor(.white)
 
-                            Image(systemName: "arrow.up.forward")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(.white)
+                                Image(systemName: "arrow.up.forward")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                            }
                         }
-                        .padding(.top, 8)
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
+                .frame(height: 40) // Fixed height to maintain spacing
+                .padding(.top, 8)
                 
                 Spacer()
             }
