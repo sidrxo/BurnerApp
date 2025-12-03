@@ -368,8 +368,8 @@ class NavigationCoordinator: ObservableObject {
         present(.ticketPurchase(event))
     }
 
-    func viewTicketDetail(_ ticket: Ticket) {
-        present(.ticketDetail(ticket))
+    func viewTicketDetail(_ ticket: Ticket, ticketWithEvent: TicketWithEventData) {
+        navigate(to: .ticketDetail(ticketWithEvent))
     }
 
     func shareEvent(_ event: Event) {

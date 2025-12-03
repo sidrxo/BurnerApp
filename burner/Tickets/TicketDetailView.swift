@@ -17,7 +17,6 @@ struct TicketDetailView: View {
     @State private var isLiveActivityActive = false
     @State private var showTransferSuccess = false
     @State private var showBurnerSetup = false
-    @State private var showTransferView = false
     @State private var liveActivityUpdateTimer: Timer?
     @State private var flipped = true // Start with image side showing
     @State private var qrCodeImage: UIImage? = nil // Pre-generated QR code
@@ -58,13 +57,15 @@ struct TicketDetailView: View {
                 // Transfer ticket text below card
                 if !flipped && appState.burnerManager.hasCompletedSetup && ticketWithEvent.ticket.status == "confirmed" {
                     Button(action: {
-                        showTransferView = true
+                        if let ticketId = ticketWithEvent.ticket.id {
+                            coordinator.navigate(to: .transferTicket(ticketWithEvent.ticket))
+                        }
                     }) {
                         HStack(spacing: 6) {
                             Text("TRANSFER TICKET")
                                 .font(.custom("Helvetica", size: 14).weight(.bold))
                                 .foregroundColor(.white)
-                            
+
                             Image(systemName: "arrow.up.forward")
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(.white)
@@ -113,11 +114,6 @@ struct TicketDetailView: View {
                     showBurnerSetup = false
                 }
             )
-        }
-        .sheet(isPresented: $showTransferView) {
-            NavigationView {
-                TransferTicketView(ticketWithEvent: ticketWithEvent)
-            }
         }
         .onAppear {
             // Pre-generate QR code in background
