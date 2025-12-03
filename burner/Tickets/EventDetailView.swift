@@ -7,9 +7,7 @@ import PassKit
 import MapKit
 import CoreLocation
 
-// NOTE: This file assumes the existence of all data models, environment objects,
-// and custom extensions (e.g., .appBody(), .appHero(), etc.) defined elsewhere,
-// as well as the button styles defined in the previous section.
+
 
 struct EventDetailView: View {
     let event: Event // Event must conform to Identifiable and contain all required properties
@@ -87,19 +85,19 @@ struct EventDetailView: View {
         }
     }
 
-    // Determines the style and custom color based on event status
+    // Determine the style and custom color based on status
     private var buttonStatus: (style: BurnerButton.Style, color: Color?) {
         if availableTickets > 0 && !isEventPast && !hasEventStarted && !userHasTicket {
-            // Active 'GET TICKET' state
+            // Active 'GET TICKET' state (Primary is solid white background)
             return (.primary, nil)
         } else if availableTickets == 0 && !isEventPast && !hasEventStarted {
-            // 'SOLD OUT' state (Dimmed fill, Red outline/text)
+            // 'SOLD OUT' state (Dimmed, Red outline/text)
             return (.dimmed, .red)
         } else if userHasTicket && !isEventPast && !hasEventStarted {
-            // 'TICKET PURCHASED' state (Dimmed fill, White outline/text)
+            // 'TICKET PURCHASED' state (Dimmed, White outline/text)
             return (.dimmed, .white)
         } else {
-            // Default inactive/past state (Dimmed fill, Gray outline/text)
+            // Default inactive/past state (Dimmed, Gray outline/text)
             return (.dimmed, .gray)
         }
     }
@@ -389,6 +387,7 @@ struct EventDetailView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         .disabled(isButtonDisabled)
+                        // Opacity control is handled inside the DimmedOutlineButtonStyle
                         .padding(.horizontal, 20)
                         .padding(.bottom, 20)
                         .padding(.top, 40)

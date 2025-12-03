@@ -7,7 +7,6 @@ import Combine
 // MARK: - Ticket Grid Item
 struct TicketGridItem: View {
     let ticketWithEvent: TicketWithEventData
-    var namespace: Namespace.ID?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,11 +22,6 @@ struct TicketGridItem: View {
                             .scaledToFill()
                             .frame(width: geometry.size.width, height: geometry.size.width)
                             .clipped()
-                            .if(namespace != nil && ticketWithEvent.event.id != nil) { view in
-                                view.matchedTransitionSource(id: "ticketImage-\(ticketWithEvent.ticket.id ?? "")", in: namespace!) { source in
-                                    source
-                                }
-                            }
                     } else {
                         ImagePlaceholder(size: geometry.size.width, cornerRadius: 12, iconSize: 24)
                             .frame(width: geometry.size.width, height: geometry.size.width)
@@ -45,13 +39,15 @@ struct TicketGridItem: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.9)
                 
+                
+                
                 if let startTime = ticketWithEvent.event.startTime {
                     Text(formatDate(startTime))
-                        .font(.system(size: 12, weight: .regular))
+                        .appCaption()
                         .foregroundColor(.gray)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading) // ✅ Fixed minimum height for the entire info section
             .padding(.top, 8)
             .padding(.horizontal, 4)
         }
@@ -69,10 +65,10 @@ struct TicketsView: View {
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var coordinator: NavigationCoordinator
-    @Environment(\.heroNamespace) private var heroNamespace
 
     @State private var searchText = ""
     @State private var selectedFilter: TicketsFilter = .upcoming
+    @State private var selectedTicket: TicketWithEventData?
     @FocusState private var isSearchFocused: Bool
 
     private let columns = [
@@ -365,8 +361,10 @@ struct TicketsView: View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 12) {
                 ForEach(filteredTickets, id: \.id) { ticketWithEvent in
-                    NavigationLink(value: NavigationDestination.ticketDetail(ticketWithEvent)) {
-                        TicketGridItem(ticketWithEvent: ticketWithEvent, namespace: heroNamespace)
+                    Button(action: {
+                        selectedTicket = ticketWithEvent
+                    }) {
+                        TicketGridItem(ticketWithEvent: ticketWithEvent)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -379,6 +377,13 @@ struct TicketsView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .background(Color.black)
+        .sheet(item: $selectedTicket) { ticketWithEvent in
+            TicketDetailView(ticketWithEvent: ticketWithEvent)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+                .presentationBackgroundInteraction(.enabled)
+                .interactiveDismissDisabled(false)
+        }
     }
 }
 
@@ -393,6 +398,8 @@ enum TicketsFilter: CaseIterable {
     }
     static var allCases: [TicketsFilter] { [.upcoming, .past] }
 }
+
+
 
 #Preview {
     TicketsView()

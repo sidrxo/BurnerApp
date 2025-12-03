@@ -174,11 +174,11 @@ struct SignInSheetView: View {
                 showingPasswordlessAuth = true
             } label: {
                 HStack(spacing: 12) {
-                    Image(systemName: "envelope")
-                        .font(.system(size: 20, weight: .medium))
-
+                 Spacer()
                     Text("CONTINUE WITH EMAIL")
                         .appBody() // Use appBody to match other button text size
+                    Spacer()
+
                 }
                 .foregroundColor(.black)
                 .frame(height: 50)

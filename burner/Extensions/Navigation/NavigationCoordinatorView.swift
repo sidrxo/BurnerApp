@@ -104,6 +104,11 @@ struct NavigationCoordinatorView<Content: View>: View {
 
         case .ticketDetail(let ticket):
             TicketDetailDestination(ticket: ticket)
+            
+        case .transferTicket(let ticketWithEvent):
+            NavigationView {
+                TransferTicketView(ticketWithEvent: ticketWithEvent)
+            }
 
         case .shareSheet(let items):
             ActivityViewController(activityItems: items)
@@ -160,7 +165,7 @@ struct NavigationDestinationBuilder: View {
 
             // Ticket Navigation
             case .ticketDetail(let ticketWithEvent):
-                TicketDetailView(ticketWithEvent: ticketWithEvent, namespace: heroNamespace)
+                TicketDetailView(ticketWithEvent: ticketWithEvent)
 
             case .ticketById(let ticketId):
                 TicketDetailByIdDestination(ticketId: ticketId)
@@ -230,12 +235,12 @@ struct TicketDetailDestination: View {
     var body: some View {
         Group {
             if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
-                TicketDetailView(ticketWithEvent: TicketWithEventData(ticket: ticket, event: event), namespace: heroNamespace)
+                TicketDetailView(ticketWithEvent: TicketWithEventData(ticket: ticket, event: event))
             } else {
                 TicketDetailView(ticketWithEvent: TicketWithEventData(
                     ticket: ticket,
                     event: createPlaceholderEvent(from: ticket)
-                ), namespace: heroNamespace)
+                ), )
             }
         }
     }
@@ -254,12 +259,12 @@ struct TicketDetailByIdDestination: View {
         Group {
             if let ticket = ticketsViewModel.tickets.first(where: { $0.id == ticketId }) {
                 if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
-                    TicketDetailView(ticketWithEvent: TicketWithEventData(ticket: ticket, event: event), namespace: heroNamespace)
+                    TicketDetailView(ticketWithEvent: TicketWithEventData(ticket: ticket, event: event))
                 } else {
                     TicketDetailView(ticketWithEvent: TicketWithEventData(
                         ticket: ticket,
                         event: createPlaceholderEvent(from: ticket)
-                    ), namespace: heroNamespace)
+                    ))
                 }
             } else {
                 // Ticket not found

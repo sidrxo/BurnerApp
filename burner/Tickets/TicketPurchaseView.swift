@@ -5,6 +5,7 @@ import Kingfisher
 import FirebaseAuth
 import PassKit
 @_spi(STP) import StripePaymentSheet
+import AVKit
 
 struct TicketPurchaseView: View {
     let event: Event
@@ -18,10 +19,11 @@ struct TicketPurchaseView: View {
     @State private var cardParams: STPPaymentMethodCardParams?
     @State private var isCardValid = false
     @State private var selectedSavedCard: StripePaymentService.PaymentMethodInfo?
-    @State private var hasInitiatedPurchase = false // ✅ Prevent duplicate purchases
+    @State private var hasInitiatedPurchase = false
     @State private var showSignIn = false
     @State private var pendingPaymentAction: (() -> Void)?
     @State private var showBurnerSetup = false
+    @State private var purchasePhase: PurchasePhase = .idle
 
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var coordinator: NavigationCoordinator
@@ -33,6 +35,12 @@ struct TicketPurchaseView: View {
         case savedCards
     }
     
+    enum PurchasePhase {
+        case idle
+        case processing
+        case success
+    }
+    
     private var availableTickets: Int {
         max(0, event.maxTickets - event.ticketsSold)
     }
@@ -42,6 +50,7 @@ struct TicketPurchaseView: View {
             ZStack {
                 Color.black.ignoresSafeArea()
                 
+                // Main content
                 VStack(spacing: 0) {
                     // Header
                     eventHeader
@@ -66,7 +75,7 @@ struct TicketPurchaseView: View {
 
                                 Spacer(minLength: 0)
                                 
-                                // ✅ UPDATED: Single line terms with clickable links
+                                // Terms and conditions
                                 VStack(spacing: 8) {
                                     HStack(spacing: 4) {
                                         Text("By continuing, you agree to our")
@@ -95,7 +104,7 @@ struct TicketPurchaseView: View {
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 16)
                                 
-                                // ✅ UPDATED: Matching button styles
+                                // Payment buttons
                                 VStack(spacing: 12) {
                                     if ApplePayHandler.canMakePayments() {
                                         Button(action: {
@@ -173,7 +182,7 @@ struct TicketPurchaseView: View {
                                 // PAY BUTTON - Fixed at bottom with card input directly above
                                 if currentStep == .cardInput || currentStep == .savedCards {
                                     VStack(spacing: 20) {
-                                        // ✅ UPDATED: Card input placed directly above the pay button
+                                        // Card input placed directly above the pay button
                                         if currentStep == .cardInput {
                                             cardInputSection
                                         } else if currentStep == .savedCards {
@@ -236,40 +245,77 @@ struct TicketPurchaseView: View {
                         }
                     }
                 }
+                .opacity(purchasePhase == .idle ? 1 : 0)
+                .animation(.easeInOut(duration: 0.2), value: purchasePhase)
                 
-                if showingAlert {
-                    CustomAlertView(
-                        title: isSuccess ? (!appState.burnerManager.hasCompletedSetup ? "Complete Burner Setup" : "Success!") : "Error",
-                        description: isSuccess && !appState.burnerManager.hasCompletedSetup
-                            ? "You need to complete Burner Mode setup to access your ticket. This only takes a minute."
-                            : alertMessage,
-                        primaryAction: {
-                            showingAlert = false
-                            if isSuccess {
-                                if !appState.burnerManager.hasCompletedSetup {
-                                    showBurnerSetup = true
-                                } else {
-                                    presentationMode.wrappedValue.dismiss()
-                                }
-                            }
-                        },
-                        primaryActionTitle: isSuccess && !appState.burnerManager.hasCompletedSetup ? "Set Up Burner Mode" : "OK",
-                        customContent: EmptyView()
-                    )
-                    .transition(.opacity)
-                    .zIndex(1001)
-                }
-
-                // Loading indicator overlay
-                if paymentService.isProcessing {
+                // ✅ IMPROVED: Immediate loading state
+                if purchasePhase == .processing {
                     ZStack {
-                        Color.black.opacity(0.8)
-                            .ignoresSafeArea()
-
-                        CustomLoadingIndicator(size: 50)
+                        Color.black.ignoresSafeArea()
+                        
+                        VStack(spacing: 24) {
+                            ProgressView()
+                                .scaleEffect(1.5)
+                                .tint(.white)
+                            
+                            Text("Processing Payment...")
+                                .font(.appFont(size: 18))
+                                .foregroundColor(.white.opacity(0.7))
+                        }
                     }
                     .transition(.opacity)
                     .zIndex(1002)
+                }
+                
+                // ✅ IMPROVED: Success animation with smooth transition
+                if purchasePhase == .success {
+                    ZStack {
+                        Color.black.ignoresSafeArea()
+                        
+                        VStack(spacing: 24) {
+                            SuccessVideoPlayer(
+                                videoName: "success",
+                                onComplete: {
+                                    // Delay slightly to show final frame
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                        if !appState.burnerManager.hasCompletedSetup {
+                                            showBurnerSetup = true
+                                        } else {
+                                            presentationMode.wrappedValue.dismiss()
+                                        }
+                                    }
+                                }
+                            )
+                            .frame(width: 250, height: 250)
+                            
+                            VStack(spacing: 8) {
+                                Text("Payment Successful!")
+                                    .font(.appFont(size: 24))
+                                    .foregroundColor(.white)
+                                
+                                Text("Your ticket is ready")
+                                    .font(.appFont(size: 16))
+                                    .foregroundColor(.white.opacity(0.7))
+                            }
+                        }
+                    }
+                    .transition(.opacity)
+                    .zIndex(1003)
+                }
+                
+                // ✅ ERROR ALERT (only shown for errors)
+                if showingAlert && !isSuccess {
+                    CustomAlertView(
+                        title: "Error",
+                        description: alertMessage,
+                        primaryAction: {
+                            showingAlert = false
+                        },
+                        primaryActionTitle: "OK",
+                        customContent: EmptyView()
+                    )
+                    .transition(.opacity)
+                    .zIndex(1004)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -283,7 +329,6 @@ struct TicketPurchaseView: View {
                                 selectedSavedCard = nil
                                 cardParams = nil
                                 isCardValid = false
-                                // ✅ FIXED: Reset hasInitiatedPurchase when user goes back/cancels
                                 hasInitiatedPurchase = false
                             }
                         } else {
@@ -330,7 +375,6 @@ struct TicketPurchaseView: View {
         }
         .onAppear {
             Task {
-                // Run these in parallel and await both
                 async let methodsResult: Void? = try? paymentService.fetchPaymentMethods()
                 async let prepResult: Void = preparePaymentIntent()
                 _ = await (methodsResult, prepResult)
@@ -351,7 +395,6 @@ struct TicketPurchaseView: View {
         guard let eventId = event.id else { return }
         guard Auth.auth().currentUser != nil else { return }
         guard ApplePayHandler.canMakePayments() else { return }
-        // `preparePayment` is not async; don't await it.
         paymentService.preparePayment(eventId: eventId)
     }
     
@@ -421,10 +464,9 @@ struct TicketPurchaseView: View {
         .padding(.horizontal, 20)
     }
     
-    // ✅ UPDATED: Card input section with minimal spacing
     private var cardInputSection: some View {
         VStack(spacing: 0) {
-                CardInputView(
+            CardInputView(
                 cardParams: $cardParams,
                 isValid: $isCardValid
             )
@@ -545,35 +587,32 @@ struct TicketPurchaseView: View {
     }
     
     private func handleApplePayPayment() {
-        // ✅ Prevent duplicate purchase attempts
         guard !hasInitiatedPurchase else {
             print("⚠️ Purchase already in progress, ignoring duplicate tap")
             return
         }
 
         guard let eventId = event.id else {
-            alertMessage = "Invalid event"
-            isSuccess = false
-            showingAlert = true
+            showError("Invalid event")
             return
         }
 
         guard Auth.auth().currentUser != nil else {
-            alertMessage = "Please log in to purchase a ticket"
-            isSuccess = false
-            showingAlert = true
+            showError("Please log in to purchase a ticket")
             return
         }
 
         guard ApplePayHandler.canMakePayments() else {
-            alertMessage = "Apple Pay is not available on this device"
-            isSuccess = false
-            showingAlert = true
+            showError("Apple Pay is not available on this device")
             return
         }
 
-        // ✅ Mark purchase as initiated
         hasInitiatedPurchase = true
+        
+        // ✅ Show processing immediately
+        withAnimation(.easeInOut(duration: 0.2)) {
+            purchasePhase = .processing
+        }
 
         paymentService.processApplePayPayment(
             eventName: event.name,
@@ -581,25 +620,28 @@ struct TicketPurchaseView: View {
             eventId: eventId
         ) { result in
             DispatchQueue.main.async {
-                self.hasInitiatedPurchase = false  // ✅ Always reset
-                
-                // ✅ Only show alert if there's a message
-                if !result.message.isEmpty {
-                    self.alertMessage = result.message
-                    self.isSuccess = result.success
-                    self.showingAlert = true
-                }
+                self.hasInitiatedPurchase = false
                 
                 if result.success {
                     self.viewModel.fetchEvents()
-                    self.presentationMode.wrappedValue.dismiss()
+                    // ✅ Smooth transition to success
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        self.purchasePhase = .success
+                    }
+                } else {
+                    // ✅ Return to idle and show error
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        self.purchasePhase = .idle
+                    }
+                    if !result.message.isEmpty {
+                        self.showError(result.message)
+                    }
                 }
             }
         }
     }
     
     private func handleCardPayment() {
-        // ✅ Prevent duplicate purchase attempts
         guard !hasInitiatedPurchase else {
             print("⚠️ Purchase already in progress, ignoring duplicate tap")
             return
@@ -610,14 +652,16 @@ struct TicketPurchaseView: View {
               isCardValid else { return }
 
         guard Auth.auth().currentUser != nil else {
-            alertMessage = "Please log in to purchase a ticket"
-            isSuccess = false
-            showingAlert = true
+            showError("Please log in to purchase a ticket")
             return
         }
 
-        // ✅ Mark purchase as initiated
         hasInitiatedPurchase = true
+        
+        // ✅ Show processing immediately
+        withAnimation(.easeInOut(duration: 0.2)) {
+            purchasePhase = .processing
+        }
 
         paymentService.processCardPayment(
             cardParams: cardParams,
@@ -626,20 +670,24 @@ struct TicketPurchaseView: View {
             eventId: eventId
         ) { result in
             DispatchQueue.main.async {
-                self.alertMessage = result.message
-                self.isSuccess = result.success
-                self.showingAlert = true
-                // ✅ Reset flag after completion
                 self.hasInitiatedPurchase = false
+                
                 if result.success {
                     self.viewModel.fetchEvents()
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        self.purchasePhase = .success
+                    }
+                } else {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        self.purchasePhase = .idle
+                    }
+                    self.showError(result.message)
                 }
             }
         }
     }
     
     private func handleSavedCardPayment() {
-        // ✅ Prevent duplicate purchase attempts
         guard !hasInitiatedPurchase else {
             print("⚠️ Purchase already in progress, ignoring duplicate tap")
             return
@@ -649,14 +697,16 @@ struct TicketPurchaseView: View {
               let savedCard = selectedSavedCard else { return }
 
         guard Auth.auth().currentUser != nil else {
-            alertMessage = "Please log in to purchase a ticket"
-            isSuccess = false
-            showingAlert = true
+            showError("Please log in to purchase a ticket")
             return
         }
 
-        // ✅ Mark purchase as initiated
         hasInitiatedPurchase = true
+        
+        // ✅ Show processing immediately
+        withAnimation(.easeInOut(duration: 0.2)) {
+            purchasePhase = .processing
+        }
 
         paymentService.processSavedCardPayment(
             paymentMethodId: savedCard.id,
@@ -665,15 +715,84 @@ struct TicketPurchaseView: View {
             eventId: eventId
         ) { result in
             DispatchQueue.main.async {
-                self.alertMessage = result.message
-                self.isSuccess = result.success
-                self.showingAlert = true
-                // ✅ Reset flag after completion
                 self.hasInitiatedPurchase = false
+                
                 if result.success {
                     self.viewModel.fetchEvents()
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        self.purchasePhase = .success
+                    }
+                } else {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        self.purchasePhase = .idle
+                    }
+                    self.showError(result.message)
                 }
             }
         }
+    }
+    
+    // ✅ Helper function to show errors
+    private func showError(_ message: String) {
+        alertMessage = message
+        isSuccess = false
+        showingAlert = true
+    }
+}
+
+// MARK: - Success Video Player Component
+struct SuccessVideoPlayer: View {
+    let videoName: String
+    let onComplete: () -> Void
+    
+    @State private var player: AVPlayer?
+    
+    var body: some View {
+        ZStack {
+            if let player = player {
+                VideoPlayer(player: player)
+                    .disabled(true)
+                    .aspectRatio(contentMode: .fit)
+            } else {
+                ProgressView()
+                    .tint(.white)
+                    .scaleEffect(1.5)
+            }
+        }
+        .onAppear {
+            loadAndPlayVideo()
+        }
+        .onDisappear {
+            player?.pause()
+            NotificationCenter.default.removeObserver(self)
+        }
+    }
+    
+    private func loadAndPlayVideo() {
+        guard let videoURL = Bundle.main.url(forResource: videoName, withExtension: "mp4") else {
+            print("❌ Could not find video file: \(videoName).mp4")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                onComplete()
+            }
+            return
+        }
+        
+        let playerItem = AVPlayerItem(url: videoURL)
+        let newPlayer = AVPlayer(playerItem: playerItem)
+        newPlayer.isMuted = true
+        
+        // ✅ Start playing immediately
+        newPlayer.play()
+        
+        // ✅ Observe completion
+        NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: playerItem,
+            queue: .main
+        ) { _ in
+            onComplete()
+        }
+        
+        player = newPlayer
     }
 }

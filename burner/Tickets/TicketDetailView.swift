@@ -1,7 +1,6 @@
 //
-//  TicketViews.swift
-//  burner
-//
+//  TicketDetailView.swift
+//  Updated with flip animation and fixed card width to match original
 //
 
 import SwiftUI
@@ -13,27 +12,50 @@ import FirebaseFunctions
 // MARK: - Ticket Detail View
 struct TicketDetailView: View {
     let ticketWithEvent: TicketWithEventData
-    var namespace: Namespace.ID?
 
     @State private var hasStartedLiveActivity = false
     @State private var isLiveActivityActive = false
     @State private var showTransferSuccess = false
     @State private var showBurnerSetup = false
+    @State private var showTransferView = false
     @State private var liveActivityUpdateTimer: Timer?
+    @State private var flipped = true // Start with image side showing
+    
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack {
-
             Color.black
                 .ignoresSafeArea()
 
-            VStack {
-                // Main ticket design
-                simpleTicketView
-                    .padding(.horizontal, 20)
+            VStack(spacing: 24) {
+                Spacer()
+                
+                // Flippable ticket card
+                ZStack {
+                    // Back of card (Event Image)
+                    cardBackView
+                        .opacity(flipped ? 1 : 0)
+                        .rotation3DEffect(
+                            flipped ? Angle(degrees: 0) : Angle(degrees: -180),
+                            axis: (x: 0, y: 1, z: 0)
+                        )
+                    
+                    // Front of card (Ticket Details)
+                    simpleTicketView
+                        .opacity(flipped ? 0 : 1)
+                        .rotation3DEffect(
+                            flipped ? Angle(degrees: 180) : Angle(degrees: 0),
+                            axis: (x: 0, y: 1, z: 0)
+                        )
+                }
+                .frame(height: 550)
+                .padding(.horizontal, 20)
+                
+                
+                Spacer()
             }
 
             // Close button
@@ -61,10 +83,8 @@ struct TicketDetailView: View {
                 .zIndex(1001)
             }
         }
+        .ignoresSafeArea()
         .navigationBarHidden(true)
-        .if(namespace != nil && ticketWithEvent.ticket.id != nil) { view in
-            view.navigationTransition(.zoom(sourceID: "ticketImage-\(ticketWithEvent.ticket.id!)", in: namespace!))
-        }
         .fullScreenCover(isPresented: $showBurnerSetup) {
             BurnerModeSetupView(
                 burnerManager: appState.burnerManager,
@@ -72,6 +92,11 @@ struct TicketDetailView: View {
                     showBurnerSetup = false
                 }
             )
+        }
+        .sheet(isPresented: $showTransferView) {
+            NavigationView {
+                TransferTicketView(ticketWithEvent: ticketWithEvent)
+            }
         }
         .onAppear {
             autoStartLiveActivityForEventDay()
@@ -82,6 +107,13 @@ struct TicketDetailView: View {
             liveActivityUpdateTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { _ in
                 updateLiveActivityIfNeeded()
             }
+            
+            // Automatically flip to show ticket details after a brief delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    flipped = false
+                }
+            }
         }
         .onDisappear {
             // Clean up timer when view disappears
@@ -90,13 +122,61 @@ struct TicketDetailView: View {
         }
     }
 
-    // MARK: - Simple Ticket View (Modified to look like a vertical business card)
+    // MARK: - Card Back View (Event Image)
+    
+    private var cardBackView: some View {
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                // Event image with overlay
+                ZStack(alignment: .bottom) {
+                    KFImage(URL(string: ticketWithEvent.event.imageUrl))
+                        .resizable()
+                        .placeholder {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .overlay(
+                                    ProgressView()
+                                        .tint(.white)
+                                )
+                        }
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
+                    
+                    // Gradient overlay for text readability
+                    LinearGradient(
+                        gradient: Gradient(colors: [.clear, .black.opacity(0.7)]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    
+                    // Event name overlay
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(ticketWithEvent.event.name.uppercased())
+                            .font(.custom("Helvetica", size: 24).weight(.bold))
+                            .kerning(-1)
+                            .foregroundColor(.white)
+                        
+                        Text(ticketWithEvent.event.venue.uppercased())
+                            .font(.custom("Helvetica", size: 14))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(24)
+                }
+            }
+        }
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 0))
+        .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+        .padding(.vertical, 32)
+    }
+
+    // MARK: - Simple Ticket View (Front - Modified to look like a vertical business card)
 
     private var simpleTicketView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // 1. --- Logo/Title Top Section ---
-            
-            // 2. --- Event Details Section (Left-Aligned Stack) ---
+            // Event Details Section (Left-Aligned Stack)
             VStack(alignment: .leading, spacing: 20) {
                 
                 // Date & Time Block
@@ -123,7 +203,7 @@ struct TicketDetailView: View {
        
                     Text((ticketWithEvent.ticket.status.uppercased()))
                         .appCard()
-                            .foregroundColor(.black)
+                        .foregroundColor(.black)
                     
                     Text(ticketWithEvent.ticket.ticketNumber ?? "N/A")
                         .appCard()
@@ -136,7 +216,7 @@ struct TicketDetailView: View {
             .background(.white)
 
             
-            // 3. --- QR Code Section ---
+            // QR Code Section
             VStack(spacing: 20) {
                 if appState.burnerManager.hasCompletedSetup {
                     // QR Code (non-interactive)
@@ -148,6 +228,27 @@ struct TicketDetailView: View {
                     )
                     .padding(5)
                     .background(.white)
+                    
+                    // Transfer Ticket Button
+                    if ticketWithEvent.ticket.status == "confirmed" {
+                        Button(action: {
+                            showTransferView = true
+                        }) {
+                            HStack(spacing: 8) {
+                                Text("TRANSFER TICKET")
+                                    .font(.custom("Helvetica", size: 14).weight(.bold))
+                                    .foregroundColor(.black)
+                                
+                                Image(systemName: "arrow.up.forward")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.black)
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.top, 12)
+                            
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
                 } else {
                     // Locked state with setup button
                     VStack(spacing: 16) {
@@ -181,10 +282,12 @@ struct TicketDetailView: View {
             .padding(.top, 40)
             .padding(.bottom, 40)
             .frame(maxWidth: .infinity)
-            .background(Color.white) // Dark card background
+            .background(Color.white)
         }
-
         .padding(.vertical, 32)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 0))
+        .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
     }
 
 
@@ -287,7 +390,6 @@ struct TicketDetailView: View {
 
 // MARK: - Preview
 
-
 struct TicketViews_Previews: PreviewProvider {
     static var sampleEvent: Event {
         Event(
@@ -295,7 +397,7 @@ struct TicketViews_Previews: PreviewProvider {
             name: "Burner Nights",
             venue: "Lakota, Bristol",
             venueId: "venue001",
-            startTime: Calendar.current.date(byAdding: .hour, value: 1, to: Date())!, // Set to near future for Live Activity logic
+            startTime: Calendar.current.date(byAdding: .hour, value: 1, to: Date())!,
             endTime: Calendar.current.date(byAdding: .hour, value: 3, to: Date()),
             price: 15.0,
             maxTickets: 100,
