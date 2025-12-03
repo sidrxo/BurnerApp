@@ -571,12 +571,12 @@ struct PermissionSlideContent: View {
             // Use reusable TightHeaderText component (aligned left)
             if authorizationGranted {
                 VStack(alignment: .leading, spacing: 0) {
-                    TightHeaderText("ACCESS", "GRANTED")
+                    TightHeaderText("YOU'RE", "APPROVED")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 VStack(alignment: .leading, spacing: 0) {
-                    TightHeaderText("ENABLE", "SCREEN TIME")
+                    TightHeaderText("GRANT", "ACCESS")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -675,8 +675,8 @@ struct CategorySelectionSlideContent: View {
 
             // Subtitle below
             Text(burnerManager.isSetupValid
-                    ? "\(categoryCount) categories will be blocked during events."
-                    : "Select all categories that distract you. We recommend 10 or more.")
+                    ? "We'll take care of the rest."
+                    : "Select 'All Apps and Categories'.")
                 .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .lineSpacing(4)

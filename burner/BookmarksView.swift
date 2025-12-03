@@ -25,7 +25,7 @@ struct BookmarksView: View {
         VStack(spacing: 0) {
             // Header Section
             HStack {
-                Text("Saves")
+                Text("Saved")
                     .appPageHeader()
                     .foregroundColor(.white)
                     .padding(.bottom, 2)
@@ -109,7 +109,7 @@ struct BookmarksView: View {
                 .padding(.bottom, 30)
             
             VStack(spacing: 8) {
-                TightHeaderText("NOTHING HERE", "YET", alignment: .center)
+                TightHeaderText("SAVE FOR", "LATER", alignment: .center)
                     .frame(maxWidth: .infinity)
 
                 Text("Tap \(Image(systemName: "heart")) on any event to save it here.")

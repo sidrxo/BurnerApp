@@ -211,14 +211,14 @@ struct TicketsView: View {
                 VStack(spacing: 8) {
                     TightHeaderText("WHERE WILL", "YOU GO?", alignment: .center)
                         .frame(maxWidth: .infinity)
-                    Text("Be part of the change.")
+                    Text("Join the movement. Sign in to get started.")
                         .appCard()
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
                 }
                 
-                BurnerButton("SIGN UP / IN", style: .primary, maxWidth: 180) {
+                BurnerButton("SIGN UP / IN", style: .primary, maxWidth: 140) {
                     coordinator.showSignIn()
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -242,9 +242,9 @@ struct TicketsView: View {
                     .padding(.bottom, 30)
                 
                 VStack(spacing: 8) {
-                    TightHeaderText("NO TICKETS", "YET", alignment: .center)
+                    TightHeaderText("EMPTY", "(FOR NOW?)", alignment: .center)
                         .frame(maxWidth: .infinity)
-                    Text("Your next experience is waiting.")
+                    Text("Find something worth remembering.")
                         .appCard()
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)

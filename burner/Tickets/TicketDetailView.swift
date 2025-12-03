@@ -54,6 +54,13 @@ struct TicketDetailView: View {
                 .frame(height: 550)
                 .padding(.horizontal, 20)
                 
+                // Transfer ticket text below card
+                if !flipped && appState.burnerManager.hasCompletedSetup && ticketWithEvent.ticket.status == "confirmed" {
+                    Text("TRANSFER TICKET")
+                        .font(.custom("Helvetica", size: 14).weight(.bold))
+                        .foregroundColor(.white)
+                        .padding(.top, 8)
+                }
                 
                 Spacer()
             }
@@ -65,7 +72,7 @@ struct TicketDetailView: View {
                     CloseButton(action: {
                         dismiss()
                     }, isDark: true)
-                    .padding(.top, 60)
+                    .padding(.top, 80)
                     .padding(.trailing, 20)
                 }
                 Spacer()
@@ -217,7 +224,7 @@ struct TicketDetailView: View {
 
             
             // QR Code Section
-            VStack(spacing: 20) {
+            VStack(spacing: 12) {
                 if appState.burnerManager.hasCompletedSetup {
                     // QR Code (non-interactive)
                     QRCodeView(
@@ -244,8 +251,7 @@ struct TicketDetailView: View {
                                     .foregroundColor(.black)
                             }
                             .padding(.horizontal, 24)
-                            .padding(.top, 12)
-                            
+                            .padding(.vertical, 12)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
@@ -279,12 +285,11 @@ struct TicketDetailView: View {
                     }
                 }
             }
-            .padding(.top, 40)
-            .padding(.bottom, 40)
+            .padding(.top, 30)
             .frame(maxWidth: .infinity)
             .background(Color.white)
         }
-        .padding(.vertical, 32)
+        .padding(.vertical, 24)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 0))
         .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
