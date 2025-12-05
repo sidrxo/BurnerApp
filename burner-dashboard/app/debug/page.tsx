@@ -6,13 +6,16 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, RefreshCw } from "lucide-react";
-import { getDebugInfo } from "@/lib/debug-utils";
+import { AlertCircle, RefreshCw, Calendar } from "lucide-react";
+import { getDebugInfo, movePastEventsToFuture } from "@/lib/debug-utils";
+import { useToast } from "@/hooks/use-toast";
 
 function DebugToolsPageContent() {
   const { user, loading } = useAuth();
+  const { toast } = useToast();
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [loadingInfo, setLoadingInfo] = useState(true);
+  const [movingEvents, setMovingEvents] = useState(false);
 
   useEffect(() => {
     loadDebugInfo();
@@ -23,6 +26,35 @@ function DebugToolsPageContent() {
     const info = await getDebugInfo();
     setDebugInfo(info);
     setLoadingInfo(false);
+  };
+
+  const handleMoveEventsToFuture = async () => {
+    setMovingEvents(true);
+    try {
+      const result = await movePastEventsToFuture();
+      if (result.success) {
+        toast({
+          title: "Events Moved Successfully",
+          description: `Moved ${result.count} past events to the future`,
+        });
+        // Reload debug info to show updated stats
+        await loadDebugInfo();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to move events to the future",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setMovingEvents(false);
+    }
   };
 
   if (loading) {
@@ -120,6 +152,50 @@ function DebugToolsPageContent() {
               Failed to load debug information
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Event Management Tools */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Event Management</CardTitle>
+          <CardDescription>Tools for managing event data</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-start gap-4 p-4 border rounded-lg">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Calendar className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold mb-1">Move All Events to Future</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Moves all past events to the future (current day + 7 days).
+                Useful for demo purposes when event data becomes outdated.
+              </p>
+              {debugInfo && debugInfo.pastEvents > 0 && (
+                <Badge variant="outline" className="mb-3">
+                  {debugInfo.pastEvents} past event{debugInfo.pastEvents !== 1 ? 's' : ''} will be moved
+                </Badge>
+              )}
+              <Button
+                onClick={handleMoveEventsToFuture}
+                disabled={movingEvents || (debugInfo && debugInfo.pastEvents === 0)}
+                variant="default"
+              >
+                {movingEvents ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Moving Events...
+                  </>
+                ) : (
+                  <>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Move Events to Future
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
