@@ -93,38 +93,34 @@ export async function simulateEventStartingSoon(): Promise<{ success: boolean; e
       };
     }
 
-    // Find the soonest event (earliest start time)
-    let soonestEvent: { id: string; name: string; startTime: Date } | null = null;
+    // Convert to array and find the soonest event
+    const events = Array.from(eventsSnapshot.docs).map((eventDoc) => ({
+      id: eventDoc.id,
+      name: eventDoc.data().name || "Unnamed Event",
+      startTime: eventDoc.data().startTime?.toDate() as Date | undefined,
+    }));
 
-    eventsSnapshot.forEach((eventDoc) => {
-      const data = eventDoc.data();
-      const startTime = data.startTime?.toDate();
+    // Filter events with valid start times and find the earliest
+    const eventsWithTime = events.filter((e) => e.startTime);
 
-      if (startTime) {
-        if (!soonestEvent || startTime < soonestEvent.startTime) {
-          soonestEvent = {
-            id: eventDoc.id,
-            name: data.name || "Unnamed Event",
-            startTime,
-          };
-        }
-      }
-    });
-
-    if (!soonestEvent) {
+    if (eventsWithTime.length === 0) {
       return {
         success: false,
         error: "No events with valid start times found",
       };
     }
 
+    const soonestEvent = eventsWithTime.reduce((earliest, current) => {
+      return current.startTime! < earliest.startTime! ? current : earliest;
+    });
+
     // Set start time to 5 minutes from now
     const now = new Date();
     const newStartTime = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes from now
     const newEndTime = new Date(newStartTime.getTime() + 10 * 60 * 1000); // 10 minutes after start (15 minutes from now)
 
-    // Update the event (non-null assertion is safe because we checked above)
-    await updateDoc(doc(db, "events", soonestEvent!.id), {
+    // Update the event
+    await updateDoc(doc(db, "events", soonestEvent.id), {
       startTime: Timestamp.fromDate(newStartTime),
       endTime: Timestamp.fromDate(newEndTime),
       date: Timestamp.fromDate(newStartTime),
@@ -133,7 +129,7 @@ export async function simulateEventStartingSoon(): Promise<{ success: boolean; e
 
     return {
       success: true,
-      eventName: soonestEvent!.name,
+      eventName: soonestEvent.name,
     };
   } catch (error: any) {
     console.error("Error simulating event:", error);
