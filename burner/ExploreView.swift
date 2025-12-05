@@ -211,12 +211,11 @@ struct ExploreView: View {
                             coordinator.activeModal = .SetLocation
                         }) {
                             ZStack {
-    
                                 Image("map")
                                     .appCard()
-                                    .foregroundColor(userLocationManager.savedLocation != nil ? .white : .gray.opacity(0.5))
+                                    .foregroundColor(.white)
                                     .frame(width: 38, height: 38)
-
+                                    .opacity(userLocationManager.savedLocation != nil ? 1.0 : 0.3)
                             }
                         }
                     }

@@ -150,7 +150,6 @@ enum ModalPresentation: Identifiable {
     case signIn
     case burnerSetup
     case ticketPurchase(Event)
-    case ticketDetail(Ticket)
     case transferTicket(TicketWithEventData)
     case shareSheet(items: [Any])
     case passwordlessAuth
@@ -161,7 +160,6 @@ enum ModalPresentation: Identifiable {
         case .signIn: return "signIn"
         case .burnerSetup: return "burnerSetup"
         case .ticketPurchase(let event): return "ticketPurchase-\(event.id ?? "")"
-        case .ticketDetail(let ticket): return "ticketDetail-\(ticket.id ?? "")"
         case .transferTicket(let ticketWithEvent): return "transferTicket-\(ticketWithEvent.ticket.id ?? "")"
         case .shareSheet: return "shareSheet"
         case .passwordlessAuth: return "passwordlessAuth"
@@ -171,7 +169,7 @@ enum ModalPresentation: Identifiable {
 
     var isFullScreen: Bool {
         switch self {
-        case .burnerSetup, .ticketDetail, .passwordlessAuth, .ticketPurchase:
+        case .burnerSetup, .passwordlessAuth, .ticketPurchase:
             return true
         case .signIn, .SetLocation, .transferTicket:
             return false

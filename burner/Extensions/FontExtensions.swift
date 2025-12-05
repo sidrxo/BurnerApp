@@ -51,8 +51,8 @@ extension View {
         self.font(.appCaption)
     }
 
-    func appSecondary() -> some View {
-        self.font(.appSecondary)
+    func appSecondary(weight: Font.Weight = .regular) -> some View {
+        self.font(.appFont(size: 14, weight: weight))
     }
 
     func appBody() -> some View {

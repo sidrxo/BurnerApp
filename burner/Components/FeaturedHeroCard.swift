@@ -75,9 +75,9 @@ struct FeaturedHeroCard: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(alignment: .bottom, spacing: 12) {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(event.name)
-    
-                                    .appPageHeader()
+                                Text(event.name.uppercased())
+                                    .font(.system(size: 32, weight: .bold, design: .default))
+                                    .kerning(-1.5)
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.leading)
                                     .fixedSize(horizontal: false, vertical: true)

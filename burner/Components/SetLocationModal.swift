@@ -1,24 +1,18 @@
 import SwiftUI
 import CoreLocation
 
-// MARK: - LOCAL Modal Button Style (No Stroke, Lighter Fill, 50pt Height)
-
-/// Dedicated style for the SetLocationModal: Translucent background, NO stroke/outline,
-/// fixed 50pt height without relying on global padding settings.
 struct ModalLocationSecondaryButtonStyle: ButtonStyle {
-    // Background opacity changed from 0.05 to 0.1 for a slightly lighter look
     var backgroundColor: Color = Color.white.opacity(0.05)
     var foregroundColor: Color = .white
     var maxWidth: CGFloat? = .infinity
     
-    // NOTE: This style achieves 50pt height because it doesn't add vertical padding
-    // and explicitly sets the container height.
+
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundColor(foregroundColor)
             .frame(maxWidth: maxWidth)
-            .frame(height: 50) // Explicitly set the container height to 50pt
+            .frame(height: 50)
             .background(backgroundColor)
             .clipShape(Capsule())
             // NO STROKE OVERLAY
@@ -28,7 +22,6 @@ struct ModalLocationSecondaryButtonStyle: ButtonStyle {
 }
 
 
-// MARK: - SetLocationModal View
 
 struct SetLocationModal: View {
     @Environment(\.dismiss) var dismiss
@@ -41,17 +34,14 @@ struct SetLocationModal: View {
     var body: some View {
         VStack(spacing: 0) {
             
-            // Removed "Set Your Location" title for cleaner UX.
             Spacer()
                 .frame(height: 30)
 
-            // Buttons — now 50pts tall, centered, with translucent background, NO STROKE
             VStack(spacing: 16) {
-                // 1. Use Current Location Button
                 Button(action: {
                     requestCurrentLocation()
                 }) {
-                    HStack(spacing: 12) { // Centering icon and text
+                    HStack(spacing: 12) {
                         if isProcessing {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))

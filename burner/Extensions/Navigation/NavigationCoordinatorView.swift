@@ -101,9 +101,6 @@ struct NavigationCoordinatorView<Content: View>: View {
                 event: event,
                 viewModel: appState.eventViewModel
             )
-
-        case .ticketDetail(let ticket):
-            TicketDetailDestination(ticket: ticket)
             
         case .transferTicket(let ticketWithEvent):
             NavigationView {

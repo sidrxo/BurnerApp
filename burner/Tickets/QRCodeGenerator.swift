@@ -10,7 +10,7 @@ struct QRCodeData: Codable {
     let ticketNumber: String?
     let timestamp: TimeInterval
     let version: String
-    let hash: String  // Security hash - validated server-side
+    let hash: String
 }
 
 struct ScannedTicketData {
@@ -46,36 +46,29 @@ struct QRCodeGenerator {
 
 }
 
-// MARK: - QR Code Validator
 struct QRCodeValidator {
 
     static func validateTicketQRCode(_ qrString: String, for eventId: String) -> Bool {
         // Parse QR code data
-        if let data = qrString.data(using: .utf8),
-           let qrData = try? JSONDecoder().decode(QRCodeData.self, from: data) {
-
-            guard qrData.type == "EVENT_TICKET",
-                  qrData.eventId == eventId,
-                  !qrData.ticketId.isEmpty,
-                  !qrData.hash.isEmpty else {  // Ensure hash exists (server-generated)
-                return false
-            }
-
-            // Check timestamp (tickets shouldn't be too old)
-            let age = Date().timeIntervalSince1970 - qrData.timestamp
-            guard age < 86400 * 365 else { // Max 1 year
-                return false
-            }
-
-            return true
+        guard let data = qrString.data(using: .utf8),
+              let qrData = try? JSONDecoder().decode(QRCodeData.self, from: data) else {
+            return false
         }
 
-        // Fallback validation for legacy simple format (should phase out)
-        let components = qrString.components(separatedBy: ":")
-        return components.count >= 6 &&
-               components[0] == "TICKET" &&
-               components[2] == "EVENT" &&
-               components[3] == eventId
+        guard qrData.type == "EVENT_TICKET",
+              qrData.eventId == eventId,
+              !qrData.ticketId.isEmpty,
+              !qrData.hash.isEmpty else {  // Ensure hash exists (server-generated)
+            return false
+        }
+
+        // Check timestamp (tickets shouldn't be too old)
+        let age = Date().timeIntervalSince1970 - qrData.timestamp
+        guard age < 86400 * 365 else { // Max 1 year
+            return false
+        }
+
+        return true
     }
 }
 
@@ -83,20 +76,11 @@ struct QRCodeValidator {
 struct QRCodeView: View {
     let data: String
     let size: CGFloat
-    let backgroundColor: Color
-    let foregroundColor: Color
     @State private var qrImage: UIImage?
     
-    init(
-        data: String,
-        size: CGFloat = 200,
-        backgroundColor: Color = .clear,
-        foregroundColor: Color = .black
-    ) {
+    init(data: String, size: CGFloat = 200) {
         self.data = data
         self.size = size
-        self.backgroundColor = backgroundColor
-        self.foregroundColor = foregroundColor
     }
     
     var body: some View {
@@ -106,19 +90,17 @@ struct QRCodeView: View {
                     .interpolation(.none)
                     .resizable()
                     .frame(width: size, height: size)
-                    .background(backgroundColor)
             } else {
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(backgroundColor)
+                    .fill(Color.gray.opacity(0.1))
                     .frame(width: size, height: size)
                     .overlay(
                         VStack {
                             ProgressView()
                                 .scaleEffect(0.8)
-                                .tint(foregroundColor)
                             Text("Generating QR...")
                                 .font(.caption)
-                                .foregroundColor(foregroundColor)
+                                .foregroundColor(.gray)
                         }
                     )
             }
@@ -140,62 +122,6 @@ struct QRCodeView: View {
             
             DispatchQueue.main.async {
                 self.qrImage = image
-            }
-        }
-    }
-}
-
-// MARK: - QR Code Scanner View
-struct QRCodeScannerView: View {
-    @State private var isShowingScanner = false
-    @State private var scannedTicket: ScannedTicketData?
-    @State private var showingResult = false
-
-    var body: some View {
-        ZStack {
-            VStack(spacing: 24) {
-                Text("Venue Scanner")
-                    .appSectionHeader()
-                    .foregroundColor(.white)
-
-                Button(action: {
-                    isShowingScanner = true
-                }) {
-                    VStack(spacing: 16) {
-                        Image(systemName: "qrcode.viewfinder")
-                            .font(.system(size: 60))
-                            .foregroundColor(.white)
-
-                        Text("Scan Ticket QR Code")
-                            .appBody()
-                            .foregroundColor(.white)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 200)
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                }
-
-                Spacer()
-            }
-            .padding(20)
-            .background(Color.black)
-            .sheet(isPresented: $isShowingScanner) {
-                Text("QR Scanner Implementation")
-                    .font(.title)
-                    .foregroundColor(.white)
-            }
-
-            if showingResult, let ticket = scannedTicket {
-                CustomAlertView(
-                    title: "Scan Result",
-                    description: "Ticket: \(ticket.ticketId)\nValid: \(ticket.isValid ? "✅" : "❌")",
-                    primaryAction: { showingResult = false },
-                    primaryActionTitle: "OK",
-                    customContent: EmptyView()
-                )
-                .transition(.opacity)
-                .zIndex(1001)
             }
         }
     }

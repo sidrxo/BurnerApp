@@ -163,9 +163,7 @@ struct BurnerApp: App {
                 // Video splash - separate from error block
                 if showingVideoSplash {
                     VideoSplashView(videoName: "splash", loop: false) {
-                        
-                            showingVideoSplash = false
-                        
+                        showingVideoSplash = false
                     }
                     .zIndex(2000)
                 }
@@ -174,6 +172,11 @@ struct BurnerApp: App {
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             configureGlobalAppearance()
+
+            // Dismiss splash screen if app is backgrounded or becomes inactive during splash
+            if showingVideoSplash && (newPhase == .background || newPhase == .inactive) {
+                showingVideoSplash = false
+            }
 
             // Update live activities when app becomes active
             if newPhase == .active {

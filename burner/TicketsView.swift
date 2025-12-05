@@ -66,9 +66,7 @@ struct TicketsView: View {
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var coordinator: NavigationCoordinator
 
-    @State private var searchText = ""
-    @State private var selectedFilter: TicketsFilter = .upcoming
-    @FocusState private var isSearchFocused: Bool
+    @State private var selectedFilter: Int = 0 // 0 = upcoming, 1 = past
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -104,31 +102,18 @@ struct TicketsView: View {
 
     private var filteredTickets: [TicketWithEventData] {
         var result = ticketsWithEvents
+        
         switch selectedFilter {
-        case .upcoming:
+        case 0: // upcoming
             result = result.filter { !$0.event.isPast }
-        case .past:
+        case 1: // past
             result = result.filter { $0.event.isPast }
+        default:
+            result = result.filter { !$0.event.isPast }
         }
-        if !searchText.isEmpty {
-            result = result.filter { ticketWithEvent in
-                ticketWithEvent.event.name.localizedCaseInsensitiveContains(searchText) ||
-                ticketWithEvent.event.venue.localizedCaseInsensitiveContains(searchText)
-            }
-        }
+        
         return result.sorted {
             ($0.event.startTime ?? Date.distantFuture) < ($1.event.startTime ?? Date.distantFuture)
-        }
-    }
-
-    private var upcomingTickets: [TicketWithEventData] {
-        filteredTickets.filter { !$0.event.isPast }
-    }
-
-    private var pastTickets: [TicketWithEventData] {
-        filteredTickets.filter { ticketWithEvent in
-            ticketWithEvent.event.isPast &&
-            ticketWithEvent.ticket.status != "cancelled"
         }
     }
     
@@ -137,17 +122,17 @@ struct TicketsView: View {
             // Custom header with settings gear
             ticketsHeader
 
+            // Show tab bar only if there are past tickets
             if !ticketsViewModel.tickets.isEmpty || ticketsViewModel.isLoading {
-                searchSection
-                filtersSection
+                if hasPastTickets {
+                    tabBarSection
+                }
             }
 
             if ticketsViewModel.isLoading && ticketsViewModel.tickets.isEmpty {
                 loadingView
             } else if ticketsViewModel.tickets.isEmpty {
                 emptyStateView
-            } else if filteredTickets.isEmpty {
-                emptyFilteredView
             } else {
                 ticketsList
             }
@@ -262,67 +247,71 @@ struct TicketsView: View {
         .background(Color.black)
     }
     
-    // MARK: - Search Bar
-    private var searchSection: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass")
-                    .appBody()
-                    .foregroundColor(.gray)
-                
-                TextField("Search tickets", text: $searchText)
-                    .appBody()
-                    .foregroundColor(.white)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .focused($isSearchFocused)
-                
-                // Clear button
-                if !searchText.isEmpty {
-                    Button(action: {
-                        searchText = ""
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.appIcon)
-                            .foregroundColor(.gray)
+    // MARK: - Tab Bar Section
+    private var tabBarSection: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                // Upcoming Tab
+                Button {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        selectedFilter = 0
                     }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(Color(red: 22/255, green: 22/255, blue: 23/255))
-            .clipShape(RoundedRectangle(cornerRadius: 25))
-            .padding(.horizontal, 20)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                isSearchFocused = true
-            }
-        }
-        .background(Color.black)
-    }
-    
-    // MARK: - Filters Section
-    private var filtersSection: some View {
-        HStack(spacing: 12) {
-            Spacer()
-
-            ForEach(TicketsFilter.allCases, id: \.self) { filter in
-                FilterButton(title: filter.displayName, isSelected: selectedFilter == filter) {
-                    // Haptic feedback for filter change
                     let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                     impactFeedback.impactOccurred()
-                    
-                    withAnimation(.easeInOut(duration: AppConstants.standardAnimationDuration)) {
-                        selectedFilter = filter
+                } label: {
+                    Text("NEXT UP")
+                        .font(.system(size: 14, weight: selectedFilter == 0 ? .bold : .medium))
+                        .foregroundColor(selectedFilter == 0 ? .white : .gray)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                
+                // Past Tab
+                Button {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        selectedFilter = 1
                     }
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                    impactFeedback.impactOccurred()
+                } label: {
+                    Text("HISTORY")
+                        .font(.system(size: 14, weight: selectedFilter == 1 ? .bold : .medium))
+                        .foregroundColor(selectedFilter == 1 ? .white : .gray)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
                 }
             }
             
-            Spacer()
+            // Border and indicator
+            ZStack(alignment: .leading) {
+                // Border line
+                Rectangle()
+                    .fill(Color(red: 38/255, green: 38/255, blue: 38/255))
+                    .frame(height: 1)
+                
+                // Sliding indicator
+                GeometryReader { geometry in
+                    let tabWidth = geometry.size.width / 2
+                    let indicatorWidth: CGFloat = selectedFilter == 0 ? 55 : 60 // Width for "NEXT UP" and "HISTORY"
+                    let xOffset = selectedFilter == 0
+                        ? (tabWidth - indicatorWidth) / 2  // Center under NEXT UP
+                        : tabWidth + (tabWidth - indicatorWidth) / 2  // Center under HISTORY
+                    
+                    Rectangle()
+                        .fill(.white)
+                        .frame(width: indicatorWidth, height: 2)
+                        .offset(x: xOffset, y: 1)
+                }
+            }
+            .frame(height: 3)
         }
         .padding(.horizontal, 20)
-        .padding(.top, 16)
         .padding(.bottom, 16)
+        .background(Color.black)
+    }
+    
+    private var hasPastTickets: Bool {
+        ticketsWithEvents.contains { $0.event.isPast }
     }
     
     private var loadingView: some View {
@@ -338,100 +327,47 @@ struct TicketsView: View {
         .background(Color.black)
     }
     
-    private var emptyFilteredView: some View {
-        Group {
-            // Show custom empty state for past tickets filter
-            if selectedFilter == .past && !searchText.isEmpty == false {
-                noPastTicketsEmptyState
-            } else {
-                // Generic search results empty state
-                VStack(spacing: 16) {
-                    VStack(spacing: 8) {
-                        Text("No Results Found")
-                            .appSectionHeader()
-                            .foregroundColor(.white)
-                        Text("Try adjusting your search terms")
-                            .appBody()
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black)
-                .padding(.bottom, 16)
-            }
-        }
-    }
-
-    private var noPastTicketsEmptyState: some View {
+    private var ticketsList: some View {
         GeometryReader { geometry in
-            VStack(spacing: 20) {
-                Image("ticket")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 140)
-                    .frame(maxWidth: .infinity)
-                    .padding(.bottom, 30)
-
-                VStack(spacing: 8) {
-                    TightHeaderText("NO PAST", "TICKETS", alignment: .center)
-                        .frame(maxWidth: .infinity)
-                    Text("Your ticket history will appear here.")
-                        .appCard()
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
+            let gridHeight = calculateGridHeight(availableWidth: geometry.size.width - 40) // 40 for horizontal padding
+            let needsScroll = gridHeight > geometry.size.height - 100 // 100 for bottom padding
+            
+            if needsScroll {
+                ScrollView {
+                    ticketsGrid
                 }
+                .refreshable {
+                    ticketsViewModel.fetchUserTickets()
+                }
+            } else {
+                ticketsGrid
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
-            .frame(width: geometry.size.width, height: geometry.size.height)
-            .position(x: geometry.size.width / 2, y: geometry.size.height / 2 - 50)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
     }
     
-    private var ticketsList: some View {
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(filteredTickets, id: \.id) { ticketWithEvent in
-                    Button(action: {
-                        coordinator.navigate(to: .ticketDetail(ticketWithEvent))
-                    }) {
-                        TicketGridItem(ticketWithEvent: ticketWithEvent)
-                    }
-                    .buttonStyle(PlainButtonStyle())
+    private var ticketsGrid: some View {
+        LazyVGrid(columns: columns, spacing: 12) {
+            ForEach(filteredTickets, id: \.id) { ticketWithEvent in
+                Button(action: {
+                    coordinator.navigate(to: .ticketDetail(ticketWithEvent))
+                }) {
+                    TicketGridItem(ticketWithEvent: ticketWithEvent)
                 }
+                .buttonStyle(PlainButtonStyle())
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 100)
         }
-        .refreshable {
-            ticketsViewModel.fetchUserTickets()
-        }
-        .scrollDismissesKeyboard(.interactively)
-        .background(Color.black)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 100)
+    }
+    
+    private func calculateGridHeight(availableWidth: CGFloat) -> CGFloat {
+        let itemWidth = (availableWidth - 24) / 3 // 24 = spacing between 3 columns (12 * 2)
+        let itemHeight = itemWidth + 60 + 8 + 4 // image height (1:1) + text section min height + top padding + spacing
+        let rows = ceil(Double(filteredTickets.count) / 3.0)
+        let totalHeight = (itemHeight * CGFloat(rows)) + (12 * CGFloat(max(0, rows - 1))) + 100 
+        return totalHeight
     }
 }
 
-// MARK: - Supporting Types
-enum TicketsFilter: CaseIterable {
-    case upcoming, past
-    var displayName: String {
-        switch self {
-        case .upcoming: return "NEXT UP"
-        case .past: return "HISTORY"
-        }
-    }
-    static var allCases: [TicketsFilter] { [.upcoming, .past] }
-}
-
-
-
-#Preview {
-    TicketsView()
-        .environmentObject(AppState().ticketsViewModel)
-        .environmentObject(AppState().eventViewModel)
-        .environmentObject(NavigationCoordinator())
-        .preferredColorScheme(.dark)
-}

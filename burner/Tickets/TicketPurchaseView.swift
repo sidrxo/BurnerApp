@@ -281,8 +281,8 @@ struct TicketPurchaseView: View {
                 
                 LoadingSuccessView(
                     isLoading: $isLoadingPayment,
-                    size: 60,
-                    lineWidth: 4,
+                    size: 80,
+                    lineWidth: 8,
                     color: .white
                 )
             }

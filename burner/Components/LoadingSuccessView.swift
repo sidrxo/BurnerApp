@@ -54,7 +54,7 @@ struct LoadingSuccessView: View {
                     CheckmarkShape()
                         .trim(from: 0, to: checkmarkProgress)
                         .stroke(Color.black, style: StrokeStyle(lineWidth: lineWidth))
-                        .frame(width: size * 0.5, height: size * 0.5)
+                        .frame(width: size * 0.7, height: size * 0.7)
                 }
                 .opacity(fadeOut ? 0 : 1)
             }
@@ -112,7 +112,7 @@ struct CustomLoadingIndicator: View {
     var body: some View {
         Circle()
             .trim(from: 0, to: 0.7)
-            .stroke(Color.white, lineWidth: 12)
+            .stroke(Color.white, lineWidth: 8)
             .frame(width: size, height: size)
             .rotationEffect(Angle(degrees: isAnimating ? 360 : 0))
             .animation(
@@ -126,34 +126,7 @@ struct CustomLoadingIndicator: View {
     }
 }
 
-// MARK: - Loading Spinner (keeping for reference but not used)
-struct LoadingSpinner: View {
-    @State private var rotation: Double = 0
-    @State private var trimEnd: CGFloat = 0.2
-    
-    let size: CGFloat
-    let lineWidth: CGFloat
-    let color: Color
-    
-    var body: some View {
-        Circle()
-            .trim(from: 0, to: trimEnd)
-            .stroke(color, style: StrokeStyle(lineWidth: lineWidth))
-            .frame(width: size, height: size)
-            .rotationEffect(.degrees(rotation))
-            .onAppear {
-                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
-                    rotation = 360
-                }
-                
-                withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
-                    trimEnd = 0.8
-                }
-            }
-    }
-}
 
-// MARK: - Checkmark Shape
 struct CheckmarkShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()

@@ -139,7 +139,10 @@ struct OnboardingFlowView: View {
                             case 3:
                                 NotificationsSlide(onContinue: { handleNextStep() })
                             case 4:
-                                CompleteSlide(onComplete: { completeOnboarding() })
+                                CompleteSlide(
+                                    onComplete: { completeOnboarding() },
+                                    isCurrentSlide: step == currentStep
+                                )
                             default:
                                 EmptyView()
                             }
@@ -524,6 +527,9 @@ struct NotificationsSlide: View {
 struct CompleteSlide: View {
     let onComplete: () -> Void
     @State private var hasTriggeredCompletion = false
+    
+    // ✅ FIX: Add a way to know if this slide is actually visible
+    var isCurrentSlide: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -556,13 +562,18 @@ struct CompleteSlide: View {
             
             Spacer()
         }
-        .onAppear {
-            // Auto-advance after 1 second
-            if !hasTriggeredCompletion {
-                hasTriggeredCompletion = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    onComplete()
-                }
+        .onChange(of: isCurrentSlide) { oldValue, newValue in
+            // ✅ FIX: Only auto-advance when this slide BECOMES visible
+            guard newValue == true, !hasTriggeredCompletion else {
+                return
+            }
+            
+            print("✅ [COMPLETE SLIDE] Became visible - starting timer")
+            hasTriggeredCompletion = true
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                print("✅ [COMPLETE SLIDE] Timer fired - calling onComplete()")
+                onComplete()
             }
         }
     }

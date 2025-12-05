@@ -25,7 +25,7 @@ struct BookmarksView: View {
         VStack(spacing: 0) {
             // Header Section
             HStack {
-                Text("Saved")
+                Text("Saves")
                     .appPageHeader()
                     .foregroundColor(.white)
                     .padding(.bottom, 2)

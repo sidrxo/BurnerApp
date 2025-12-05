@@ -609,20 +609,7 @@ struct PermissionSlideContent: View {
                 .background(Color.white.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
-                HStack(spacing: 12) {
-                    Image(systemName: "lock.shield.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(.white.opacity(0.7))
-                    
-                    Text("Your data stays private and secure")
-                        .font(.appFont(size: 15))
-                        .kerning(-0.3)
-                        .foregroundColor(.white.opacity(0.7))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
-                .background(Color.white.opacity(0.05))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+       
             }
             
             Spacer()
@@ -693,7 +680,7 @@ struct CategorySelectionSlideContent: View {
                         .foregroundColor(.white)
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("\(categoryCount) categories selected")
+                        Text("All categories selected")
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
                         
@@ -753,38 +740,21 @@ struct ConfirmationSlideContent: View {
                 .font(.system(size: 48, weight: .bold))
                 .kerning(-1.5)
                 .foregroundColor(.white)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 40)
+
             
             // Subtitle below
-            Text("BURNER is ready. Your ticket QR code is now on the home screen.")
+            Text("BURNER is ready. Your ticket is now available in the tickets tab.")
                 .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .lineSpacing(4)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, 16)
             
             Spacer()
                 .frame(height: 32)
             
-            VStack(spacing: 12) {
-                ConfirmationItem(
-                    icon: "checkmark.shield.fill",
-                    text: "Screen Time access enabled",
-                    color: .white
-                )
-                
-                ConfirmationItem(
-                    icon: "square.grid.3x3.fill",
-                    text: "\(categoryCount) categories will be blocked",
-                    color: .white
-                )
-                
-                ConfirmationItem(
-                    icon: "bolt.fill",
-                    text: "Auto-activates when scanned",
-                    color: .white
-                )
-            }
             
             Spacer()
         }
