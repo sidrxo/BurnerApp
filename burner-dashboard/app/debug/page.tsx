@@ -6,8 +6,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, RefreshCw, Calendar } from "lucide-react";
-import { getDebugInfo, movePastEventsToFuture } from "@/lib/debug-utils";
+import { AlertCircle, RefreshCw, Calendar, PlayCircle } from "lucide-react";
+import { getDebugInfo, movePastEventsToFuture, simulateEventStartingSoon } from "@/lib/debug-utils";
 import { toast } from "sonner";
 
 function DebugToolsPageContent() {
@@ -15,6 +15,7 @@ function DebugToolsPageContent() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [loadingInfo, setLoadingInfo] = useState(true);
   const [movingEvents, setMovingEvents] = useState(false);
+  const [simulatingEvent, setSimulatingEvent] = useState(false);
 
   useEffect(() => {
     loadDebugInfo();
@@ -42,6 +43,24 @@ function DebugToolsPageContent() {
       toast.error("An unexpected error occurred");
     } finally {
       setMovingEvents(false);
+    }
+  };
+
+  const handleSimulateEvent = async () => {
+    setSimulatingEvent(true);
+    try {
+      const result = await simulateEventStartingSoon();
+      if (result.success) {
+        toast.success(`"${result.eventName}" will start in 5 minutes`);
+        // Reload debug info to show updated stats
+        await loadDebugInfo();
+      } else {
+        toast.error(result.error || "Failed to simulate event");
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setSimulatingEvent(false);
     }
   };
 
@@ -179,6 +198,36 @@ function DebugToolsPageContent() {
                   <>
                     <Calendar className="h-4 w-4 mr-2" />
                     Move Events to Future
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4 p-4 border rounded-lg">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <PlayCircle className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold mb-1">Simulate Event Starting Soon</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Sets the soonest event to start in 5 minutes and end 10 minutes later.
+                Useful for testing event notifications and real-time features.
+              </p>
+              <Button
+                onClick={handleSimulateEvent}
+                disabled={simulatingEvent || (debugInfo && debugInfo.totalEvents === 0)}
+                variant="default"
+              >
+                {simulatingEvent ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Simulating Event...
+                  </>
+                ) : (
+                  <>
+                    <PlayCircle className="h-4 w-4 mr-2" />
+                    Simulate Event
                   </>
                 )}
               </Button>
