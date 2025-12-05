@@ -189,13 +189,7 @@ struct ExploreView: View {
     }
     
     var body: some View {
-        ErrorBoundary(
-            errorTitle: "Failed to Load Events",
-            errorMessage: eventViewModel.errorMessage ?? "Unable to load events. Please check your connection and try again.",
-            onRetry: {
-                eventViewModel.fetchEvents()
-            }
-        ) {
+        ZStack {
             ScrollView {
                 VStack(spacing: 0) {
                     // Header with Location Button
@@ -241,25 +235,63 @@ struct ExploreView: View {
                     coordinator.navigate(to: .eventById(eventId))
                 }
             }
-            .overlay {
-                if showingSignInAlert {
-                    CustomAlertView(
-                        title: "Sign In Required",
-                        description: "You need to be signed in to bookmark events.",
-                        cancelAction: {
-                            showingSignInAlert = false
-                        },
-                        cancelActionTitle: "Cancel",
-                        primaryAction: {
-                            showingSignInAlert = false
-                            coordinator.showSignIn()
-                        },
-                        primaryActionTitle: "Sign In",
-                        customContent: EmptyView()
-                    )
-                    .transition(.opacity)
-                    .zIndex(999)
+            .onChange(of: eventViewModel.errorMessage) { _, newError in
+                // Clear error after showing it briefly if events are already loaded
+                if newError != nil && !eventViewModel.events.isEmpty {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        eventViewModel.clearMessages()
+                    }
                 }
+            }
+
+            // Only show error screen when there are no events loaded
+            if eventViewModel.errorMessage != nil && eventViewModel.events.isEmpty {
+                VStack(spacing: 24) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.yellow)
+
+                    Text("Failed to Load Events")
+                        .appSectionHeader()
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+
+                    Text("Unable to load events. Please check your connection and try again.")
+                        .appBody()
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+
+                    Button(action: {
+                        eventViewModel.clearMessages()
+                        eventViewModel.fetchEvents()
+                    }) {
+                        Text("TRY AGAIN")
+                            .font(.appFont(size: 17))
+                    }
+                    .buttonStyle(SecondaryButton(backgroundColor: .white, foregroundColor: .black))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.black)
+            }
+
+            if showingSignInAlert {
+                CustomAlertView(
+                    title: "Sign In Required",
+                    description: "You need to be signed in to bookmark events.",
+                    cancelAction: {
+                        showingSignInAlert = false
+                    },
+                    cancelActionTitle: "Cancel",
+                    primaryAction: {
+                        showingSignInAlert = false
+                        coordinator.showSignIn()
+                    },
+                    primaryActionTitle: "Sign In",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(999)
             }
         }
     }

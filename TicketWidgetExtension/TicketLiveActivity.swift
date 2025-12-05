@@ -14,16 +14,14 @@ struct TicketLiveActivity: Widget {
                     if hasStarted {
                         // DURING EVENT: Time until end + event info + progress bar (INVERTED COLORS)
                         VStack(spacing: 0) {
-                            // Time countdown (large, italic) - updates every minute
+                            // Time countdown (large, italic) - auto-updating native timer
                             if let eventEndTime = context.state.eventEndTime {
-                                TimelineView(.periodic(from: Date(), by: 60)) { timeContext in
-                                    Text(formatTimeRemaining(until: eventEndTime, at: timeContext.date))
-                                        .font(.custom("Avenir Next", size: 52).italic().weight(.heavy))
-                                        .foregroundColor(.white)
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.8)
-                                        .monospacedDigit()
-                                }
+                                Text(eventEndTime, style: .timer)
+                                    .font(.custom("Avenir Next", size: 52).italic().weight(.heavy))
+                                    .foregroundColor(.white)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                                    .monospacedDigit()
                             }
 
                             // Progress bar section - auto-updating with ProgressView
@@ -140,17 +138,13 @@ struct TicketLiveActivity: Widget {
                         Image(systemName: "clock")
                             .imageScale(.medium)
 
-                        // Time until start or until end
+                        // Time until start or until end - auto-updating native timer
                         if context.state.hasEventStarted, let end = context.state.eventEndTime {
-                            TimelineView(.periodic(from: Date(), by: 60)) { timeContext in
-                                Text(formatTimeRemaining(until: end, at: timeContext.date))
-                                    .font(.headline.monospacedDigit())
-                            }
+                            Text(end, style: .timer)
+                                .font(.headline.monospacedDigit())
                         } else {
-                            TimelineView(.periodic(from: Date(), by: 60)) { timeContext in
-                                Text(formatTimeRemaining(until: context.state.eventStartTime, at: timeContext.date))
-                                    .font(.headline.monospacedDigit())
-                            }
+                            Text(context.state.eventStartTime, style: .timer)
+                                .font(.headline.monospacedDigit())
                         }
                     }
                 }
@@ -158,16 +152,13 @@ struct TicketLiveActivity: Widget {
                 Image(systemName: "clock")
                     .imageScale(.small)
             } compactTrailing: {
+                // Auto-updating native timer for compact trailing
                 if context.state.hasEventStarted, let end = context.state.eventEndTime {
-                    TimelineView(.periodic(from: Date(), by: 60)) { timeContext in
-                        Text(formatTimeRemaining(until: end, at: timeContext.date))
-                            .font(.caption2.monospacedDigit())
-                    }
+                    Text(end, style: .timer)
+                        .font(.caption2.monospacedDigit())
                 } else {
-                    TimelineView(.periodic(from: Date(), by: 60)) { timeContext in
-                        Text(formatTimeRemaining(until: context.state.eventStartTime, at: timeContext.date))
-                            .font(.caption2.monospacedDigit())
-                    }
+                    Text(context.state.eventStartTime, style: .timer)
+                        .font(.caption2.monospacedDigit())
                 }
             } minimal: {
                 Image(systemName: "clock")
