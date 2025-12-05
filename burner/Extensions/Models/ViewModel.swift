@@ -64,6 +64,7 @@ class EventViewModel: ObservableObject {
 
         await MainActor.run {
             self.isLoading = true
+            self.errorMessage = nil // Clear any existing errors
         }
 
         let calendar = Calendar.current
