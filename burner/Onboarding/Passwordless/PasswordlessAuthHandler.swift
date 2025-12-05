@@ -24,7 +24,7 @@ class PasswordlessAuthHandler: ObservableObject {
         }
         
         // Retrieve the email from storage
-        guard let email = UserDefaults.standard.string(forKey: "pendingEmailForSignIn") else {
+        guard let email =   UserDefaults.standard.string(forKey: "pendingEmailForSignIn") else {
             self.error = "Email not found. Please try signing in again."
             return false
         }

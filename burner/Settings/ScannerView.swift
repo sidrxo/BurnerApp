@@ -26,12 +26,12 @@ struct ScannerView: View {
     @State private var selectedEvent: Event?
     @State private var todaysEvents: [Event] = []
     @State private var isLoadingEvents = false
+    @State private var isScanning = true // NEW STATE: Controls whether scanner is active
 
     @Environment(\.presentationMode) var presentationMode
     private let db = Firestore.firestore()
     private let functions = Functions.functions(region: "europe-west2")
     
-    // UserDefaults key for persistent event selection
     private let selectedEventIdKey = "selectedScannerEventId"
     
     struct AlreadyUsedTicket {
@@ -57,14 +57,17 @@ struct ScannerView: View {
                 scannerViewFinder
             }
 
-            // Custom Alerts
+            // Custom Alerts - Updated to include Scan Next/Try Again
             if showingError {
                 CustomAlertView(
                     title: "Error",
                     description: errorMessage,
-                    primaryAction: { showingError = false },
-                    primaryActionTitle: "OK",
-                    customContent: EmptyView()
+                    primaryAction: {
+                        showingError = false
+                        self.isScanning = true // RE-ACTIVATE SCANNER
+                    },
+                    primaryActionTitle: "TRY AGAIN",
+                    primaryActionColor: .red
                 )
                 .transition(.opacity)
                 .zIndex(1001)
@@ -74,8 +77,11 @@ struct ScannerView: View {
                 CustomAlertView(
                     title: "Success",
                     description: successMessage,
-                    primaryAction: { showingSuccess = false },
-                    primaryActionTitle: "Done",
+                    primaryAction: {
+                        showingSuccess = false
+                        self.isScanning = true // RE-ACTIVATE SCANNER
+                    },
+                    primaryActionTitle: "SCAN NEXT",
                     customContent: EmptyView()
                 )
                 .transition(.opacity)
@@ -96,9 +102,12 @@ struct ScannerView: View {
                     By: \(details.scannedBy)
                     \(details.scannedByEmail != nil ? "(\(details.scannedByEmail!))" : "")
                     """,
-                    primaryAction: { showingAlreadyUsed = false },
-                    primaryActionTitle: "OK",
-                    customContent: EmptyView()
+                    primaryAction: {
+                        showingAlreadyUsed = false
+                        self.isScanning = true // RE-ACTIVATE SCANNER
+                    },
+                    primaryActionTitle: "SCAN NEXT",
+                    primaryActionColor: .orange
                 )
                 .transition(.opacity)
                 .zIndex(1001)
@@ -135,6 +144,7 @@ struct ScannerView: View {
                         Button("CANCEL") {
                             showManualEntry = false
                             manualTicketNumber = ""
+                            self.isScanning = true
                         }
                         .appBody()
                         .foregroundColor(.white)
@@ -176,7 +186,6 @@ struct ScannerView: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showManualEntry)
     }
     
-    // MARK: - Loading View
     private var loadingView: some View {
         VStack(spacing: 16) {
             ProgressView()
@@ -190,7 +199,6 @@ struct ScannerView: View {
         .background(Color.black)
     }
     
-    // MARK: - Access Denied View
     private var accessDeniedView: some View {
         VStack(spacing: 24) {
             Spacer()
@@ -210,7 +218,6 @@ struct ScannerView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
                 
-                // Debug info
                 Text("Role: \(userRole.isEmpty ? "not loaded" : userRole)")
                     .appSecondary()
                     .foregroundColor(.gray.opacity(0.6))
@@ -237,7 +244,6 @@ struct ScannerView: View {
         .background(Color.black)
     }
     
-    // MARK: - Event Selection View
     private var eventSelectionView: some View {
         VStack(spacing: 0) {
             HeaderSection(title: "Select Event", includeTopPadding: false, includeHorizontalPadding: false)
@@ -255,26 +261,23 @@ struct ScannerView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if todaysEvents.isEmpty {
-                GeometryReader { geometry in
-                    VStack(spacing: 20) {
-                        Image(systemName: "calendar.badge.exclamationmark")
-                            .font(.system(size: 60))
+                VStack(spacing: 20) {
+                    Image(systemName: "calendar.badge.exclamationmark")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray)
+                        .padding(.top, 60)
+
+                    VStack(spacing: 8) {
+                        Text("No Events Today")
+                            .appSectionHeader()
+                            .foregroundColor(.white)
+
+                        Text("There are no events scheduled for today")
+                            .appBody()
                             .foregroundColor(.gray)
-
-                        VStack(spacing: 8) {
-                            Text("No Events Today")
-                                .appSectionHeader()
-                                .foregroundColor(.white)
-
-                            Text("There are no events scheduled for today")
-                                .appBody()
-                                .foregroundColor(.gray)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 40)
-                        }
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
                     }
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -301,26 +304,28 @@ struct ScannerView: View {
         .background(Color.black)
     }
     
-    // MARK: - Scanner ViewFinder
     private var scannerViewFinder: some View {
         ZStack {
-            // Camera ViewFinder
-            CodeScannerView(
-                codeTypes: [.qr],
-                scanMode: .once,
-                showViewfinder: true,
-                simulatedData: "TEST_TICKET_123",
-                completion: handleScan
-            )
-            .ignoresSafeArea()
+            // Camera ViewFinder is only active when isScanning is true
+            if isScanning {
+                CodeScannerView(
+                    codeTypes: [.qr],
+                    showViewfinder: true,
+                    simulatedData: "TEST_TICKET_123",
+                    completion: handleScan
+                )
+                .ignoresSafeArea()
+            } else {
+                Color.black.ignoresSafeArea()
+            }
             
             // Overlay with manual entry and event info
             VStack {
                 // Top section with manual entry pill
                 VStack(spacing: 16) {
-                    // Manual Entry Pill
                     Button(action: {
                         withAnimation {
+                            self.isScanning = false // Pause scanner for manual entry
                             showManualEntry = true
                         }
                     }) {
@@ -385,11 +390,9 @@ struct ScannerView: View {
         }
     }
     
-    // MARK: - Helper Functions
     private func loadPersistedEventSelection() {
-        guard let eventId = UserDefaults.standard.string(forKey: selectedEventIdKey) else { return }
+        guard let eventId =   UserDefaults.standard.string(forKey: selectedEventIdKey) else { return }
         
-        // Find the event in today's events once they're loaded
         if let event = todaysEvents.first(where: { $0.id == eventId }) {
             selectedEvent = event
         }
@@ -398,13 +401,13 @@ struct ScannerView: View {
     private func selectEvent(_ event: Event) {
         selectedEvent = event
         if let eventId = event.id {
-            UserDefaults.standard.set(eventId, forKey: selectedEventIdKey)
+              UserDefaults.standard.set(eventId, forKey: selectedEventIdKey)
         }
     }
     
     private func clearEventSelection() {
         selectedEvent = nil
-        UserDefaults.standard.removeObject(forKey: selectedEventIdKey)
+          UserDefaults.standard.removeObject(forKey: selectedEventIdKey)
     }
     
     private var canScanTickets: Bool {
@@ -413,7 +416,6 @@ struct ScannerView: View {
     
     private func checkScannerAccessFromClaims() {
         guard let user = Auth.auth().currentUser else {
-            print("🔍 [SCANNER DEBUG] ❌ No user authenticated")
             DispatchQueue.main.async {
                 self.isCheckingScanner = false
                 self.isScannerActive = false
@@ -421,26 +423,20 @@ struct ScannerView: View {
             return
         }
         
-        print("🔍 [SCANNER DEBUG] Checking scanner access for user: \(user.uid)")
-        
         user.getIDTokenResult { result, error in
             DispatchQueue.main.async {
                 self.isCheckingScanner = false
                 
-                if let error = error {
-                    print("🔍 [SCANNER DEBUG] ❌ Error getting token: \(error.localizedDescription)")
+                if error != nil {
                     self.isScannerActive = false
                     return
                 }
                 
                 if let claims = result?.claims,
                    let role = claims["role"] as? String {
-                    print("🔍 [SCANNER DEBUG] ✅ User role from claims: \(role)")
                     self.userRole = role
-                    self.isScannerActive = (role == "scanner" || role == "admin" || role == "siteadmin")
-                    print("🔍 [SCANNER DEBUG] Scanner active: \(self.isScannerActive)")
+                    self.isScannerActive = (role == "scanner" || role == "admin" || role == "siteadmin" || role == "venueAdmin")
                 } else {
-                    print("🔍 [SCANNER DEBUG] ⚠️ No role claim found")
                     self.isScannerActive = false
                 }
             }
@@ -461,107 +457,102 @@ struct ScannerView: View {
     }
     
     private func handleScan(result: Result<ScanResult, ScanError>) {
+        // Immediately pause scanning when a code is detected
+        self.isScanning = false
+
         switch result {
         case .success(let scanResult):
-            print("🔍 [SCANNER DEBUG] QR Code scanned: \(scanResult.string)")
             validateAndScanTicket(qrCodeData: scanResult.string)
             
         case .failure(let error):
-            print("🔍 [SCANNER DEBUG] ❌ Scan failed: \(error.localizedDescription)")
             errorMessage = "Scanning failed: \(error.localizedDescription)"
             showingError = true
         }
     }
     
+    // FIX 1: Extracts Firestore Document ID from JSON payload or URL
     private func extractTicketId(from qrData: String) -> String? {
-        print("🔍 [SCANNER DEBUG] Attempting to extract ticket ID from: \(qrData)")
-        
+        // 1. URL Extraction
         if let url = URL(string: qrData),
-           url.scheme == "https",
-           url.host == "partypass.com" || url.host == "www.partypass.com",
+           (url.host == "partypass.com" || url.host == "www.partypass.com"),
            url.pathComponents.contains("ticket") {
             
-            if let ticketId = url.pathComponents.last {
-                print("🔍 [SCANNER DEBUG] ✅ Extracted ticket ID from URL: \(ticketId)")
+            if let ticketId = url.pathComponents.last, ticketId.count > 10 {
                 return ticketId
             }
         }
         
-        print("🔍 [SCANNER DEBUG] ⚠️ Could not extract ticket ID, using raw data")
+        // 2. JSON Payload Extraction
+        if let data = qrData.data(using: .utf8),
+           let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+           let type = json["type"] as? String, type == "EVENT_TICKET",
+           let ticketId = json["ticketId"] as? String {
+            
+            return ticketId
+        }
+        
         return nil
     }
     
     private func validateAndScanTicket(qrCodeData: String? = nil, ticketId: String? = nil) {
-        print("🔍 [SCANNER DEBUG] === SCAN INITIATED ===")
-        print("🔍 [SCANNER DEBUG] QR Data: \(qrCodeData ?? "nil")")
-        print("🔍 [SCANNER DEBUG] Manual Ticket ID: \(ticketId ?? "nil")")
         
-        guard !isProcessing else {
-            print("🔍 [SCANNER DEBUG] ⚠️ Already processing a scan")
-            return
-        }
+        guard !isProcessing else { return }
         
         guard let selectedEvent = selectedEvent, let eventId = selectedEvent.id else {
-            print("🔍 [SCANNER DEBUG] ❌ No event selected")
             errorMessage = "Please select an event first"
             showingError = true
+            self.isScanning = true // Resume scanning if event selection fails
             return
         }
 
         var finalTicketId: String = ""
+        var isTicketNumber: Bool = false
 
-        if let ticketId = ticketId {
-            finalTicketId = ticketId
-            print("🔍 [SCANNER DEBUG] Using manual ticket ID: \(finalTicketId)")
+        if let id = ticketId {
+            finalTicketId = id
+            // Check if manual input is the human-readable ticket number (TKT...)
+            if id.starts(with: "TKT") && id.count > 10 {
+                isTicketNumber = true
+            }
         } else if let qrData = qrCodeData, let extracted = extractTicketId(from: qrData) {
             finalTicketId = extracted
-            print("🔍 [SCANNER DEBUG] Extracted ticket ID from QR: \(finalTicketId)")
-        } else if let qrData = qrCodeData {
-            finalTicketId = qrData
-            print("🔍 [SCANNER DEBUG] Using raw QR data as ticket ID: \(finalTicketId)")
         } else {
-            print("🔍 [SCANNER DEBUG] ❌ No valid ticket data provided")
-            errorMessage = "Invalid ticket data"
+            errorMessage = "Invalid QR Code or Ticket ID"
             showingError = true
+            self.isScanning = false // Keep paused to show error
             return
         }
 
         guard !finalTicketId.isEmpty else {
-            print("🔍 [SCANNER DEBUG] ❌ Final ticket ID is empty")
             errorMessage = "Invalid ticket ID"
             showingError = true
+            self.isScanning = false // Keep paused to show error
             return
         }
 
-        print("🔍 [SCANNER DEBUG] Final Ticket ID: \(finalTicketId)")
-        print("🔍 [SCANNER DEBUG] Selected Event ID: \(eventId)")
-
         isProcessing = true
 
-        // Call Cloud Function with event verification
         let scanFunction = functions.httpsCallable("scanTicket")
-        let data: [String: Any] = [
-            "ticketId": finalTicketId,
+        var data: [String: Any] = [
             "eventId": eventId,
             "qrCodeData": qrCodeData as Any
         ]
-
-        print("🔍 [SCANNER DEBUG] Calling cloud function with data: \(data)")
+        
+        if isTicketNumber {
+            data["ticketNumber"] = finalTicketId // Use ticketNumber key for TKT... (Manual input)
+        } else {
+            data["ticketId"] = finalTicketId // Use ticketId key for Document ID (QR/URL extraction)
+        }
 
         scanFunction.call(data) { result, error in
             DispatchQueue.main.async {
                 self.isProcessing = false
                 self.manualTicketNumber = ""
+                
+                // Scanner remains paused until an alert button is pressed
 
                 if let error = error as NSError? {
-                    print("🔍 [SCANNER DEBUG] ❌ ERROR RECEIVED")
-                    print("🔍 [SCANNER DEBUG] Error code: \(error.code)")
-                    print("🔍 [SCANNER DEBUG] Error domain: \(error.domain)")
-                    print("🔍 [SCANNER DEBUG] Error description: \(error.localizedDescription)")
-                    print("🔍 [SCANNER DEBUG] Error userInfo: \(error.userInfo)")
-
                     var errorMsg = error.localizedDescription
-
                     if errorMsg.contains("not-found") || errorMsg.contains("Ticket not found") {
                         errorMsg = "Ticket not found. Please check the ticket ID and try again."
                     } else if errorMsg.contains("wrong-event") || errorMsg.contains("different event") {
@@ -572,33 +563,26 @@ struct ScannerView: View {
                         errorMsg = "Invalid ticket format. Please check and try again."
                     }
 
-                    print("🔍 [SCANNER DEBUG] Displaying error to user: \(errorMsg)")
                     self.errorMessage = errorMsg
                     self.showingError = true
+                    let generator = UINotificationFeedbackGenerator()
+                    generator.notificationOccurred(.error)
                     return
                 }
 
                 guard let data = result?.data as? [String: Any] else {
-                    print("🔍 [SCANNER DEBUG] ❌ Invalid response format from server")
                     self.errorMessage = "Invalid response from server"
                     self.showingError = true
                     return
                 }
 
-                print("🔍 [SCANNER DEBUG] ✅ Response received: \(data)")
-
                 let success = data["success"] as? Bool ?? false
                 let message = data["message"] as? String ?? ""
                 let ticketStatus = data["ticketStatus"] as? String ?? ""
 
-                print("🔍 [SCANNER DEBUG] Success: \(success)")
-                print("🔍 [SCANNER DEBUG] Message: \(message)")
-                print("🔍 [SCANNER DEBUG] Ticket Status: \(ticketStatus)")
-
                 if success {
                     self.successMessage = message
                     self.showingSuccess = true
-
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.success)
                 } else if ticketStatus == "used" {
@@ -622,7 +606,6 @@ struct ScannerView: View {
                             scannedByEmail: scannedByEmail
                         )
                         self.showingAlreadyUsed = true
-
                         let generator = UINotificationFeedbackGenerator()
                         generator.notificationOccurred(.error)
                     } else {
@@ -632,7 +615,6 @@ struct ScannerView: View {
                 } else {
                     self.errorMessage = message
                     self.showingError = true
-
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.error)
                 }
@@ -666,8 +648,6 @@ struct ScannerView: View {
         let today = calendar.startOfDay(for: Date())
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
 
-        print("🔍 [SCANNER DEBUG] Fetching events for today...")
-
         db.collection("events")
             .whereField("startTime", isGreaterThanOrEqualTo: today)
             .whereField("startTime", isLessThan: tomorrow)
@@ -676,13 +656,11 @@ struct ScannerView: View {
                 DispatchQueue.main.async {
                     self.isLoadingEvents = false
 
-                    if let error = error {
-                        print("🔍 [SCANNER DEBUG] ❌ Error fetching events: \(error.localizedDescription)")
+                    if error != nil {
                         return
                     }
 
                     guard let documents = snapshot?.documents else {
-                        print("🔍 [SCANNER DEBUG] No events found for today")
                         return
                     }
 
@@ -694,10 +672,7 @@ struct ScannerView: View {
                         }
                         return start1 < start2
                     }
-
-                    print("🔍 [SCANNER DEBUG] Found \(self.todaysEvents.count) events for today")
                     
-                    // Restore persisted event selection after events are loaded
                     self.loadPersistedEventSelection()
                 }
             }

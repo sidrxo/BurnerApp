@@ -19,7 +19,7 @@ struct NotificationsSettingsView: View {
                 .edgesIgnoringSafeArea(.all)
 
             VStack(spacing: 0) {
-                HeaderSection(title: "Notifications", includeTopPadding: false, includeHorizontalPadding: false)
+                HeaderSection(title: "Notifications")
 
                 ScrollView {
                     VStack(spacing: 0) {
@@ -72,7 +72,7 @@ struct NotificationsSettingsView: View {
                                             .foregroundColor(.gray)
                                     }
                                 }
-                                .toggleStyle(SwitchToggleStyle(tint: .white))
+                                .toggleStyle(SwitchToggleStyle(tint: .cyan)) // TINT CHANGED TO CYAN
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
 
@@ -91,7 +91,7 @@ struct NotificationsSettingsView: View {
                                             .foregroundColor(.gray)
                                     }
                                 }
-                                .toggleStyle(SwitchToggleStyle(tint: .white))
+                                .toggleStyle(SwitchToggleStyle(tint: .cyan)) // TINT CHANGED TO CYAN
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
 
@@ -110,7 +110,7 @@ struct NotificationsSettingsView: View {
                                             .foregroundColor(.gray)
                                     }
                                 }
-                                .toggleStyle(SwitchToggleStyle(tint: .white))
+                                .toggleStyle(SwitchToggleStyle(tint: .cyan)) // TINT CHANGED TO CYAN
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
 
@@ -129,7 +129,7 @@ struct NotificationsSettingsView: View {
                                             .foregroundColor(.gray)
                                     }
                                 }
-                                .toggleStyle(SwitchToggleStyle(tint: .white))
+                                .toggleStyle(SwitchToggleStyle(tint: .cyan)) // TINT CHANGED TO CYAN
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
                             }

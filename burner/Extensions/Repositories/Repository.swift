@@ -68,6 +68,20 @@ class EventRepository: BaseRepository {
 
         setListener(listener)
     }
+    
+    // MARK: - Fetch Events from Server (for Refresh) <-- NEW FUNCTION
+    func fetchEventsFromServer(since date: Date) async throws -> [Event] {
+        let snapshot = try await db.collection("events")
+            .whereField("startTime", isGreaterThanOrEqualTo: Timestamp(date: date))
+            .getDocuments(source: .server) // <-- FORCES SERVER READ
+        
+        return snapshot.documents.compactMap { doc -> Event? in
+            var event = try? doc.data(as: Event.self)
+            event?.id = doc.documentID
+            return event
+        }
+    }
+
 
     // MARK: - Fetch Single Event
     func fetchEvent(by id: String) async throws -> Event? {

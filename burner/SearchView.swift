@@ -18,11 +18,16 @@ struct SearchView: View {
     @State private var showingSignInAlert = false
     @State private var showingLocationPermissionAlert = false
     @State private var pendingNearbySortRequest = false
+    
+    // FIX: RTI Error - We need to manage focus strictly
     @FocusState private var isSearchFocused: Bool
     
     // Debouncing for search
     @State private var searchTask: Task<Void, Never>?
     @State private var debouncedSearchText = ""
+    
+    // FIX: RTI Error - Track pending filter changes to cancel them if needed
+    @State private var pendingSortTask: DispatchWorkItem?
 
     enum SortOption: String {
         case date = "date"
@@ -125,6 +130,14 @@ struct SearchView: View {
             filtersSection
             contentSection
         }
+        // FIX: RTI Error - Ensure keyboard dismisses properly on scroll
+        .simultaneousGesture(
+            DragGesture().onChanged { _ in
+                if isSearchFocused {
+                    isSearchFocused = false
+                }
+            }
+        )
     }
 
     private var alertsOverlay: some View {
@@ -205,22 +218,31 @@ struct SearchView: View {
         impactFeedback.impactOccurred()
 
         if newValue == .nearby {
+            let authStatus = CLLocationManager().authorizationStatus
+            
             if userLocationManager.savedLocation != nil {
-                // Location already available
+                // Case 1: Location already set, proceed normally
                 return
-            } else {
-                let authStatus = CLLocationManager().authorizationStatus
-                if authStatus == .notDetermined {
-                    showingLocationPermissionAlert = true
-                    pendingNearbySortRequest = true
-                    sortBy = oldValue
-                } else if authStatus == .authorizedWhenInUse || authStatus == .authorizedAlways {
-                    requestLocationPermission()
-                    pendingNearbySortRequest = true
-                } else {
-                    // Permission denied
+                
+            } else if authStatus == .notDetermined {
+                // Case 2: Permission not yet asked
+                // FIX: Don't set state blindly, revert immediately until permission granted
+                // This prevents the UI from trying to sort by distance before having coordinates
+                if sortBy != oldValue {
                     sortBy = oldValue
                 }
+                
+                showingLocationPermissionAlert = true
+                pendingNearbySortRequest = true
+                
+            } else if authStatus == .authorizedWhenInUse || authStatus == .authorizedAlways {
+                // Case 3: Permission granted, but no current location fetched yet
+                requestLocationPermission()
+                pendingNearbySortRequest = true
+                
+            } else {
+                // Case 4: Permission denied
+                sortBy = oldValue
             }
         }
     }
@@ -232,11 +254,11 @@ struct SearchView: View {
                 switch result {
                 case .success:
                     if pendingNearbySortRequest {
-                        sortBy = .nearby
-                        pendingNearbySortRequest = false
+                        self.sortBy = .nearby
+                        self.pendingNearbySortRequest = false
                     }
                 case .failure:
-                    pendingNearbySortRequest = false
+                    self.pendingNearbySortRequest = false
                 }
             }
         }
@@ -245,16 +267,21 @@ struct SearchView: View {
     private var searchSection: some View {
         HStack(spacing: 12) {
             HStack(spacing: 12) {
-                // Show loading indicator when debouncing search
-                if searchText != debouncedSearchText && !searchText.isEmpty {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                        .tint(.gray)
-                } else {
-                    Image(systemName: "magnifyingglass")
-                        .font(.appIcon)
-                        .foregroundColor(.gray)
+                // FIX: CoreGraphics NaN Error
+                // Using ZStack with fixed frame prevents layout width from collapsing to 0
+                // or undefined during the transition between Image and ProgressView.
+                ZStack {
+                    if searchText != debouncedSearchText && !searchText.isEmpty {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .tint(.gray)
+                    } else {
+                        Image(systemName: "magnifyingglass")
+                            .font(.appIcon)
+                            .foregroundColor(.gray)
+                    }
                 }
+                .frame(width: 24, height: 24)
 
                 TextField("Search events", text: $searchText)
                     .appBody()
@@ -262,6 +289,13 @@ struct SearchView: View {
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .focused($isSearchFocused)
+                    // FIX: RTI Error - Stabilize TextField identity
+                    .id("searchField")
+                    .submitLabel(.search)
+                    .onSubmit {
+                        // Dismiss keyboard when search is submitted
+                        isSearchFocused = false
+                    }
 
                 // Clear button
                 if !searchText.isEmpty {
@@ -269,6 +303,8 @@ struct SearchView: View {
                         searchText = ""
                         debouncedSearchText = ""
                         searchTask?.cancel()
+                        // Keep focus on the field after clearing
+                        isSearchFocused = true
                     }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.appIcon)
@@ -282,6 +318,11 @@ struct SearchView: View {
             .clipShape(RoundedRectangle(cornerRadius: 25))
             .contentShape(Rectangle())
             .onTapGesture {
+                // FIX: RTI Error - Cancel any pending filter changes before focusing
+                pendingSortTask?.cancel()
+                pendingSortTask = nil
+                
+                // Set focus immediately without delay
                 isSearchFocused = true
             }
         }
@@ -294,32 +335,21 @@ struct SearchView: View {
                 title: "DATE",
                 isSelected: sortBy == .date
             ) {
-                withAnimation(.easeInOut(duration: AppConstants.standardAnimationDuration)) {
-                    sortBy = .date
-                }
+                handleFilterButtonTap(newSort: .date)
             }
 
             FilterButton(
                 title: "PRICE",
                 isSelected: sortBy == .price
             ) {
-                withAnimation(.easeInOut(duration: AppConstants.standardAnimationDuration)) {
-                    sortBy = .price
-                }
+                handleFilterButtonTap(newSort: .price)
             }
 
             FilterButton(
                 title: nearbyButtonTitle,
                 isSelected: sortBy == .nearby
             ) {
-                // If already on nearby, show location modal to reset
-                if sortBy == .nearby {
-                    coordinator.activeModal = .SetLocation
-                } else {
-                    withAnimation(.easeInOut(duration: AppConstants.standardAnimationDuration)) {
-                        sortBy = .nearby
-                    }
-                }
+                handleNearbyButtonTap()
             }
 
             Spacer()
@@ -327,6 +357,54 @@ struct SearchView: View {
         .padding(.horizontal, 20)
         .padding(.top, 16)
         .padding(.bottom, 16)
+    }
+    
+    // MARK: - Filter Button Handlers
+    private func handleFilterButtonTap(newSort: SortOption) {
+        // Cancel any pending sort tasks
+        pendingSortTask?.cancel()
+        
+        // If keyboard is visible, dismiss it first
+        if isSearchFocused {
+            isSearchFocused = false
+            
+            // Create a new work item for the sort change
+            let workItem = DispatchWorkItem { [newSort] in
+                sortBy = newSort
+            }
+            pendingSortTask = workItem
+            
+            // Delay to allow keyboard to dismiss
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
+        } else {
+            // No keyboard, change immediately
+            sortBy = newSort
+        }
+    }
+    
+    private func handleNearbyButtonTap() {
+        // Cancel any pending sort tasks
+        pendingSortTask?.cancel()
+        
+        // If keyboard is visible, dismiss it first
+        if isSearchFocused {
+            isSearchFocused = false
+        }
+        
+        // If already on nearby, show location modal to reset
+        if sortBy == .nearby {
+            let workItem = DispatchWorkItem {
+                coordinator.activeModal = .SetLocation
+            }
+            pendingSortTask = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
+        } else {
+            let workItem = DispatchWorkItem {
+                sortBy = .nearby
+            }
+            pendingSortTask = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
+        }
     }
 
     private var nearbyButtonTitle: String {
@@ -361,6 +439,11 @@ struct SearchView: View {
                 }
                 .padding(.bottom, 100)
             }
+            // FIX: CoreGraphics NaN Error
+            // Adding an ID forces the ScrollView to reset when criteria changes.
+            // This prevents the renderer from trying to interpolate rows from 'Date Sorted' positions
+            // to 'Price Sorted' positions, which often results in invalid frame calculations.
+            .id(sortBy?.rawValue ?? "default" + debouncedSearchText)
             .refreshable {
                 await eventViewModel.refreshEvents()
             }

@@ -8,6 +8,7 @@ import CoreLocation
 protocol EventRepositoryProtocol {
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void)
     func stopObserving()
+    func fetchEventsFromServer(since date: Date) async throws -> [Event] // <-- NEW
 }
 
 // MARK: - Ticket Repository Protocol
@@ -136,6 +137,13 @@ class MockEventRepository: EventRepositoryProtocol {
     }
 
     func stopObserving() {}
+    
+    func fetchEventsFromServer(since date: Date) async throws -> [Event] {
+        if shouldFail {
+            throw NSError(domain: "MockError", code: -1, userInfo: nil)
+        }
+        return mockEvents
+    }
 }
 
 class MockTicketRepository: TicketRepositoryProtocol {
@@ -178,5 +186,3 @@ class MockBookmarkRepository: BookmarkRepositoryProtocol {
 
     func stopObserving() {}
 }
-
-

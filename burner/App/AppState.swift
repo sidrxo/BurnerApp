@@ -215,7 +215,7 @@ class AppState: ObservableObject {
         
         // Also check on app state initialization if burner mode is already enabled
         Task { @MainActor in
-            let isEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
+            let isEnabled =   UserDefaults.standard.bool(forKey: "burnerModeEnabled")
             if isEnabled {
                 self.showingBurnerLockScreen = true
             }
@@ -238,7 +238,7 @@ class AppState: ObservableObject {
         burnerModeMonitor.startMonitoring()
 
         // Check if burner mode is enabled and show lock screen
-        let isEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
+        let isEnabled =   UserDefaults.standard.bool(forKey: "burnerModeEnabled")
         if isEnabled {
             showingBurnerLockScreen = true
         }

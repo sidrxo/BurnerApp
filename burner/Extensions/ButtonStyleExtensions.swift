@@ -10,7 +10,7 @@ struct PrimaryButton: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .appBody()
+            .font(.system(size: 16, design: .monospaced))
             .foregroundColor(foregroundColor)
             .frame(maxWidth: maxWidth)
             .padding(.vertical, 12)

@@ -21,7 +21,7 @@ struct BurnerModeLockScreen: View {
 
     // Check if terminal has already been shown for this burner mode session
     private var hasShownTerminalThisSession: Bool {
-        UserDefaults.standard.bool(forKey: "burnerModeTerminalShown")
+          UserDefaults.standard.bool(forKey: "burnerModeTerminalShown")
     }
 
     private var burnerManager: BurnerModeManager { appState.burnerManager }
@@ -285,7 +285,7 @@ struct BurnerModeLockScreen: View {
     // MARK: - Terminal Completion / Transitions
     private func handleTerminalComplete() {
         // Mark terminal as shown for this session
-        UserDefaults.standard.set(true, forKey: "burnerModeTerminalShown")
+          UserDefaults.standard.set(true, forKey: "burnerModeTerminalShown")
 
         // 1. Fade terminal to black
         withAnimation(.easeInOut(duration: 0.6)) {
@@ -308,7 +308,7 @@ struct BurnerModeLockScreen: View {
     // MARK: - Helper Functions
     private func setupEventEndTime() {
         // SIMPLE: Just retrieve the pre-determined end time that was set when burner mode was activated
-        if let stored = UserDefaults.standard.object(forKey: "burnerModeEventEndTime") as? Date {
+        if let stored =   UserDefaults.standard.object(forKey: "burnerModeEventEndTime") as? Date {
             eventEndTime = stored
         } else {
             // Fallback - this should only happen if something went wrong during activation
@@ -330,8 +330,8 @@ struct BurnerModeLockScreen: View {
         guard !isExiting else { return }
         isExiting = true
 
-        UserDefaults.standard.removeObject(forKey: "burnerModeEventEndTime")
-        UserDefaults.standard.removeObject(forKey: "burnerModeTerminalShown")
+          UserDefaults.standard.removeObject(forKey: "burnerModeEventEndTime")
+          UserDefaults.standard.removeObject(forKey: "burnerModeTerminalShown")
         withAnimation(.easeOut(duration: 0.3)) { lockScreenOpacity = 0 }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             burnerManager.disable()

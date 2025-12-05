@@ -5,9 +5,12 @@ import FirebaseFirestore
 import GoogleSignIn
 import Kingfisher
 import ActivityKit
+import UserNotifications
 
 // MARK: - AppDelegate
 class AppDelegate: NSObject, UIApplicationDelegate {
+    let notificationDelegate = NotificationDelegate()
+    
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         // Configure Firebase
@@ -47,6 +50,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Configure downloader
         let downloader = ImageDownloader.default
         downloader.downloadTimeout = 15.0 // 15 seconds timeout
+
+        // Setup notification delegate
+        UNUserNotificationCenter.current().delegate = notificationDelegate
 
         return true
     }
@@ -102,6 +108,7 @@ private func configureGlobalAppearance() {
     UILabel.appearance().textColor = .white
 }
 
+
 // MARK: - App
 @main
 struct BurnerApp: App {
@@ -110,12 +117,12 @@ struct BurnerApp: App {
     @State private var shouldResetApp = false
     @State private var showingVideoSplash = true
     @Environment(\.scenePhase) private var scenePhase
-
+    
     init() {
         configureGlobalAppearance()
-
+        
     }
-
+    
     var body: some Scene {
         WindowGroup {
             ZStack {
@@ -135,19 +142,20 @@ struct BurnerApp: App {
                     .onAppear {
                         appState.loadInitialData()
                         setupResetObserver()
+                        setupNotificationObserver()
                     }
                     .id(shouldResetApp)
                     .tint(.white)
                     .foregroundColor(.white)
                     .preferredColorScheme(.dark)
-
+                
                 if appState.showingBurnerLockScreen {
                     BurnerModeLockScreen()
                         .environmentObject(appState)
                         .transition(.opacity)
                         .zIndex(1000)
                 }
-
+                
                 if appState.showingError {
                     CustomAlertView(
                         title: "Error",
@@ -172,38 +180,45 @@ struct BurnerApp: App {
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             configureGlobalAppearance()
-
+            
             // Dismiss splash screen if app is backgrounded or becomes inactive during splash
             if showingVideoSplash && (newPhase == .background || newPhase == .inactive) {
                 showingVideoSplash = false
             }
-
+            
             // Update live activities when app becomes active
             if newPhase == .active {
+                // FIX: Use UNUserNotificationCenter to clear the application badge
+                UNUserNotificationCenter.current().setBadgeCount(0) { error in
+                    if let error = error {
+                        print("⚠️ Error clearing badge count: \(error.localizedDescription)")
+                    }
+                }
+                
                 if #available(iOS 16.1, *) {
                     TicketLiveActivityManager.updateLiveActivity()
                 }
             }
         }
     }
-
+    
     // MARK: - URL Handling
     private func handleIncomingURL(_ url: URL) {
         // 1) Google Sign-In first
         if GIDSignIn.sharedInstance.handle(url) {
             return
         }
-
+        
         // 2) Check for Firebase passwordless sign-in link
         if appState.passwordlessAuthHandler.handleSignInLink(url: url) {
             return
         }
-
+        
         // 3) Our custom scheme(s)
         guard url.scheme?.lowercased() == "burner" else {
             return
         }
-
+        
         if let deeplink = parseBurnerDeepLink(url) {
             switch deeplink {
             case .event(let id):
@@ -218,23 +233,23 @@ struct BurnerApp: App {
             }
         }
     }
-
+    
     private enum BurnerDeepLink {
         case event(String)
         case ticket(String)
         case auth(String)
     }
-
+    
     private func parseBurnerDeepLink(_ url: URL) -> BurnerDeepLink? {
         guard let comps = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
             return nil
         }
-
+        
         // ✅ SECURITY: Validate URL scheme strictly
         guard url.scheme?.lowercased() == "burner" else {
             return nil
         }
-
+        
         // Case A: burner://auth?link=<url> (passwordless auth)
         if comps.host == "auth" {
             if let linkParam = comps.queryItems?.first(where: { $0.name == "link" })?.value {
@@ -250,7 +265,7 @@ struct BurnerApp: App {
             }
             return nil
         }
-
+        
         // Case B: burner://event/12345 (host-based)
         if comps.host == "event" {
             let id = url.lastPathComponent
@@ -260,7 +275,7 @@ struct BurnerApp: App {
             }
             return .event(id)
         }
-
+        
         // Case B2: burner://ticket/12345 (host-based)
         if comps.host == "ticket" {
             let id = url.lastPathComponent
@@ -270,10 +285,10 @@ struct BurnerApp: App {
             }
             return .ticket(id)
         }
-
+        
         // Case C: burner:///event/12345 or burner:///ticket/12345 (path-based)
         let parts = url.pathComponents.filter { $0 != "/" }
-
+        
         if parts.count >= 2 {
             if parts[0] == "event" {
                 let id = parts[1]
@@ -289,10 +304,10 @@ struct BurnerApp: App {
                 return .ticket(id)
             }
         }
-
+        
         return nil
     }
-
+    
     // ✅ SECURITY: Validate ID format to prevent injection
     private func isValidID(_ id: String) -> Bool {
         // Allow alphanumeric characters, hyphens, and underscores only
@@ -311,12 +326,12 @@ struct BurnerApp: App {
         // Use NavigationCoordinator for deep linking
         appState.navigationCoordinator.handleDeepLink(eventId: eventId)
     }
-
+    
     private func navigateToTicket(ticketId: String) {
         // Use NavigationCoordinator for ticket deep linking
         appState.navigationCoordinator.handleTicketDeepLink(ticketId: ticketId)
     }
-
+    
     private func setupResetObserver() {
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name("ResetOnboarding"),
@@ -324,6 +339,21 @@ struct BurnerApp: App {
             queue: .main
         ) { _ in
             shouldResetApp.toggle()
+        }
+    }
+    
+    // MARK: - Notification Observer (fixed for MainActor)
+    private func setupNotificationObserver() {
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("UserTappedEventEndedNotification"),
+            object: nil,
+            queue: .main
+        ) { [weak appState] _ in
+            guard let appState = appState else { return }
+            
+            Task { @MainActor in
+                appState.navigationCoordinator.explorePath
+            }
         }
     }
 }

@@ -58,18 +58,43 @@ class EventViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Refresh Events (Force refresh by restarting listener)
+    // MARK: - Refresh Events (Force refresh by hitting server) <-- UPDATED
     func refreshEvents() async {
         guard !isSimulatingEmptyData else { return }
 
-        // Stop the existing listener
+        // 1. Stop the existing real-time listener
         eventRepository.stopObserving()
 
-        // Small delay to ensure clean restart
-        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        await MainActor.run {
+            self.isLoading = true // Show loading indicator during server fetch
+        }
 
-        // Restart the listener
-        fetchEvents()
+        let calendar = Calendar.current
+        let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+        
+        do {
+            // 2. Perform a one-time, server-only fetch
+            let serverEvents = try await eventRepository.fetchEventsFromServer(since: sevenDaysAgo)
+
+            await MainActor.run {
+                self.events = serverEvents // Update events immediately with fresh data
+                self.isLoading = false
+            }
+            
+            // 3. Re-establish the real-time listener for future updates
+            fetchEvents()
+
+            await self.refreshUserTicketStatus()
+
+        } catch {
+            await MainActor.run {
+                self.errorMessage = "Failed to refresh events: \(error.localizedDescription)"
+                self.isLoading = false
+            }
+            
+            // IMPORTANT: Re-establish listener even on failure to ensure data streaming resumes
+            fetchEvents()
+        }
     }
 
     // MARK: - Debug helpers

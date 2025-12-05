@@ -244,7 +244,7 @@ struct PasswordlessAuthView: View {
         startLoading()
         
         // Store email for verification after link is clicked
-        UserDefaults.standard.set(email, forKey: "pendingEmailForSignIn")
+          UserDefaults.standard.set(email, forKey: "pendingEmailForSignIn")
         
         // Configure action code settings
         let actionCodeSettings = ActionCodeSettings()

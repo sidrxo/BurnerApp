@@ -1,3 +1,11 @@
+//
+//  NotificationDelegate.swift
+//  burner
+//
+//  Created by Sid Rao on 05/12/2025.
+//
+
+
 import Foundation
 import UserNotifications
 
@@ -9,13 +17,13 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        let identifier = notification.request.identifier
+        _ = notification.request.identifier
         
         // Always show notifications even when app is in foreground
         if #available(iOS 14.0, *) {
-            completionHandler([.banner, .sound, .badge])
+            completionHandler([.banner, .sound])
         } else {
-            completionHandler([.alert, .sound, .badge])
+            completionHandler([.alert, .sound])
         }
     }
     

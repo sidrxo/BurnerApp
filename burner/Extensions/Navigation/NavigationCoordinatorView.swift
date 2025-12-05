@@ -81,7 +81,6 @@ struct NavigationCoordinatorView<Content: View>: View {
     private func modalView(for modal: ModalPresentation) -> some View {
         switch modal {
         case .SetLocation:
-            // Present your new modal. Adjust init/props to match your SetLocationModal.swift
             SetLocationModal()
         case .signIn:
             SignInSheetView(showingSignIn: Binding(
@@ -190,7 +189,11 @@ struct NavigationDestinationBuilder: View {
                 PaymentSettingsView()
 
             case .scanner:
+                // ✅ FIX: Ensure ScannerView gets all required environment objects
                 ScannerView()
+                    .environmentObject(appState)
+                    .environmentObject(appState.ticketsViewModel)
+                    .environmentObject(appState.eventViewModel)
 
             case .notifications:
                 NotificationsSettingsView()
@@ -202,8 +205,6 @@ struct NavigationDestinationBuilder: View {
                 DebugMenuView(appState: appState, burnerManager: appState.burnerManager)
             }
         }
-        // REMOVED: Manual tab bar management - let MainTabView handle it
-        // The tab bar visibility is now controlled by the path count in MainTabView
     }
 }
 

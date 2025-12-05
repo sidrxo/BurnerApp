@@ -9,6 +9,7 @@ struct DebugMenuView: View {
     @State private var showBurnerError = false
     @State private var burnerErrorMessage = ""
     @State private var showResetConfirmation = false
+    @State private var showNotificationScheduled = false
     
     // MARK: - New State for Presentation
     @State private var showBurnerModeSetup = false
@@ -63,12 +64,40 @@ struct DebugMenuView: View {
                     }
 
                     MenuSection(title: "BURNER MODE") {
+                        // 1. TOGGLE Button (Existing)
                         Button(action: {
                             toggleBurnerMode()
                         }) {
                             MenuItemContent(
-                                title: appState.showingBurnerLockScreen ? "Disable Burner Mode" : "Enable Burner Mode",
+                                title: appState.showingBurnerLockScreen ? "Disable Burner Mode (Toggle)" : "Enable Burner Mode (Toggle)",
                                 subtitle: appState.showingBurnerLockScreen ? "Currently active" : "Test Burner Mode"
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        // 2. DEDICATED DISABLE Button (NEW)
+                        Button(action: {
+                            burnerManager.disable()
+                            appState.showingBurnerLockScreen = false
+                        }) {
+                            MenuItemContent(
+                                title: "Force Disable Burner Mode",
+                                subtitle: "Instantly removes all Screen Time restrictions"
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(!appState.showingBurnerLockScreen) // Disable if already off
+                        
+                        // 3. Test Notification Button (Existing)
+                        Button(action: {
+                            burnerManager.scheduleTestNotification(delay: 10)
+                            showNotificationScheduled = true
+                        }) {
+                            MenuItemContent(
+                                title: "Test Event End Notification",
+                                subtitle: "Sends 'Event Ended' notification in 10 seconds"
                             )
                             .contentShape(Rectangle())
                         }
@@ -148,11 +177,16 @@ struct DebugMenuView: View {
         } message: {
             Text("This will clear all app data, sign you out, and reset the app to its first install state. This action cannot be undone.")
         }
+        .alert("Notification Scheduled", isPresented: $showNotificationScheduled) {
+            Button("OK") { }
+        } message: {
+            Text("The 'Event Ended' notification will appear in 10 seconds. You can close the app to test background delivery.")
+        }
         // MARK: - New Full Screen Covers
         .fullScreenCover(isPresented: $showOnboardingFlow) {
             // Instantiate a new manager instance for isolated testing of the flow
             OnboardingFlowView() // No need to pass manager in init now
-                .environmentObject(appState.onboardingManager) // <<< Inject via environment
+                .environmentObject(appState.onboardingManager) // Inject via environment
                 .environmentObject(appState) // Ensure AppState is also available
         }
         .fullScreenCover(isPresented: $showBurnerModeSetup) {
@@ -167,8 +201,7 @@ struct DebugMenuView: View {
                 
                 VStack(spacing: 40) {
                     LoadingSuccessView(
-                        isLoading: $isLoadingSuccess,
-                      
+                        isLoading: $isLoadingSuccess
                     )
                     
                     Button(action: {
@@ -241,7 +274,7 @@ struct DebugMenuView: View {
 
             // Clear UserDefaults
             if let bundleID = Bundle.main.bundleIdentifier {
-                UserDefaults.standard.removePersistentDomain(forName: bundleID)
+                  UserDefaults.standard.removePersistentDomain(forName: bundleID)
             }
 
             // ✅ FIX: Call reset on the AppState's shared OnboardingManager instance
@@ -294,6 +327,7 @@ struct DebugMenuView: View {
             // Remove preferences field from Firestore
             try await userRef.updateData(["preferences": FieldValue.delete()])
         } catch {
+            // Ignore error if field doesn't exist or update fails
         }
     }
 

@@ -44,6 +44,7 @@ class BurnerModeManager: ObservableObject {
         loadHasCompletedSetup()
         setupAuthorizationMonitoring()
         checkSetupCompliance()
+        requestNotificationPermissions()
     }
 
     private func loadHasCompletedSetup() {
@@ -161,6 +162,15 @@ class BurnerModeManager: ObservableObject {
         UserDefaults.standard.set(false, forKey: "hasCompletedBurnerSetup")
     }
 
+    // MARK: - Notification Permissions
+    private func requestNotificationPermissions() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if let error = error {
+                print("⚠️ Error requesting notification permissions: \(error.localizedDescription)")
+            }
+        }
+    }
+
     func enable(appState: AppState) async throws {
         guard isAuthorized else {
             throw BurnerModeError.notAuthorized
@@ -179,8 +189,14 @@ class BurnerModeManager: ObservableObject {
         
         // DETERMINE AND SET END TIME ONCE when enabling burner mode
         let eventEndTime = await calculateEventEndTime(appState: appState)
+        
+        // Save to both UserDefaults and App Group for Device Activity Extension access
         UserDefaults.standard.set(eventEndTime, forKey: "burnerModeEventEndTime")
+        appGroupDefaults?.set(eventEndTime, forKey: "burnerModeEventEndTime")
         UserDefaults.standard.set(false, forKey: "burnerModeTerminalShown") // Reset terminal flag
+        
+        // Schedule notification for when event ends
+        scheduleEventEndNotification(endTime: eventEndTime)
         
         // CRITICAL SECURITY MEASURES
         
@@ -194,8 +210,8 @@ class BurnerModeManager: ObservableObject {
             store.shield.applicationCategories = .all(except: selectedApps.applicationTokens)
         }
         
-        // 3. Start Device Activity monitoring to reapply restrictions
-        try startDeviceActivityMonitoring()
+        // 3. Start Device Activity monitoring with event end time
+        try startDeviceActivityMonitoring(endTime: eventEndTime)
 
         // Save state to both UserDefaults locations
         appGroupDefaults?.set(true, forKey: "burnerModeEnabled")
@@ -247,27 +263,105 @@ class BurnerModeManager: ObservableObject {
         }
     }
     
-    private func startDeviceActivityMonitoring() throws {
-        // Create a schedule that runs all day, every day
+    private func startDeviceActivityMonitoring(endTime: Date) throws {
+        // Calculate start and end time components for the Device Activity schedule
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Start time is now
+        let startComponents = calendar.dateComponents([.hour, .minute], from: now)
+        
+        // End time is when the event ends
+        let endComponents = calendar.dateComponents([.hour, .minute], from: endTime)
+        
+        // Create a schedule that runs from now until the event ends
         let schedule = DeviceActivitySchedule(
-            intervalStart: DateComponents(hour: 0, minute: 0),
-            intervalEnd: DateComponents(hour: 23, minute: 59),
-            repeats: true
+            intervalStart: startComponents,
+            intervalEnd: endComponents,
+            repeats: false  // Don't repeat - one-time monitoring until event ends
         )
         
         let activityName = DeviceActivityName("burner.protection")
         
         do {
             try center.startMonitoring(activityName, during: schedule)
+            print("✓ Device Activity monitoring started until \(endTime)")
         } catch {
+            print("⚠️ Error starting Device Activity monitoring: \(error.localizedDescription)")
             throw error
         }
+    }
+
+    // MARK: - Schedule Event End Notification
+    private func scheduleEventEndNotification(endTime: Date) {
+        let content = UNMutableNotificationContent()
+        content.title = "Event Ended"
+        content.body = "Your event has ended and Burner Mode has been automatically disabled. Welcome back! 🎉"
+        content.sound = .default
+        content.badge = 1
+        
+        // Create trigger for the event end time
+        let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: endTime)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+        
+        // Create request
+        let request = UNNotificationRequest(
+            identifier: "burner-mode-event-ended",
+            content: content,
+            trigger: trigger
+        )
+        
+        // Schedule notification
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("⚠️ Error scheduling event end notification: \(error.localizedDescription)")
+            } else {
+                print("✓ Event end notification scheduled for \(endTime)")
+            }
+        }
+    }
+    
+    // MARK: - Test Notification (Debug Only)
+    func scheduleTestNotification(delay: TimeInterval = 10) {
+        let content = UNMutableNotificationContent()
+        content.title = "Event Ended"
+        content.body = "Your event has ended and Burner Mode has been automatically disabled. Welcome back! 🎉"
+        content.sound = .default
+        content.badge = 1
+        
+        // Create trigger for X seconds from now
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
+        
+        // Create request
+        let request = UNNotificationRequest(
+            identifier: "burner-mode-test-notification",
+            content: content,
+            trigger: trigger
+        )
+        
+        // Schedule notification
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("⚠️ Error scheduling test notification: \(error.localizedDescription)")
+            } else {
+                print("✓ Test notification scheduled for \(Int(delay)) seconds from now")
+            }
+        }
+    }
+    
+    // MARK: - Cancel Event End Notification
+    private func cancelEventEndNotification() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["burner-mode-event-ended"])
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["burner-mode-event-ended"])
     }
 
     func disable() {
         guard isAuthorized else {
             return
         }
+
+        // Cancel the event end notification
+        cancelEventEndNotification()
 
         // Stop device activity monitoring
         let activityName = DeviceActivityName("burner.protection")
@@ -282,6 +376,7 @@ class BurnerModeManager: ObservableObject {
 
         // Clean up end time and terminal flag
         UserDefaults.standard.removeObject(forKey: "burnerModeEventEndTime")
+        appGroupDefaults?.removeObject(forKey: "burnerModeEventEndTime")
         UserDefaults.standard.removeObject(forKey: "burnerModeTerminalShown")
 
         // Update locked state
