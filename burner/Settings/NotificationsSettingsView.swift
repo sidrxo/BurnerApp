@@ -140,7 +140,6 @@ struct NotificationsSettingsView: View {
                 }
             }
         }
-        .navigationBarHidden(true)
         .onAppear {
             checkNotificationAuthorization()
         }
