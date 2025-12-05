@@ -10,6 +10,7 @@ struct ModalLocationSecondaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .font(.system(size: 16, design: .monospaced))
             .foregroundColor(foregroundColor)
             .frame(maxWidth: maxWidth)
             .frame(height: 50)
@@ -126,33 +127,35 @@ struct ManualCityEntryView: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Enter City Name")
-                        .appBody()
-                        .foregroundColor(.white)
-                    
+            VStack(spacing: 24) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("ENTER CITY NAME")
+                        .font(.system(size: 16, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.7))
+                        .textCase(.uppercase)
+
                     TextField("e.g., London, New York", text: $cityInput)
-                        .appBody()
+                        .font(.system(size: 16, design: .monospaced))
                         .foregroundColor(.white)
                         .padding()
                         .background(Color.white.opacity(0.05))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .focused($isFocused)
                         .autocorrectionDisabled()
+                        .textInputAutocapitalization(.words)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+
                 if let error = errorMessage {
                     Text(error)
-                        .appCaption()
+                        .font(.system(size: 14, design: .monospaced))
                         .foregroundColor(.red)
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 24)
                 }
-                
+
                 Spacer()
-                
+
                 // Updated Save Location Button using BurnerButton (Primary Style)
                 BurnerButton(
                     isProcessing ? "SAVING..." : "SAVE LOCATION",
@@ -163,23 +166,26 @@ struct ManualCityEntryView: View {
                 }
                 .disabled(cityInput.isEmpty || isProcessing)
                 .opacity((cityInput.isEmpty || isProcessing) ? 0.5 : 1.0)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
             }
             .background(Color.black)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button("CANCEL") {
                         onDismiss()
                     }
-                    .foregroundColor(.white)
+                    .font(.system(size: 16, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.7))
                 }
             }
             .onAppear {
                 isFocused = true
             }
         }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
     
     private func geocodeCity() {
