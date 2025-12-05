@@ -264,14 +264,16 @@ struct BurnerModeSetupView: View {
         burnerManager.completeSetup()
 
         if let onSkip = onSkip {
+            // If onSkip is provided, let the caller handle dismissal and navigation
             onSkip()
         } else {
+            // Otherwise, dismiss and navigate to tickets tab
             dismiss()
-        }
 
-        // Navigate to tickets tab to show the user's ticket
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            appState.navigationCoordinator.selectTab(.tickets)
+            // Navigate to tickets tab to show the user's ticket
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                appState.navigationCoordinator.selectTab(.tickets)
+            }
         }
     }
     

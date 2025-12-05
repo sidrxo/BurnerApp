@@ -58,30 +58,34 @@ class EventViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Refresh Events (Force refresh by hitting server) <-- UPDATED
+    // MARK: - Refresh Events (Force refresh by hitting server)
     func refreshEvents() async {
         guard !isSimulatingEmptyData else { return }
 
-        // 1. Stop the existing real-time listener
-        eventRepository.stopObserving()
-
         await MainActor.run {
-            self.isLoading = true // Show loading indicator during server fetch
+            self.isLoading = true
         }
 
         let calendar = Calendar.current
         let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-        
+
         do {
-            // 2. Perform a one-time, server-only fetch
+            // 1. Perform a one-time, server-only fetch (bypasses cache)
             let serverEvents = try await eventRepository.fetchEventsFromServer(since: sevenDaysAgo)
 
+            // 2. Stop the existing real-time listener AFTER getting fresh data
+            eventRepository.stopObserving()
+
             await MainActor.run {
-                self.events = serverEvents // Update events immediately with fresh data
+                // 3. Update events with fresh server data
+                self.events = serverEvents
                 self.isLoading = false
             }
-            
-            // 3. Re-establish the real-time listener for future updates
+
+            // 4. Small delay to ensure UI updates with fresh data before listener re-establishes
+            try await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+
+            // 5. Re-establish the real-time listener for future updates
             fetchEvents()
 
             await self.refreshUserTicketStatus()
@@ -91,8 +95,8 @@ class EventViewModel: ObservableObject {
                 self.errorMessage = "Failed to refresh events: \(error.localizedDescription)"
                 self.isLoading = false
             }
-            
-            // IMPORTANT: Re-establish listener even on failure to ensure data streaming resumes
+
+            // Re-establish listener even on failure to ensure data streaming resumes
             fetchEvents()
         }
     }
