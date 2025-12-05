@@ -301,9 +301,9 @@ struct TicketPurchaseView: View {
                 onSkip: {
                     showBurnerSetup = false
                     presentationMode.wrappedValue.dismiss()
-                    // Navigate to tickets tab after dismissing purchase view
+                    // Navigate to ticket detail after dismissing purchase view
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        coordinator.selectTab(.tickets)
+                        navigateToTicketDetail()
                     }
                 }
             )
@@ -324,10 +324,10 @@ struct TicketPurchaseView: View {
                     if !appState.burnerManager.hasCompletedSetup {
                         showBurnerSetup = true
                     } else {
-                        // Burner already set up, dismiss and navigate to tickets
+                        // Burner already set up, dismiss and navigate to ticket detail
                         presentationMode.wrappedValue.dismiss()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            coordinator.selectTab(.tickets)
+                            navigateToTicketDetail()
                         }
                     }
                 }
@@ -686,5 +686,40 @@ struct TicketPurchaseView: View {
         alertMessage = message
         isSuccess = false
         showingAlert = true
+    }
+
+    // Helper function to navigate to the newly purchased ticket detail
+    private func navigateToTicketDetail() {
+        // First, switch to tickets tab
+        coordinator.selectTab(.tickets)
+
+        // Wait a moment for Firestore to create the ticket and for tickets to load
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            // Refresh tickets to get the newly created ticket
+            Task {
+                // Find the ticket for this event
+                let matchingTickets = appState.ticketsViewModel.tickets.filter { ticket in
+                    ticket.eventId == event.id && ticket.status == "confirmed"
+                }
+
+                if let ticket = matchingTickets.first {
+                    // Create TicketWithEventData and navigate
+                    let ticketWithEvent = TicketWithEventData(ticket: ticket, event: event)
+                    coordinator.navigate(to: .ticketDetail(ticketWithEvent), in: .tickets)
+                } else {
+                    // If ticket not found yet, try again after a short delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        let retryTickets = appState.ticketsViewModel.tickets.filter { ticket in
+                            ticket.eventId == event.id && ticket.status == "confirmed"
+                        }
+
+                        if let ticket = retryTickets.first {
+                            let ticketWithEvent = TicketWithEventData(ticket: ticket, event: event)
+                            coordinator.navigate(to: .ticketDetail(ticketWithEvent), in: .tickets)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
