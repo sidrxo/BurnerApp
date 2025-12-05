@@ -38,6 +38,16 @@ struct ErrorBoundary<Content: View>: View {
                         hasError = false
                         errorDetails = nil
                     }
+                    .onChange(of: errorMessage) { oldValue, newValue in
+                        // Show error view when error message changes to non-nil
+                        if let message = newValue, !message.isEmpty {
+                            hasError = true
+                            errorDetails = message
+                        } else {
+                            hasError = false
+                            errorDetails = nil
+                        }
+                    }
             }
         }
     }
