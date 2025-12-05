@@ -78,6 +78,73 @@ export async function movePastEventsToFuture(): Promise<{ success: boolean; coun
 }
 
 /**
+ * Simulates an event happening soon by setting the soonest event to start in 5 minutes
+ * Only available to site administrators
+ */
+export async function simulateEventStartingSoon(): Promise<{ success: boolean; eventName?: string; error?: string }> {
+  try {
+    // Get all events
+    const eventsSnapshot = await getDocs(collection(db, "events"));
+
+    if (eventsSnapshot.empty) {
+      return {
+        success: false,
+        error: "No events found in the database",
+      };
+    }
+
+    // Find the soonest event (earliest start time)
+    let soonestEvent: { id: string; name: string; startTime: Date } | null = null;
+
+    eventsSnapshot.forEach((eventDoc) => {
+      const data = eventDoc.data();
+      const startTime = data.startTime?.toDate();
+
+      if (startTime) {
+        if (!soonestEvent || startTime < soonestEvent.startTime) {
+          soonestEvent = {
+            id: eventDoc.id,
+            name: data.name || "Unnamed Event",
+            startTime,
+          };
+        }
+      }
+    });
+
+    if (!soonestEvent) {
+      return {
+        success: false,
+        error: "No events with valid start times found",
+      };
+    }
+
+    // Set start time to 5 minutes from now
+    const now = new Date();
+    const newStartTime = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes from now
+    const newEndTime = new Date(newStartTime.getTime() + 10 * 60 * 1000); // 10 minutes after start (15 minutes from now)
+
+    // Update the event
+    await updateDoc(doc(db, "events", soonestEvent.id), {
+      startTime: Timestamp.fromDate(newStartTime),
+      endTime: Timestamp.fromDate(newEndTime),
+      date: Timestamp.fromDate(newStartTime),
+      updatedAt: Timestamp.now(),
+    });
+
+    return {
+      success: true,
+      eventName: soonestEvent.name,
+    };
+  } catch (error: any) {
+    console.error("Error simulating event:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to simulate event",
+    };
+  }
+}
+
+/**
  * Get debug information about the database
  */
 export async function getDebugInfo() {
