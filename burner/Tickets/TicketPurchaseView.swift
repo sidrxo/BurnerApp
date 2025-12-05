@@ -324,7 +324,11 @@ struct TicketPurchaseView: View {
                     if !appState.burnerManager.hasCompletedSetup {
                         showBurnerSetup = true
                     } else {
+                        // Burner already set up, dismiss and navigate to tickets
                         presentationMode.wrappedValue.dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            coordinator.selectTab(.tickets)
+                        }
                     }
                 }
             }
