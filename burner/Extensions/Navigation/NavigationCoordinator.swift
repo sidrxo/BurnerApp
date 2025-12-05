@@ -1,14 +1,6 @@
-//
-//  NavigationCoordinator.swift
-//  burner
-//
-//  Created by Claude on 2025-11-05.
-//
-
 import SwiftUI
 import Combine
 
-// MARK: - Tab Selection
 
 enum AppTab: Int, CaseIterable {
     case explore = 0
@@ -38,15 +30,14 @@ enum AppTab: Int, CaseIterable {
 // MARK: - Navigation Destinations
 
 enum NavigationDestination: Hashable {
-    // Event Navigation
-    case eventDetail(Event)
+    case eventDetail(String)
     case eventById(String)
     case filteredEvents(EventSectionDestination)
 
     // Ticket Navigation
     case ticketDetail(TicketWithEventData)
     case ticketById(String)
-    case ticketPurchase(Event)
+    case ticketPurchase(Event)  
     case transferTicket(Ticket)
     case transferTicketsList
 
@@ -62,9 +53,9 @@ enum NavigationDestination: Hashable {
 
     func hash(into hasher: inout Hasher) {
         switch self {
-        case .eventDetail(let event):
+        case .eventDetail(let eventId):  // ✅ CHANGED: Now uses eventId
             hasher.combine("eventDetail")
-            hasher.combine(event.id)
+            hasher.combine(eventId)
         case .eventById(let id):
             hasher.combine("eventById")
             hasher.combine(id)
@@ -106,10 +97,14 @@ enum NavigationDestination: Hashable {
 
     static func == (lhs: NavigationDestination, rhs: NavigationDestination) -> Bool {
         switch (lhs, rhs) {
-        case (.eventDetail(let lEvent), .eventDetail(let rEvent)):
-            return lEvent.id == rEvent.id
+        case (.eventDetail(let lId), .eventDetail(let rId)):  // ✅ CHANGED: Compare IDs
+            return lId == rId
         case (.eventById(let lId), .eventById(let rId)):
             return lId == rId
+        // ✅ NEW: Allow eventDetail and eventById to be equal if same ID
+        case (.eventDetail(let id1), .eventById(let id2)),
+             (.eventById(let id1), .eventDetail(let id2)):
+            return id1 == id2
         case (.filteredEvents(let lDest), .filteredEvents(let rDest)):
             return lDest == rDest
         case (.ticketDetail(let lTicketWithEvent), .ticketDetail(let rTicketWithEvent)):
@@ -341,7 +336,8 @@ class NavigationCoordinator: ObservableObject {
             explorePath.removeLast(explorePath.count)
         }
         pendingDeepLink = eventId
-        navigate(to: .eventById(eventId), in: .explore)
+        // ✅ CHANGED: Use eventDetail instead of eventById (now they're the same)
+        navigate(to: .eventDetail(eventId), in: .explore)
     }
 
     func handleTicketDeepLink(ticketId: String) {

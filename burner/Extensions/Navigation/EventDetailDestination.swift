@@ -8,75 +8,89 @@ struct EventDetailDestination: View {
     @Environment(\.heroNamespace) private var heroNamespace
 
     let eventId: String
-    @State private var event: Event?
+    
+    // REMOVED: @State private var event: Event?
+    // ADDED: Computed property that always gets latest event
+    private var event: Event? {
+        eventViewModel.events.first(where: { $0.id == eventId })
+    }
+    
     @State private var isLoading = false
     @State private var loadError: String?
+    @State private var hasAttemptedFetch = false
 
     var body: some View {
         Group {
-            if let event {
-                EventDetailView(event: event, namespace: heroNamespace)
+            if let event = event {
+                // CHANGE: Pass eventId instead of event object
+                EventDetailView(eventId: eventId, namespace: heroNamespace)
             } else if isLoading {
-                ZStack {
-                    Color.black.ignoresSafeArea()
-                    VStack(spacing: 20) {
-                        ProgressView()
-                            .tint(.white)
-                            .scaleEffect(1.5)
-                        Text("Loading event...")
-                            .foregroundColor(.white)
-                        Text("Event ID: \(eventId)")
-                            .foregroundColor(.gray)
-                            .font(.caption)
-                    }
-                }
-            } else if let loadError {
-                ZStack {
-                    Color.black.ignoresSafeArea()
-                    VStack(spacing: 12) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 48))
-                            .foregroundColor(.orange)
-                        Text("Couldn't open event")
-                            .foregroundColor(.white)
-                            .font(.headline)
-                        Text(loadError)
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                        Text("Event ID: \(eventId)")
-                            .foregroundColor(.gray)
-                            .font(.caption)
-                            .padding(.top, 8)
-                        Button("Retry") {
-                            self.loadError = nil
+                loadingView
+            } else if let loadError = loadError {
+                errorView(error: loadError)
+            } else {
+                loadingView
+                    .onAppear {
+                        if !hasAttemptedFetch {
                             Task { await load() }
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.white)
                     }
-                    .padding()
-                }
-            } else {
-                ZStack {
-                    Color.black.ignoresSafeArea()
-                    VStack(spacing: 20) {
-                        ProgressView()
-                            .tint(.white)
-                            .scaleEffect(1.5)
-                        Text("Preparing event...")
-                            .foregroundColor(.white)
-                        Text("Event ID: \(eventId)")
-                            .foregroundColor(.gray)
-                            .font(.caption)
-                    }
-                }
-                .onAppear {
-                    Task { await load() }
-                }
             }
         }
         .navigationBarBackButtonHidden(false)
+        // ADDED: Watch for changes to eventViewModel.events
+        .onChange(of: eventViewModel.events.count) { _, _ in
+            // If we were loading and now the event appears, stop loading
+            if isLoading && event != nil {
+                isLoading = false
+            }
+        }
+    }
+    
+    private var loadingView: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 20) {
+                ProgressView()
+                    .tint(.white)
+                    .scaleEffect(1.5)
+                Text(hasAttemptedFetch ? "Loading event..." : "Preparing event...")
+                    .foregroundColor(.white)
+                Text("Event ID: \(eventId)")
+                    .foregroundColor(.gray)
+                    .font(.caption)
+            }
+        }
+    }
+    
+    private func errorView(error: String) -> some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 12) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 48))
+                    .foregroundColor(.orange)
+                Text("Couldn't open event")
+                    .foregroundColor(.white)
+                    .font(.headline)
+                Text(error)
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                Text("Event ID: \(eventId)")
+                    .foregroundColor(.gray)
+                    .font(.caption)
+                    .padding(.top, 8)
+                Button("Retry") {
+                    self.loadError = nil
+                    self.hasAttemptedFetch = false
+                    Task { await load() }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.white)
+            }
+            .padding()
+        }
     }
 
     private func load() async {
@@ -84,20 +98,22 @@ struct EventDetailDestination: View {
         guard !eventId.isEmpty else {
             await MainActor.run {
                 loadError = "Invalid event ID"
+                hasAttemptedFetch = true
             }
             return
         }
 
-        // First check if event is already loaded in memory
-        if let e = eventViewModel.events.first(where: { $0.id == eventId }) {
+        // Check if event is already loaded in memory
+        if event != nil {
             await MainActor.run {
-                event = e
+                hasAttemptedFetch = true
             }
             return
         }
 
         await MainActor.run {
             isLoading = true
+            hasAttemptedFetch = true
         }
 
         defer {
@@ -107,9 +123,18 @@ struct EventDetailDestination: View {
         }
 
         do {
-            let e = try await eventViewModel.fetchEvent(byId: eventId)
+            // Fetch event from Firestore
+            let fetchedEvent = try await eventViewModel.fetchEvent(byId: eventId)
+            
             await MainActor.run {
-                event = e
+                // IMPORTANT: Don't store in @State
+                // The event will appear in eventViewModel.events via the fetchEvent method
+                // and our computed property will pick it up
+                
+                // If for some reason it's not in the events array, that's an error
+                if self.event == nil {
+                    loadError = "Event not found in local cache after fetch"
+                }
             }
         } catch {
             await MainActor.run {

@@ -149,10 +149,10 @@ struct NavigationDestinationBuilder: View {
     var body: some View {
         Group {
             switch destination {
-            // Event Navigation
-            case .eventDetail(let event):
-                EventDetailView(event: event, namespace: heroNamespace)
-
+            // Event Navigation - ✅ CHANGED: Both cases now use EventDetailDestination
+            case .eventDetail(let eventId):
+                EventDetailDestination(eventId: eventId)
+                
             case .eventById(let eventId):
                 EventDetailDestination(eventId: eventId)
 
@@ -189,7 +189,6 @@ struct NavigationDestinationBuilder: View {
                 PaymentSettingsView()
 
             case .scanner:
-                // ✅ FIX: Ensure ScannerView gets all required environment objects
                 ScannerView()
                     .environmentObject(appState)
                     .environmentObject(appState.ticketsViewModel)

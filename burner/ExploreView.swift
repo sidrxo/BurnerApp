@@ -15,6 +15,9 @@ struct ExploreView: View {
     @State private var searchText = ""
     @State private var showingSignInAlert = false
     @StateObject private var localPreferences = LocalPreferences()
+    
+    // Track refresh state to improve UX
+    @State private var isRefreshing = false
 
     // Maximum distance for "nearby" events (in meters)
     private let maxNearbyDistance: CLLocationDistance = AppConstants.maxNearbyDistanceMeters
@@ -226,7 +229,13 @@ struct ExploreView: View {
                 .padding(.bottom, 80)
             }
             .refreshable {
+                // IMPROVED: Set flag and use task to handle refresh
+                isRefreshing = true
                 await eventViewModel.refreshEvents()
+                
+                // Small delay to show refresh completed (feels more natural)
+                try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+                isRefreshing = false
             }
             .navigationBarHidden(true)
             .background(Color.black)
@@ -237,7 +246,8 @@ struct ExploreView: View {
             }
             .onChange(of: eventViewModel.errorMessage) { _, newError in
                 // Clear error after showing it briefly if events are already loaded
-                if newError != nil && !eventViewModel.events.isEmpty {
+                // IMPROVED: Don't clear error during refresh
+                if newError != nil && !eventViewModel.events.isEmpty && !isRefreshing {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         eventViewModel.clearMessages()
                     }
@@ -372,7 +382,6 @@ struct ExploreView: View {
         // 7) Genre sections with featured cards interspersed every 2 sections
         buildGenreSectionsWithFeaturedCards(isLast: true)
 
-        // 8) All Events
         // 8) All Events (centered title + arrow, no list)
         if !allEvents.isEmpty {
             HStack {
@@ -417,7 +426,7 @@ struct ExploreView: View {
                 allEvents: allEventsForGenre(genre),
                 bookmarkManager: bookmarkManager,
                 showViewAllButton: true,
-                isLast: index == genresWithEvents.count - 1,   // <-- PASS IT
+                isLast: index == genresWithEvents.count - 1,
                 showingSignInAlert: $showingSignInAlert,
                 namespace: heroNamespace
             )
@@ -557,7 +566,7 @@ struct EventSection: View {
     let allEvents: [Event]
     let bookmarkManager: BookmarkManager
     let showViewAllButton: Bool
-    let isLast: Bool   // <-- ADD THIS
+    let isLast: Bool
     @Binding var showingSignInAlert: Bool
     var namespace: Namespace.ID?
 
@@ -567,7 +576,7 @@ struct EventSection: View {
         allEvents: [Event]? = nil,
         bookmarkManager: BookmarkManager,
         showViewAllButton: Bool = true,
-        isLast: Bool = false, // <-- add this
+        isLast: Bool = false,
         showingSignInAlert: Binding<Bool> = .constant(false),
         namespace: Namespace.ID? = nil
     ) {
