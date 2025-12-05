@@ -123,8 +123,12 @@ export async function simulateEventStartingSoon(): Promise<{ success: boolean; e
     const newStartTime = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes from now
     const newEndTime = new Date(newStartTime.getTime() + 10 * 60 * 1000); // 10 minutes after start (15 minutes from now)
 
+    // Store event details for return (TypeScript type narrowing)
+    const eventId = soonestEvent.id;
+    const eventName = soonestEvent.name;
+
     // Update the event
-    await updateDoc(doc(db, "events", soonestEvent.id), {
+    await updateDoc(doc(db, "events", eventId), {
       startTime: Timestamp.fromDate(newStartTime),
       endTime: Timestamp.fromDate(newEndTime),
       date: Timestamp.fromDate(newStartTime),
@@ -133,7 +137,7 @@ export async function simulateEventStartingSoon(): Promise<{ success: boolean; e
 
     return {
       success: true,
-      eventName: soonestEvent.name,
+      eventName,
     };
   } catch (error: any) {
     console.error("Error simulating event:", error);
