@@ -8,11 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, RefreshCw, Calendar } from "lucide-react";
 import { getDebugInfo, movePastEventsToFuture } from "@/lib/debug-utils";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 function DebugToolsPageContent() {
   const { user, loading } = useAuth();
-  const { toast } = useToast();
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [loadingInfo, setLoadingInfo] = useState(true);
   const [movingEvents, setMovingEvents] = useState(false);
@@ -33,25 +32,14 @@ function DebugToolsPageContent() {
     try {
       const result = await movePastEventsToFuture();
       if (result.success) {
-        toast({
-          title: "Events Moved Successfully",
-          description: `Moved ${result.count} past events to the future`,
-        });
+        toast.success(`Moved ${result.count} past event${result.count !== 1 ? 's' : ''} to the future`);
         // Reload debug info to show updated stats
         await loadDebugInfo();
       } else {
-        toast({
-          title: "Error",
-          description: "Failed to move events to the future",
-          variant: "destructive",
-        });
+        toast.error("Failed to move events to the future");
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
+      toast.error("An unexpected error occurred");
     } finally {
       setMovingEvents(false);
     }
