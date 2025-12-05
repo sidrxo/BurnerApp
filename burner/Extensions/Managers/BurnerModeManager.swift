@@ -321,6 +321,76 @@ class BurnerModeManager: ObservableObject {
         }
     }
     
+    // MARK: - Event Day Burner Setup Reminder
+    func checkAndScheduleEventDayReminder(tickets: [Ticket]) {
+        guard !hasCompletedSetup else {
+            // User has already completed setup, no need to remind
+            return
+        }
+
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
+        // Check if user has any tickets for today
+        let todayTickets = tickets.filter { ticket in
+            let ticketDate = calendar.startOfDay(for: ticket.startTime)
+            return ticketDate == today && ticket.status == "confirmed"
+        }
+
+        guard !todayTickets.isEmpty else {
+            // No tickets for today, no need to remind
+            return
+        }
+
+        // Check if we've already sent a reminder today
+        let lastReminderDate = UserDefaults.standard.object(forKey: "lastBurnerSetupReminderDate") as? Date
+        if let lastDate = lastReminderDate,
+           calendar.isDate(lastDate, inSameDayAs: today) {
+            // Already sent reminder today
+            return
+        }
+
+        // Schedule reminder notification
+        scheduleBurnerSetupReminder(eventCount: todayTickets.count)
+
+        // Save today's date to avoid duplicate reminders
+        UserDefaults.standard.set(Date(), forKey: "lastBurnerSetupReminderDate")
+    }
+
+    private func scheduleBurnerSetupReminder(eventCount: Int) {
+        let content = UNMutableNotificationContent()
+        content.title = "Complete Burner Mode Setup"
+        content.body = eventCount == 1
+            ? "You have an event today! Complete Burner Mode setup to access your ticket."
+            : "You have \(eventCount) events today! Complete Burner Mode setup to access your tickets."
+        content.sound = .default
+        content.badge = 1
+        content.categoryIdentifier = "BURNER_SETUP_REMINDER"
+
+        // Trigger immediately
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+
+        // Create request with unique identifier for today
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let identifier = "burner-setup-reminder-\(dateFormatter.string(from: Date()))"
+
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: trigger
+        )
+
+        // Schedule notification
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("⚠️ Error scheduling burner setup reminder: \(error.localizedDescription)")
+            } else {
+                print("✓ Burner setup reminder scheduled")
+            }
+        }
+    }
+
     // MARK: - Test Notification (Debug Only)
     func scheduleTestNotification(delay: TimeInterval = 10) {
         let content = UNMutableNotificationContent()
@@ -328,17 +398,17 @@ class BurnerModeManager: ObservableObject {
         content.body = "Your event has ended and Burner Mode has been automatically disabled. Welcome back! 🎉"
         content.sound = .default
         content.badge = 1
-        
+
         // Create trigger for X seconds from now
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
-        
+
         // Create request
         let request = UNNotificationRequest(
             identifier: "burner-mode-test-notification",
             content: content,
             trigger: trigger
         )
-        
+
         // Schedule notification
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
@@ -347,6 +417,12 @@ class BurnerModeManager: ObservableObject {
                 print("✓ Test notification scheduled for \(Int(delay)) seconds from now")
             }
         }
+    }
+
+    // MARK: - Test Burner Setup Reminder (Debug Only)
+    func scheduleTestBurnerSetupReminder() {
+        scheduleBurnerSetupReminder(eventCount: 1)
+        print("✓ Test burner setup reminder sent")
     }
     
     // MARK: - Cancel Event End Notification

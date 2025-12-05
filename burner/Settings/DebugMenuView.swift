@@ -90,7 +90,7 @@ struct DebugMenuView: View {
                         .buttonStyle(PlainButtonStyle())
                         .disabled(!appState.showingBurnerLockScreen) // Disable if already off
                         
-                        // 3. Test Notification Button (Existing)
+                        // 3. Test Event End Notification Button (Existing)
                         Button(action: {
                             burnerManager.scheduleTestNotification(delay: 10)
                             showNotificationScheduled = true
@@ -98,6 +98,19 @@ struct DebugMenuView: View {
                             MenuItemContent(
                                 title: "Test Event End Notification",
                                 subtitle: "Sends 'Event Ended' notification in 10 seconds"
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+
+                        // 4. Test Burner Setup Reminder Button (NEW)
+                        Button(action: {
+                            burnerManager.scheduleTestBurnerSetupReminder()
+                            showNotificationScheduled = true
+                        }) {
+                            MenuItemContent(
+                                title: "Test Burner Setup Reminder",
+                                subtitle: "Sends 'Complete Burner Mode Setup' notification"
                             )
                             .contentShape(Rectangle())
                         }

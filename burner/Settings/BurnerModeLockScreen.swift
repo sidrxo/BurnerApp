@@ -15,8 +15,8 @@ struct BurnerModeLockScreen: View {
     @State private var showNFCScanner = false
     @State private var nfcScanMessage = ""
 
-    // Terminal state
-    @State private var showTerminal: Bool = true
+    // Terminal state - Initialize based on whether terminal has been shown this session
+    @State private var showTerminal: Bool = !UserDefaults.standard.bool(forKey: "burnerModeTerminalShown")
     @State private var terminalOpacity: Double = 0
 
     // Check if terminal has already been shown for this burner mode session

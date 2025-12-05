@@ -197,6 +197,15 @@ class AppState: ObservableObject {
                 self?.showError(error)
             }
             .store(in: &cancellables)
+
+        // Observe tickets changes to check for event day reminder
+        ticketsViewModel.$tickets
+            .sink { [weak self] tickets in
+                guard let self = self else { return }
+                // Check if user needs burner setup reminder for today's events
+                self.burnerManager.checkAndScheduleEventDayReminder(tickets: tickets)
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Burner Mode Observer

@@ -4,9 +4,8 @@ import CoreLocation
 struct ModalLocationSecondaryButtonStyle: ButtonStyle {
     var backgroundColor: Color = .white
     var foregroundColor: Color = .black
+    var borderColor: Color? = nil
     var maxWidth: CGFloat? = .infinity
-
-
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -16,7 +15,13 @@ struct ModalLocationSecondaryButtonStyle: ButtonStyle {
             .frame(height: 50)
             .background(backgroundColor)
             .clipShape(Capsule())
-            // NO STROKE OVERLAY
+            .overlay(
+                Group {
+                    if let borderColor = borderColor {
+                        Capsule().stroke(borderColor, lineWidth: 1)
+                    }
+                }
+            )
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
@@ -39,40 +44,48 @@ struct SetLocationModal: View {
                 .frame(height: 30)
 
             VStack(spacing: 16) {
+                // 1. Use Current Location Button (White background, black text)
                 Button(action: {
                     requestCurrentLocation()
                 }) {
                     HStack(spacing: 12) {
                         if isProcessing {
                             ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .progressViewStyle(CircularProgressViewStyle(tint: .black))
                                 .scaleEffect(0.9)
                         } else {
-                            // Icon added back
                             Image(systemName: "location.fill")
-                                .appBody()
+                                .font(.system(size: 16, design: .monospaced))
                         }
                         Text(isProcessing ? "LOCATING..." : "USE CURRENT LOCATION")
-                            .appBody()
+                            .font(.system(size: 16, design: .monospaced))
                     }
                 }
-                .buttonStyle(ModalLocationSecondaryButtonStyle(maxWidth: .infinity))
+                .buttonStyle(ModalLocationSecondaryButtonStyle(
+                    backgroundColor: .white,
+                    foregroundColor: .black,
+                    maxWidth: .infinity
+                ))
                 .disabled(isProcessing)
                 .opacity(isProcessing ? 0.5 : 1.0)
-                
-                // 2. Search for a City Button
+
+                // 2. Search for a City Button (Black background, white text, white border)
                 Button(action: {
                     showingManualEntry = true
                 }) {
-                    HStack(spacing: 12) { // Centering icon and text
-                        // Icon added back
+                    HStack(spacing: 12) {
                         Image(systemName: "magnifyingglass")
-                            .appBody()
+                            .font(.system(size: 16, design: .monospaced))
                         Text("SEARCH FOR A CITY")
-                            .appBody()
+                            .font(.system(size: 16, design: .monospaced))
                     }
                 }
-                .buttonStyle(ModalLocationSecondaryButtonStyle(maxWidth: .infinity))
+                .buttonStyle(ModalLocationSecondaryButtonStyle(
+                    backgroundColor: .black,
+                    foregroundColor: .white,
+                    borderColor: .white.opacity(0.3),
+                    maxWidth: .infinity
+                ))
             }
             .padding(.horizontal, 24)
 
