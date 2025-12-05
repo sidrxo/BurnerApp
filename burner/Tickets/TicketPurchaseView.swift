@@ -112,7 +112,7 @@ struct TicketPurchaseView: View {
                                                     .font(.appIcon)
 
                                                 Text("BUY WITH APPLE PAY")
-                                                    .appBody()
+                                                    .font(.system(size: 16, design: .monospaced))
                                             }
                                             .foregroundColor(.black)
                                             .frame(height: 50)
@@ -139,7 +139,7 @@ struct TicketPurchaseView: View {
                                                 .font(.appIcon)
 
                                             Text("BUY WITH CARD")
-                                                .appBody()
+                                                .font(.system(size: 16, design: .monospaced))
                                         }
                                         .foregroundColor(.white)
                                         .frame(height: 50)
@@ -190,7 +190,7 @@ struct TicketPurchaseView: View {
                                                     HStack(spacing: 12) {
                                                         Image(systemName: "creditcard.fill").font(.appIcon)
                                                         Text("PAY £\(String(format: "%.2f", event.price))")
-                                                            .appBody()
+                                                            .font(.system(size: 16, design: .monospaced))
                                                     }
                                                     .foregroundColor(isCardValid ? .black : .gray)
                                                     .frame(height: 50)
@@ -208,7 +208,7 @@ struct TicketPurchaseView: View {
                                                     HStack(spacing: 12) {
                                                         Image(systemName: "creditcard.fill").font(.appIcon)
                                                         Text("PAY £\(String(format: "%.2f", event.price))")
-                                                            .appBody()
+                                                            .font(.system(size: 16, design: .monospaced))
                                                     }
                                                     .foregroundColor(selectedSavedCard != nil ? .black : .gray)
                                                     .frame(height: 50)
@@ -301,6 +301,10 @@ struct TicketPurchaseView: View {
                 onSkip: {
                     showBurnerSetup = false
                     presentationMode.wrappedValue.dismiss()
+                    // Navigate to tickets tab after dismissing purchase view
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        coordinator.selectTab(.tickets)
+                    }
                 }
             )
         }

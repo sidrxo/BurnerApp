@@ -2,10 +2,10 @@ import SwiftUI
 import CoreLocation
 
 struct ModalLocationSecondaryButtonStyle: ButtonStyle {
-    var backgroundColor: Color = Color.white.opacity(0.05)
-    var foregroundColor: Color = .white
+    var backgroundColor: Color = .white
+    var foregroundColor: Color = .black
     var maxWidth: CGFloat? = .infinity
-    
+
 
 
     func makeBody(configuration: Configuration) -> some View {
