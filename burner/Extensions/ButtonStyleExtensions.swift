@@ -30,7 +30,7 @@ struct SecondaryButton: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .appBody()
+            .font(.system(size: 16, design: .monospaced))
             .foregroundColor(foregroundColor)
             .frame(maxWidth: maxWidth)
             .padding(.vertical, 12)
@@ -83,7 +83,7 @@ struct DimmedOutlineButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .appBody()
+            .font(.system(size: 16, design: .monospaced))
             .foregroundColor(customColor) // 1. Full Color Text
             .frame(maxWidth: maxWidth)
             .padding(.vertical, 12)

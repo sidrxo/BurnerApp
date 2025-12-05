@@ -9,12 +9,13 @@ import ManagedSettings
 
 struct BurnerModeSetupView: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appState: AppState
     @State private var currentStep = 0
-    
+
     // START: FIX - Authorization status must start as false to prevent unwanted auto-advance.
     @State private var authorizationGranted = false
     // END: FIX
-    
+
     @State private var showingAppPicker = false
     @ObservedObject var burnerManager: BurnerModeManager // Assume BurnerModeManager is defined elsewhere
     var onSkip: (() -> Void)? = nil
@@ -266,6 +267,11 @@ struct BurnerModeSetupView: View {
             onSkip()
         } else {
             dismiss()
+        }
+
+        // Navigate to tickets tab to show the user's ticket
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            appState.navigationCoordinator.selectTab(.tickets)
         }
     }
     
@@ -650,12 +656,12 @@ struct CategorySelectionSlideContent: View {
             // Use reusable TightHeaderText component (aligned left)
             if burnerManager.isSetupValid {
                 VStack(alignment: .leading, spacing: 0) {
-                    TightHeaderText("Categories", "Selected")
+                    TightHeaderText("CATEGORIES", "SELECTED")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 VStack(alignment: .leading, spacing: 0) {
-                    TightHeaderText("Choose", "Distractions")
+                    TightHeaderText("CHOOSE", "DISTRACTIONS")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -731,19 +737,17 @@ struct ConfirmationSlideContent: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Consistent header spacing (same 60pt as other slides)
+            // Flexible top spacer for vertical centering
             Spacer()
-                .frame(height: 60)
-            
+
             // Title (Single line, no negative padding needed)
-            Text("You're All Set!")
+            Text("YOU'RE ALL SET!")
                 .font(.system(size: 48, weight: .bold))
                 .kerning(-1.5)
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 40)
 
-            
+
             // Subtitle below
             Text("BURNER is ready. Your ticket is now available in the tickets tab.")
                 .appBody()
@@ -751,11 +755,8 @@ struct ConfirmationSlideContent: View {
                 .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, 16)
-            
-            Spacer()
-                .frame(height: 32)
-            
-            
+
+            // Flexible bottom spacer for vertical centering
             Spacer()
         }
         .padding(.horizontal, 24)
