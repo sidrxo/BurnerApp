@@ -6,6 +6,7 @@ import FirebaseFirestore
 struct AccountDetailsView: View {
     // ✅ NEW: Access AppState
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var coordinator: NavigationCoordinator
 
     @State private var displayName = ""
     @State private var email = ""
@@ -259,6 +260,10 @@ struct AccountDetailsView: View {
                 appState.handleManualSignOut()
                 NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
                 presentationMode.wrappedValue.dismiss()
+
+                // Navigate to explore tab
+                coordinator.selectTab(.explore)
+                coordinator.popToRoot(in: .explore)
             }
         }
     }
@@ -275,6 +280,10 @@ struct AccountDetailsView: View {
                 appState.handleManualSignOut()
                 NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
                 presentationMode.wrappedValue.dismiss()
+
+                // Navigate to explore tab
+                coordinator.selectTab(.explore)
+                coordinator.popToRoot(in: .explore)
             }
         }
     }
