@@ -549,7 +549,7 @@ struct CompleteSlide: View {
             
             // Header positioned at consistent height
             VStack(spacing: 0) {
-                TightHeaderText("YOU'RE ALL", "SET!", alignment: .center)
+                TightHeaderText("YOU'RE", "IN!", alignment: .center)
                     .frame(maxWidth: .infinity)
             }
             .frame(height: 120)

@@ -1,3 +1,4 @@
+// EventDetailDestination.swift
 import SwiftUI
 
 struct EventDetailDestination: View {
@@ -21,7 +22,7 @@ struct EventDetailDestination: View {
 
     var body: some View {
         Group {
-            if let event = event {
+            if event != nil {
                 // CHANGE: Pass eventId instead of event object
                 EventDetailView(eventId: eventId, namespace: heroNamespace)
             } else if isLoading {
@@ -123,19 +124,11 @@ struct EventDetailDestination: View {
         }
 
         do {
-            // Fetch event from Firestore
-            let fetchedEvent = try await eventViewModel.fetchEvent(byId: eventId)
+            // Fetch event from Firestore. The ViewModel handles adding it to the 'events' array.
+            _ = try await eventViewModel.fetchEvent(byId: eventId)
             
-            await MainActor.run {
-                // IMPORTANT: Don't store in @State
-                // The event will appear in eventViewModel.events via the fetchEvent method
-                // and our computed property will pick it up
-                
-                // If for some reason it's not in the events array, that's an error
-                if self.event == nil {
-                    loadError = "Event not found in local cache after fetch"
-                }
-            }
+            // SIMPLIFICATION: No need for post-fetch check, as the ViewModel handles insertion/update.
+
         } catch {
             await MainActor.run {
                 loadError = error.localizedDescription

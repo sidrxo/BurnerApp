@@ -8,7 +8,6 @@ import MapKit
 import CoreLocation
 
 struct EventDetailView: View {
-    // CHANGE 1: Store event ID instead of event object
     let eventId: String
     var namespace: Namespace.ID?
 
@@ -22,8 +21,6 @@ struct EventDetailView: View {
     @State private var userHasTicket = false
     @State private var showingSignInAlert = false
     @State private var showingMapsSheet = false
-    @State private var isDescriptionExpanded = false
-    @State private var needsReadMore = false
     
     // MARK: - Animation & Performance State
     @State private var didAppear = false
@@ -116,6 +113,34 @@ struct EventDetailView: View {
         return "\(datePart) at \(timePart)"
     }
 
+    // MARK: - Helper Methods
+
+    private func checkUserTicketStatus() {
+        eventViewModel.checkUserTicketStatus(for: eventId) { hasTicket in
+            DispatchQueue.main.async {
+                self.userHasTicket = hasTicket
+            }
+        }
+    }
+
+    private func formatTimeRange(event: Event) -> String {
+        guard let startTime = event.startTime else {
+            return "TBA"
+        }
+
+        let timeFormatter = DateFormatter()
+        timeFormatter.timeStyle = .short
+
+        let startTimeString = timeFormatter.string(from: startTime)
+
+        if let endTime = event.endTime {
+            let endTimeString = timeFormatter.string(from: endTime)
+            return "\(startTimeString) - \(endTimeString)"
+        } else {
+            return startTimeString
+        }
+    }
+
     var body: some View {
         Group {
             if let event = event {
@@ -139,6 +164,44 @@ struct EventDetailView: View {
                 )
                 .presentationDetents([.height(200)])
                 .presentationDragIndicator(.visible)
+            }
+        }
+        .onAppear {
+            checkUserTicketStatus()
+            
+            withAnimation(.easeOut(duration: 0.4).delay(0.15)) {
+                didAppear = true
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                interactionEnabled = true
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                dismissalEnabled = true
+                withAnimation {
+                    mapReady = true
+                }
+            }
+        }
+        .onChange(of: ticketsViewModel.tickets.count) { _, _ in
+            checkUserTicketStatus()
+        }
+        // Watch for changes to the specific event's ticketsSold property in the ViewModel
+        .onChange(of: eventViewModel.events.first(where: { $0.id == eventId })?.ticketsSold) { _, _ in
+            checkUserTicketStatus()
+        }
+        .onReceive(eventViewModel.$errorMessage) { errorMessage in
+            if let errorMessage = errorMessage {
+                coordinator.showError(title: "Error", message: errorMessage)
+                eventViewModel.clearMessages()
+            }
+        }
+        .onReceive(eventViewModel.$successMessage) { successMessage in
+            if let successMessage = successMessage {
+                coordinator.showSuccess(title: "Success", message: successMessage)
+                eventViewModel.clearMessages()
+                checkUserTicketStatus()
             }
         }
     }
@@ -237,147 +300,92 @@ struct EventDetailView: View {
                                             coordinator.shareEvent(event)
                                         }) {
                                             Image(systemName: "square.and.arrow.up")
+                                                .padding(.bottom, 3)
                                                 .appSectionHeader()
                                                 .foregroundColor(.white)
                                         }
                                         .buttonStyle(IconButton(size: 60, backgroundColor: Color.white.opacity(0.1), cornerRadius: 10))
                                     }
+                                    
+                                }
+                                .padding(.bottom, 24)
+                                .padding(.horizontal, 20)
 
-                                        Menu {
-                                            Button(action: {
-                                                coordinator.shareEvent(event)
-                                            }) {
-                                                Label("Share Event", systemImage: "square.and.arrow.up")
-                                            }
-                                        } label: {
-                                            ZStack {
-                                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                                    .fill(Color.white.opacity(0.1))
-                                                    .frame(width: 48, height: 48)
-                                                Image(systemName: "ellipsis")
-                                                    .foregroundColor(.white)
-                                                    .font(.appIcon)
-                                            }
+                                VStack(spacing: 16) {
+                                    // IMPROVED: Using ExpandableText component
+                                    if let description = event.description, !description.isEmpty {
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            Text("About")
+                                                .appBody()
+                                                .foregroundColor(.white)
+
+                                            ExpandableText(description)
                                         }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, 20)
+                                        .padding(.bottom, 8)
                                     }
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 8)
 
-                                HStack(spacing: 6) {
-                                    Image(systemName: "calendar")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.gray)
-
-                                    Text(headerDateString)
-                                        .appSecondary()
-                                        .foregroundColor(.gray)
-
-                                    Text("•")
-                                        .appSecondary()
-                                        .foregroundColor(.gray.opacity(0.5))
-
-                                    Image(systemName: "mappin.circle.fill")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.gray)
-
-                                    Text(event.venue)
-                                        .appSecondary()
-                                        .foregroundColor(.gray)
-
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 18)
-
-                                VStack(spacing: 14) {
-                                    EventDetailRow(
-                                        icon: "clock.fill",
-                                        title: "Time",
-                                        value: formatTimeRange(event: event)
-                                    )
-
-                                    EventDetailRow(
-                                        icon: "mappin.circle.fill",
-                                        title: "Location",
-                                        value: event.venue
-                                    )
-
-                                    EventDetailRow(
-                                        icon: "ticket.fill",
-                                        title: "Tickets Available",
-                                        value: "\(availableTickets) / \(event.maxTickets)"
-                                    )
-
-                                    EventDetailRow(
-                                        icon: "dollarsign.circle.fill",
-                                        title: "Price",
-                                        value: event.price != nil ? "$\(String(format: "%.2f", event.price))" : "FREE"
-                                    )
-                                }
-                                .padding(.horizontal, 20)
-
-                                if let description = event.description, !description.isEmpty {
-                                    VStack(alignment: .leading, spacing: 12) {
-                                        Text("About")
-                                            .appSectionHeader()
+                                    VStack(spacing: 12) {
+                                        Text("Event Details")
+                                            .appBody()
                                             .foregroundColor(.white)
                                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                                        Text(description)
-                                            .appBody()
-                                            .foregroundColor(.gray)
-                                            .lineLimit(isDescriptionExpanded ? nil : 6)
-                                            .background(
-                                                GeometryReader { proxy in
-                                                    Color.clear.onAppear {
-                                                        let size = proxy.size
-                                                        let lineHeight: CGFloat = 22
-                                                        let lines = Int(size.height / lineHeight)
-                                                        needsReadMore = lines > 6
-                                                    }
-                                                }
+                                        VStack(spacing: 8) {
+                                            EventDetailRow(
+                                                icon: "calendar",
+                                                title: "Date",
+                                                value: (event.startTime ?? Date()).formatted(.dateTime.weekday(.abbreviated).day().month().year())
                                             )
 
-                                        if needsReadMore {
-                                            Button(action: {
-                                                withAnimation {
-                                                    isDescriptionExpanded.toggle()
-                                                }
-                                            }) {
-                                                Text(isDescriptionExpanded ? "Read Less" : "Read More")
-                                                    .appSecondary()
-                                                    .foregroundColor(.white)
-                                                    .padding(.top, 4)
+                                            EventDetailRow(
+                                                icon: "clock",
+                                                title: "Time",
+                                                value: formatTimeRange(event: event)
+                                            )
+
+                                            EventDetailRow(
+                                                icon: "location",
+                                                title: "Venue",
+                                                value: event.venue
+                                            )
+
+                                            EventDetailRow(
+                                                icon: "creditcard",
+                                                title: "Price",
+                                                value: "£\(String(format: "%.2f", event.price))"
+                                            )
+
+                                            if let tags = event.tags, !tags.isEmpty {
+                                                EventDetailRow(
+                                                    icon: "tag",
+                                                    title: "Genre",
+                                                    value: tags.joined(separator: ", ")
+                                                )
                                             }
                                         }
                                     }
                                     .padding(.horizontal, 20)
-                                    .padding(.top, 20)
-                                }
 
-                                if let coordinates = event.coordinates {
-                                    VStack(alignment: .leading, spacing: 12) {
-                                        Text("Location")
-                                            .appSectionHeader()
-                                            .foregroundColor(.white)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .padding(.horizontal, 20)
-
+                                    if let coordinates = event.coordinates {
                                         if mapReady {
-                                            EventMapView(
-                                                coordinate: CLLocationCoordinate2D(
-                                                    latitude: coordinates.latitude,
-                                                    longitude: coordinates.longitude
-                                                ),
-                                                venueName: event.venue
-                                            )
-                                            .frame(height: 200)
-                                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                                            .padding(.horizontal, 20)
-                                            .onTapGesture {
+                                            Button(action: {
                                                 showingMapsSheet = true
+                                            }) {
+                                                EventMapView(
+                                                    coordinate: CLLocationCoordinate2D(
+                                                        latitude: coordinates.latitude,
+                                                        longitude: coordinates.longitude
+                                                    ),
+                                                    venueName: event.venue
+                                                )
+                                                .frame(height: 200)
+                                                .clipShape(RoundedRectangle(cornerRadius: 12))
                                             }
+                                            .buttonStyle(PlainButtonStyle())
+                                            .padding(.horizontal, 20)
+                                            .padding(.top, 8)
                                             .transition(.opacity)
                                         } else {
                                             RoundedRectangle(cornerRadius: 12)
@@ -475,72 +483,8 @@ struct EventDetailView: View {
         }
         .allowsHitTesting(interactionEnabled)
         .interactiveDismissDisabled(!dismissalEnabled)
-        .onAppear {
-            checkUserTicketStatus()
-            
-            withAnimation(.easeOut(duration: 0.4).delay(0.15)) {
-                didAppear = true
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                interactionEnabled = true
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                dismissalEnabled = true
-                withAnimation {
-                    mapReady = true
-                }
-            }
-        }
-        .onChange(of: ticketsViewModel.tickets.count) { _, _ in
-            checkUserTicketStatus()
-        }
-        // CHANGE 3: Watch for changes to the event in the viewModel
-        .onChange(of: eventViewModel.events.first(where: { $0.id == eventId })?.ticketsSold) { _, _ in
-            checkUserTicketStatus()
-        }
-        .onReceive(eventViewModel.$errorMessage) { errorMessage in
-            if let errorMessage = errorMessage {
-                coordinator.showError(title: "Error", message: errorMessage)
-                eventViewModel.clearMessages()
-            }
-        }
-        .onReceive(eventViewModel.$successMessage) { successMessage in
-            if let successMessage = successMessage {
-                coordinator.showSuccess(title: "Success", message: successMessage)
-                eventViewModel.clearMessages()
-                checkUserTicketStatus()
-            }
-        }
     }
-
-    private func checkUserTicketStatus() {
-        eventViewModel.checkUserTicketStatus(for: eventId) { hasTicket in
-            DispatchQueue.main.async {
-                self.userHasTicket = hasTicket
-            }
-        }
-    }
-
-    private func formatTimeRange(event: Event) -> String {
-        guard let startTime = event.startTime else {
-            return "TBA"
-        }
-
-        let timeFormatter = DateFormatter()
-        timeFormatter.timeStyle = .short
-
-        let startTimeString = timeFormatter.string(from: startTime)
-
-        if let endTime = event.endTime {
-            let endTimeString = timeFormatter.string(from: endTime)
-            return "\(startTimeString) - \(endTimeString)"
-        } else {
-            return startTimeString
-        }
-    }
-
+}
 
 // MARK: - Event Detail Row
 struct EventDetailRow: View {

@@ -743,11 +743,7 @@ struct ConfirmationSlideContent: View {
             Spacer()
 
             // Title (Single line, no negative padding needed)
-            Text("YOU'RE ALL SET!")
-                .font(.system(size: 48, weight: .bold))
-                .kerning(-1.5)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, alignment: .center)
+            TightHeaderText("SEE YOU", "THERE!", alignment: .center)
 
 
             // Subtitle below

@@ -1,7 +1,7 @@
 import SwiftUI
 import Kingfisher
 import CoreLocation
-internal import FirebaseFirestoreInternal
+import FirebaseFirestore
 
 struct ExploreView: View {
     @EnvironmentObject var eventViewModel: EventViewModel
@@ -16,34 +16,26 @@ struct ExploreView: View {
     @State private var showingSignInAlert = false
     @StateObject private var localPreferences = LocalPreferences()
     
-    // Track refresh state to improve UX
     @State private var isRefreshing = false
 
-    // Maximum distance for "nearby" events (in meters)
     private let maxNearbyDistance: CLLocationDistance = AppConstants.maxNearbyDistanceMeters
 
-    // MARK: - Dynamic Genres from Firestore (with user preferences first)
     private var displayGenres: [String] {
         let allGenres = tagViewModel.displayTags
         let selectedGenres = localPreferences.selectedGenres
-
-        // Put selected genres first, then the rest
         let selectedSet = Set(selectedGenres)
         let remainingGenres = allGenres.filter { !selectedSet.contains($0) }
-
         return selectedGenres + remainingGenres
     }
 
-    // MARK: - Featured Events
     var featuredEvents: [Event] {
         let now = Date()
         let featured = eventViewModel.events.filter { event in
-            // Only show featured events that haven't started yet
             guard event.isFeatured else { return false }
             if let startTime = event.startTime {
                 return startTime > now
             }
-            return true // If no startTime, include it
+            return true
         }
         let calendar = Calendar.current
         let dayOfYear = calendar.ordinality(of: .day, in: .year, for: Date()) ?? 0
@@ -51,7 +43,6 @@ struct ExploreView: View {
         return featured.shuffled(using: &rng)
     }
     
-    // MARK: - This Week Events
     var thisWeekEvents: [Event] {
         let calendar = Calendar.current
         let now = Date()
@@ -65,8 +56,8 @@ struct ExploreView: View {
             .filter { event in
                 guard let startTime = event.startTime else { return false }
                 return !event.isFeatured &&
-                       startTime >= now &&
-                       startTime < endOfWeek
+                        startTime >= now &&
+                        startTime < endOfWeek
             }
             .sorted { event1, event2 in
                 (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
@@ -77,7 +68,6 @@ struct ExploreView: View {
         Array(thisWeekEvents.prefix(5))
     }
     
-    // MARK: - Nearby Events (Filtered by Distance)
     var nearbyEvents: [(event: Event, distance: CLLocationDistance)] {
         guard let savedLocation = userLocationManager.savedLocation else {
             return []
@@ -122,7 +112,6 @@ struct ExploreView: View {
         Array(nearbyEvents.prefix(5))
     }
 
-    // Helper function to format distance
     private func formatDistance(_ distance: CLLocationDistance) -> String {
         let miles = distance * 0.000621371
         if miles < 0.1 {
@@ -133,9 +122,6 @@ struct ExploreView: View {
         }
     }
     
-    
-    
-    // MARK: - Popular Events
     var popularEvents: [Event] {
         let thisWeekEventIds = Set(thisWeekEvents.compactMap { $0.id })
         
@@ -143,8 +129,8 @@ struct ExploreView: View {
             .filter { event in
                 guard let startTime = event.startTime else { return false }
                 return !event.isFeatured &&
-                       startTime > Date() &&
-                       !thisWeekEventIds.contains(event.id ?? "")
+                        startTime > Date() &&
+                        !thisWeekEventIds.contains(event.id ?? "")
             }
             .sorted { event1, event2 in
                 let sellThrough1 = Double(event1.ticketsSold) / Double(max(event1.maxTickets, 1))
@@ -157,14 +143,13 @@ struct ExploreView: View {
         Array(popularEvents.prefix(5))
     }
     
-    // MARK: - Genre-Based Events
     func allEventsForGenre(_ genre: String) -> [Event] {
         eventViewModel.events
             .filter { event in
                 guard let startTime = event.startTime else { return false }
                 return !event.isFeatured &&
-                       startTime > Date() &&
-                       (event.tags?.contains { $0.localizedCaseInsensitiveCompare(genre) == .orderedSame } ?? false)
+                        startTime > Date() &&
+                        (event.tags?.contains { $0.localizedCaseInsensitiveCompare(genre) == .orderedSame } ?? false)
             }
             .sorted { event1, event2 in
                 (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
@@ -175,7 +160,6 @@ struct ExploreView: View {
         Array(allEventsForGenre(genre).prefix(5))
     }
     
-    // MARK: - All Events
     var allEvents: [Event] {
         eventViewModel.events
             .filter { event in
@@ -193,60 +177,60 @@ struct ExploreView: View {
     
     var body: some View {
         ZStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    // Header with Location Button
-                    HStack {
-                        Text("Explore")
-                            .appPageHeader()
-                            .foregroundColor(.white)
-                            .padding(.bottom, 2)
+            Color.black.ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Explore")
+                        .appPageHeader()
+                        .foregroundColor(.white)
+                        .padding(.bottom, 2)
 
-
-                        Spacer()
-                        Button(action: {
-                            coordinator.activeModal = .SetLocation
-                        }) {
-                            ZStack {
-                                Image("map")
-                                    .appCard()
-                                    .foregroundColor(.white)
-                                    .frame(width: 38, height: 38)
-                                    .opacity(userLocationManager.savedLocation != nil ? 1.0 : 0.3)
-                            }
+                    Spacer()
+                    Button(action: {
+                        coordinator.activeModal = .SetLocation
+                    }) {
+                        ZStack {
+                            Image("map")
+                                .appCard()
+                                .foregroundColor(.white)
+                                .frame(width: 38, height: 38)
+                                .opacity(userLocationManager.savedLocation != nil ? 1.0 : 0.3)
                         }
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.top, 14)
-                    .padding(.bottom, 30)
-
-                    if eventViewModel.isLoading && eventViewModel.events.isEmpty {
-                        loadingView
-                    } else {
-                        contentView
-                    }
                 }
-                .padding(.bottom, 80)
-            }
-            .refreshable {
-                // IMPROVED: Set flag and use task to handle refresh
-                isRefreshing = true
-                await eventViewModel.refreshEvents()
-                
-                // Small delay to show refresh completed (feels more natural)
-                try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
-                isRefreshing = false
+                .padding(.horizontal, 10)
+                .padding(.top, 14)
+                .padding(.bottom, 8)
+                .background(Color.black)
+                .zIndex(1)
+
+                ScrollView {
+                    VStack(spacing: 0) {
+                        if eventViewModel.isLoading && eventViewModel.events.isEmpty {
+                            loadingView
+                        } else {
+                            contentView
+                        }
+                    }
+                    .padding(.top, 10)
+                    .padding(.bottom, 80)
+                }
+                .refreshable {
+                    isRefreshing = true
+                    await eventViewModel.refreshEvents()
+                    
+                    try? await Task.sleep(nanoseconds: 200_000_000)
+                    isRefreshing = false
+                }
             }
             .navigationBarHidden(true)
-            .background(Color.black)
             .onChange(of: coordinator.pendingDeepLink) { _, eventId in
                 if let eventId = eventId {
                     coordinator.navigate(to: .eventById(eventId))
                 }
             }
             .onChange(of: eventViewModel.errorMessage) { _, newError in
-                // Clear error after showing it briefly if events are already loaded
-                // IMPROVED: Don't clear error during refresh
                 if newError != nil && !eventViewModel.events.isEmpty && !isRefreshing {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         eventViewModel.clearMessages()
@@ -254,7 +238,6 @@ struct ExploreView: View {
                 }
             }
 
-            // Only show error screen when there are no events loaded
             if eventViewModel.errorMessage != nil && eventViewModel.events.isEmpty {
                 VStack(spacing: 24) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -298,6 +281,7 @@ struct ExploreView: View {
                         coordinator.showSignIn()
                     },
                     primaryActionTitle: "Sign In",
+                    primaryActionColor: .white,
                     customContent: EmptyView()
                 )
                 .transition(.opacity)
@@ -306,7 +290,6 @@ struct ExploreView: View {
         }
     }
     
-    // MARK: - Loading View
     private var loadingView: some View {
         VStack(spacing: 16) {
             CustomLoadingIndicator(size: 50)
@@ -315,22 +298,18 @@ struct ExploreView: View {
         .frame(height: 300)
     }
     
-    // MARK: - Content View
     private var contentView: some View {
         VStack(spacing: 0) {
             buildContentSections()
         }
     }
 
-    // MARK: - Build Content Sections (final order with genre sections)
     @ViewBuilder
     private func buildContentSections() -> some View {
-        // 1) Featured card (index 0)
         if let e0 = featuredEvents[safe: 0] {
             featuredCard(e0)
         }
 
-        // 2) Popular
         if !popularEvents.isEmpty {
             EventSection(
                 title: "Popular",
@@ -343,7 +322,6 @@ struct ExploreView: View {
             )
         }
 
-        // 3) This Week
         if !thisWeekEvents.isEmpty {
             EventSection(
                 title: "This Week",
@@ -356,33 +334,26 @@ struct ExploreView: View {
             )
         }
 
-        // 4) Featured card (index 1)
         if let e1 = featuredEvents[safe: 1] {
             featuredCard(e1)
         }
 
-        // 5) Nearby section + Featured card (linked together - only show if nearby events exist)
         if !nearbyEvents.isEmpty {
             nearbySection
 
-            // Featured card (index 2) - only shows when nearby section shows
             if let e2 = featuredEvents[safe: 2] {
                 featuredCard(e2)
             }
         } else if userLocationManager.currentCLLocation != nil {
-            // Show "no events nearby" message when user has location but no nearby events
             noNearbyEventsMessage
         }
 
-        // 6) Genre cards (horizontal scroll)
         if !displayGenres.isEmpty {
             GenreCardsScrollRow(genres: displayGenres, allEventsForGenre: { g in allEventsForGenre(g) })
         }
 
-        // 7) Genre sections with featured cards interspersed every 2 sections
         buildGenreSectionsWithFeaturedCards(isLast: true)
 
-        // 8) All Events (centered title + arrow, no list)
         if !allEvents.isEmpty {
             HStack {
                 Spacer()
@@ -411,10 +382,8 @@ struct ExploreView: View {
             }
             .padding(.horizontal, 10)
         }
-
     }
 
-    // MARK: - Helper: Build Genre Sections with Featured Cards
     @ViewBuilder
     private func buildGenreSectionsWithFeaturedCards(isLast: Bool = false) -> some View {
         let genresWithEvents = displayGenres.filter { !allEventsForGenre($0).isEmpty }
@@ -431,8 +400,6 @@ struct ExploreView: View {
                 namespace: heroNamespace
             )
 
-            // Add featured card after every 2 genre sections
-            // Featured cards start at index 3 (since 0, 1, 2 are used above)
             if (index + 1) % 2 == 0 {
                 let featuredIndex = 3 + (index + 1) / 2 - 1
                 if let featured = featuredEvents[safe: featuredIndex] {
@@ -442,10 +409,9 @@ struct ExploreView: View {
         }
     }
 
-    // MARK: - Helper: Featured Card
     @ViewBuilder
     private func featuredCard(_ event: Event) -> some View {
-        NavigationLink(value: NavigationDestination.eventDetail(event)) {
+        NavigationLink(value: NavigationDestination.eventDetail(event.id ?? "")) {
             FeaturedHeroCard(
                 event: event,
                 bookmarkManager: bookmarkManager,
@@ -458,7 +424,6 @@ struct ExploreView: View {
         .buttonStyle(.noHighlight)
     }
 
-    // MARK: - Helper: Nearby Section
     private var nearbySection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -471,7 +436,7 @@ struct ExploreView: View {
 
             LazyVStack(spacing: 0) {
                 ForEach(Array(nearbyEventsPreview.enumerated()), id: \.element.event.id) { _, item in
-                    NavigationLink(value: NavigationDestination.eventDetail(item.event)) {
+                    NavigationLink(value: NavigationDestination.eventDetail(item.event.id ?? "")) {
                         EventRow(
                             event: item.event,
                             bookmarkManager: bookmarkManager,
@@ -487,7 +452,6 @@ struct ExploreView: View {
         .padding(.bottom, 40)
     }
 
-    // MARK: - Helper: No Nearby Events Message
     private var noNearbyEventsMessage: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -529,7 +493,6 @@ struct ExploreView: View {
     }
 }
 
-// MARK: - Event Section Destination
 struct EventSectionDestination: Hashable {
     let title: String
     let events: [Event]
@@ -545,7 +508,6 @@ struct EventSectionDestination: Hashable {
     }
 }
 
-// MARK: - Seeded Random Number Generator
 struct SeededRandomNumberGenerator: RandomNumberGenerator {
     private var state: UInt64
     
@@ -559,7 +521,6 @@ struct SeededRandomNumberGenerator: RandomNumberGenerator {
     }
 }
 
-// MARK: - Reusable Event Section Component
 struct EventSection: View {
     let title: String
     let events: [Event]
@@ -615,7 +576,7 @@ struct EventSection: View {
 
             LazyVStack(spacing: 0) {
                 ForEach(events) { event in
-                    NavigationLink(value: NavigationDestination.eventDetail(event)) {
+                    NavigationLink(value: NavigationDestination.eventDetail(event.id ?? "")) {
                         EventRow(
                             event: event,
                             bookmarkManager: bookmarkManager,
@@ -631,7 +592,6 @@ struct EventSection: View {
     }
 }
 
-// MARK: - Genre Cards Horizontal Scroll
 struct GenreCardsScrollRow: View {
     let genres: [String]
     let allEventsForGenre: (String) -> [Event]
@@ -655,8 +615,6 @@ struct GenreCardsScrollRow: View {
     }
 }
 
-
-// MARK: - Genre Card
 struct GenreCard: View {
     let genreName: String
 
@@ -685,17 +643,6 @@ struct GenreCard: View {
     }
 }
 
-// MARK: - Preview
-struct ExploreView_Previews: PreviewProvider {
-    static var previews: some View {
-        ExploreView()
-            .environmentObject(AppState().eventViewModel)
-            .environmentObject(AppState().bookmarkManager)
-            .preferredColorScheme(.dark)
-    }
-}
-
-// MARK: - Event Equatable & Hashable
 extension Event: Hashable {
     public static func == (lhs: Event, rhs: Event) -> Bool {
         lhs.id == rhs.id
@@ -705,9 +652,7 @@ extension Event: Hashable {
     }
 }
 
-// MARK: - Utilities
 extension Array {
-    /// Splits the array into chunks of a fixed size (e.g. 2)
     func chunked(into size: Int) -> [[Element]] {
         guard size > 0 else { return [] }
         var result: [[Element]] = []
@@ -720,7 +665,6 @@ extension Array {
         return result
     }
 
-    /// Safe subscript to avoid out-of-bounds
     subscript(safe index: Int) -> Element? {
         indices.contains(index) ? self[index] : nil
     }

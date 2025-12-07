@@ -1,3 +1,4 @@
+// Models.swift
 import Foundation
 @preconcurrency import FirebaseFirestore
 import FirebaseAuth
@@ -74,7 +75,7 @@ struct Ticket: Identifiable, Codable, Sendable {
 // MARK: - Supporting Types
 
 /// Combined ticket and event data for display purposes
-struct TicketWithEventData: Codable, Identifiable {
+struct TicketWithEventData: Codable, Identifiable, Sendable {
     let ticket: Ticket
     let event: Event
     var id: String {
@@ -100,4 +101,3 @@ extension Event {
         return Date() >= startTime
     }
 }
-

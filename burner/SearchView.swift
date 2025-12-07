@@ -425,7 +425,7 @@ struct SearchView: View {
                         emptyStateView
                     } else {
                         ForEach(filteredEvents) { event in
-                            NavigationLink(value: NavigationDestination.eventDetail(event)) {
+                            NavigationLink(value: NavigationDestination.eventDetail(event.id ?? "")) {
                                 EventRow(
                                     event: event,
                                     bookmarkManager: bookmarkManager,

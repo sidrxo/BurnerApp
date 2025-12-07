@@ -67,6 +67,7 @@ struct TicketsView: View {
     @EnvironmentObject var coordinator: NavigationCoordinator
 
     @State private var selectedFilter: Int = 0 // 0 = upcoming, 1 = past
+    @State private var showTicketsAnimation = false // ✅ Animation state
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -135,10 +136,43 @@ struct TicketsView: View {
                 emptyStateView
             } else {
                 ticketsList
+                    .opacity(showTicketsAnimation ? 1 : 0) // ✅ Fade in
+                    .offset(y: showTicketsAnimation ? 0 : 30) // ✅ Slide up
             }
         }
         .background(Color.black)
         .navigationBarHidden(true)
+        .onAppear {
+            // ✅ Trigger animation when view appears with tickets
+            if !ticketsViewModel.tickets.isEmpty {
+                withAnimation(.easeOut(duration: 0.5)) {
+                    showTicketsAnimation = true
+                }
+            }
+        }
+        .onChange(of: ticketsViewModel.tickets.count) { newCount in
+            // ✅ Trigger animation when tickets are loaded
+            if newCount > 0 {
+                showTicketsAnimation = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    withAnimation(.easeOut(duration: 0.5).delay(0.1)) {
+                        showTicketsAnimation = true
+                    }
+                }
+            }
+        }
+        .onChange(of: Auth.auth().currentUser?.uid) { userId in
+            // ✅ Reset animation when user signs in/out
+            if userId != nil {
+                showTicketsAnimation = false
+                // Wait for modal to dismiss, then fetch and animate
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    ticketsViewModel.fetchUserTickets()
+                }
+            } else {
+                showTicketsAnimation = false
+            }
+        }
     }
 
     // MARK: - Tickets Header with Settings Gear
@@ -195,14 +229,14 @@ struct TicketsView: View {
                 VStack(spacing: 8) {
                     TightHeaderText("WHERE WILL", "YOU GO?", alignment: .center)
                         .frame(maxWidth: .infinity)
-                    Text("Join the movement. Sign in to get started.")
+                    Text("Sign in below to get started.")
                         .appCard()
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
                 }
                 
-                BurnerButton("SIGN UP / IN", style: .primary, maxWidth: 140) {
+                BurnerButton("SIGN UP/IN", style: .primary, maxWidth: 160) {
                     coordinator.showSignIn()
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -366,8 +400,7 @@ struct TicketsView: View {
         let itemWidth = (availableWidth - 24) / 3 // 24 = spacing between 3 columns (12 * 2)
         let itemHeight = itemWidth + 60 + 8 + 4 // image height (1:1) + text section min height + top padding + spacing
         let rows = ceil(Double(filteredTickets.count) / 3.0)
-        let totalHeight = (itemHeight * CGFloat(rows)) + (12 * CGFloat(max(0, rows - 1))) + 100 
+        let totalHeight = (itemHeight * CGFloat(rows)) + (12 * CGFloat(max(0, rows - 1))) + 100
         return totalHeight
     }
 }
-

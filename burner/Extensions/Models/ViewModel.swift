@@ -1,3 +1,4 @@
+// ViewModel.swift
 import Foundation
 import FirebaseAuth
 import FirebaseFunctions
@@ -155,6 +156,17 @@ class EventViewModel: ObservableObject {
         }
         
         event.id = documentSnapshot.documentID
+        
+        // ✅ FIX: Add the fetched event to the published array
+        await MainActor.run {
+            // Check if it already exists and update, otherwise append
+            if let index = self.events.firstIndex(where: { $0.id == event.id }) {
+                self.events[index] = event // Update existing
+            } else {
+                self.events.append(event) // Add new
+            }
+        }
+        
         return event
     }
     
