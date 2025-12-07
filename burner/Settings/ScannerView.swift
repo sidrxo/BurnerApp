@@ -204,7 +204,7 @@ struct ScannerView: View {
             Spacer()
             
             Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 60))
+                .appLargeIcon()
                 .foregroundColor(.gray)
 
             VStack(spacing: 8) {
@@ -263,7 +263,7 @@ struct ScannerView: View {
             } else if todaysEvents.isEmpty {
                 VStack(spacing: 20) {
                     Image(systemName: "calendar.badge.exclamationmark")
-                        .font(.system(size: 60))
+                        .appLargeIcon()
                         .foregroundColor(.gray)
                         .padding(.top, 60)
 

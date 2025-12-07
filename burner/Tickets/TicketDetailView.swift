@@ -130,12 +130,12 @@ struct TicketDetailView: View {
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text(ticketWithEvent.event.name.uppercased())
-                            .font(.custom("Helvetica", size: 24).weight(.bold))
+                            .appSectionHeader()
                             .kerning(-1)
                             .foregroundColor(.white)
-                        
+
                         Text(ticketWithEvent.event.venue.uppercased())
-                            .font(.custom("Helvetica", size: 14))
+                            .appSecondary()
                             .foregroundColor(.white.opacity(0.9))
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -167,7 +167,7 @@ struct TicketDetailView: View {
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(ticketWithEvent.event.name.uppercased())
-                        .font(.custom("Helvetica", size: 20).weight(.bold))
+                        .appFont(size: 20, weight: .bold)
                         .kerning(-1.5)
                         .foregroundColor(.black)
 
@@ -239,7 +239,7 @@ struct TicketDetailView: View {
                             showBurnerSetup = true
                         }) {
                             Text("COMPLETE SETUP")
-                                .font(.custom("Helvetica", size: 15).weight(.bold))
+                                .appFont(size: 15, weight: .bold)
                                 .foregroundColor(.black)
                                 .padding(.horizontal, 32)
                                 .padding(.vertical, 12)

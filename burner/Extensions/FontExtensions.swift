@@ -14,12 +14,10 @@ extension Font {
         }
     }
 
-    // Monospaced font for buttons and code-like elements
     static func appMonospaced(size: CGFloat, weight: Font.Weight = .regular) -> Font {
         return .system(size: size, weight: weight, design: .monospaced)
     }
 
-    // Semantic font sizes
     static var appCaption: Font { appFont(size: 12) }
     static var appSecondary: Font { appFont(size: 14) }
     static var appBody: Font { appFont(size: 16) }
@@ -31,10 +29,7 @@ extension Font {
     static var appIcon: Font { .system(size: 16) }
     static var appLargeIcon: Font { .system(size: 60) }
 
-    // Button font (monospaced)
     static var appButton: Font { appMonospaced(size: 16) }
-
-
 }
 
 extension View {
@@ -46,7 +41,6 @@ extension View {
         self.font(.appMonospaced(size: size, weight: weight))
     }
 
-    // Semantic font modifiers
     func appCaption() -> some View {
         self.font(.appCaption)
     }
@@ -57,7 +51,7 @@ extension View {
 
     func appBody() -> some View {
         self.font(.appBody)
-            .kerning(-0.3) // Negative kerning for tighter letter spacing
+            .kerning(-0.3)
     }
 
     func appCard() -> some View {
@@ -81,10 +75,6 @@ extension View {
         self.font(.appButton)
     }
 
-    // MARK: - Conditional View Modifier
-
-    /// Conditionally applies a transformation to a view
-    /// Usage: .if(condition) { view in view.modifier(...) }
     @ViewBuilder
     func `if`<TransformedView: View>(_ condition: Bool, @ViewBuilder transform: (Self) -> TransformedView) -> some View {
         if condition {

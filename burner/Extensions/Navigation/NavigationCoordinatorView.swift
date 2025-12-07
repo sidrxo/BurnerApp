@@ -269,7 +269,7 @@ struct TicketDetailByIdDestination: View {
                     Color.black.ignoresSafeArea()
                     VStack(spacing: 12) {
                         Image(systemName: "ticket.fill")
-                            .font(.system(size: 48))
+                            .appFont(size: 48)
                             .foregroundColor(.gray)
                         Text("Ticket Not Found")
                             .foregroundColor(.white)

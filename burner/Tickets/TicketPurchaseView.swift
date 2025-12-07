@@ -112,7 +112,7 @@ struct TicketPurchaseView: View {
                                                     .font(.appIcon)
 
                                                 Text("BUY WITH APPLE PAY")
-                                                    .font(.system(size: 16, design: .monospaced))
+                                                    .appButton()
                                             }
                                             .foregroundColor(.black)
                                             .frame(height: 50)
@@ -139,7 +139,7 @@ struct TicketPurchaseView: View {
                                                 .font(.appIcon)
 
                                             Text("BUY WITH CARD")
-                                                .font(.system(size: 16, design: .monospaced))
+                                                .appButton()
                                         }
                                         .foregroundColor(.white)
                                         .frame(height: 50)
@@ -190,7 +190,7 @@ struct TicketPurchaseView: View {
                                                     HStack(spacing: 12) {
                                                         Image(systemName: "creditcard.fill").font(.appIcon)
                                                         Text("PAY £\(String(format: "%.2f", event.price))")
-                                                            .font(.system(size: 16, design: .monospaced))
+                                                            .appButton()
                                                     }
                                                     .foregroundColor(isCardValid ? .black : .gray)
                                                     .frame(height: 50)
@@ -208,7 +208,7 @@ struct TicketPurchaseView: View {
                                                     HStack(spacing: 12) {
                                                         Image(systemName: "creditcard.fill").font(.appIcon)
                                                         Text("PAY £\(String(format: "%.2f", event.price))")
-                                                            .font(.system(size: 16, design: .monospaced))
+                                                            .appButton()
                                                     }
                                                     .foregroundColor(selectedSavedCard != nil ? .black : .gray)
                                                     .frame(height: 50)
@@ -410,7 +410,7 @@ struct TicketPurchaseView: View {
     private var burnerModeDisclaimer: some View {
         HStack(spacing: 12) {
             Image(systemName: "info.circle.fill")
-                .font(.system(size: 20))
+                .appFont(size: 20)
                 .foregroundColor(.white.opacity(0.7))
 
             Text("You'll need to complete Burner Mode setup after purchase to access your ticket.")
@@ -471,7 +471,7 @@ struct TicketPurchaseView: View {
                                 
                                 if method.brand.lowercased() == "visa" {
                                     Text("VISA")
-                                        .font(.system(size: 8, weight: .bold))
+                                        .appFont(size: 8, weight: .bold)
                                         .foregroundColor(.white)
                                 } else if method.brand.lowercased() == "mastercard" {
                                     HStack(spacing: -4) {
@@ -484,7 +484,7 @@ struct TicketPurchaseView: View {
                                     }
                                 } else {
                                     Image(systemName: "creditcard.fill")
-                                        .font(.system(size: 12))
+                                        .appCaption()
                                         .foregroundColor(.white)
                                 }
                             }
@@ -497,7 +497,7 @@ struct TicketPurchaseView: View {
                                     
                                     if method.isDefault {
                                         Text("DEFAULT")
-                                            .font(.system(size: 8, weight: .bold))
+                                            .appFont(size: 8, weight: .bold)
                                             .foregroundColor(.green)
                                             .padding(.horizontal, 4)
                                             .padding(.vertical, 2)
