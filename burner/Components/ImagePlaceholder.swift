@@ -25,7 +25,7 @@ struct ImagePlaceholder: View {
             .frame(width: size, height: size)
             .overlay(
                 Image(systemName: "music.note")
-                    .font(.system(size: iconSize))
+                    .appFont(size: iconSize)
                     .foregroundColor(.gray)
             )
     }

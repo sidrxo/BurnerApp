@@ -462,7 +462,7 @@ struct SearchView: View {
     private var emptyStateView: some View {
         VStack(spacing: 16) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 48))
+                .appFont(size: 48)
                 .foregroundColor(.gray.opacity(0.5))
             
             Text("No events found")

@@ -105,7 +105,7 @@ struct PaymentSettingsView: View {
                                 // Simple empty state
                                 VStack(spacing: 12) {
                                     Image(systemName: "creditcard")
-                                        .font(.system(size: 40, weight: .semibold))
+                                        .appFont(size: 40, weight: .semibold)
                                         .foregroundColor(.white)
                                         .padding(.top, 28)
 

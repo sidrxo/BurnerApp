@@ -342,7 +342,6 @@ struct BurnerApp: App {
         }
     }
     
-    // MARK: - Notification Observer (fixed for MainActor)
     private func setupNotificationObserver() {
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name("UserTappedEventEndedNotification"),
@@ -350,9 +349,9 @@ struct BurnerApp: App {
             queue: .main
         ) { [weak appState] _ in
             guard let appState = appState else { return }
-            
+
             Task { @MainActor in
-                appState.navigationCoordinator.explorePath
+                _ = appState.navigationCoordinator.explorePath
             }
         }
     }

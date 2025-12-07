@@ -109,7 +109,7 @@ struct EventRow: View {
                 if let distance = distanceText {
                     HStack(spacing: 4) {
                         Image(systemName: "location.fill")
-                            .font(.system(size: 10))
+                            .appFont(size: 10)
                             .foregroundColor(.gray)
                         Text(distance)
                             .appCaption()

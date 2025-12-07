@@ -86,7 +86,7 @@ struct BurnerModeSetupView: View {
                         HStack {
                             Button(action: { handleBackButton() }) {
                                 Image(systemName: "chevron.left")
-                                    .font(.system(size: 20, weight: .medium))
+                                    .appFont(size: 20, weight: .medium)
                                     .foregroundColor(.white.opacity(0.6))
                                     .frame(width: 44, height: 44)
                             }
@@ -107,7 +107,7 @@ struct BurnerModeSetupView: View {
                             }
                         }) {
                             Image(systemName: "xmark")
-                                .font(.system(size: 17, weight: .semibold))
+                                .appFont(size: 17, weight: .semibold)
                                 .foregroundColor(.white.opacity(0.6))
                                 .frame(width: 44, height: 44)
                         }
@@ -460,15 +460,15 @@ struct StepCard: View {
         HStack(alignment: .top, spacing: 12) {
             // Number circle
             Text(number)
-                .font(.system(size: 18, weight: .bold))
+                .appCard()
                 .foregroundColor(.black)
                 .frame(width: 36, height: 36)
                 .background(Color.white)
                 .clipShape(Circle())
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .appFont(size: 17, weight: .semibold)
                     .foregroundColor(.white)
                 
                 Text(description)
@@ -539,13 +539,13 @@ struct ExitMethodCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 20))
+                .appFont(size: 20)
                 .foregroundColor(.white)
                 .frame(width: 32)
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold))
+                    .appBody()
                     .foregroundColor(.white)
                 
                 Text(description)
@@ -605,7 +605,7 @@ struct PermissionSlideContent: View {
             if authorizationGranted {
                 HStack(spacing: 12) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 24))
+                        .appSectionHeader()
                         .foregroundColor(.white)
                     
                     Text("READY TO CONTINUE")
@@ -684,12 +684,12 @@ struct CategorySelectionSlideContent: View {
             if burnerManager.isSetupValid {
                 HStack(spacing: 12) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 24))
+                        .appSectionHeader()
                         .foregroundColor(.white)
-                    
+
                     VStack(alignment: .leading, spacing: 4) {
                         Text("All categories selected")
-                            .font(.system(size: 17, weight: .semibold))
+                            .appFont(size: 17, weight: .semibold)
                             .foregroundColor(.white)
                         
                         Text("Ready to continue")
@@ -769,7 +769,7 @@ struct ConfirmationItem: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 20))
+                .appFont(size: 20)
                 .foregroundColor(color)
                 .frame(width: 32)
             

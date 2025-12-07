@@ -143,15 +143,13 @@ struct TicketsView: View {
         .background(Color.black)
         .navigationBarHidden(true)
         .onAppear {
-            // ✅ Trigger animation when view appears with tickets
             if !ticketsViewModel.tickets.isEmpty {
                 withAnimation(.easeOut(duration: 0.5)) {
                     showTicketsAnimation = true
                 }
             }
         }
-        .onChange(of: ticketsViewModel.tickets.count) { newCount in
-            // ✅ Trigger animation when tickets are loaded
+        .onChange(of: ticketsViewModel.tickets.count) { oldCount, newCount in
             if newCount > 0 {
                 showTicketsAnimation = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -161,11 +159,9 @@ struct TicketsView: View {
                 }
             }
         }
-        .onChange(of: Auth.auth().currentUser?.uid) { userId in
-            // ✅ Reset animation when user signs in/out
-            if userId != nil {
+        .onChange(of: Auth.auth().currentUser?.uid) { oldValue, newValue in
+            if newValue != nil {
                 showTicketsAnimation = false
-                // Wait for modal to dismiss, then fetch and animate
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                     ticketsViewModel.fetchUserTickets()
                 }
@@ -294,7 +290,7 @@ struct TicketsView: View {
                     impactFeedback.impactOccurred()
                 } label: {
                     Text("NEXT UP")
-                        .font(.system(size: 14, weight: selectedFilter == 0 ? .bold : .medium))
+                        .appSecondary(weight: selectedFilter == 0 ? .bold : .medium)
                         .foregroundColor(selectedFilter == 0 ? .white : .gray)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -309,7 +305,7 @@ struct TicketsView: View {
                     impactFeedback.impactOccurred()
                 } label: {
                     Text("HISTORY")
-                        .font(.system(size: 14, weight: selectedFilter == 1 ? .bold : .medium))
+                        .appSecondary(weight: selectedFilter == 1 ? .bold : .medium)
                         .foregroundColor(selectedFilter == 1 ? .white : .gray)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)

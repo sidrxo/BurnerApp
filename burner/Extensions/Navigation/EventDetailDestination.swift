@@ -69,7 +69,7 @@ struct EventDetailDestination: View {
             Color.black.ignoresSafeArea()
             VStack(spacing: 12) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 48))
+                    .appFont(size: 48)
                     .foregroundColor(.orange)
                 Text("Couldn't open event")
                     .foregroundColor(.white)

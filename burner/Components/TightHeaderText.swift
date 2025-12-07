@@ -33,7 +33,7 @@ struct TightHeaderText: View {
         VStack(alignment: alignment, spacing: 0) {
             ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                 Text(line)
-                    .font(.system(size: fontSize, weight: fontWeight, design: .default))
+                    .appFont(size: fontSize, weight: fontWeight)
                     .kerning(kerning)
                     .foregroundColor(color)
                     .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .center)

@@ -27,7 +27,7 @@ struct NotificationsSettingsView: View {
                             // Show message if notifications are not authorized
                             VStack(spacing: 16) {
                                 Image(systemName: "bell.slash.fill")
-                                    .font(.system(size: 48))
+                                    .appFont(size: 48)
                                     .foregroundColor(.gray)
                                     .padding(.top, 40)
 

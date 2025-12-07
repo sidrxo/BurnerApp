@@ -130,7 +130,7 @@ struct SignInSheetView: View {
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "applelogo")
-                        .font(.system(size: 20, weight: .medium))
+                        .appFont(size: 20, weight: .medium)
 
                     Text("CONTINUE WITH APPLE")
                         .appBody()

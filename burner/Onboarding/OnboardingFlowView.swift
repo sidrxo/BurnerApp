@@ -90,7 +90,7 @@ struct OnboardingFlowView: View {
                         HStack {
                             Button(action: { handleBackButton() }) {
                                 Image(systemName: "chevron.left")
-                                    .font(.system(size: 20, weight: .medium))
+                                    .appFont(size: 20, weight: .medium)
                                     .foregroundColor(.white.opacity(0.6))
                                     .frame(width: 44, height: 44)
                             }
@@ -106,7 +106,7 @@ struct OnboardingFlowView: View {
                             Spacer()
                             Button(action: { handleSkip() }) {
                                 Text(skipText)
-                                    .font(.system(size: 17, weight: .semibold))
+                                    .appFont(size: 17, weight: .semibold)
                                     .foregroundColor(.white.opacity(0.6))
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 10)
@@ -313,11 +313,11 @@ struct LocationSlide: View {
                                 .scaleEffect(0.8)
                         } else {
                             Image(systemName: "location.fill")
-                                .font(.system(size: 14, weight: .bold))
+                                .appSecondary(weight: .bold)
                         }
-                        
+
                         Text(detectedCity ?? "CURRENT LOCATION")
-                            .font(.system(size: 16, design: .monospaced))
+                            .appButton()
                             .lineLimit(1)
                     }
                     .foregroundColor(.black)
@@ -335,10 +335,10 @@ struct LocationSlide: View {
                 }) {
                     HStack(spacing: 6) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 14, weight: .bold))
+                            .appSecondary(weight: .bold)
 
                         Text("ENTER CITY")
-                            .font(.system(size: 16, design: .monospaced))
+                            .appButton()
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: 160)
@@ -450,7 +450,7 @@ struct GenreSlide: View {
                         onContinue()
                     }) {
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 24, weight: .bold))
+                            .appSectionHeader()
                             .foregroundColor(.black)
                             .frame(width: 60, height: 60)
                             .background(Color.white)
@@ -540,9 +540,9 @@ struct CompleteSlide: View {
                 Circle()
                     .fill(Color.white.opacity(0.1))
                     .frame(width: 100, height: 100)
-                
+
                 Image(systemName: "checkmark")
-                    .font(.system(size: 50, weight: .bold))
+                    .appFont(size: 50, weight: .bold)
                     .foregroundColor(.white)
             }
             .padding(.bottom, 32)
@@ -642,8 +642,7 @@ struct GenrePill: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Text(title.lowercased())
-                    .appSecondary()
-                    .font(.system(size: 15, weight: .medium))
+                    .appFont(size: 15, weight: .medium)
                     .lineLimit(1)
             }
             .foregroundColor(isSelected ? .black : .white)

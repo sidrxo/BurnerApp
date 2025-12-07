@@ -9,7 +9,7 @@ struct ModalLocationSecondaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 16, design: .monospaced))
+            .appButton()
             .foregroundColor(foregroundColor)
             .frame(maxWidth: maxWidth)
             .frame(height: 50)
@@ -55,10 +55,10 @@ struct SetLocationModal: View {
                                 .scaleEffect(0.9)
                         } else {
                             Image(systemName: "location.fill")
-                                .font(.system(size: 16, design: .monospaced))
+                                .appMonospaced(size: 16)
                         }
                         Text(isProcessing ? "LOCATING..." : "USE CURRENT LOCATION")
-                            .font(.system(size: 16, design: .monospaced))
+                            .appButton()
                     }
                 }
                 .buttonStyle(ModalLocationSecondaryButtonStyle(
@@ -75,9 +75,9 @@ struct SetLocationModal: View {
                 }) {
                     HStack(spacing: 12) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 16, design: .monospaced))
+                            .appMonospaced(size: 16)
                         Text("SEARCH FOR A CITY")
-                            .font(.system(size: 16, design: .monospaced))
+                            .appButton()
                     }
                 }
                 .buttonStyle(ModalLocationSecondaryButtonStyle(
@@ -143,12 +143,12 @@ struct ManualCityEntryView: View {
             VStack(spacing: 24) {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("ENTER CITY NAME")
-                        .font(.system(size: 16, design: .monospaced))
+                        .appButton()
                         .foregroundColor(.white.opacity(0.7))
                         .textCase(.uppercase)
 
                     TextField("e.g., London, New York", text: $cityInput)
-                        .font(.system(size: 16, design: .monospaced))
+                        .appButton()
                         .foregroundColor(.white)
                         .padding()
                         .background(Color.white.opacity(0.05))
@@ -162,7 +162,7 @@ struct ManualCityEntryView: View {
 
                 if let error = errorMessage {
                     Text(error)
-                        .font(.system(size: 14, design: .monospaced))
+                        .appMonospaced(size: 14)
                         .foregroundColor(.red)
                         .padding(.horizontal, 24)
                 }
@@ -189,7 +189,7 @@ struct ManualCityEntryView: View {
                     Button("CANCEL") {
                         onDismiss()
                     }
-                    .font(.system(size: 16, design: .monospaced))
+                    .appButton()
                     .foregroundColor(.white.opacity(0.7))
                 }
             }

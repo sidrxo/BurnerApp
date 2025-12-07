@@ -56,7 +56,7 @@ struct ErrorBoundary<Content: View>: View {
         VStack(spacing: 24) {
             // Error Icon
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 50))
+                .appFont(size: 50)
                 .foregroundColor(.yellow)
 
             // Error Title

@@ -1,8 +1,5 @@
 import SwiftUI
 
-// MARK: - Unified Button Styles (ButtonStyle protocol implementations)
-
-/// Primary button style with scaling effect on press
 struct PrimaryButton: ButtonStyle {
     var backgroundColor: Color = .white
     var foregroundColor: Color = .black
@@ -10,7 +7,7 @@ struct PrimaryButton: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 16, design: .monospaced))
+            .appButton()
             .foregroundColor(foregroundColor)
             .frame(maxWidth: maxWidth)
             .padding(.vertical, 12)
@@ -21,7 +18,6 @@ struct PrimaryButton: ButtonStyle {
     }
 }
 
-/// Secondary button style with scaling effect on press
 struct SecondaryButton: ButtonStyle {
     var backgroundColor: Color = Color.gray.opacity(0.1)
     var foregroundColor: Color = .white
@@ -30,7 +26,7 @@ struct SecondaryButton: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 16, design: .monospaced))
+            .appButton()
             .foregroundColor(foregroundColor)
             .frame(maxWidth: maxWidth)
             .padding(.vertical, 12)
@@ -42,7 +38,6 @@ struct SecondaryButton: ButtonStyle {
     }
 }
 
-/// Icon button style with scaling effect on press
 struct IconButton: ButtonStyle {
     var size: CGFloat = 50
     var backgroundColor: Color = Color.white.opacity(0.05)
@@ -58,7 +53,6 @@ struct IconButton: ButtonStyle {
     }
 }
 
-/// No highlight button style
 struct NoHighlightButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -71,11 +65,6 @@ extension ButtonStyle where Self == NoHighlightButtonStyle {
     }
 }
 
-// MARK: - New Button Style for Dimmed States (CORRECTED)
-
-/// Dedicated style for states like "SOLD OUT" or "TICKET PURCHASED".
-/// **Only the background fill is translucent and dimmed (opacity 0.5).**
-/// **Text and outline remain at full opacity (1.0).**
 struct DimmedOutlineButtonStyle: ButtonStyle {
     var customColor: Color // Red or White
     var dimmedOpacity: Double = 0.5
@@ -83,29 +72,25 @@ struct DimmedOutlineButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 16, design: .monospaced))
-            .foregroundColor(customColor) // 1. Full Color Text
+            .appButton()
+            .foregroundColor(customColor)
             .frame(maxWidth: maxWidth)
             .padding(.vertical, 12)
             .background(
                 Capsule()
-                    .fill(Color.gray.opacity(0.1)) // Translucent base fill
-                    .opacity(dimmedOpacity) // 2. Dim the translucent fill to 50%
+                    .fill(Color.gray.opacity(0.1))
+                    .opacity(dimmedOpacity)
             )
             .clipShape(Capsule())
             .overlay(
                 Capsule()
-                    .stroke(customColor, lineWidth: 1.5) // 3. Full Color Outline
+                    .stroke(customColor, lineWidth: 1.5)
             )
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
-
-// MARK: - Convenience Button Component (UPDATED)
-
-/// Convenience button component with primary/secondary variants
 struct BurnerButton: View {
     enum Style {
         case primary    // Solid White
@@ -144,7 +129,6 @@ struct BurnerButton: View {
             case .secondary:
                 return AnyButtonStyle(SecondaryButton(maxWidth: maxWidth))
             case .dimmed:
-                // Use the new dedicated style for dimmed states
                 let color = customColor ?? .gray
                 return AnyButtonStyle(DimmedOutlineButtonStyle(customColor: color, maxWidth: maxWidth))
             }
@@ -152,7 +136,6 @@ struct BurnerButton: View {
     }
 }
 
-// Helper to erase ButtonStyle type
 struct AnyButtonStyle: ButtonStyle {
     private let _makeBody: (Configuration) -> AnyView
 

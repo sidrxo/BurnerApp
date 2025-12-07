@@ -122,7 +122,7 @@ struct BurnerModeLockScreen: View {
                     Spacer()
                     Button(action: { exitBurnerModeImmediately() }) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 20, weight: .semibold))
+                            .appFont(size: 20, weight: .semibold)
                             .foregroundColor(.white.opacity(0.7))
                             .frame(width: 44, height: 44)
                     }
@@ -221,7 +221,7 @@ struct BurnerModeLockScreen: View {
                         Button(action: { startNFCUnlock() }) {
                             HStack(spacing: 8) {
                                 Image(systemName: "wave.3.right")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .appBody()
                                 Text("Unlock with NFC Tag")
                                     .appCaption().fontWeight(.semibold)
                             }
@@ -379,7 +379,7 @@ struct TerminalLoadingView: View {
                 ForEach(messages, id: \.self) { message in
                     HStack(spacing: 4) {
                         Text(message)
-                            .font(.system(size: 14, weight: .medium, design: .monospaced))
+                            .appMonospaced(size: 14, weight: .medium)
                             .foregroundColor(.white)
                         
                         if message == messages.last && message != allMessages.last {
@@ -421,7 +421,7 @@ struct BlinkingCursor: View {
     
     var body: some View {
         Text("_")
-            .font(.system(size: 14, weight: .bold, design: .monospaced))
+            .appMonospaced(size: 14, weight: .bold)
             .foregroundColor(.teal)
             .opacity(isVisible ? 1 : 0)
             .onAppear {
@@ -458,7 +458,7 @@ struct NFCScannerOverlay: View {
                         )
                     
                     Image(systemName: "wave.3.right.circle.fill")
-                        .font(.system(size: 80))
+                        .appFont(size: 80)
                         .foregroundColor(.teal)
                 }
                 .onAppear {

@@ -241,7 +241,7 @@ struct ExploreView: View {
             if eventViewModel.errorMessage != nil && eventViewModel.events.isEmpty {
                 VStack(spacing: 24) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 50))
+                        .appFont(size: 50)
                         .foregroundColor(.yellow)
 
                     Text("Failed to Load Events")
@@ -466,7 +466,7 @@ struct ExploreView: View {
                 Spacer()
                 VStack(spacing: 12) {
                     Image(systemName: "mappin.slash")
-                        .font(.system(size: 32))
+                        .appHero()
                         .foregroundColor(.gray)
 
                     Text("No events nearby")
