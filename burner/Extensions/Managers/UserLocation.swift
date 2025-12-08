@@ -45,7 +45,7 @@ class UserLocationManager: NSObject, ObservableObject {
     
     // MARK: - Load Saved Location
     func loadSavedLocation() {
-        guard let data =   UserDefaults.standard.data(forKey: userDefaultsKey),
+        guard let data = UserDefaults.standard.data(forKey: userDefaultsKey),
               let location = try? JSONDecoder().decode(UserLocation.self, from: data) else {
             return
         }
@@ -53,14 +53,21 @@ class UserLocationManager: NSObject, ObservableObject {
         currentCLLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
     }
     
-    // MARK: - Save Location
+    // MARK: - Save Location (Private)
     private func saveLocation(_ location: UserLocation) {
         savedLocation = location
         currentCLLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
         
         if let encoded = try? JSONEncoder().encode(location) {
-              UserDefaults.standard.set(encoded, forKey: userDefaultsKey)
+            UserDefaults.standard.set(encoded, forKey: userDefaultsKey)
         }
+    }
+    
+    // MARK: - Save Location Directly (Public - for autocomplete)
+    /// Public method to save a location directly without geocoding
+    /// Used by the autocomplete search when a location is already validated
+    func saveLocationDirectly(_ location: UserLocation) {
+        saveLocation(location)
     }
     
     // MARK: - Request Location Permission
@@ -72,7 +79,7 @@ class UserLocationManager: NSObject, ObservableObject {
     func clearLocation() {
         savedLocation = nil
         currentCLLocation = nil
-          UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+        UserDefaults.standard.removeObject(forKey: userDefaultsKey)
     }
     
     // MARK: - Request Current Location
@@ -158,7 +165,7 @@ class UserLocationManager: NSObject, ObservableObject {
         currentCLLocation = nil
         
         // Clear UserDefaults
-          UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+        UserDefaults.standard.removeObject(forKey: userDefaultsKey)
         
         // Cancel any pending completion handlers
         locationCompletion = nil

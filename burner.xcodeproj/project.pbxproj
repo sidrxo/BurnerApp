@@ -81,7 +81,7 @@
 		8B36D8C82E7DAB8A00EDDF0F /* Exceptions for "burner" folder in "burner" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				App/Info.plist,
 			);
 			target = 8B66F8AF2E67612A00760E4E /* burner */;
 		};
@@ -656,14 +656,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = burner/burner.entitlements;
+				CODE_SIGN_ENTITLEMENTS = burner/App/burner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = WFVLHMLM7A;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = burner/Info.plist;
+				INFOPLIST_FILE = burner/App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BURNER;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to scan QR codes for ticket verification and event check-ins.";
@@ -699,13 +699,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = burner/burner.entitlements;
+				CODE_SIGN_ENTITLEMENTS = burner/App/burner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = WFVLHMLM7A;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = burner/Info.plist;
+				INFOPLIST_FILE = burner/App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BURNER;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to scan QR codes for ticket verification and event check-ins.";

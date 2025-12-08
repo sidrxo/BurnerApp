@@ -22,11 +22,10 @@ struct Event: Identifiable, Codable, Sendable {
     var isFeatured: Bool
     var description: String?
     
-    // Additional fields from Phase 4
-    var status: String? // "active", "soldOut", "past"
+    
+    var status: String?
     var tags: [String]?
 
-    // Location field (typically inherited from venue)
     var coordinates: GeoPoint?
 
     var createdAt: Date?
@@ -74,7 +73,6 @@ struct Ticket: Identifiable, Codable, Sendable {
 
 // MARK: - Supporting Types
 
-/// Combined ticket and event data for display purposes
 struct TicketWithEventData: Codable, Identifiable, Sendable {
     let ticket: Ticket
     let event: Event
@@ -86,7 +84,6 @@ struct TicketWithEventData: Codable, Identifiable, Sendable {
 // MARK: - Event Extensions
 
 extension Event {
-    /// Determines if the event is considered "past" (more than 6 hours after the event's start day)
     var isPast: Bool {
         guard let startTime = startTime else { return true }
         let calendar = Calendar.current
