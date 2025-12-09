@@ -742,7 +742,6 @@ struct EventMosaicCarousel: View {
             )
             
             // 2. ADD BOTTOM PADDING TO PUSH UP THE MOSAIC
-            .padding(.bottom, 30)
         }
     }
 }

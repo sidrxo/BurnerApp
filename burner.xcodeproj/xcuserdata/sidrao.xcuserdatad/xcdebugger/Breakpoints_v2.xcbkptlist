@@ -3,4 +3,80 @@
    uuid = "C6F0E83D-0760-432D-9036-AC13E737C45B"
    type = "1"
    version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "AA174F95-AB4E-4B0C-9156-53186EF51170"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "burner/Extensions/Managers/NFCUnlockManager.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "5"
+            endingLineNumber = "5"
+            landmarkName = "NFCUnlockManager"
+            landmarkType = "3">
+            <Locations>
+               <Location
+                  uuid = "AA174F95-AB4E-4B0C-9156-53186EF51170 - 57f42b126507e6f1"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "burner.NFCUnlockManager.__allocating_init() -&gt; burner.NFCUnlockManager"
+                  moduleName = "burner.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/sidrao/burner/burner/Extensions/Managers/NFCUnlockManager.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "0"
+                  endingLineNumber = "0">
+               </Location>
+               <Location
+                  uuid = "AA174F95-AB4E-4B0C-9156-53186EF51170 - eeda95020a8a487c"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "burner.NFCUnlockManager.init() -&gt; burner.NFCUnlockManager"
+                  moduleName = "burner.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/sidrao/burner/burner/Extensions/Managers/NFCUnlockManager.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "11"
+                  endingLineNumber = "11">
+               </Location>
+               <Location
+                  uuid = "AA174F95-AB4E-4B0C-9156-53186EF51170 - f7d3b27c15567931"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "burner.NFCUnlockManager.__isolated_deallocating_deinit"
+                  moduleName = "burner.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/sidrao/burner/burner/Extensions/Managers/NFCUnlockManager.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "0"
+                  endingLineNumber = "0">
+               </Location>
+               <Location
+                  uuid = "AA174F95-AB4E-4B0C-9156-53186EF51170 - b28f92cad8e117f4"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "burner.NFCUnlockManager.__deallocating_deinit"
+                  moduleName = "burner.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/sidrao/burner/burner/Extensions/Managers/NFCUnlockManager.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "0"
+                  endingLineNumber = "0">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
 </Bucket>
