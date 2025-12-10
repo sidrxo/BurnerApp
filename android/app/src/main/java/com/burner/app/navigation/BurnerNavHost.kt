@@ -175,6 +175,9 @@ fun BurnerNavHost(
                         },
                         onSignInClick = {
                             navController.navigate(Routes.SignIn.route)
+                        },
+                        onSettingsClick = {
+                            navController.navigate(Routes.Settings.route)
                         }
                     )
                 }

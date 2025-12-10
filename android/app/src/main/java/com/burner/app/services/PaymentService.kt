@@ -173,11 +173,13 @@ class PaymentService @Inject constructor(
                 return
             }
 
-            // Confirm payment intent
-            val confirmParams = ConfirmPaymentIntentParams.createWithPaymentMethodId(
-                paymentMethodId = paymentMethod.id!!,
-                clientSecret = clientSecret
-            )
+            // Confirm payment intent (using SDK - server should set use_stripe_sdk: true)
+            val confirmParams = ConfirmPaymentIntentParams
+                .createWithPaymentMethodId(
+                    paymentMethodId = paymentMethod.id!!,
+                    clientSecret = clientSecret,
+                    returnUrl = "burner://payment-return" // Add return URL for redirect flows
+                )
 
             val paymentIntent = withContext(Dispatchers.IO) {
                 stripe.confirmPaymentIntentSynchronous(confirmParams)
@@ -225,10 +227,12 @@ class PaymentService @Inject constructor(
                 }
 
             // Confirm with saved payment method
-            val confirmParams = ConfirmPaymentIntentParams.createWithPaymentMethodId(
-                paymentMethodId = paymentMethodId,
-                clientSecret = clientSecret
-            )
+            val confirmParams = ConfirmPaymentIntentParams
+                .createWithPaymentMethodId(
+                    paymentMethodId = paymentMethodId,
+                    clientSecret = clientSecret,
+                    returnUrl = "burner://payment-return" // Add return URL for redirect flows
+                )
 
             val paymentIntent = withContext(Dispatchers.IO) {
                 stripe.confirmPaymentIntentSynchronous(confirmParams)
