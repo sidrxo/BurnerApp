@@ -173,12 +173,11 @@ class PaymentService @Inject constructor(
                 return
             }
 
-            // Confirm payment intent (using SDK - server should set use_stripe_sdk: true)
+            // Confirm payment intent (using SDK - server sets use_stripe_sdk: true)
             val confirmParams = ConfirmPaymentIntentParams
                 .createWithPaymentMethodId(
                     paymentMethodId = paymentMethod.id!!,
-                    clientSecret = clientSecret,
-                    returnUrl = "burner://payment-return" // Add return URL for redirect flows
+                    clientSecret = clientSecret
                 )
 
             val paymentIntent = withContext(Dispatchers.IO) {
@@ -230,8 +229,7 @@ class PaymentService @Inject constructor(
             val confirmParams = ConfirmPaymentIntentParams
                 .createWithPaymentMethodId(
                     paymentMethodId = paymentMethodId,
-                    clientSecret = clientSecret,
-                    returnUrl = "burner://payment-return" // Add return URL for redirect flows
+                    clientSecret = clientSecret
                 )
 
             val paymentIntent = withContext(Dispatchers.IO) {

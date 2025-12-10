@@ -339,6 +339,7 @@ exports.createPaymentIntent = onCall(
         },
         payment_method_types: ['card'],
         capture_method: "automatic",
+        use_stripe_sdk: true, // Required for mobile SDK confirmation
         statement_descriptor: "BURNER TICKET",
         statement_descriptor_suffix: event.name.substring(0, 15)
       });
