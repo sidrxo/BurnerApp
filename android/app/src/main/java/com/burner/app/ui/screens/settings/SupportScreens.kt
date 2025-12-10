@@ -1,8 +1,10 @@
 package com.burner.app.ui.screens.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -112,9 +114,9 @@ private fun FAQItem(question: String, answer: String) {
             .fillMaxWidth()
             .background(
                 BurnerColors.CardBackground,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(BurnerDimensions.radiusMd)
+                shape = RoundedCornerShape(BurnerDimensions.radiusMd)
             )
-            .androidx.compose.foundation.clickable { expanded = !expanded }
+            .clickable { expanded = !expanded }
             .padding(BurnerDimensions.spacingLg)
     ) {
         Row(

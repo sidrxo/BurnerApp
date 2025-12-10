@@ -6,6 +6,7 @@ import com.burner.app.data.models.PaymentIntentResponse
 import com.burner.app.data.models.PaymentState
 import com.burner.app.data.models.SavedCard
 import com.stripe.android.PaymentConfiguration
+import com.stripe.android.model.PaymentMethod
 import com.stripe.android.model.ConfirmPaymentIntentParams
 import com.stripe.android.model.PaymentMethodCreateParams
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,10 +73,13 @@ class PaymentService @Inject constructor(
         _paymentState.value = PaymentState.Processing
 
         return try {
+            // Create billing details
+            val billingDetails = PaymentMethod.Builder().build()
+
             // Create payment method params
             val paymentMethodParams = PaymentMethodCreateParams.create(
                 card = cardParams,
-                billingDetails = PaymentMethodCreateParams.BillingDetails()
+                billingDetails = PaymentMethod.BillingDetails.Builder().build()
             )
 
             // In a real implementation, you would use Stripe's PaymentSheet or

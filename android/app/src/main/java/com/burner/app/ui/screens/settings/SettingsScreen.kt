@@ -141,7 +141,7 @@ fun SettingsScreen(
 
             // Version
             Text(
-                text = "Version 1.0.0",
+                text = "Version ${BuildConfig.VERSION_NAME}",
                 style = BurnerTypography.caption,
                 color = BurnerColors.TextDimmed,
                 modifier = Modifier.padding(horizontal = BurnerDimensions.paddingScreen)
