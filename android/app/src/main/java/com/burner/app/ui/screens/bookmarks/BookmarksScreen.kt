@@ -1,41 +1,25 @@
 package com.burner.app.ui.screens.bookmarks
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
-import com.burner.app.data.models.Bookmark
 import com.burner.app.ui.components.*
 import com.burner.app.ui.theme.BurnerColors
-import com.burner.app.ui.theme.BurnerDimensions
 import com.burner.app.ui.theme.BurnerTypography
-import java.text.SimpleDateFormat
-import java.util.*
 
 @Composable
 fun BookmarksScreen(
     onEventClick: (String) -> Unit,
     onSignInClick: () -> Unit,
+    onExploreClick: () -> Unit = {},
     viewModel: BookmarksViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -45,175 +29,143 @@ fun BookmarksScreen(
             .fillMaxSize()
             .background(BurnerColors.Background)
     ) {
-        // Header
-        BurnerTopBar(title = "SAVES")
+        // Header matching iOS
+        BookmarksHeader()
 
-        if (!uiState.isAuthenticated) {
-            // Not signed in
-            EmptyStateView(
-                title = "SIGN IN TO SAVE",
-                subtitle = "Create an account to save events for later",
-                icon = Icons.Outlined.BookmarkBorder,
-                action = {
-                    PrimaryButton(
-                        text = "SIGN IN",
-                        onClick = onSignInClick,
-                        modifier = Modifier.width(200.dp)
-                    )
-                }
-            )
-        } else if (uiState.isLoading) {
-            LoadingView()
-        } else if (uiState.bookmarks.isEmpty()) {
-            EmptyStateView(
-                title = "SAVE FOR LATER",
-                subtitle = "Tap the heart icon on events you love",
-                icon = Icons.Outlined.BookmarkBorder
-            )
-        } else {
-            // Bookmarked events list
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    horizontal = BurnerDimensions.paddingScreen,
-                    vertical = BurnerDimensions.spacingSm
-                ),
-                verticalArrangement = Arrangement.spacedBy(BurnerDimensions.spacingSm)
-            ) {
-                items(uiState.bookmarks, key = { it.eventId }) { bookmark ->
-                    BookmarkCard(
-                        bookmark = bookmark,
-                        onClick = { onEventClick(bookmark.eventId) },
-                        onRemove = { viewModel.removeBookmark(bookmark.eventId) }
-                    )
-                }
+        when {
+            !uiState.isAuthenticated -> {
+                // Not implemented - bookmarks require auth but showing empty state
+                EmptyBookmarksState(onBrowseClick = onExploreClick)
+            }
+            uiState.isLoading -> {
+                LoadingState()
+            }
+            uiState.bookmarkedEvents.isEmpty() -> {
+                EmptyBookmarksState(onBrowseClick = onExploreClick)
+            }
+            else -> {
+                BookmarksList(
+                    events = uiState.bookmarkedEvents,
+                    onEventClick = onEventClick,
+                    onBookmarkClick = { viewModel.toggleBookmark(it) }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun BookmarkCard(
-    bookmark: Bookmark,
-    onClick: () -> Unit,
-    onRemove: () -> Unit
-) {
-    Box(
+private fun BookmarksHeader() {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(BurnerDimensions.cardHeightLg)
-            .clip(RoundedCornerShape(BurnerDimensions.radiusMd))
-            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp)
+            .padding(top = 14.dp, bottom = 30.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Background image
-        AsyncImage(
-            model = bookmark.eventImageUrl,
-            contentDescription = bookmark.eventName,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
+        Text(
+            text = "Saves",
+            style = BurnerTypography.pageHeader,
+            color = BurnerColors.White,
+            modifier = Modifier.padding(bottom = 2.dp)
         )
 
-        // Gradient overlay
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.8f)
-                        ),
-                        startY = 100f
-                    )
-                )
-        )
+        // Empty spacer for symmetry (matching iOS)
+        Box(modifier = Modifier.size(38.dp))
+    }
+}
 
-        // Content
+@Composable
+private fun LoadingState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(BurnerDimensions.paddingCard),
-            verticalArrangement = Arrangement.SpaceBetween
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Top row with remove button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Date chip
-                bookmark.startDate?.let { date ->
-                    BookmarkDateChip(date = date)
-                }
-
-                // Remove button
-                IconButton(
-                    onClick = onRemove,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Favorite,
-                        contentDescription = "Remove",
-                        tint = Color.Red
-                    )
-                }
-            }
-
-            // Bottom content
-            Column {
-                // Venue
-                Text(
-                    text = bookmark.eventVenue.uppercase(),
-                    style = BurnerTypography.caption,
-                    color = BurnerColors.TextSecondary
-                )
-
-                Spacer(modifier = Modifier.height(BurnerDimensions.spacingXs))
-
-                // Event name
-                Text(
-                    text = bookmark.eventName,
-                    style = BurnerTypography.card,
-                    color = BurnerColors.White,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(modifier = Modifier.height(BurnerDimensions.spacingSm))
-
-                // Price
-                Text(
-                    text = "From £${String.format("%.2f", bookmark.eventPrice)}",
-                    style = BurnerTypography.secondary,
-                    color = BurnerColors.White
-                )
-            }
+            CircularProgressIndicator(
+                modifier = Modifier.size(32.dp),
+                color = BurnerColors.White,
+                strokeWidth = 2.dp
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Loading bookmarks...",
+                style = BurnerTypography.body,
+                color = BurnerColors.TextSecondary
+            )
         }
     }
 }
 
 @Composable
-private fun BookmarkDateChip(date: Date) {
-    val dayFormat = SimpleDateFormat("dd", Locale.getDefault())
-    val monthFormat = SimpleDateFormat("MMM", Locale.getDefault())
-
-    Column(
+private fun EmptyBookmarksState(onBrowseClick: () -> Unit) {
+    Box(
         modifier = Modifier
-            .background(
-                color = BurnerColors.Black.copy(alpha = 0.7f),
-                shape = RoundedCornerShape(BurnerDimensions.radiusSm)
-            )
-            .padding(horizontal = BurnerDimensions.spacingSm, vertical = BurnerDimensions.spacingXs),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .fillMaxSize()
+            .padding(bottom = 100.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = dayFormat.format(date),
-            style = BurnerTypography.body.copy(fontWeight = FontWeight.Bold),
-            color = BurnerColors.White
-        )
-        Text(
-            text = monthFormat.format(date).uppercase(),
-            style = BurnerTypography.caption,
-            color = BurnerColors.TextSecondary
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Bookmark icon placeholder
+            Box(
+                modifier = Modifier
+                    .size(140.dp)
+                    .padding(bottom = 30.dp)
+            )
+
+            Text(
+                text = "SAVE FOR",
+                style = BurnerTypography.sectionHeader,
+                color = BurnerColors.White
+            )
+            Text(
+                text = "LATER",
+                style = BurnerTypography.sectionHeader,
+                color = BurnerColors.White
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Tap the heart on any event to save it here.",
+                style = BurnerTypography.card,
+                color = BurnerColors.TextSecondary
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            PrimaryButton(
+                text = "BROWSE EVENTS",
+                onClick = onBrowseClick,
+                modifier = Modifier.width(200.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun BookmarksList(
+    events: List<com.burner.app.data.models.Event>,
+    onEventClick: (String) -> Unit,
+    onBookmarkClick: (com.burner.app.data.models.Event) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 100.dp)
+    ) {
+        items(events, key = { it.id ?: "" }) { event ->
+            EventRow(
+                event = event,
+                isBookmarked = true, // All items here are bookmarked
+                onBookmarkClick = onBookmarkClick,
+                onClick = { event.id?.let { onEventClick(it) } }
+            )
+        }
     }
 }
