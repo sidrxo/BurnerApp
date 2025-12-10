@@ -1,6 +1,6 @@
 1<?xml version="1.0" encoding="utf-8"?>
 2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-3    package="com.gas.Burner"
+3    package="com.burner.app"
 4    android:versionCode="1"
 5    android:versionName="1.0.0" >
 6
@@ -55,12 +55,12 @@
 31
 32    <permission
 32-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
-33        android:name="com.gas.Burner.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+33        android:name="com.burner.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
 33-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
 34        android:protectionLevel="signature" />
 34-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
 35
-36    <uses-permission android:name="com.gas.Burner.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+36    <uses-permission android:name="com.burner.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
 36-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
 36-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
 37
@@ -508,7 +508,7 @@
 272-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-43:42
 273                    android:host="complete"
 273-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:21-39
-274                    android:path="/com.gas.Burner"
+274                    android:path="/com.burner.app"
 275                    android:scheme="link-popup" />
 275-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:21-44
 276            </intent-filter>
@@ -605,7 +605,7 @@
 324-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-43:42
 325                    android:host="payment_return_url"
 325-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:21-39
-326                    android:path="/com.gas.Burner"
+326                    android:path="/com.burner.app"
 327                    android:scheme="stripesdk" />
 327-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:21-44
 328            </intent-filter>
@@ -670,7 +670,7 @@
 359-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:23:9-28:39
 360            android:name="com.google.firebase.provider.FirebaseInitProvider"
 360-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:24:13-77
-361            android:authorities="com.gas.Burner.firebaseinitprovider"
+361            android:authorities="com.burner.app.firebaseinitprovider"
 361-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:25:13-72
 362            android:directBootAware="true"
 362-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:26:13-43
@@ -704,7 +704,7 @@
 377-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
 378            android:name="androidx.startup.InitializationProvider"
 378-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
-379            android:authorities="com.gas.Burner.androidx-startup"
+379            android:authorities="com.burner.app.androidx-startup"
 379-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
 380            android:exported="false" >
 380-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37

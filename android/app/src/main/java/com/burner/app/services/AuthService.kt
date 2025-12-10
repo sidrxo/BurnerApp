@@ -78,7 +78,7 @@ class AuthService @Inject constructor(
     // Google Sign In - Initialize
     fun getGoogleSignInIntent(): Intent {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("YOUR_WEB_CLIENT_ID") // Replace with actual Web Client ID
+            .requestIdToken("8577865405-5368q7lnrrjalobo3t99j7mlrv8t3ssm.apps.googleusercontent.com") // Replace with actual Web Client ID
             .requestEmail()
             .build()
 

@@ -28,7 +28,7 @@
     <string name="google_api_key" translatable="false">AIzaSyBRSJGDRBaKdHZW392ChuNKIqk0H9-3rtw</string>
     <string name="google_app_id" translatable="false">1:8577865405:android:318ed0703e4eb8563849d4</string>
     <string name="google_crash_reporting_api_key" translatable="false">AIzaSyBRSJGDRBaKdHZW392ChuNKIqk0H9-3rtw</string>
-    <string name="google_storage_bucket" translatable="false">burner-34556.firebasestorage.app</string>
+    <string name="google_storage_bucket" translatable="false">burner-34556.appspot.com</string>
     <string name="loading">Loading...</string>
     <string name="nav_bookmarks">Saves</string>
     <string name="nav_explore">Explore</string>

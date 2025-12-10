@@ -13,7 +13,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.gas.Burner"
+        applicationId = "com.burner.app"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

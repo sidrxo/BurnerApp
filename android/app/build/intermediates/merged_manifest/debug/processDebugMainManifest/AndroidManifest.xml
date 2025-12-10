@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.gas.Burner"
+    package="com.burner.app"
     android:versionCode="1"
     android:versionName="1.0.0" >
 
@@ -30,10 +30,10 @@
         android:required="true" />
 
     <permission
-        android:name="com.gas.Burner.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        android:name="com.burner.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         android:protectionLevel="signature" />
 
-    <uses-permission android:name="com.gas.Burner.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+    <uses-permission android:name="com.burner.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
 
     <application
         android:name="com.burner.app.BurnerApplication"
@@ -271,7 +271,7 @@
 
                 <data
                     android:host="complete"
-                    android:path="/com.gas.Burner"
+                    android:path="/com.burner.app"
                     android:scheme="link-popup" />
             </intent-filter>
         </activity>
@@ -323,7 +323,7 @@
                 <!-- Must match `DefaultReturnUrl#value`. -->
                 <data
                     android:host="payment_return_url"
-                    android:path="/com.gas.Burner"
+                    android:path="/com.burner.app"
                     android:scheme="stripesdk" />
             </intent-filter>
         </activity>
@@ -358,7 +358,7 @@
 
         <provider
             android:name="com.google.firebase.provider.FirebaseInitProvider"
-            android:authorities="com.gas.Burner.firebaseinitprovider"
+            android:authorities="com.burner.app.firebaseinitprovider"
             android:directBootAware="true"
             android:exported="false"
             android:initOrder="100" />
@@ -376,7 +376,7 @@
 
         <provider
             android:name="androidx.startup.InitializationProvider"
-            android:authorities="com.gas.Burner.androidx-startup"
+            android:authorities="com.burner.app.androidx-startup"
             android:exported="false" >
             <meta-data
                 android:name="androidx.emoji2.text.EmojiCompatInitializer"

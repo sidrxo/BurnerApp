@@ -1016,7 +1016,7 @@ ADDED from [com.stripe:link:20.35.1] /Users/sidrao/.gradle/caches/transforms-4/5
 		ADDED from [com.stripe:link:20.35.1] /Users/sidrao/.gradle/caches/transforms-4/590d428bc1b9f93c93cab04f213a66b6/transformed/link-20.35.1/AndroidManifest.xml:15:13-79
 intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:host:complete+data:path:/${applicationId}+data:scheme:link-popup
 ADDED from [com.stripe:link:20.35.1] /Users/sidrao/.gradle/caches/transforms-4/590d428bc1b9f93c93cab04f213a66b6/transformed/link-20.35.1/AndroidManifest.xml:20:13-30:29
-intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:host:complete+data:path:/com.gas.Burner+data:scheme:link-popup
+intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:host:complete+data:path:/com.burner.app+data:scheme:link-popup
 ADDED from [com.stripe:link:20.35.1] /Users/sidrao/.gradle/caches/transforms-4/590d428bc1b9f93c93cab04f213a66b6/transformed/link-20.35.1/AndroidManifest.xml:20:13-30:29
 activity#com.stripe.android.ui.core.cardscan.CardScanActivity
 ADDED from [com.stripe:payments-ui-core:20.35.1] /Users/sidrao/.gradle/caches/transforms-4/48a810a3162879c2095cc142831749d5/transformed/payments-ui-core-20.35.1/AndroidManifest.xml:8:9-11:69
@@ -1098,7 +1098,7 @@ ADDED from [com.stripe:payments-core:20.35.1] /Users/sidrao/.gradle/caches/trans
 		ADDED from [com.stripe:payments-core:20.35.1] /Users/sidrao/.gradle/caches/transforms-4/b52d804b4fa8e26741a59e18c7424b22/transformed/payments-core-20.35.1/AndroidManifest.xml:47:13-88
 intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:host:payment_return_url+data:path:/${applicationId}+data:scheme:stripesdk
 ADDED from [com.stripe:payments-core:20.35.1] /Users/sidrao/.gradle/caches/transforms-4/b52d804b4fa8e26741a59e18c7424b22/transformed/payments-core-20.35.1/AndroidManifest.xml:51:13-62:29
-intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:host:payment_return_url+data:path:/com.gas.Burner+data:scheme:stripesdk
+intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:host:payment_return_url+data:path:/com.burner.app+data:scheme:stripesdk
 ADDED from [com.stripe:payments-core:20.35.1] /Users/sidrao/.gradle/caches/transforms-4/b52d804b4fa8e26741a59e18c7424b22/transformed/payments-core-20.35.1/AndroidManifest.xml:51:13-62:29
 activity#com.stripe.android.payments.core.authentication.threeds2.Stripe3ds2TransactionActivity
 ADDED from [com.stripe:payments-core:20.35.1] /Users/sidrao/.gradle/caches/transforms-4/b52d804b4fa8e26741a59e18c7424b22/transformed/payments-core-20.35.1/AndroidManifest.xml:64:9-67:57
@@ -1266,7 +1266,7 @@ ADDED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4
 		ADDED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
 	android:name
 		ADDED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
-permission#com.gas.Burner.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+permission#com.burner.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
 	android:protectionLevel
 		ADDED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
@@ -1276,7 +1276,7 @@ uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
-uses-permission#com.gas.Burner.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+uses-permission#com.burner.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:26:22-94

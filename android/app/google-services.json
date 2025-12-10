@@ -2,14 +2,14 @@
   "project_info": {
     "project_number": "8577865405",
     "project_id": "burner-34556",
-    "storage_bucket": "burner-34556.firebasestorage.app"
+    "storage_bucket": "burner-34556.appspot.com"
   },
   "client": [
     {
       "client_info": {
         "mobilesdk_app_id": "1:8577865405:android:318ed0703e4eb8563849d4",
         "android_client_info": {
-          "package_name": "com.gas.Burner"
+          "package_name": "com.burner.app"
         }
       },
       "oauth_client": [
