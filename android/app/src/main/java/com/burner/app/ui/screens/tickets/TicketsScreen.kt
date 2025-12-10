@@ -1,5 +1,6 @@
 package com.burner.app.ui.screens.tickets
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,230 +9,419 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ConfirmationNumber
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.burner.app.data.models.Ticket
-import com.burner.app.data.models.TicketStatus
+import com.burner.app.data.models.TicketWithEventData
 import com.burner.app.ui.components.*
 import com.burner.app.ui.theme.BurnerColors
-import com.burner.app.ui.theme.BurnerDimensions
 import com.burner.app.ui.theme.BurnerTypography
 import java.text.SimpleDateFormat
 import java.util.*
 
-enum class TicketFilter { UPCOMING, PAST }
+enum class TicketFilter { NEXT_UP, HISTORY }
 
 @Composable
 fun TicketsScreen(
     onTicketClick: (String) -> Unit,
     onSignInClick: () -> Unit,
+    onSettingsClick: () -> Unit = {},
     viewModel: TicketsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedFilter by remember { mutableStateOf(TicketFilter.UPCOMING) }
+    var selectedFilter by remember { mutableStateOf(TicketFilter.NEXT_UP) }
 
     val filteredTickets = when (selectedFilter) {
-        TicketFilter.UPCOMING -> uiState.tickets.filter { it.isUpcoming }
-        TicketFilter.PAST -> uiState.tickets.filter { it.isPast }
-    }
+        TicketFilter.NEXT_UP -> uiState.ticketsWithEvents.filter {
+            it.event?.isPast == false && it.ticket.isUpcoming
+        }
+        TicketFilter.HISTORY -> uiState.ticketsWithEvents.filter {
+            it.event?.isPast == true || it.ticket.isPast
+        }
+    }.sortedBy { it.event?.startDate ?: it.ticket.startDate }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(BurnerColors.Background)
     ) {
-        // Header
-        BurnerTopBar(title = "TICKETS")
+        // Header matching iOS ticketsHeader
+        TicketsHeader(
+            onSettingsClick = {
+                if (uiState.isAuthenticated) {
+                    onSettingsClick()
+                } else {
+                    onSignInClick()
+                }
+            }
+        )
 
         if (!uiState.isAuthenticated) {
-            // Not signed in
-            EmptyStateView(
-                title = "SIGN IN",
-                subtitle = "Sign in to view your tickets",
-                icon = Icons.Outlined.ConfirmationNumber,
-                action = {
-                    PrimaryButton(
-                        text = "SIGN IN",
-                        onClick = onSignInClick,
-                        modifier = Modifier.width(200.dp)
-                    )
-                }
-            )
-        } else if (uiState.isLoading) {
-            LoadingView()
+            // Signed out empty state
+            SignedOutEmptyState(onSignInClick = onSignInClick)
+        } else if (uiState.isLoading && uiState.ticketsWithEvents.isEmpty()) {
+            LoadingView(message = "Loading your tickets...")
+        } else if (uiState.ticketsWithEvents.isEmpty()) {
+            // No tickets empty state
+            NoTicketsEmptyState(onExploreClick = { /* Navigate to explore */ })
         } else {
-            // Filter tabs
-            Row(
+            // Show tab bar only if there are past tickets
+            if (uiState.hasPastTickets) {
+                TabBarSection(
+                    selectedFilter = selectedFilter,
+                    onFilterSelected = { selectedFilter = it }
+                )
+            }
+
+            // Tickets grid
+            if (filteredTickets.isEmpty()) {
+                EmptyFilterState(filter = selectedFilter)
+            } else {
+                TicketsGrid(
+                    tickets = filteredTickets,
+                    onTicketClick = onTicketClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TicketsHeader(
+    onSettingsClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp)
+            .padding(top = 14.dp, bottom = 30.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Tickets",
+            style = BurnerTypography.pageHeader,
+            color = BurnerColors.White,
+            modifier = Modifier.padding(bottom = 2.dp)
+        )
+
+        IconButton(
+            onClick = onSettingsClick,
+            modifier = Modifier.size(38.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = "Settings",
+                tint = BurnerColors.White
+            )
+        }
+    }
+}
+
+@Composable
+private fun TabBarSection(
+    selectedFilter: TicketFilter,
+    onFilterSelected: (TicketFilter) -> Unit
+) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val tabWidth = (screenWidth - 40.dp) / 2
+    val indicatorWidth = if (selectedFilter == TicketFilter.NEXT_UP) 55.dp else 60.dp
+
+    val indicatorOffset by animateDpAsState(
+        targetValue = if (selectedFilter == TicketFilter.NEXT_UP) {
+            (tabWidth - indicatorWidth) / 2
+        } else {
+            tabWidth + (tabWidth - indicatorWidth) / 2
+        },
+        label = "indicator"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .padding(bottom = 16.dp)
+    ) {
+        // Tab buttons
+        Row(modifier = Modifier.fillMaxWidth()) {
+            // Next Up tab
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onFilterSelected(TicketFilter.NEXT_UP) }
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "NEXT UP",
+                    style = BurnerTypography.secondary.copy(
+                        fontWeight = if (selectedFilter == TicketFilter.NEXT_UP) FontWeight.Bold else FontWeight.Medium
+                    ),
+                    color = if (selectedFilter == TicketFilter.NEXT_UP) BurnerColors.White else BurnerColors.TextSecondary
+                )
+            }
+
+            // History tab
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onFilterSelected(TicketFilter.HISTORY) }
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "HISTORY",
+                    style = BurnerTypography.secondary.copy(
+                        fontWeight = if (selectedFilter == TicketFilter.HISTORY) FontWeight.Bold else FontWeight.Medium
+                    ),
+                    color = if (selectedFilter == TicketFilter.HISTORY) BurnerColors.White else BurnerColors.TextSecondary
+                )
+            }
+        }
+
+        // Indicator line
+        Box(modifier = Modifier.fillMaxWidth()) {
+            // Background line
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = BurnerDimensions.paddingScreen),
-                horizontalArrangement = Arrangement.spacedBy(BurnerDimensions.spacingSm)
-            ) {
-                ChipButton(
-                    text = "UPCOMING",
-                    selected = selectedFilter == TicketFilter.UPCOMING,
-                    onClick = { selectedFilter = TicketFilter.UPCOMING }
-                )
-                ChipButton(
-                    text = "PAST",
-                    selected = selectedFilter == TicketFilter.PAST,
-                    onClick = { selectedFilter = TicketFilter.PAST }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
-
-            if (filteredTickets.isEmpty()) {
-                EmptyStateView(
-                    title = if (selectedFilter == TicketFilter.UPCOMING) "NO UPCOMING TICKETS" else "NO PAST TICKETS",
-                    subtitle = if (selectedFilter == TicketFilter.UPCOMING) "Your upcoming event tickets will appear here" else "Your past event tickets will appear here",
-                    icon = Icons.Outlined.ConfirmationNumber
-                )
-            } else {
-                // Tickets grid
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(BurnerDimensions.paddingScreen),
-                    horizontalArrangement = Arrangement.spacedBy(BurnerDimensions.spacingSm),
-                    verticalArrangement = Arrangement.spacedBy(BurnerDimensions.spacingSm)
-                ) {
-                    items(filteredTickets, key = { it.id ?: "" }) { ticket ->
-                        TicketCard(
-                            ticket = ticket,
-                            onClick = { ticket.id?.let { onTicketClick(it) } }
-                        )
-                    }
-                }
-            }
+                    .height(1.dp)
+                    .background(Color(0xFF262626))
+            )
+            // Active indicator
+            Box(
+                modifier = Modifier
+                    .offset(x = indicatorOffset)
+                    .width(indicatorWidth)
+                    .height(2.dp)
+                    .background(BurnerColors.White)
+            )
         }
     }
 }
 
 @Composable
-private fun TicketCard(
-    ticket: Ticket,
-    onClick: () -> Unit
-) {
+private fun SignedOutEmptyState(onSignInClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .aspectRatio(0.7f)
-            .clip(RoundedCornerShape(BurnerDimensions.radiusMd))
-            .background(BurnerColors.CardBackground)
+            .fillMaxSize()
+            .padding(bottom = 100.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // User icon placeholder
+            Box(
+                modifier = Modifier
+                    .size(140.dp)
+                    .padding(bottom = 30.dp)
+            )
+
+            Text(
+                text = "WHERE WILL",
+                style = BurnerTypography.sectionHeader,
+                color = BurnerColors.White
+            )
+            Text(
+                text = "YOU GO?",
+                style = BurnerTypography.sectionHeader,
+                color = BurnerColors.White
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Sign in below to get started.",
+                style = BurnerTypography.card,
+                color = BurnerColors.TextSecondary
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            PrimaryButton(
+                text = "SIGN UP/IN",
+                onClick = onSignInClick,
+                modifier = Modifier.width(160.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun NoTicketsEmptyState(onExploreClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = 100.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Ticket icon placeholder
+            Box(
+                modifier = Modifier
+                    .size(140.dp)
+                    .padding(bottom = 30.dp)
+            )
+
+            Text(
+                text = "EMPTY",
+                style = BurnerTypography.sectionHeader,
+                color = BurnerColors.White
+            )
+            Text(
+                text = "(FOR NOW?)",
+                style = BurnerTypography.sectionHeader,
+                color = BurnerColors.White
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Find something worth remembering.",
+                style = BurnerTypography.card,
+                color = BurnerColors.TextSecondary
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            PrimaryButton(
+                text = "EXPLORE EVENTS",
+                onClick = onExploreClick,
+                modifier = Modifier.width(200.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyFilterState(filter: TicketFilter) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = if (filter == TicketFilter.NEXT_UP) "No upcoming tickets" else "No past tickets",
+            style = BurnerTypography.card,
+            color = BurnerColors.TextSecondary
+        )
+    }
+}
+
+@Composable
+private fun TicketsGrid(
+    tickets: List<TicketWithEventData>,
+    onTicketClick: (String) -> Unit
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 0.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(tickets, key = { it.ticket.id ?: "" }) { ticketWithEvent ->
+            TicketGridItem(
+                ticketWithEvent = ticketWithEvent,
+                onClick = { ticketWithEvent.ticket.id?.let { onTicketClick(it) } }
+            )
+        }
+        // Bottom padding item
+        item { Spacer(modifier = Modifier.height(100.dp)) }
+        item { Spacer(modifier = Modifier.height(100.dp)) }
+        item { Spacer(modifier = Modifier.height(100.dp)) }
+    }
+}
+
+@Composable
+private fun TicketGridItem(
+    ticketWithEvent: TicketWithEventData,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
             .clickable(onClick = onClick)
     ) {
-        // Gradient background placeholder
+        // Square image
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            BurnerColors.SurfaceVariant,
-                            BurnerColors.Background
-                        )
-                    )
-                )
-        )
-
-        // Content
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(BurnerDimensions.spacingSm),
-            verticalArrangement = Arrangement.SpaceBetween
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(BurnerColors.CardBackground)
         ) {
-            // Status badge
-            StatusBadge(status = ticket.status)
-
-            Column {
-                // Event name
-                Text(
-                    text = ticket.eventName,
-                    style = BurnerTypography.secondary,
-                    color = BurnerColors.White,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+            val imageUrl = ticketWithEvent.event?.imageUrl
+            if (!imageUrl.isNullOrEmpty()) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = ticketWithEvent.event?.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
-
-                Spacer(modifier = Modifier.height(BurnerDimensions.spacingXs))
-
-                // Date
-                ticket.startDate?.let { date ->
+            } else {
+                // Placeholder
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(BurnerColors.SurfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = formatShortDate(date),
-                        style = BurnerTypography.caption,
-                        color = BurnerColors.TextSecondary
+                        text = ticketWithEvent.ticket.eventName.take(2).uppercase(),
+                        style = BurnerTypography.sectionHeader,
+                        color = BurnerColors.TextDimmed
                     )
                 }
+            }
+        }
 
-                Spacer(modifier = Modifier.height(BurnerDimensions.spacingXs))
+        // Event info below image
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 60.dp)
+                .padding(top = 8.dp, start = 4.dp, end = 4.dp)
+        ) {
+            Text(
+                text = ticketWithEvent.event?.name ?: ticketWithEvent.ticket.eventName,
+                style = BurnerTypography.body,
+                color = BurnerColors.White,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
 
-                // Venue
+            val startDate = ticketWithEvent.event?.startDate ?: ticketWithEvent.ticket.startDate
+            startDate?.let { date ->
                 Text(
-                    text = ticket.venue,
+                    text = formatDate(date),
                     style = BurnerTypography.caption,
-                    color = BurnerColors.TextDimmed,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    color = BurnerColors.TextSecondary
                 )
             }
         }
     }
 }
 
-@Composable
-private fun StatusBadge(status: String) {
-    val (backgroundColor, textColor, text) = when (status) {
-        TicketStatus.CONFIRMED -> Triple(
-            BurnerColors.Success.copy(alpha = 0.2f),
-            BurnerColors.Success,
-            "CONFIRMED"
-        )
-        TicketStatus.USED -> Triple(
-            BurnerColors.TextSecondary.copy(alpha = 0.2f),
-            BurnerColors.TextSecondary,
-            "USED"
-        )
-        TicketStatus.CANCELLED -> Triple(
-            BurnerColors.Error.copy(alpha = 0.2f),
-            BurnerColors.Error,
-            "CANCELLED"
-        )
-        TicketStatus.REFUNDED -> Triple(
-            BurnerColors.Warning.copy(alpha = 0.2f),
-            BurnerColors.Warning,
-            "REFUNDED"
-        )
-        else -> Triple(
-            BurnerColors.TextSecondary.copy(alpha = 0.2f),
-            BurnerColors.TextSecondary,
-            status.uppercase()
-        )
-    }
-
-    Text(
-        text = text,
-        style = BurnerTypography.caption,
-        color = textColor,
-        modifier = Modifier
-            .background(backgroundColor, RoundedCornerShape(BurnerDimensions.radiusXs))
-            .padding(horizontal = BurnerDimensions.spacingSm, vertical = BurnerDimensions.spacingXs)
-    )
-}
-
-private fun formatShortDate(date: Date): String {
-    val format = SimpleDateFormat("d MMM", Locale.getDefault())
+private fun formatDate(date: Date): String {
+    val format = SimpleDateFormat("MMM d", Locale.getDefault())
     return format.format(date)
 }
