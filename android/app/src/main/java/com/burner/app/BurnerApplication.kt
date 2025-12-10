@@ -4,11 +4,14 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import com.burner.app.util.createImageLoader
 import com.stripe.android.PaymentConfiguration
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
-class BurnerApplication : Application() {
+class BurnerApplication : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
@@ -21,6 +24,11 @@ class BurnerApplication : Application() {
 
         // Create notification channel
         createNotificationChannel()
+    }
+
+    // Provide custom ImageLoader with caching (matching iOS Kingfisher)
+    override fun newImageLoader(): ImageLoader {
+        return createImageLoader(this)
     }
 
     private fun createNotificationChannel() {

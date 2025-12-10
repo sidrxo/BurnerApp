@@ -105,7 +105,8 @@ class TicketRepository @Inject constructor(
         venue: String,
         venueId: String?,
         startTime: Timestamp,
-        totalPrice: Double
+        totalPrice: Double,
+        eventImageUrl: String? = null
     ): Result<String> {
         val userId = authService.currentUserId
             ?: return Result.failure(Exception("User not authenticated"))
@@ -127,7 +128,8 @@ class TicketRepository @Inject constructor(
                 totalPrice = totalPrice,
                 purchaseDate = Timestamp.now(),
                 status = TicketStatus.CONFIRMED,
-                qrCode = qrCode
+                qrCode = qrCode,
+                eventImageUrl = eventImageUrl
             )
 
             ticketsCollection

@@ -26,7 +26,17 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideFirebaseFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
+    fun provideFirebaseFirestore(): FirebaseFirestore {
+        val firestore = FirebaseFirestore.getInstance()
+
+        // Enable offline persistence (matching iOS behavior)
+        firestore.firestoreSettings = com.google.firebase.firestore.FirebaseFirestoreSettings.Builder()
+            .setPersistenceEnabled(true)
+            .setCacheSizeBytes(100 * 1024 * 1024) // 100 MB cache
+            .build()
+
+        return firestore
+    }
 
     @Provides
     @Singleton
