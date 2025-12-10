@@ -19,10 +19,14 @@ class EventRepository @Inject constructor(
 ) {
     private val eventsCollection = firestore.collection("events")
 
-    // Get all events (real-time)
+    // Get all events (real-time) - matching iOS which fetches from 7 days ago
     val allEvents: Flow<List<Event>> = callbackFlow {
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.DAY_OF_YEAR, -7)
+        val sevenDaysAgo = calendar.time
+
         val listener = eventsCollection
-            .whereGreaterThan("startTime", Timestamp.now())
+            .whereGreaterThanOrEqualTo("startTime", Timestamp(sevenDaysAgo))
             .orderBy("startTime", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
