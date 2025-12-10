@@ -169,11 +169,11 @@ fun EventDetailScreen(
 
                     Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
 
-                    // Price
+                    // Price (no ticket counter, matching iOS)
                     InfoRow(
                         icon = Icons.Filled.ConfirmationNumber,
-                        title = if (event.isSoldOut) "SOLD OUT" else "From £${String.format("%.2f", event.price)}",
-                        subtitle = if (event.isSoldOut) "" else "${event.ticketsRemaining} tickets remaining"
+                        title = "From £${String.format("%.2f", event.price)}",
+                        subtitle = ""
                     )
 
                     // Tags
@@ -252,7 +252,7 @@ fun EventDetailScreen(
                 }
             }
 
-            // Bottom action button
+            // Bottom action button (matching iOS 5-state system)
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -267,9 +267,9 @@ fun EventDetailScreen(
                     .navigationBarsPadding()
             ) {
                 PrimaryButton(
-                    text = if (event.isSoldOut) "SOLD OUT" else "GET TICKETS",
+                    text = viewModel.getButtonText(),
                     onClick = { event.id?.let { onGetTicketsClick(it) } },
-                    enabled = !event.isSoldOut
+                    enabled = !viewModel.isButtonDisabled()
                 )
             }
         }

@@ -41,17 +41,12 @@ fun TicketDetailScreen(
         viewModel.loadTicket(ticketId)
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BurnerColors.Background)
+            .background(BurnerColors.Background),
+        contentAlignment = Alignment.Center
     ) {
-        // Top bar
-        BurnerTopBar(
-            title = "TICKET",
-            onBackClick = onBackClick
-        )
-
         if (uiState.isLoading) {
             LoadingView()
         } else if (uiState.ticket == null) {
@@ -69,129 +64,132 @@ fun TicketDetailScreen(
         } else {
             val ticket = uiState.ticket!!
 
-            Column(
+            // White card in center (matching iOS)
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(BurnerDimensions.paddingScreen),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(horizontal = 20.dp, vertical = 32.dp)
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .clip(RoundedCornerShape(0.dp)) // iOS has no rounded corners
+                    .background(androidx.compose.ui.graphics.Color.White)
+                    .padding(vertical = 24.dp)
             ) {
-                // Ticket card
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(BurnerDimensions.radiusLg))
-                        .background(BurnerColors.Surface)
-                        .padding(BurnerDimensions.spacingXl),
-                    contentAlignment = Alignment.Center
+                Column(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    // Close button at top right (matching iOS)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 22.dp, top = 8.dp),
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        // QR Code
-                        ticket.qrCode?.let { qrData ->
-                            QRCodeImage(
-                                data = qrData,
-                                size = BurnerDimensions.qrCodeSize
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = "Close",
+                                tint = androidx.compose.ui.graphics.Color.Black
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Info section - left aligned at top (matching iOS)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 30.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = ticket.eventName.uppercase(),
+                            style = BurnerTypography.sectionHeader.copy(
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                letterSpacing = (-1.5).sp
+                            ),
+                            color = androidx.compose.ui.graphics.Color.Black
+                        )
+
+                        Text(
+                            text = ticket.venue.uppercase(),
+                            style = BurnerTypography.card,
+                            color = androidx.compose.ui.graphics.Color.Black
+                        )
+
+                        ticket.startDate?.let { date ->
+                            Text(
+                                text = formatDateDetailed(date),
+                                style = BurnerTypography.card,
+                                color = androidx.compose.ui.graphics.Color.Black
+                            )
+
+                            Text(
+                                text = formatTime(date),
+                                style = BurnerTypography.card,
+                                color = androidx.compose.ui.graphics.Color.Black
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(BurnerDimensions.spacingLg))
-
-                        // Ticket number
                         Text(
-                            text = ticket.ticketNumber ?: "---",
-                            style = BurnerTypography.label,
-                            color = BurnerColors.TextSecondary
+                            text = ticket.status.uppercase(),
+                            style = BurnerTypography.card,
+                            color = androidx.compose.ui.graphics.Color.Black
+                        )
+
+                        Text(
+                            text = ticket.ticketNumber ?: "N/A",
+                            style = BurnerTypography.card,
+                            color = androidx.compose.ui.graphics.Color.Black
                         )
                     }
-                }
 
-                Spacer(modifier = Modifier.height(BurnerDimensions.spacingXl))
+                    Spacer(modifier = Modifier.height(30.dp))
 
-                // Event details
-                Text(
-                    text = ticket.eventName,
-                    style = BurnerTypography.sectionHeader,
-                    color = BurnerColors.White,
-                    textAlign = TextAlign.Center
-                )
+                    // QR Code centered (matching iOS)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        ticket.qrCode?.let { qrData ->
+                            QRCodeImage(
+                                data = qrData,
+                                size = 320.dp
+                            )
+                        }
 
-                Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
+                        // Transfer button (matching iOS, if status is confirmed)
+                        if (ticket.status == TicketStatus.CONFIRMED) {
+                            Spacer(modifier = Modifier.height(10.dp))
 
-                // Status
-                TicketStatusChip(status = ticket.status)
-
-                Spacer(modifier = Modifier.height(BurnerDimensions.spacingXl))
-
-                // Info rows
-                ticket.startDate?.let { date ->
-                    TicketInfoRow(
-                        icon = Icons.Filled.CalendarToday,
-                        label = "DATE",
-                        value = formatFullDate(date)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
-
-                TicketInfoRow(
-                    icon = Icons.Filled.LocationOn,
-                    label = "VENUE",
-                    value = ticket.venue
-                )
-
-                Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
-
-                TicketInfoRow(
-                    icon = Icons.Filled.Payment,
-                    label = "PRICE",
-                    value = "£${String.format("%.2f", ticket.totalPrice)}"
-                )
-
-                ticket.purchaseDateValue?.let { date ->
-                    Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
-
-                    TicketInfoRow(
-                        icon = Icons.Filled.Receipt,
-                        label = "PURCHASED",
-                        value = formatFullDate(date)
-                    )
-                }
-
-                // Burner Mode placeholder
-                Spacer(modifier = Modifier.height(BurnerDimensions.spacingXxl))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            BurnerColors.CardBackground,
-                            RoundedCornerShape(BurnerDimensions.radiusMd)
-                        )
-                        .padding(BurnerDimensions.spacingLg)
-                ) {
-                    Column {
-                        Text(
-                            text = "BURNER MODE",
-                            style = BurnerTypography.label,
-                            color = BurnerColors.TextSecondary
-                        )
-                        Spacer(modifier = Modifier.height(BurnerDimensions.spacingXs))
-                        Text(
-                            text = "Go offline during this event to be fully present",
-                            style = BurnerTypography.secondary,
-                            color = BurnerColors.TextTertiary
-                        )
-                        Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
-                        SecondaryButton(
-                            text = "SET UP BURNER MODE",
-                            onClick = { /* Placeholder */ }
-                        )
+                            androidx.compose.material3.TextButton(
+                                onClick = { /* TODO: Implement transfer */ }
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "TRANSFER TICKET",
+                                        style = BurnerTypography.secondary.copy(
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                        ),
+                                        color = androidx.compose.ui.graphics.Color.Black
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Filled.ArrowUpward,
+                                        contentDescription = "Transfer",
+                                        tint = androidx.compose.ui.graphics.Color.Black,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(BurnerDimensions.spacingXxl))
             }
         }
     }
@@ -314,5 +312,18 @@ private fun TicketInfoRow(
 
 private fun formatFullDate(date: Date): String {
     val format = SimpleDateFormat("EEEE, d MMMM yyyy 'at' HH:mm", Locale.getDefault())
+    return format.format(date)
+}
+
+// Date formatting matching iOS
+private fun formatDateDetailed(date: Date): String {
+    val day = SimpleDateFormat("d", Locale.getDefault()).format(date)
+    val month = SimpleDateFormat("MMM", Locale.getDefault()).format(date)
+    val year = SimpleDateFormat("yyyy", Locale.getDefault()).format(date)
+    return "$day $month $year"
+}
+
+private fun formatTime(date: Date): String {
+    val format = SimpleDateFormat("HH:mm", Locale.getDefault())
     return format.format(date)
 }
