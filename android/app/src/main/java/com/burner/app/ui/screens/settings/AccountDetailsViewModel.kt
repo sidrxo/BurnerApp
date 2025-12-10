@@ -60,4 +60,11 @@ class AccountDetailsViewModel @Inject constructor(
             }
         }
     }
+
+    fun signOut() {
+        viewModelScope.launch {
+            authService.signOut()
+            preferencesRepository.clearAll()
+        }
+    }
 }

@@ -4,9 +4,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.burner.app.data.models.Event
+import com.burner.app.data.models.Tag
 import com.burner.app.data.repository.BookmarkRepository
 import com.burner.app.data.repository.EventRepository
 import com.burner.app.data.repository.PreferencesRepository
+import com.burner.app.data.repository.TagRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -21,6 +23,7 @@ data class ExploreUiState(
     val popularEvents: List<Event> = emptyList(),
     val thisWeekEvents: List<Event> = emptyList(),
     val nearbyEvents: List<Event> = emptyList(),
+    val genres: List<String> = emptyList(),
     val bookmarkedEventIds: Set<String> = emptySet(),
     val userLat: Double? = null,
     val userLon: Double? = null,
@@ -32,7 +35,8 @@ data class ExploreUiState(
 class ExploreViewModel @Inject constructor(
     private val eventRepository: EventRepository,
     private val bookmarkRepository: BookmarkRepository,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
+    private val tagRepository: TagRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExploreUiState())
@@ -41,6 +45,7 @@ class ExploreViewModel @Inject constructor(
     init {
         observeEvents()
         observeBookmarks()
+        observeTags()
         loadUserLocation()
     }
 
@@ -171,6 +176,16 @@ class ExploreViewModel @Inject constructor(
         viewModelScope.launch {
             bookmarkRepository.getBookmarkedEventIds().collect { ids ->
                 _uiState.update { it.copy(bookmarkedEventIds = ids) }
+            }
+        }
+    }
+
+    private fun observeTags() {
+        viewModelScope.launch {
+            tagRepository.allTags.collect { tags ->
+                // Convert to list of tag names, matching iOS behavior
+                val genreNames = tags.map { it.name }
+                _uiState.update { it.copy(genres = genreNames) }
             }
         }
     }

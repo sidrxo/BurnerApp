@@ -36,7 +36,7 @@ class TicketRepository @Inject constructor(
 
         val listener = ticketsCollection
             .whereEqualTo("userId", userId)
-            .orderBy("startTime", Query.Direction.DESCENDING)
+            .orderBy("purchaseDate", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     trySend(emptyList())
