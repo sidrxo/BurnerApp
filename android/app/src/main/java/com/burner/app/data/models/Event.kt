@@ -2,10 +2,10 @@ package com.burner.app.data.models
 
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
+import com.google.firebase.firestore.Exclude
 import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.firestore.PropertyName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
+import java.util.Calendar
 import java.util.Date
 
 /**
@@ -34,12 +34,27 @@ data class Event(
     val description: String? = null,
     val status: String? = null,
     val tags: List<String>? = null,
-    val coordinates: GeoPoint? = null,
     @PropertyName("createdAt")
     val createdAt: Timestamp? = null,
     @PropertyName("updatedAt")
     val updatedAt: Timestamp? = null
 ) {
+    @get:Exclude
+    var coordinates: GeoPoint? = null
+
+    @set:PropertyName("coordinates")
+    var coordinatesMap: HashMap<String, Any>? = null
+        set(value) {
+            field = value
+            if (value != null) {
+                val lat = value["latitude"] as? Double
+                val lon = value["longitude"] as? Double
+                if (lat != null && lon != null) {
+                    coordinates = GeoPoint(lat, lon)
+                }
+            }
+        }
+
     // Computed properties
     val isAvailable: Boolean
         get() = ticketsSold < maxTickets && status != "cancelled"
@@ -55,6 +70,26 @@ data class Event(
 
     val endDate: Date?
         get() = endTime?.toDate()
+
+    val isPast: Boolean
+        get() {
+            val localStartTime = startDate ?: return true
+            val calendar = Calendar.getInstance()
+            calendar.time = localStartTime
+
+            // Find the start of the next day
+            calendar.add(Calendar.DAY_OF_MONTH, 1)
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+
+            // Add 6 hours to get 6 AM on the next day
+            calendar.add(Calendar.HOUR_OF_DAY, 6)
+
+            val nextDay6AM = calendar.time
+            return Date() > nextDay6AM
+        }
 
     fun distanceFrom(latitude: Double, longitude: Double): Double? {
         val coords = coordinates ?: return null

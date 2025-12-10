@@ -25,7 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.burner.app.data.models.TicketWithEventData
+import com.burner.app.data.models.Ticket
 import com.burner.app.ui.components.*
 import com.burner.app.ui.theme.BurnerColors
 import com.burner.app.ui.theme.BurnerTypography
@@ -44,14 +44,11 @@ fun TicketsScreen(
     val uiState by viewModel.uiState.collectAsState()
     var selectedFilter by remember { mutableStateOf(TicketFilter.NEXT_UP) }
 
-    val filteredTickets = when (selectedFilter) {
-        TicketFilter.NEXT_UP -> uiState.ticketsWithEvents.filter {
-            it.event?.isPast == false && it.ticket.isUpcoming
-        }
-        TicketFilter.HISTORY -> uiState.ticketsWithEvents.filter {
-            it.event?.isPast == true || it.ticket.isPast
-        }
-    }.sortedBy { it.event?.startDate ?: it.ticket.startDate }
+    val ticketsToShow = if (selectedFilter == TicketFilter.NEXT_UP) {
+        uiState.upcomingTickets
+    } else {
+        uiState.pastTickets
+    }
 
     Column(
         modifier = Modifier
@@ -72,14 +69,14 @@ fun TicketsScreen(
         if (!uiState.isAuthenticated) {
             // Signed out empty state
             SignedOutEmptyState(onSignInClick = onSignInClick)
-        } else if (uiState.isLoading && uiState.ticketsWithEvents.isEmpty()) {
+        } else if (uiState.isLoading && ticketsToShow.isEmpty()) {
             LoadingView(message = "Loading your tickets...")
-        } else if (uiState.ticketsWithEvents.isEmpty()) {
+        } else if (uiState.upcomingTickets.isEmpty() && uiState.pastTickets.isEmpty()) {
             // No tickets empty state
             NoTicketsEmptyState(onExploreClick = { /* Navigate to explore */ })
         } else {
             // Show tab bar only if there are past tickets
-            if (uiState.hasPastTickets) {
+            if (uiState.pastTickets.isNotEmpty()) {
                 TabBarSection(
                     selectedFilter = selectedFilter,
                     onFilterSelected = { selectedFilter = it }
@@ -87,11 +84,11 @@ fun TicketsScreen(
             }
 
             // Tickets grid
-            if (filteredTickets.isEmpty()) {
+            if (ticketsToShow.isEmpty()) {
                 EmptyFilterState(filter = selectedFilter)
             } else {
                 TicketsGrid(
-                    tickets = filteredTickets,
+                    tickets = ticketsToShow,
                     onTicketClick = onTicketClick
                 )
             }
@@ -328,7 +325,7 @@ private fun EmptyFilterState(filter: TicketFilter) {
 
 @Composable
 private fun TicketsGrid(
-    tickets: List<TicketWithEventData>,
+    tickets: List<Ticket>,
     onTicketClick: (String) -> Unit
 ) {
     LazyVerticalGrid(
@@ -338,10 +335,10 @@ private fun TicketsGrid(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(tickets, key = { it.ticket.id ?: "" }) { ticketWithEvent ->
+        items(tickets, key = { it.id ?: "" }) { ticket ->
             TicketGridItem(
-                ticketWithEvent = ticketWithEvent,
-                onClick = { ticketWithEvent.ticket.id?.let { onTicketClick(it) } }
+                ticket = ticket,
+                onClick = { ticket.id?.let { onTicketClick(it) } }
             )
         }
         // Bottom padding item
@@ -353,7 +350,7 @@ private fun TicketsGrid(
 
 @Composable
 private fun TicketGridItem(
-    ticketWithEvent: TicketWithEventData,
+    ticket: Ticket,
     onClick: () -> Unit
 ) {
     Column(
@@ -369,11 +366,11 @@ private fun TicketGridItem(
                 .clip(RoundedCornerShape(12.dp))
                 .background(BurnerColors.CardBackground)
         ) {
-            val imageUrl = ticketWithEvent.event?.imageUrl
+            val imageUrl = ticket.eventImageUrl
             if (!imageUrl.isNullOrEmpty()) {
                 AsyncImage(
                     model = imageUrl,
-                    contentDescription = ticketWithEvent.event?.name,
+                    contentDescription = ticket.eventName,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -386,7 +383,7 @@ private fun TicketGridItem(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = ticketWithEvent.ticket.eventName.take(2).uppercase(),
+                        text = ticket.eventName.take(2).uppercase(),
                         style = BurnerTypography.sectionHeader,
                         color = BurnerColors.TextDimmed
                     )
@@ -402,14 +399,14 @@ private fun TicketGridItem(
                 .padding(top = 8.dp, start = 4.dp, end = 4.dp)
         ) {
             Text(
-                text = ticketWithEvent.event?.name ?: ticketWithEvent.ticket.eventName,
+                text = ticket.eventName,
                 style = BurnerTypography.body,
                 color = BurnerColors.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
-            val startDate = ticketWithEvent.event?.startDate ?: ticketWithEvent.ticket.startDate
+            val startDate = ticket.startDate
             startDate?.let { date ->
                 Text(
                     text = formatDate(date),

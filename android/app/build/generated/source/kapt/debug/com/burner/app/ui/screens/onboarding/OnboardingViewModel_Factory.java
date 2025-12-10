@@ -1,6 +1,7 @@
 package com.burner.app.ui.screens.onboarding;
 
 import android.content.Context;
+import com.burner.app.data.repository.EventRepository;
 import com.burner.app.data.repository.PreferencesRepository;
 import com.burner.app.data.repository.TagRepository;
 import dagger.internal.DaggerGenerated;
@@ -28,28 +29,33 @@ public final class OnboardingViewModel_Factory implements Factory<OnboardingView
 
   private final Provider<TagRepository> tagRepositoryProvider;
 
+  private final Provider<EventRepository> eventRepositoryProvider;
+
   private final Provider<Context> contextProvider;
 
   public OnboardingViewModel_Factory(Provider<PreferencesRepository> preferencesRepositoryProvider,
-      Provider<TagRepository> tagRepositoryProvider, Provider<Context> contextProvider) {
+      Provider<TagRepository> tagRepositoryProvider,
+      Provider<EventRepository> eventRepositoryProvider, Provider<Context> contextProvider) {
     this.preferencesRepositoryProvider = preferencesRepositoryProvider;
     this.tagRepositoryProvider = tagRepositoryProvider;
+    this.eventRepositoryProvider = eventRepositoryProvider;
     this.contextProvider = contextProvider;
   }
 
   @Override
   public OnboardingViewModel get() {
-    return newInstance(preferencesRepositoryProvider.get(), tagRepositoryProvider.get(), contextProvider.get());
+    return newInstance(preferencesRepositoryProvider.get(), tagRepositoryProvider.get(), eventRepositoryProvider.get(), contextProvider.get());
   }
 
   public static OnboardingViewModel_Factory create(
       Provider<PreferencesRepository> preferencesRepositoryProvider,
-      Provider<TagRepository> tagRepositoryProvider, Provider<Context> contextProvider) {
-    return new OnboardingViewModel_Factory(preferencesRepositoryProvider, tagRepositoryProvider, contextProvider);
+      Provider<TagRepository> tagRepositoryProvider,
+      Provider<EventRepository> eventRepositoryProvider, Provider<Context> contextProvider) {
+    return new OnboardingViewModel_Factory(preferencesRepositoryProvider, tagRepositoryProvider, eventRepositoryProvider, contextProvider);
   }
 
   public static OnboardingViewModel newInstance(PreferencesRepository preferencesRepository,
-      TagRepository tagRepository, Context context) {
-    return new OnboardingViewModel(preferencesRepository, tagRepository, context);
+      TagRepository tagRepository, EventRepository eventRepository, Context context) {
+    return new OnboardingViewModel(preferencesRepository, tagRepository, eventRepository, context);
   }
 }

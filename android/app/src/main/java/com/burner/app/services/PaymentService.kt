@@ -2,6 +2,7 @@ package com.burner.app.services
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.StringRes
 import com.google.firebase.functions.FirebaseFunctions
 import com.burner.app.data.models.Event
 import com.burner.app.data.models.PaymentIntentResponse
@@ -9,7 +10,6 @@ import com.burner.app.data.models.PaymentState
 import com.burner.app.data.models.SavedCard
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.Stripe
-import com.stripe.android.model.PaymentMethod
 import com.stripe.android.model.ConfirmPaymentIntentParams
 import com.stripe.android.model.PaymentMethodCreateParams
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -454,7 +454,7 @@ data class PaymentResult(
 /**
  * Payment errors matching iOS PaymentError
  */
-sealed class PaymentError(val message: String) : Exception(message) {
+sealed class PaymentError(override val message: String) : Exception(message) {
     object NotAuthenticated : PaymentError("Please sign in to purchase tickets")
     object InvalidResponse : PaymentError("Invalid response from server. Please try again.")
     object PaymentFailed : PaymentError("Payment failed. Please try again")

@@ -44,7 +44,9 @@ data class Ticket(
     @PropertyName("transferredAt")
     val transferredAt: Timestamp? = null,
     @PropertyName("updatedAt")
-    val updatedAt: Timestamp? = null
+    val updatedAt: Timestamp? = null,
+    @PropertyName("eventImageUrl")
+    val eventImageUrl: String? = null
 ) {
     val startDate: Date?
         get() = startTime?.toDate()

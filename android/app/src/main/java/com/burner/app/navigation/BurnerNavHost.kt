@@ -101,9 +101,6 @@ fun BurnerNavHost(
                             navController.navigate(Routes.Main.route) {
                                 popUpTo(Routes.Onboarding.route) { inclusive = true }
                             }
-                        },
-                        onSignIn = {
-                            navController.navigate(Routes.SignIn.route)
                         }
                     )
                 }

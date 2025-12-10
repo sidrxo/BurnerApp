@@ -54,7 +54,7 @@ class BookmarksViewModel @Inject constructor(
 
     private fun observeEvents() {
         viewModelScope.launch {
-            eventRepository.observeEvents().collect { events ->
+            eventRepository.allEvents.collect { events ->
                 eventsCache = events.associateBy { it.id ?: "" }
                 updateBookmarkedEvents()
             }

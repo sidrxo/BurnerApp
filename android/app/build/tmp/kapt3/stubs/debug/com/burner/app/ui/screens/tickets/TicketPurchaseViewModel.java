@@ -4,15 +4,15 @@ import androidx.lifecycle.ViewModel;
 import com.burner.app.data.models.Event;
 import com.burner.app.data.models.PaymentMethod;
 import com.burner.app.data.models.PaymentState;
+import com.burner.app.data.models.SavedCard;
 import com.burner.app.data.repository.EventRepository;
 import com.burner.app.data.repository.TicketRepository;
 import com.burner.app.services.PaymentService;
-import com.google.firebase.Timestamp;
 import dagger.hilt.android.lifecycle.HiltViewModel;
 import kotlinx.coroutines.flow.*;
 import javax.inject.Inject;
 
-@kotlin.Metadata(mv = {1, 9, 0}, k = 1, xi = 48, d1 = {"\u0000F\n\u0002\u0018\u0002\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0002\b\u0002\n\u0002\u0018\u0002\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0002\b\u0003\n\u0002\u0010\u0002\n\u0000\n\u0002\u0010\u000e\n\u0002\b\u0003\n\u0002\u0018\u0002\n\u0002\b\u0007\b\u0007\u0018\u00002\u00020\u0001B\u001f\b\u0007\u0012\u0006\u0010\u0002\u001a\u00020\u0003\u0012\u0006\u0010\u0004\u001a\u00020\u0005\u0012\u0006\u0010\u0006\u001a\u00020\u0007\u00a2\u0006\u0002\u0010\bJ\u000e\u0010\u0010\u001a\u00020\u00112\u0006\u0010\u0012\u001a\u00020\u0013J\u0006\u0010\u0014\u001a\u00020\u0011J\u000e\u0010\u0015\u001a\u00020\u00112\u0006\u0010\u0016\u001a\u00020\u0017J\u000e\u0010\u0018\u001a\u00020\u00112\u0006\u0010\u0019\u001a\u00020\u0013J\u000e\u0010\u001a\u001a\u00020\u00112\u0006\u0010\u001b\u001a\u00020\u0013J\u000e\u0010\u001c\u001a\u00020\u00112\u0006\u0010\u001d\u001a\u00020\u0013R\u0014\u0010\t\u001a\b\u0012\u0004\u0012\u00020\u000b0\nX\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0002\u001a\u00020\u0003X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0006\u001a\u00020\u0007X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0004\u001a\u00020\u0005X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u0017\u0010\f\u001a\b\u0012\u0004\u0012\u00020\u000b0\r\u00a2\u0006\b\n\u0000\u001a\u0004\b\u000e\u0010\u000f\u00a8\u0006\u001e"}, d2 = {"Lcom/burner/app/ui/screens/tickets/TicketPurchaseViewModel;", "Landroidx/lifecycle/ViewModel;", "eventRepository", "Lcom/burner/app/data/repository/EventRepository;", "ticketRepository", "Lcom/burner/app/data/repository/TicketRepository;", "paymentService", "Lcom/burner/app/services/PaymentService;", "(Lcom/burner/app/data/repository/EventRepository;Lcom/burner/app/data/repository/TicketRepository;Lcom/burner/app/services/PaymentService;)V", "_uiState", "Lkotlinx/coroutines/flow/MutableStateFlow;", "Lcom/burner/app/ui/screens/tickets/TicketPurchaseUiState;", "uiState", "Lkotlinx/coroutines/flow/StateFlow;", "getUiState", "()Lkotlinx/coroutines/flow/StateFlow;", "loadEvent", "", "eventId", "", "processPayment", "selectPaymentMethod", "method", "Lcom/burner/app/data/models/PaymentMethod;", "updateCardNumber", "number", "updateCvv", "cvv", "updateExpiryDate", "date", "app_debug"})
+@kotlin.Metadata(mv = {1, 9, 0}, k = 1, xi = 48, d1 = {"\u0000X\n\u0002\u0018\u0002\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0002\b\u0002\n\u0002\u0018\u0002\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0002\b\u0003\n\u0002\u0010\u0002\n\u0002\b\u0004\n\u0002\u0010\u000e\n\u0002\b\u0006\n\u0002\u0018\u0002\n\u0002\b\u0002\n\u0002\u0018\u0002\n\u0002\b\u0002\n\u0002\u0018\u0002\n\u0002\b\u0007\b\u0007\u0018\u00002\u00020\u0001B\u001f\b\u0007\u0012\u0006\u0010\u0002\u001a\u00020\u0003\u0012\u0006\u0010\u0004\u001a\u00020\u0005\u0012\u0006\u0010\u0006\u001a\u00020\u0007\u00a2\u0006\u0002\u0010\bJ\u0006\u0010\u0010\u001a\u00020\u0011J\u0006\u0010\u0012\u001a\u00020\u0011J\u0006\u0010\u0013\u001a\u00020\u0011J\u000e\u0010\u0014\u001a\u00020\u00112\u0006\u0010\u0015\u001a\u00020\u0016J\b\u0010\u0017\u001a\u00020\u0011H\u0014J\u0006\u0010\u0018\u001a\u00020\u0011J\u0006\u0010\u0019\u001a\u00020\u0011J\u0006\u0010\u001a\u001a\u00020\u0011J\u000e\u0010\u001b\u001a\u00020\u00112\u0006\u0010\u001c\u001a\u00020\u001dJ\u000e\u0010\u001e\u001a\u00020\u00112\u0006\u0010\u001f\u001a\u00020 J\u000e\u0010!\u001a\u00020\u00112\u0006\u0010\"\u001a\u00020#J\u000e\u0010$\u001a\u00020\u00112\u0006\u0010%\u001a\u00020\u0016J\u000e\u0010&\u001a\u00020\u00112\u0006\u0010\'\u001a\u00020\u0016J\u000e\u0010(\u001a\u00020\u00112\u0006\u0010)\u001a\u00020\u0016R\u0014\u0010\t\u001a\b\u0012\u0004\u0012\u00020\u000b0\nX\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0002\u001a\u00020\u0003X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0006\u001a\u00020\u0007X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0004\u001a\u00020\u0005X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u0017\u0010\f\u001a\b\u0012\u0004\u0012\u00020\u000b0\r\u00a2\u0006\b\n\u0000\u001a\u0004\b\u000e\u0010\u000f\u00a8\u0006*"}, d2 = {"Lcom/burner/app/ui/screens/tickets/TicketPurchaseViewModel;", "Landroidx/lifecycle/ViewModel;", "eventRepository", "Lcom/burner/app/data/repository/EventRepository;", "ticketRepository", "Lcom/burner/app/data/repository/TicketRepository;", "paymentService", "Lcom/burner/app/services/PaymentService;", "(Lcom/burner/app/data/repository/EventRepository;Lcom/burner/app/data/repository/TicketRepository;Lcom/burner/app/services/PaymentService;)V", "_uiState", "Lkotlinx/coroutines/flow/MutableStateFlow;", "Lcom/burner/app/ui/screens/tickets/TicketPurchaseUiState;", "uiState", "Lkotlinx/coroutines/flow/StateFlow;", "getUiState", "()Lkotlinx/coroutines/flow/StateFlow;", "goBack", "", "goToCardInput", "goToSavedCards", "loadEvent", "eventId", "", "onCleared", "processCardPayment", "processSavedCardPayment", "resetState", "selectPaymentMethod", "method", "Lcom/burner/app/data/models/PaymentMethod;", "selectSavedCard", "card", "Lcom/burner/app/data/models/SavedCard;", "setStep", "step", "Lcom/burner/app/ui/screens/tickets/PurchaseStep;", "updateCardNumber", "number", "updateCvv", "cvv", "updateExpiryDate", "date", "app_debug"})
 @dagger.hilt.android.lifecycle.HiltViewModel()
 public final class TicketPurchaseViewModel extends androidx.lifecycle.ViewModel {
     @org.jetbrains.annotations.NotNull()
@@ -43,8 +43,25 @@ public final class TicketPurchaseViewModel extends androidx.lifecycle.ViewModel 
     java.lang.String eventId) {
     }
     
+    public final void setStep(@org.jetbrains.annotations.NotNull()
+    com.burner.app.ui.screens.tickets.PurchaseStep step) {
+    }
+    
+    public final void goToCardInput() {
+    }
+    
+    public final void goToSavedCards() {
+    }
+    
+    public final void goBack() {
+    }
+    
     public final void selectPaymentMethod(@org.jetbrains.annotations.NotNull()
     com.burner.app.data.models.PaymentMethod method) {
+    }
+    
+    public final void selectSavedCard(@org.jetbrains.annotations.NotNull()
+    com.burner.app.data.models.SavedCard card) {
     }
     
     public final void updateCardNumber(@org.jetbrains.annotations.NotNull()
@@ -59,6 +76,16 @@ public final class TicketPurchaseViewModel extends androidx.lifecycle.ViewModel 
     java.lang.String cvv) {
     }
     
-    public final void processPayment() {
+    public final void processCardPayment() {
+    }
+    
+    public final void processSavedCardPayment() {
+    }
+    
+    public final void resetState() {
+    }
+    
+    @java.lang.Override()
+    protected void onCleared() {
     }
 }

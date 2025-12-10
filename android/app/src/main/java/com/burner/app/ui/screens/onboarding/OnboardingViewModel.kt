@@ -200,7 +200,7 @@ class OnboardingViewModel @Inject constructor(
         _uiState.update { it.copy(notificationsEnabled = enabled) }
     }
 
-    private fun savePreferences() {
+    fun savePreferences() {
         viewModelScope.launch {
             val state = _uiState.value
 

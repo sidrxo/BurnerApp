@@ -1,6 +1,5 @@
 package com.burner.app.data.repository
 
-import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -20,42 +19,25 @@ class EventRepository @Inject constructor(
 ) {
     private val eventsCollection = firestore.collection("events")
 
-    // Get all events (real-time) - matching iOS behavior (events from 7 days ago)
+    // Get all events (real-time)
     val allEvents: Flow<List<Event>> = callbackFlow {
-        // Match iOS: fetch events from 7 days ago to show recently started events
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, -7)
-        val sevenDaysAgo = calendar.time
-
-        Log.d("EventRepository", "Setting up real-time listener for events since: $sevenDaysAgo")
-
         val listener = eventsCollection
-            .whereGreaterThanOrEqualTo("startTime", Timestamp(sevenDaysAgo))
+            .whereGreaterThan("startTime", Timestamp.now())
+            .orderBy("startTime", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e("EventRepository", "Error fetching events: ${error.message}")
-                    // Don't close the flow on error, just log and continue
-                    trySend(emptyList())
+                    close(error)
                     return@addSnapshotListener
                 }
 
                 val events = snapshot?.documents?.mapNotNull { doc ->
-                    try {
-                        doc.toObject(Event::class.java)
-                    } catch (e: Exception) {
-                        Log.e("EventRepository", "Error parsing event ${doc.id}: ${e.message}")
-                        null
-                    }
+                    doc.toObject(Event::class.java)
                 } ?: emptyList()
 
-                Log.d("EventRepository", "Received ${events.size} events from Firestore")
                 trySend(events)
             }
 
-        awaitClose {
-            Log.d("EventRepository", "Removing events listener")
-            listener.remove()
-        }
+        awaitClose { listener.remove() }
     }
 
     // Get featured events
