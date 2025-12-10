@@ -1,14 +1,15 @@
 package com.burner.app.ui.screens.explore
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,7 +35,6 @@ import kotlinx.coroutines.delay
 @Composable
 fun ExploreScreen(
     onEventClick: (String) -> Unit,
-    onSettingsClick: () -> Unit,
     onLocationClick: (() -> Unit)? = null,
     viewModel: ExploreViewModel = hiltViewModel()
 ) {
@@ -66,8 +66,7 @@ fun ExploreScreen(
                 item {
                     ExploreHeader(
                         hasLocation = uiState.userLat != null && uiState.userLon != null,
-                        onLocationClick = onLocationClick,
-                        onSettingsClick = onSettingsClick
+                        onLocationClick = onLocationClick
                     )
                 }
 
@@ -163,6 +162,13 @@ fun ExploreScreen(
                     }
                 }
 
+                // Genre Cards (matching iOS)
+                if (uiState.genres.isNotEmpty()) {
+                    item {
+                        GenreCardsRow(genres = uiState.genres, onGenreClick = { /* TODO: Navigate to filtered events */ })
+                    }
+                }
+
                 // Third Featured Hero Card (if available)
                 if (uiState.featuredEvents.size > 2) {
                     item {
@@ -207,7 +213,6 @@ fun ExploreScreen(
 private fun ExploreHeader(
     hasLocation: Boolean,
     onLocationClick: (() -> Unit)?,
-    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -227,35 +232,17 @@ private fun ExploreHeader(
             color = BurnerColors.White
         )
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Location button (like iOS map icon)
-            if (onLocationClick != null) {
-                IconButton(
-                    onClick = onLocationClick,
-                    modifier = Modifier
-                        .size(38.dp)
-                        .alpha(if (hasLocation) 1f else 0.3f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.LocationOn,
-                        contentDescription = "Set Location",
-                        tint = BurnerColors.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-
-            // Settings button
+        // Location button (like iOS map icon) - no settings gear
+        if (onLocationClick != null) {
             IconButton(
-                onClick = onSettingsClick,
-                modifier = Modifier.size(38.dp)
+                onClick = onLocationClick,
+                modifier = Modifier
+                    .size(38.dp)
+                    .alpha(if (hasLocation) 1f else 0.3f)
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = "Settings",
+                    imageVector = Icons.Filled.LocationOn,
+                    contentDescription = "Set Location",
                     tint = BurnerColors.White,
                     modifier = Modifier.size(24.dp)
                 )
@@ -305,5 +292,92 @@ private fun EventSectionHeader(
                 )
             }
         }
+    }
+}
+
+/**
+ * Genre Cards Row matching iOS GenreCardsScrollRow
+ */
+@Composable
+private fun GenreCardsRow(
+    genres: List<String>,
+    onGenreClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.foundation.lazy.LazyRow(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 40.dp),
+        contentPadding = PaddingValues(horizontal = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(genres.size) { index ->
+            GenreCard(
+                genreName = genres[index],
+                onClick = { onGenreClick(genres[index]) }
+            )
+        }
+    }
+}
+
+/**
+ * Genre Card matching iOS GenreCard
+ */
+@Composable
+private fun GenreCard(
+    genreName: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(width = 140.dp, height = 120.dp)
+            .background(
+                color = BurnerColors.White.copy(alpha = 0.05f),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.BottomStart
+    ) {
+        // Gradient overlay
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(
+                            BurnerColors.White.copy(alpha = 0.15f),
+                            BurnerColors.White.copy(alpha = 0.05f)
+                        )
+                    ),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                )
+        )
+
+        // Border
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    color = androidx.compose.ui.graphics.Color.Transparent,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                )
+        ) {
+            androidx.compose.foundation.Canvas(modifier = Modifier.matchParentSize()) {
+                drawRoundRect(
+                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.15f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx())
+                )
+            }
+        }
+
+        // Text
+        Text(
+            text = genreName,
+            style = BurnerTypography.card,
+            color = BurnerColors.White,
+            modifier = Modifier.padding(16.dp)
+        )
     }
 }

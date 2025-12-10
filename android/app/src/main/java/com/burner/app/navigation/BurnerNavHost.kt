@@ -142,9 +142,6 @@ fun BurnerNavHost(
                     ExploreScreen(
                         onEventClick = { eventId ->
                             navController.navigate(Routes.EventDetail.createRoute(eventId))
-                        },
-                        onSettingsClick = {
-                            navController.navigate(Routes.Settings.route)
                         }
                     )
                 }
@@ -275,18 +272,20 @@ fun BurnerNavHost(
                         onSupportClick = { navController.navigate(Routes.Support.route) },
                         onFAQClick = { navController.navigate(Routes.FAQ.route) },
                         onTermsClick = { navController.navigate(Routes.TermsOfService.route) },
-                        onPrivacyClick = { navController.navigate(Routes.PrivacyPolicy.route) },
+                        onPrivacyClick = { navController.navigate(Routes.PrivacyPolicy.route) }
+                    )
+                }
+
+                // Settings sub-screens
+                composable(Routes.AccountDetails.route) {
+                    AccountDetailsScreen(
+                        onBackClick = { navController.popBackStack() },
                         onSignOut = {
                             navController.navigate(Routes.Onboarding.route) {
                                 popUpTo(0) { inclusive = true }
                             }
                         }
                     )
-                }
-
-                // Settings sub-screens
-                composable(Routes.AccountDetails.route) {
-                    AccountDetailsScreen(onBackClick = { navController.popBackStack() })
                 }
 
                 composable(Routes.PaymentSettings.route) {

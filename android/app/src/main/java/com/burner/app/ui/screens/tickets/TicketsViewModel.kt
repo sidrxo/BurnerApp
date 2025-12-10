@@ -65,14 +65,9 @@ class TicketsViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
 
             ticketRepository.getUserTickets().collect { tickets ->
-                val upcoming = tickets.filter { ticket ->
-                    val event = eventsCache[ticket.eventId]
-                    event != null && !event.isPast
-                }
-                val past = tickets.filter { ticket ->
-                    val event = eventsCache[ticket.eventId]
-                    event == null || event.isPast
-                }
+                // Filter based on ticket's own startTime, matching iOS behavior
+                val upcoming = tickets.filter { it.isUpcoming }
+                val past = tickets.filter { it.isPast }
 
                 _uiState.update {
                     it.copy(

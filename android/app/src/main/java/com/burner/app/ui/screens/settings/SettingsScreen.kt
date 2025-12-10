@@ -26,7 +26,6 @@ fun SettingsScreen(
     onFAQClick: () -> Unit,
     onTermsClick: () -> Unit,
     onPrivacyClick: () -> Unit,
-    onSignOut: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -122,20 +121,6 @@ fun SettingsScreen(
                 icon = Icons.Filled.PrivacyTip,
                 onClick = onPrivacyClick
             )
-
-            Spacer(modifier = Modifier.height(BurnerDimensions.spacingXxl))
-
-            // Sign out / Sign in
-            if (uiState.isAuthenticated) {
-                SecondaryButton(
-                    text = "SIGN OUT",
-                    onClick = {
-                        viewModel.signOut()
-                        onSignOut()
-                    },
-                    modifier = Modifier.padding(horizontal = BurnerDimensions.paddingScreen)
-                )
-            }
 
             Spacer(modifier = Modifier.height(BurnerDimensions.spacingXl))
 

@@ -22,6 +22,7 @@ import com.burner.app.ui.theme.BurnerTypography
 @Composable
 fun AccountDetailsScreen(
     onBackClick: () -> Unit,
+    onSignOut: () -> Unit,
     viewModel: AccountDetailsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -112,14 +113,24 @@ fun AccountDetailsScreen(
 
             Spacer(modifier = Modifier.height(BurnerDimensions.spacingXxl))
 
-            // Actions
-            SecondaryButton(
-                text = "EDIT PROFILE",
-                onClick = { /* TODO */ }
+            // Account Actions section (matching iOS)
+            SectionHeader(title = "ACCOUNT ACTIONS")
+
+            Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
+
+            // Sign Out button
+            TextButton(
+                text = "Sign Out",
+                onClick = {
+                    viewModel.signOut()
+                    onSignOut()
+                },
+                color = BurnerColors.Error
             )
 
             Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
 
+            // Delete Account button
             TextButton(
                 text = "Delete Account",
                 onClick = { /* TODO */ },
