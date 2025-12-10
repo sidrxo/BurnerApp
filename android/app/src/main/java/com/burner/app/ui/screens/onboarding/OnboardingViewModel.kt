@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.burner.app.data.models.Tag
+import com.burner.app.data.repository.EventRepository
 import com.burner.app.data.repository.PreferencesRepository
 import com.burner.app.data.repository.TagRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,13 +30,36 @@ data class OnboardingUiState(
     val isLoadingLocation: Boolean = false,
     val availableGenres: List<String> = Tag.defaultGenres.map { it.name },
     val selectedGenres: Set<String> = emptySet(),
-    val notificationsEnabled: Boolean = false
-)
+    val notificationsEnabled: Boolean = false,
+    val eventImageUrls: List<String> = emptyList()
+) {
+    // Progress step (0-2) for Location(1), Genres(2), Notifications(3)
+    val progressStep: Int
+        get() = when (currentStep) {
+            OnboardingStep.WELCOME -> 0
+            OnboardingStep.LOCATION -> 0
+            OnboardingStep.GENRES -> 1
+            OnboardingStep.NOTIFICATIONS -> 2
+            OnboardingStep.COMPLETE -> 2
+        }
+
+    // Total flow steps (excluding welcome and complete)
+    val totalFlowSteps: Int = 3
+
+    // Whether to show back button
+    val showBackButton: Boolean
+        get() = currentStep != OnboardingStep.WELCOME && currentStep != OnboardingStep.COMPLETE
+
+    // Whether to show skip button
+    val showSkipButton: Boolean
+        get() = currentStep in listOf(OnboardingStep.LOCATION, OnboardingStep.GENRES, OnboardingStep.NOTIFICATIONS)
+}
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val tagRepository: TagRepository,
+    private val eventRepository: EventRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -47,6 +71,7 @@ class OnboardingViewModel @Inject constructor(
 
     init {
         loadGenres()
+        loadEventImages()
     }
 
     private fun loadGenres() {
@@ -54,6 +79,23 @@ class OnboardingViewModel @Inject constructor(
             tagRepository.allTags.collect { tags ->
                 _uiState.update { state ->
                     state.copy(availableGenres = tags.map { it.name })
+                }
+            }
+        }
+    }
+
+    private fun loadEventImages() {
+        viewModelScope.launch {
+            eventRepository.allEvents.collect { events ->
+                // Get unique image URLs from events with valid images
+                val imageUrls = events
+                    .filter { it.imageUrl.isNotBlank() }
+                    .map { it.imageUrl }
+                    .distinct()
+                    .take(12) // Max 12 images for mosaic (4 per row x 3 rows)
+
+                _uiState.update { state ->
+                    state.copy(eventImageUrls = imageUrls)
                 }
             }
         }
@@ -77,6 +119,23 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
+    fun previousStep() {
+        _uiState.update { state ->
+            val prevStep = when (state.currentStep) {
+                OnboardingStep.WELCOME -> OnboardingStep.WELCOME
+                OnboardingStep.LOCATION -> OnboardingStep.WELCOME
+                OnboardingStep.GENRES -> OnboardingStep.LOCATION
+                OnboardingStep.NOTIFICATIONS -> OnboardingStep.GENRES
+                OnboardingStep.COMPLETE -> OnboardingStep.NOTIFICATIONS
+            }
+            state.copy(currentStep = prevStep)
+        }
+    }
+
+    fun skipStep() {
+        nextStep()
+    }
+
     @SuppressLint("MissingPermission")
     fun detectCurrentLocation() {
         viewModelScope.launch {
@@ -95,7 +154,7 @@ class OnboardingViewModel @Inject constructor(
 
                     _uiState.update { state ->
                         state.copy(
-                            locationName = cityName,
+                            locationName = cityName.uppercase(),
                             locationLat = location.latitude,
                             locationLon = location.longitude,
                             isLoadingLocation = false
@@ -104,6 +163,10 @@ class OnboardingViewModel @Inject constructor(
 
                     // Save location
                     preferencesRepository.setLocation(cityName, location.latitude, location.longitude)
+
+                    // Auto-advance after detecting location (like iOS)
+                    kotlinx.coroutines.delay(500)
+                    nextStep()
                 } else {
                     _uiState.update { it.copy(isLoadingLocation = false) }
                 }
