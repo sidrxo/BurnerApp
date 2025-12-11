@@ -181,8 +181,9 @@ struct OnboardingFlowView: View {
                             switch step {
                             case 0:
                                 AuthWelcomeSlide(
+                                    showSimpleVersion: onboardingManager.isFirstLaunch,
                                     onLogin: { handleNextStep() },
-                                    onExplore: { handleNextStep() }
+                                    onExplore: { completeOnboarding() }
                                 )
                             case 1:
                                 LocationSlide(onLocationSet: { handleNextStep() })
@@ -266,6 +267,7 @@ struct OnboardingFlowView: View {
 // MARK: - Step 0: Auth Welcome Slide (uses Event Mosaic)
 
 struct AuthWelcomeSlide: View {
+    let showSimpleVersion: Bool
     let onLogin: () -> Void
     let onExplore: () -> Void
 
@@ -314,46 +316,81 @@ struct AuthWelcomeSlide: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // ✅ OPTIMIZED: Always show mosaic immediately, even if loading
-            EventMosaicCarousel(eventImages: eventImageURLs)
-                .padding(.top, 24)
-
-            // Header — keep the same visual hierarchy
+        if showSimpleVersion {
+            // Simple version for first launch - just centered buttons
             VStack(spacing: 0) {
-                TightHeaderText("MEET ME IN THE", "MOMENT", alignment: .center)
-                    .frame(maxWidth: .infinity)
-            }
-            .frame(height: 120)
-            .padding(.bottom, 22)
+                Spacer()
 
-            // Buttons
-            VStack(spacing: 14) {
-                BurnerButton("SIGN UP/IN", style: .primary, maxWidth: 200) {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    showingSignIn = true
+                // Buttons centered vertically and horizontally
+                VStack(spacing: 14) {
+                    BurnerButton("SIGN UP/IN", style: .primary, maxWidth: 200) {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        showingSignIn = true
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    BurnerButton("EXPLORE", style: .secondary, maxWidth: 160) {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        onExplore()
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 40)
 
-                BurnerButton("EXPLORE", style: .secondary, maxWidth: 160) {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    onExplore()
-                }
-                .buttonStyle(PlainButtonStyle())
+                Spacer()
             }
-            .padding(.horizontal, 40)
-
-            Spacer()
-                .frame(minHeight: 40)
-        }
-        .sheet(isPresented: $showingSignIn) {
-            SignInSheetView(showingSignIn: $showingSignIn, onSkip: {
+            .sheet(isPresented: $showingSignIn) {
+                SignInSheetView(showingSignIn: $showingSignIn, onSkip: {
+                    onLogin()
+                })
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
+                showingSignIn = false
                 onLogin()
-            })
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
-            showingSignIn = false
-            onLogin()
+            }
+        } else {
+            // Full version with mosaic for subsequent launches
+            VStack(spacing: 0) {
+                // ✅ OPTIMIZED: Always show mosaic immediately, even if loading
+                EventMosaicCarousel(eventImages: eventImageURLs)
+                    .padding(.top, 24)
+
+                // Header — keep the same visual hierarchy
+                VStack(spacing: 0) {
+                    TightHeaderText("MEET ME IN THE", "MOMENT", alignment: .center)
+                        .frame(maxWidth: .infinity)
+                }
+                .frame(height: 120)
+                .padding(.bottom, 22)
+
+                // Buttons
+                VStack(spacing: 14) {
+                    BurnerButton("SIGN UP/IN", style: .primary, maxWidth: 200) {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        showingSignIn = true
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    BurnerButton("EXPLORE", style: .secondary, maxWidth: 160) {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        onExplore()
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(.horizontal, 40)
+
+                Spacer()
+                    .frame(minHeight: 40)
+            }
+            .sheet(isPresented: $showingSignIn) {
+                SignInSheetView(showingSignIn: $showingSignIn, onSkip: {
+                    onLogin()
+                })
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
+                showingSignIn = false
+                onLogin()
+            }
         }
     }
 }

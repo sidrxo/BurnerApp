@@ -7,9 +7,12 @@ import SwiftUI
 class OnboardingManager: ObservableObject {
     @Published var hasCompletedOnboarding: Bool
     @Published var shouldShowOnboarding: Bool = false
+    @Published var isFirstLaunch: Bool
 
     private let userDefaults = UserDefaults.standard
     private let onboardingCompletedKey = "hasCompletedOnboarding"
+    private let firstLaunchKey = "isFirstLaunch"
+    private let hasEverSignedInKey = "hasEverSignedIn"
     
     // Hold a reference to the AuthenticationService
     private var authService: AuthenticationService?
@@ -22,24 +25,36 @@ class OnboardingManager: ObservableObject {
         self.authService = authService
         self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
 
+        // Check if this is the first launch (default is true, set to false after first launch)
+        if !userDefaults.bool(forKey: firstLaunchKey) {
+            // Very first launch ever
+            self.isFirstLaunch = true
+            userDefaults.set(true, forKey: firstLaunchKey)
+        } else {
+            self.isFirstLaunch = false
+        }
+
         // Set initial state immediately based on current auth status
         let isAuthenticated = authService.currentUser != nil
+        let hasEverSignedIn = userDefaults.bool(forKey: hasEverSignedInKey)
 
         // LOGIC:
-        // - If signed IN and COMPLETED -> Hide onboarding
-        // - If signed IN but NOT completed -> Show onboarding (they need to finish)
-        // - If signed OUT and COMPLETED -> Hide onboarding
+        // - If signed IN -> Mark as having signed in, hide onboarding
         // - If signed OUT and NOT completed -> Show onboarding
+        // - If signed OUT and COMPLETED -> Hide onboarding
         if isAuthenticated {
-            // Signed in - check if they completed onboarding
-            self.shouldShowOnboarding = !hasCompletedOnboarding
-            
-            // If they completed before, load their preferences
+            // User is signed in - mark it and hide onboarding
+            if !hasEverSignedIn {
+                userDefaults.set(true, forKey: hasEverSignedInKey)
+            }
+            self.shouldShowOnboarding = false
+
+            // Load preferences if they completed before
             if hasCompletedOnboarding {
                 // Will load preferences after auth subscription is set up
             }
         } else {
-            // Signed out - check if they completed onboarding
+            // Signed out - show onboarding if not completed
             self.shouldShowOnboarding = !hasCompletedOnboarding
         }
 
@@ -51,6 +66,14 @@ class OnboardingManager: ObservableObject {
     init() {
         self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
         self.shouldShowOnboarding = !hasCompletedOnboarding
+
+        // Check if this is the first launch
+        if !userDefaults.bool(forKey: firstLaunchKey) {
+            self.isFirstLaunch = true
+            userDefaults.set(true, forKey: firstLaunchKey)
+        } else {
+            self.isFirstLaunch = false
+        }
     }
 
     // MARK: - Subscription Setup
@@ -67,6 +90,8 @@ class OnboardingManager: ObservableObject {
         // Also listen for explicit sign-in notifications
         NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))
             .sink { [weak self] _ in
+                // Mark that user has signed in
+                self?.userDefaults.set(true, forKey: self?.hasEverSignedInKey ?? "hasEverSignedIn")
                 // Small delay to ensure auth state is fully updated
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     self?.updateOnboardingStatus()
@@ -136,11 +161,15 @@ class OnboardingManager: ObservableObject {
         // Save completion state
         hasCompletedOnboarding = true
         userDefaults.set(true, forKey: onboardingCompletedKey)
+
+        // Mark first launch as complete
+        isFirstLaunch = false
+
         userDefaults.synchronize() // Force immediate save
-        
+
         // Force SwiftUI to notice the change by explicitly calling objectWillChange
         objectWillChange.send()
-        
+
         // Simple, direct state update
         shouldShowOnboarding = false
     }
