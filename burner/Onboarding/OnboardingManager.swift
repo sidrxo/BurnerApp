@@ -23,9 +23,8 @@ class OnboardingManager: ObservableObject {
     // Main Initializer: Use this for production/App startup
     init(authService: AuthenticationService) {
         self.authService = authService
-        self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
 
-        // Check if this is the first launch (default is true, set to false after first launch)
+        // Initialize isFirstLaunch first (required before accessing other properties)
         if !userDefaults.bool(forKey: firstLaunchKey) {
             // Very first launch ever
             self.isFirstLaunch = true
@@ -33,6 +32,9 @@ class OnboardingManager: ObservableObject {
         } else {
             self.isFirstLaunch = false
         }
+
+        // Now initialize hasCompletedOnboarding
+        self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
 
         // Set initial state immediately based on current auth status
         let isAuthenticated = authService.currentUser != nil
@@ -64,16 +66,17 @@ class OnboardingManager: ObservableObject {
 
     // Secondary Initializer: For backward compatibility/Previews where Auth is unavailable
     init() {
-        self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
-        self.shouldShowOnboarding = !hasCompletedOnboarding
-
-        // Check if this is the first launch
+        // Initialize isFirstLaunch first (required before accessing other properties)
         if !userDefaults.bool(forKey: firstLaunchKey) {
             self.isFirstLaunch = true
             userDefaults.set(true, forKey: firstLaunchKey)
         } else {
             self.isFirstLaunch = false
         }
+
+        // Now initialize hasCompletedOnboarding
+        self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
+        self.shouldShowOnboarding = !hasCompletedOnboarding
     }
 
     // MARK: - Subscription Setup
