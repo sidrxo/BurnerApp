@@ -24,8 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.burner.app.ui.components.BurnerButton
 import com.burner.app.ui.components.BurnerTopBar
+import com.burner.app.ui.components.PrimaryButton
 import com.burner.app.ui.theme.BurnerColors
 import com.burner.app.ui.theme.BurnerDimensions
 import com.burner.app.ui.theme.BurnerTypography
@@ -107,7 +107,7 @@ private fun NoAccessView() {
             Spacer(modifier = Modifier.height(BurnerDimensions.spacingLg))
             Text(
                 text = "Access Denied",
-                style = BurnerTypography.h2,
+                style = BurnerTypography.sectionHeader,
                 color = BurnerColors.TextPrimary
             )
             Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
@@ -141,7 +141,7 @@ private fun CameraPermissionView(permissionState: PermissionState) {
             Spacer(modifier = Modifier.height(BurnerDimensions.spacingLg))
             Text(
                 text = "Camera Permission Required",
-                style = BurnerTypography.h2,
+                style = BurnerTypography.sectionHeader,
                 color = BurnerColors.TextPrimary
             )
             Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
@@ -152,7 +152,7 @@ private fun CameraPermissionView(permissionState: PermissionState) {
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(BurnerDimensions.spacingXl))
-            BurnerButton(
+            PrimaryButton(
                 text = "Grant Permission",
                 onClick = { permissionState.launchPermissionRequest() }
             )
@@ -260,7 +260,7 @@ private fun ScannerContent(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(BurnerDimensions.paddingMd),
+                    modifier = Modifier.padding(BurnerDimensions.paddingCard),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -290,6 +290,7 @@ private fun ScannerContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EventSelector(
     events: List<com.burner.app.data.models.Event>,
@@ -450,7 +451,7 @@ private fun ManualEntryView(
         Spacer(modifier = Modifier.height(BurnerDimensions.spacingXl))
         Text(
             text = "Enter Ticket Number",
-            style = BurnerTypography.h2,
+            style = BurnerTypography.sectionHeader,
             color = BurnerColors.TextPrimary
         )
         Spacer(modifier = Modifier.height(BurnerDimensions.spacingLg))
@@ -468,7 +469,7 @@ private fun ManualEntryView(
             )
         )
         Spacer(modifier = Modifier.height(BurnerDimensions.spacingLg))
-        BurnerButton(
+        PrimaryButton(
             text = if (isProcessing) "Scanning..." else "Scan",
             onClick = onSubmit,
             enabled = !isProcessing && value.isNotEmpty(),
@@ -498,6 +499,7 @@ private fun ScanResultView(
         is ScanResult.Success -> Icons.Filled.CheckCircle
         is ScanResult.AlreadyUsed -> Icons.Filled.Warning
         is ScanResult.Error -> Icons.Filled.Error
+        else -> Icons.Filled.Error
     }
 
     Surface(
@@ -508,7 +510,7 @@ private fun ScanResultView(
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
-            modifier = Modifier.padding(BurnerDimensions.paddingLg)
+            modifier = Modifier.padding(BurnerDimensions.spacingLg)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
@@ -525,7 +527,7 @@ private fun ScanResultView(
                         is ScanResult.Success -> {
                             Text(
                                 text = "Ticket Scanned Successfully",
-                                style = BurnerTypography.h3,
+                                style = BurnerTypography.card,
                                 color = textColor
                             )
                             Text(
@@ -537,7 +539,7 @@ private fun ScanResultView(
                         is ScanResult.AlreadyUsed -> {
                             Text(
                                 text = "Ticket Already Used",
-                                style = BurnerTypography.h3,
+                                style = BurnerTypography.card,
                                 color = textColor
                             )
                             Text(
@@ -549,7 +551,7 @@ private fun ScanResultView(
                         is ScanResult.Error -> {
                             Text(
                                 text = "Scan Failed",
-                                style = BurnerTypography.h3,
+                                style = BurnerTypography.card,
                                 color = textColor
                             )
                             Text(
