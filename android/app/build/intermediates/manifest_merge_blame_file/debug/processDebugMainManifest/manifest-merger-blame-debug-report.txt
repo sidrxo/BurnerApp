@@ -27,796 +27,864 @@
 17    <uses-permission android:name="android.permission.VIBRATE" />
 17-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:11:5-66
 17-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:11:22-63
-18
-19    <!-- See https://developer.android.com/training/package-visibility/declaring for more details. -->
-20    <queries>
-20-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:8:5-12:15
-21
-22        <!-- Added to check if Chrome is installed for browser-based payment authentication (e.g. 3DS1). -->
-23        <package android:name="com.android.chrome" />
-23-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:11:9-54
-23-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:11:18-51
-24        <!-- Needs to be explicitly declared on Android R+ -->
-25        <package android:name="com.google.android.apps.maps" />
-25-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:33:9-64
-25-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:33:18-61
-26    </queries>
-27
-28    <uses-permission android:name="android.permission.WAKE_LOCK" /> <!-- Required by older versions of Google Play services to create IID tokens -->
-28-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:24:5-68
-28-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:24:22-65
-29    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
-29-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:26:5-82
-29-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:26:22-79
-30
-31    <uses-feature
-31-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:26:5-28:35
-32        android:glEsVersion="0x00020000"
-32-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:27:9-41
-33        android:required="true" />
-33-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:28:9-32
-34
-35    <permission
-35-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
-36        android:name="com.burner.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-36-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
-37        android:protectionLevel="signature" />
-37-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
-38
-39    <uses-permission android:name="com.burner.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-39-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
-39-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
-40
-41    <application
-41-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:13:5-60:19
-42        android:name="com.burner.app.BurnerApplication"
-42-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:14:9-42
-43        android:allowBackup="true"
-43-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:15:9-35
-44        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-44-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
-45        android:dataExtractionRules="@xml/data_extraction_rules"
-45-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:16:9-65
-46        android:debuggable="true"
-47        android:extractNativeLibs="false"
-48        android:fullBackupContent="@xml/backup_rules"
-48-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:17:9-54
-49        android:icon="@mipmap/ic_launcher"
-49-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:18:9-43
-50        android:label="@string/app_name"
-50-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:19:9-41
-51        android:roundIcon="@mipmap/ic_launcher_round"
-51-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:20:9-54
-52        android:supportsRtl="true"
-52-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:21:9-35
-53        android:testOnly="true"
-54        android:theme="@style/Theme.Burner" >
-54-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:22:9-44
-55        <activity
-55-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:25:9-45:20
-56            android:name="com.burner.app.MainActivity"
-56-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:26:13-41
-57            android:exported="true"
-57-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:27:13-36
-58            android:label="@string/app_name"
-58-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:28:13-45
-59            android:theme="@style/Theme.Burner"
-59-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:29:13-48
-60            android:windowSoftInputMode="adjustResize" >
-60-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:30:13-55
-61            <intent-filter>
-61-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:31:13-34:29
-62                <action android:name="android.intent.action.MAIN" />
-62-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:32:17-69
-62-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:32:25-66
-63
-64                <category android:name="android.intent.category.LAUNCHER" />
-64-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:33:17-77
-64-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:33:27-74
-65            </intent-filter>
-66
-67            <!-- Deep linking -->
-68            <intent-filter android:autoVerify="true" >
-68-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:37:13-44:29
-68-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:37:28-53
-69                <action android:name="android.intent.action.VIEW" />
-69-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:38:17-69
-69-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:38:25-66
-70
-71                <category android:name="android.intent.category.DEFAULT" />
-71-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:17-76
-71-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:27-73
-72                <category android:name="android.intent.category.BROWSABLE" />
-72-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:17-78
-72-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:27-75
-73
-74                <data
-74-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-43:42
-75                    android:host="app"
-75-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:21-39
-76                    android:scheme="burner" />
-76-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:21-44
-77            </intent-filter>
-78        </activity>
-79
-80        <!-- Firebase Messaging Service -->
-81        <service
-81-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:48:9-54:19
-82            android:name="com.burner.app.services.BurnerFirebaseMessagingService"
-82-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:49:13-68
-83            android:exported="false" >
-83-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:50:13-37
-84            <intent-filter>
-84-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:51:13-53:29
-85                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-85-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:52:17-78
-85-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:52:25-75
-86            </intent-filter>
-87        </service>
-88
-89        <meta-data
-89-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:56:9-58:52
-90            android:name="com.google.firebase.messaging.default_notification_channel_id"
-90-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:57:13-89
-91            android:value="burner_notifications" />
-91-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:58:13-49
-92
-93        <activity
-93-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:8:9-11:69
-94            android:name="com.stripe.android.paymentsheet.PaymentSheetActivity"
-94-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:9:13-80
-95            android:exported="false"
-95-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:10:13-37
-96            android:theme="@style/StripePaymentSheetDefaultTheme" />
-96-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:11:13-66
-97        <activity
-97-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:12:9-15:69
-98            android:name="com.stripe.android.paymentsheet.PaymentOptionsActivity"
-98-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:13:13-82
-99            android:exported="false"
-99-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:14:13-37
-100            android:theme="@style/StripePaymentSheetDefaultTheme" />
-100-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:15:13-66
-101        <activity
-101-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:16:9-19:69
-102            android:name="com.stripe.android.customersheet.CustomerSheetActivity"
-102-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:17:13-82
-103            android:exported="false"
-103-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:18:13-37
-104            android:theme="@style/StripePaymentSheetDefaultTheme" />
-104-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:19:13-66
-105        <activity
-105-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:20:9-23:69
-106            android:name="com.stripe.android.paymentsheet.addresselement.AddressElementActivity"
-106-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:21:13-97
-107            android:exported="false"
-107-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:22:13-37
-108            android:theme="@style/StripePaymentSheetDefaultTheme" />
-108-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:23:13-66
-109        <activity
-109-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:24:9-27:69
-110            android:name="com.stripe.android.paymentsheet.paymentdatacollection.bacs.BacsMandateConfirmationActivity"
-110-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:25:13-118
-111            android:exported="false"
-111-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:26:13-37
-112            android:theme="@style/StripePaymentSheetDefaultTheme" />
-112-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:27:13-66
-113        <activity
-113-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:28:9-31:69
-114            android:name="com.stripe.android.paymentsheet.paymentdatacollection.polling.PollingActivity"
-114-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:29:13-105
-115            android:exported="false"
-115-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:30:13-37
-116            android:theme="@style/StripePaymentSheetDefaultTheme" />
-116-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:31:13-66
-117        <activity
-117-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:32:9-35:69
-118            android:name="com.stripe.android.paymentsheet.ui.SepaMandateActivity"
-118-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:33:13-82
-119            android:exported="false"
-119-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:34:13-37
-120            android:theme="@style/StripePaymentSheetDefaultTheme" />
-120-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:35:13-66
-121        <activity
-121-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:36:9-39:68
-122            android:name="com.stripe.android.paymentsheet.ExternalPaymentMethodProxyActivity"
-122-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:37:13-94
-123            android:exported="false"
-123-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:38:13-37
-124            android:theme="@style/StripePayLauncherDefaultTheme" />
-124-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:39:13-65
-125        <activity
-125-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:40:9-42:69
-126            android:name="com.stripe.android.paymentsheet.paymentdatacollection.cvcrecollection.CvcRecollectionActivity"
-126-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:41:13-121
-127            android:theme="@style/StripePaymentSheetDefaultTheme" />
-127-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:42:13-66
-128        <activity
-128-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:23:9-27:75
-129            android:name="com.google.android.gms.auth.api.signin.internal.SignInHubActivity"
-129-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:24:13-93
-130            android:excludeFromRecents="true"
-130-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:25:13-46
-131            android:exported="false"
-131-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:26:13-37
-132            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-132-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:27:13-72
+18    <uses-permission android:name="android.permission.CAMERA" />
+18-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:12:5-65
+18-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:12:22-62
+19
+20    <uses-feature
+20-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:13:5-85
+21        android:name="android.hardware.camera"
+21-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:13:19-57
+22        android:required="false" />
+22-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:13:58-82
+23
+24    <!-- See https://developer.android.com/training/package-visibility/declaring for more details. -->
+25    <queries>
+25-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:8:5-12:15
+26
+27        <!-- Added to check if Chrome is installed for browser-based payment authentication (e.g. 3DS1). -->
+28        <package android:name="com.android.chrome" />
+28-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:11:9-54
+28-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:11:18-51
+29        <!-- Needs to be explicitly declared on Android R+ -->
+30        <package android:name="com.google.android.apps.maps" />
+30-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:33:9-64
+30-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:33:18-61
+31    </queries>
+32
+33    <uses-permission android:name="android.permission.WAKE_LOCK" /> <!-- Required by older versions of Google Play services to create IID tokens -->
+33-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:24:5-68
+33-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:24:22-65
+34    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+34-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:26:5-82
+34-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:26:22-79
+35
+36    <uses-feature
+36-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:26:5-28:35
+37        android:glEsVersion="0x00020000"
+37-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:27:9-41
+38        android:required="true" />
+38-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:28:9-32
+39
+40    <permission
+40-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+41        android:name="com.burner.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+41-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+42        android:protectionLevel="signature" />
+42-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+43
+44    <uses-permission android:name="com.burner.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+44-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+44-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+45
+46    <application
+46-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:15:5-62:19
+47        android:name="com.burner.app.BurnerApplication"
+47-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:16:9-42
+48        android:allowBackup="true"
+48-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:17:9-35
+49        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+49-->[androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+50        android:dataExtractionRules="@xml/data_extraction_rules"
+50-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:18:9-65
+51        android:debuggable="true"
+52        android:extractNativeLibs="false"
+53        android:fullBackupContent="@xml/backup_rules"
+53-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:19:9-54
+54        android:icon="@mipmap/ic_launcher"
+54-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:20:9-43
+55        android:label="@string/app_name"
+55-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:21:9-41
+56        android:roundIcon="@mipmap/ic_launcher_round"
+56-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:22:9-54
+57        android:supportsRtl="true"
+57-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:23:9-35
+58        android:testOnly="true"
+59        android:theme="@style/Theme.Burner" >
+59-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:24:9-44
+60        <activity
+60-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:27:9-47:20
+61            android:name="com.burner.app.MainActivity"
+61-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:28:13-41
+62            android:exported="true"
+62-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:29:13-36
+63            android:label="@string/app_name"
+63-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:30:13-45
+64            android:theme="@style/Theme.Burner"
+64-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:31:13-48
+65            android:windowSoftInputMode="adjustResize" >
+65-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:32:13-55
+66            <intent-filter>
+66-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:33:13-36:29
+67                <action android:name="android.intent.action.MAIN" />
+67-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:34:17-69
+67-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:34:25-66
+68
+69                <category android:name="android.intent.category.LAUNCHER" />
+69-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:35:17-77
+69-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:35:27-74
+70            </intent-filter>
+71
+72            <!-- Deep linking -->
+73            <intent-filter android:autoVerify="true" >
+73-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:13-46:29
+73-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:28-53
+74                <action android:name="android.intent.action.VIEW" />
+74-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:17-69
+74-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:25-66
+75
+76                <category android:name="android.intent.category.DEFAULT" />
+76-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-76
+76-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:27-73
+77                <category android:name="android.intent.category.BROWSABLE" />
+77-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:17-78
+77-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:27-75
+78
+79                <data
+79-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:17-45:42
+80                    android:host="app"
+80-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:45:21-39
+81                    android:scheme="burner" />
+81-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:44:21-44
+82            </intent-filter>
+83        </activity>
+84
+85        <!-- Firebase Messaging Service -->
+86        <service
+86-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:50:9-56:19
+87            android:name="com.burner.app.services.BurnerFirebaseMessagingService"
+87-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:51:13-68
+88            android:exported="false" >
+88-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:52:13-37
+89            <intent-filter>
+89-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:53:13-55:29
+90                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+90-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:54:17-78
+90-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:54:25-75
+91            </intent-filter>
+92        </service>
+93
+94        <meta-data
+94-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:58:9-60:52
+95            android:name="com.google.firebase.messaging.default_notification_channel_id"
+95-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:59:13-89
+96            android:value="burner_notifications" />
+96-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:60:13-49
+97
+98        <activity
+98-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:8:9-11:69
+99            android:name="com.stripe.android.paymentsheet.PaymentSheetActivity"
+99-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:9:13-80
+100            android:exported="false"
+100-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:10:13-37
+101            android:theme="@style/StripePaymentSheetDefaultTheme" />
+101-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:11:13-66
+102        <activity
+102-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:12:9-15:69
+103            android:name="com.stripe.android.paymentsheet.PaymentOptionsActivity"
+103-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:13:13-82
+104            android:exported="false"
+104-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:14:13-37
+105            android:theme="@style/StripePaymentSheetDefaultTheme" />
+105-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:15:13-66
+106        <activity
+106-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:16:9-19:69
+107            android:name="com.stripe.android.customersheet.CustomerSheetActivity"
+107-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:17:13-82
+108            android:exported="false"
+108-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:18:13-37
+109            android:theme="@style/StripePaymentSheetDefaultTheme" />
+109-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:19:13-66
+110        <activity
+110-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:20:9-23:69
+111            android:name="com.stripe.android.paymentsheet.addresselement.AddressElementActivity"
+111-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:21:13-97
+112            android:exported="false"
+112-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:22:13-37
+113            android:theme="@style/StripePaymentSheetDefaultTheme" />
+113-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:23:13-66
+114        <activity
+114-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:24:9-27:69
+115            android:name="com.stripe.android.paymentsheet.paymentdatacollection.bacs.BacsMandateConfirmationActivity"
+115-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:25:13-118
+116            android:exported="false"
+116-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:26:13-37
+117            android:theme="@style/StripePaymentSheetDefaultTheme" />
+117-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:27:13-66
+118        <activity
+118-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:28:9-31:69
+119            android:name="com.stripe.android.paymentsheet.paymentdatacollection.polling.PollingActivity"
+119-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:29:13-105
+120            android:exported="false"
+120-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:30:13-37
+121            android:theme="@style/StripePaymentSheetDefaultTheme" />
+121-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:31:13-66
+122        <activity
+122-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:32:9-35:69
+123            android:name="com.stripe.android.paymentsheet.ui.SepaMandateActivity"
+123-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:33:13-82
+124            android:exported="false"
+124-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:34:13-37
+125            android:theme="@style/StripePaymentSheetDefaultTheme" />
+125-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:35:13-66
+126        <activity
+126-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:36:9-39:68
+127            android:name="com.stripe.android.paymentsheet.ExternalPaymentMethodProxyActivity"
+127-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:37:13-94
+128            android:exported="false"
+128-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:38:13-37
+129            android:theme="@style/StripePayLauncherDefaultTheme" />
+129-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:39:13-65
+130        <activity
+130-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:40:9-42:69
+131            android:name="com.stripe.android.paymentsheet.paymentdatacollection.cvcrecollection.CvcRecollectionActivity"
+131-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:41:13-121
+132            android:theme="@style/StripePaymentSheetDefaultTheme" />
+132-->[com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:42:13-66
 133        <!--
-134            Service handling Google Sign-In user revocation. For apps that do not integrate with
-135            Google Sign-In, this service will never be started.
+134        Service for holding metadata. Cannot be instantiated.
+135        Metadata will be merged from other manifests.
 136        -->
 137        <service
-137-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:33:9-37:51
-138            android:name="com.google.android.gms.auth.api.signin.RevocationBoundService"
-138-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:34:13-89
-139            android:exported="true"
-139-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:35:13-36
-140            android:permission="com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION"
-140-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:36:13-107
-141            android:visibleToInstantApps="true" />
-141-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:37:13-48
-142        <service
-142-->[com.google.firebase:firebase-auth-ktx:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/364d0c88531b0306fc1527827620a023/transformed/firebase-auth-ktx-22.3.0/AndroidManifest.xml:8:9-14:19
-143            android:name="com.google.firebase.components.ComponentDiscoveryService"
-143-->[com.google.firebase:firebase-auth-ktx:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/364d0c88531b0306fc1527827620a023/transformed/firebase-auth-ktx-22.3.0/AndroidManifest.xml:9:13-84
-144            android:directBootAware="true"
-144-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:32:13-43
-145            android:exported="false" >
-145-->[com.google.firebase:firebase-auth-ktx:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/364d0c88531b0306fc1527827620a023/transformed/firebase-auth-ktx-22.3.0/AndroidManifest.xml:10:13-37
-146            <meta-data
-146-->[com.google.firebase:firebase-auth-ktx:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/364d0c88531b0306fc1527827620a023/transformed/firebase-auth-ktx-22.3.0/AndroidManifest.xml:11:13-13:85
-147                android:name="com.google.firebase.components:com.google.firebase.auth.ktx.FirebaseAuthLegacyRegistrar"
-147-->[com.google.firebase:firebase-auth-ktx:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/364d0c88531b0306fc1527827620a023/transformed/firebase-auth-ktx-22.3.0/AndroidManifest.xml:12:17-119
-148                android:value="com.google.firebase.components.ComponentRegistrar" />
-148-->[com.google.firebase:firebase-auth-ktx:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/364d0c88531b0306fc1527827620a023/transformed/firebase-auth-ktx-22.3.0/AndroidManifest.xml:13:17-82
-149            <meta-data
-149-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:69:13-71:85
-150                android:name="com.google.firebase.components:com.google.firebase.auth.FirebaseAuthRegistrar"
-150-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:70:17-109
-151                android:value="com.google.firebase.components.ComponentRegistrar" />
-151-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:71:17-82
-152            <meta-data
-152-->[com.google.firebase:firebase-functions-ktx:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/d12895e059026b134ac8d7a261d64887/transformed/firebase-functions-ktx-20.4.0/AndroidManifest.xml:12:13-14:85
-153                android:name="com.google.firebase.components:com.google.firebase.functions.ktx.FirebaseFunctionsLegacyRegistrar"
-153-->[com.google.firebase:firebase-functions-ktx:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/d12895e059026b134ac8d7a261d64887/transformed/firebase-functions-ktx-20.4.0/AndroidManifest.xml:13:17-129
-154                android:value="com.google.firebase.components.ComponentRegistrar" />
-154-->[com.google.firebase:firebase-functions-ktx:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/d12895e059026b134ac8d7a261d64887/transformed/firebase-functions-ktx-20.4.0/AndroidManifest.xml:14:17-82
-155            <meta-data
-155-->[com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:15:13-17:85
-156                android:name="com.google.firebase.components:com.google.firebase.functions.FirebaseFunctionsKtxRegistrar"
-156-->[com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:16:17-122
-157                android:value="com.google.firebase.components.ComponentRegistrar" />
-157-->[com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:17:17-82
-158            <meta-data
-158-->[com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:18:13-20:85
-159                android:name="com.google.firebase.components:com.google.firebase.functions.FunctionsRegistrar"
-159-->[com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:19:17-111
-160                android:value="com.google.firebase.components.ComponentRegistrar" />
-160-->[com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:20:17-82
-161            <meta-data
-161-->[com.google.firebase:firebase-firestore-ktx:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/8de9010674fa6fd9085225c593f5528e/transformed/firebase-firestore-ktx-24.10.0/AndroidManifest.xml:12:13-14:85
-162                android:name="com.google.firebase.components:com.google.firebase.firestore.ktx.FirebaseFirestoreLegacyRegistrar"
-162-->[com.google.firebase:firebase-firestore-ktx:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/8de9010674fa6fd9085225c593f5528e/transformed/firebase-firestore-ktx-24.10.0/AndroidManifest.xml:13:17-129
-163                android:value="com.google.firebase.components.ComponentRegistrar" />
-163-->[com.google.firebase:firebase-firestore-ktx:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/8de9010674fa6fd9085225c593f5528e/transformed/firebase-firestore-ktx-24.10.0/AndroidManifest.xml:14:17-82
+137-->[androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:29:9-33:78
+138            android:name="androidx.camera.core.impl.MetadataHolderService"
+138-->[androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:30:13-75
+139            android:enabled="false"
+139-->[androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:31:13-36
+140            android:exported="false" >
+140-->[androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:32:13-37
+141            <meta-data
+141-->[androidx.camera:camera-camera2:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/ec19a94885ee53f7371eaf079291f061/transformed/camera-camera2-1.3.1/AndroidManifest.xml:30:13-32:89
+142                android:name="androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER"
+142-->[androidx.camera:camera-camera2:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/ec19a94885ee53f7371eaf079291f061/transformed/camera-camera2-1.3.1/AndroidManifest.xml:31:17-103
+143                android:value="androidx.camera.camera2.Camera2Config$DefaultProvider" />
+143-->[androidx.camera:camera-camera2:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/ec19a94885ee53f7371eaf079291f061/transformed/camera-camera2-1.3.1/AndroidManifest.xml:32:17-86
+144        </service>
+145
+146        <activity
+146-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:23:9-27:75
+147            android:name="com.google.android.gms.auth.api.signin.internal.SignInHubActivity"
+147-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:24:13-93
+148            android:excludeFromRecents="true"
+148-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:25:13-46
+149            android:exported="false"
+149-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:26:13-37
+150            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+150-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:27:13-72
+151        <!--
+152            Service handling Google Sign-In user revocation. For apps that do not integrate with
+153            Google Sign-In, this service will never be started.
+154        -->
+155        <service
+155-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:33:9-37:51
+156            android:name="com.google.android.gms.auth.api.signin.RevocationBoundService"
+156-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:34:13-89
+157            android:exported="true"
+157-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:35:13-36
+158            android:permission="com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION"
+158-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:36:13-107
+159            android:visibleToInstantApps="true" />
+159-->[com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:37:13-48
+160        <service
+160-->[com.google.firebase:firebase-auth-ktx:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/364d0c88531b0306fc1527827620a023/transformed/firebase-auth-ktx-22.3.0/AndroidManifest.xml:8:9-14:19
+161            android:name="com.google.firebase.components.ComponentDiscoveryService"
+161-->[com.google.firebase:firebase-auth-ktx:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/364d0c88531b0306fc1527827620a023/transformed/firebase-auth-ktx-22.3.0/AndroidManifest.xml:9:13-84
+162            android:directBootAware="true"
+162-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:32:13-43
+163            android:exported="false" >
+163-->[com.google.firebase:firebase-auth-ktx:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/364d0c88531b0306fc1527827620a023/transformed/firebase-auth-ktx-22.3.0/AndroidManifest.xml:10:13-37
 164            <meta-data
-164-->[com.google.firebase:firebase-firestore:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/c6df4d9d465aba055e76ba7b9da7722b/transformed/firebase-firestore-24.10.0/AndroidManifest.xml:17:13-19:85
-165                android:name="com.google.firebase.components:com.google.firebase.firestore.FirebaseFirestoreKtxRegistrar"
-165-->[com.google.firebase:firebase-firestore:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/c6df4d9d465aba055e76ba7b9da7722b/transformed/firebase-firestore-24.10.0/AndroidManifest.xml:18:17-122
+164-->[com.google.firebase:firebase-auth-ktx:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/364d0c88531b0306fc1527827620a023/transformed/firebase-auth-ktx-22.3.0/AndroidManifest.xml:11:13-13:85
+165                android:name="com.google.firebase.components:com.google.firebase.auth.ktx.FirebaseAuthLegacyRegistrar"
+165-->[com.google.firebase:firebase-auth-ktx:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/364d0c88531b0306fc1527827620a023/transformed/firebase-auth-ktx-22.3.0/AndroidManifest.xml:12:17-119
 166                android:value="com.google.firebase.components.ComponentRegistrar" />
-166-->[com.google.firebase:firebase-firestore:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/c6df4d9d465aba055e76ba7b9da7722b/transformed/firebase-firestore-24.10.0/AndroidManifest.xml:19:17-82
+166-->[com.google.firebase:firebase-auth-ktx:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/364d0c88531b0306fc1527827620a023/transformed/firebase-auth-ktx-22.3.0/AndroidManifest.xml:13:17-82
 167            <meta-data
-167-->[com.google.firebase:firebase-firestore:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/c6df4d9d465aba055e76ba7b9da7722b/transformed/firebase-firestore-24.10.0/AndroidManifest.xml:20:13-22:85
-168                android:name="com.google.firebase.components:com.google.firebase.firestore.FirestoreRegistrar"
-168-->[com.google.firebase:firebase-firestore:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/c6df4d9d465aba055e76ba7b9da7722b/transformed/firebase-firestore-24.10.0/AndroidManifest.xml:21:17-111
+167-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:69:13-71:85
+168                android:name="com.google.firebase.components:com.google.firebase.auth.FirebaseAuthRegistrar"
+168-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:70:17-109
 169                android:value="com.google.firebase.components.ComponentRegistrar" />
-169-->[com.google.firebase:firebase-firestore:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/c6df4d9d465aba055e76ba7b9da7722b/transformed/firebase-firestore-24.10.0/AndroidManifest.xml:22:17-82
+169-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:71:17-82
 170            <meta-data
-170-->[com.google.firebase:firebase-messaging-ktx:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/2636e9f7852975b05d19ab27aef0766f/transformed/firebase-messaging-ktx-23.4.0/AndroidManifest.xml:26:13-28:85
-171                android:name="com.google.firebase.components:com.google.firebase.messaging.ktx.FirebaseMessagingLegacyRegistrar"
-171-->[com.google.firebase:firebase-messaging-ktx:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/2636e9f7852975b05d19ab27aef0766f/transformed/firebase-messaging-ktx-23.4.0/AndroidManifest.xml:27:17-129
+170-->[com.google.firebase:firebase-functions-ktx:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/d12895e059026b134ac8d7a261d64887/transformed/firebase-functions-ktx-20.4.0/AndroidManifest.xml:12:13-14:85
+171                android:name="com.google.firebase.components:com.google.firebase.functions.ktx.FirebaseFunctionsLegacyRegistrar"
+171-->[com.google.firebase:firebase-functions-ktx:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/d12895e059026b134ac8d7a261d64887/transformed/firebase-functions-ktx-20.4.0/AndroidManifest.xml:13:17-129
 172                android:value="com.google.firebase.components.ComponentRegistrar" />
-172-->[com.google.firebase:firebase-messaging-ktx:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/2636e9f7852975b05d19ab27aef0766f/transformed/firebase-messaging-ktx-23.4.0/AndroidManifest.xml:28:17-82
+172-->[com.google.firebase:firebase-functions-ktx:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/d12895e059026b134ac8d7a261d64887/transformed/firebase-functions-ktx-20.4.0/AndroidManifest.xml:14:17-82
 173            <meta-data
-173-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:57:13-59:85
-174                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingKtxRegistrar"
-174-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:58:17-122
+173-->[com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:15:13-17:85
+174                android:name="com.google.firebase.components:com.google.firebase.functions.FirebaseFunctionsKtxRegistrar"
+174-->[com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:16:17-122
 175                android:value="com.google.firebase.components.ComponentRegistrar" />
-175-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:59:17-82
+175-->[com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:17:17-82
 176            <meta-data
-176-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:60:13-62:85
-177                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingRegistrar"
-177-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:61:17-119
+176-->[com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:18:13-20:85
+177                android:name="com.google.firebase.components:com.google.firebase.functions.FunctionsRegistrar"
+177-->[com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:19:17-111
 178                android:value="com.google.firebase.components.ComponentRegistrar" />
-178-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:62:17-82
+178-->[com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:20:17-82
 179            <meta-data
-179-->[com.google.firebase:firebase-iid:21.1.0] /Users/sidrao/.gradle/caches/transforms-4/6bbad914861dbc21ae51409fbcd97514/transformed/firebase-iid-21.1.0/AndroidManifest.xml:32:13-34:85
-180                android:name="com.google.firebase.components:com.google.firebase.iid.Registrar"
-180-->[com.google.firebase:firebase-iid:21.1.0] /Users/sidrao/.gradle/caches/transforms-4/6bbad914861dbc21ae51409fbcd97514/transformed/firebase-iid-21.1.0/AndroidManifest.xml:33:17-96
+179-->[com.google.firebase:firebase-firestore-ktx:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/8de9010674fa6fd9085225c593f5528e/transformed/firebase-firestore-ktx-24.10.0/AndroidManifest.xml:12:13-14:85
+180                android:name="com.google.firebase.components:com.google.firebase.firestore.ktx.FirebaseFirestoreLegacyRegistrar"
+180-->[com.google.firebase:firebase-firestore-ktx:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/8de9010674fa6fd9085225c593f5528e/transformed/firebase-firestore-ktx-24.10.0/AndroidManifest.xml:13:17-129
 181                android:value="com.google.firebase.components.ComponentRegistrar" />
-181-->[com.google.firebase:firebase-iid:21.1.0] /Users/sidrao/.gradle/caches/transforms-4/6bbad914861dbc21ae51409fbcd97514/transformed/firebase-iid-21.1.0/AndroidManifest.xml:34:17-82
+181-->[com.google.firebase:firebase-firestore-ktx:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/8de9010674fa6fd9085225c593f5528e/transformed/firebase-firestore-ktx-24.10.0/AndroidManifest.xml:14:17-82
 182            <meta-data
-182-->[com.google.firebase:firebase-installations:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/f4f70a8c7f0d2b6027c1214a2b8d6da4/transformed/firebase-installations-17.2.0/AndroidManifest.xml:15:13-17:85
-183                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar"
-183-->[com.google.firebase:firebase-installations:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/f4f70a8c7f0d2b6027c1214a2b8d6da4/transformed/firebase-installations-17.2.0/AndroidManifest.xml:16:17-130
+182-->[com.google.firebase:firebase-firestore:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/c6df4d9d465aba055e76ba7b9da7722b/transformed/firebase-firestore-24.10.0/AndroidManifest.xml:17:13-19:85
+183                android:name="com.google.firebase.components:com.google.firebase.firestore.FirebaseFirestoreKtxRegistrar"
+183-->[com.google.firebase:firebase-firestore:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/c6df4d9d465aba055e76ba7b9da7722b/transformed/firebase-firestore-24.10.0/AndroidManifest.xml:18:17-122
 184                android:value="com.google.firebase.components.ComponentRegistrar" />
-184-->[com.google.firebase:firebase-installations:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/f4f70a8c7f0d2b6027c1214a2b8d6da4/transformed/firebase-installations-17.2.0/AndroidManifest.xml:17:17-82
+184-->[com.google.firebase:firebase-firestore:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/c6df4d9d465aba055e76ba7b9da7722b/transformed/firebase-firestore-24.10.0/AndroidManifest.xml:19:17-82
 185            <meta-data
-185-->[com.google.firebase:firebase-installations:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/f4f70a8c7f0d2b6027c1214a2b8d6da4/transformed/firebase-installations-17.2.0/AndroidManifest.xml:18:13-20:85
-186                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar"
-186-->[com.google.firebase:firebase-installations:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/f4f70a8c7f0d2b6027c1214a2b8d6da4/transformed/firebase-installations-17.2.0/AndroidManifest.xml:19:17-127
+185-->[com.google.firebase:firebase-firestore:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/c6df4d9d465aba055e76ba7b9da7722b/transformed/firebase-firestore-24.10.0/AndroidManifest.xml:20:13-22:85
+186                android:name="com.google.firebase.components:com.google.firebase.firestore.FirestoreRegistrar"
+186-->[com.google.firebase:firebase-firestore:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/c6df4d9d465aba055e76ba7b9da7722b/transformed/firebase-firestore-24.10.0/AndroidManifest.xml:21:17-111
 187                android:value="com.google.firebase.components.ComponentRegistrar" />
-187-->[com.google.firebase:firebase-installations:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/f4f70a8c7f0d2b6027c1214a2b8d6da4/transformed/firebase-installations-17.2.0/AndroidManifest.xml:20:17-82
+187-->[com.google.firebase:firebase-firestore:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/c6df4d9d465aba055e76ba7b9da7722b/transformed/firebase-firestore-24.10.0/AndroidManifest.xml:22:17-82
 188            <meta-data
-188-->[com.google.firebase:firebase-common-ktx:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/c8d8bb2bc4c4ec3ae2499aa71c25d150/transformed/firebase-common-ktx-20.4.2/AndroidManifest.xml:12:13-14:85
-189                android:name="com.google.firebase.components:com.google.firebase.ktx.FirebaseCommonLegacyRegistrar"
-189-->[com.google.firebase:firebase-common-ktx:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/c8d8bb2bc4c4ec3ae2499aa71c25d150/transformed/firebase-common-ktx-20.4.2/AndroidManifest.xml:13:17-116
+188-->[com.google.firebase:firebase-messaging-ktx:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/2636e9f7852975b05d19ab27aef0766f/transformed/firebase-messaging-ktx-23.4.0/AndroidManifest.xml:26:13-28:85
+189                android:name="com.google.firebase.components:com.google.firebase.messaging.ktx.FirebaseMessagingLegacyRegistrar"
+189-->[com.google.firebase:firebase-messaging-ktx:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/2636e9f7852975b05d19ab27aef0766f/transformed/firebase-messaging-ktx-23.4.0/AndroidManifest.xml:27:17-129
 190                android:value="com.google.firebase.components.ComponentRegistrar" />
-190-->[com.google.firebase:firebase-common-ktx:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/c8d8bb2bc4c4ec3ae2499aa71c25d150/transformed/firebase-common-ktx-20.4.2/AndroidManifest.xml:14:17-82
+190-->[com.google.firebase:firebase-messaging-ktx:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/2636e9f7852975b05d19ab27aef0766f/transformed/firebase-messaging-ktx-23.4.0/AndroidManifest.xml:28:17-82
 191            <meta-data
-191-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:35:13-37:85
-192                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
-192-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:36:17-109
+191-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:57:13-59:85
+192                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingKtxRegistrar"
+192-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:58:17-122
 193                android:value="com.google.firebase.components.ComponentRegistrar" />
-193-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:37:17-82
+193-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:59:17-82
 194            <meta-data
-194-->[com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:27:13-29:85
-195                android:name="com.google.firebase.components:com.google.firebase.datatransport.TransportRegistrar"
-195-->[com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:28:17-115
+194-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:60:13-62:85
+195                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingRegistrar"
+195-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:61:17-119
 196                android:value="com.google.firebase.components.ComponentRegistrar" />
-196-->[com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:29:17-82
-197        </service>
-198
-199        <activity
-199-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:29:9-46:20
-200            android:name="com.google.firebase.auth.internal.GenericIdpActivity"
-200-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:30:13-80
-201            android:excludeFromRecents="true"
-201-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:31:13-46
-202            android:exported="true"
-202-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:32:13-36
-203            android:launchMode="singleTask"
-203-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:33:13-44
-204            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
-204-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:34:13-72
-205            <intent-filter>
-205-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:35:13-45:29
-206                <action android:name="android.intent.action.VIEW" />
-206-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:38:17-69
-206-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:38:25-66
-207
-208                <category android:name="android.intent.category.DEFAULT" />
-208-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:17-76
-208-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:27-73
-209                <category android:name="android.intent.category.BROWSABLE" />
-209-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:17-78
-209-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:27-75
-210
-211                <data
-211-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-43:42
-212                    android:host="firebase.auth"
-212-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:21-39
-213                    android:path="/"
-214                    android:scheme="genericidp" />
-214-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:21-44
-215            </intent-filter>
-216        </activity>
+196-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:62:17-82
+197            <meta-data
+197-->[com.google.firebase:firebase-iid:21.1.0] /Users/sidrao/.gradle/caches/transforms-4/6bbad914861dbc21ae51409fbcd97514/transformed/firebase-iid-21.1.0/AndroidManifest.xml:32:13-34:85
+198                android:name="com.google.firebase.components:com.google.firebase.iid.Registrar"
+198-->[com.google.firebase:firebase-iid:21.1.0] /Users/sidrao/.gradle/caches/transforms-4/6bbad914861dbc21ae51409fbcd97514/transformed/firebase-iid-21.1.0/AndroidManifest.xml:33:17-96
+199                android:value="com.google.firebase.components.ComponentRegistrar" />
+199-->[com.google.firebase:firebase-iid:21.1.0] /Users/sidrao/.gradle/caches/transforms-4/6bbad914861dbc21ae51409fbcd97514/transformed/firebase-iid-21.1.0/AndroidManifest.xml:34:17-82
+200            <meta-data
+200-->[com.google.firebase:firebase-installations:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/f4f70a8c7f0d2b6027c1214a2b8d6da4/transformed/firebase-installations-17.2.0/AndroidManifest.xml:15:13-17:85
+201                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar"
+201-->[com.google.firebase:firebase-installations:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/f4f70a8c7f0d2b6027c1214a2b8d6da4/transformed/firebase-installations-17.2.0/AndroidManifest.xml:16:17-130
+202                android:value="com.google.firebase.components.ComponentRegistrar" />
+202-->[com.google.firebase:firebase-installations:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/f4f70a8c7f0d2b6027c1214a2b8d6da4/transformed/firebase-installations-17.2.0/AndroidManifest.xml:17:17-82
+203            <meta-data
+203-->[com.google.firebase:firebase-installations:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/f4f70a8c7f0d2b6027c1214a2b8d6da4/transformed/firebase-installations-17.2.0/AndroidManifest.xml:18:13-20:85
+204                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar"
+204-->[com.google.firebase:firebase-installations:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/f4f70a8c7f0d2b6027c1214a2b8d6da4/transformed/firebase-installations-17.2.0/AndroidManifest.xml:19:17-127
+205                android:value="com.google.firebase.components.ComponentRegistrar" />
+205-->[com.google.firebase:firebase-installations:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/f4f70a8c7f0d2b6027c1214a2b8d6da4/transformed/firebase-installations-17.2.0/AndroidManifest.xml:20:17-82
+206            <meta-data
+206-->[com.google.firebase:firebase-common-ktx:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/c8d8bb2bc4c4ec3ae2499aa71c25d150/transformed/firebase-common-ktx-20.4.2/AndroidManifest.xml:12:13-14:85
+207                android:name="com.google.firebase.components:com.google.firebase.ktx.FirebaseCommonLegacyRegistrar"
+207-->[com.google.firebase:firebase-common-ktx:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/c8d8bb2bc4c4ec3ae2499aa71c25d150/transformed/firebase-common-ktx-20.4.2/AndroidManifest.xml:13:17-116
+208                android:value="com.google.firebase.components.ComponentRegistrar" />
+208-->[com.google.firebase:firebase-common-ktx:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/c8d8bb2bc4c4ec3ae2499aa71c25d150/transformed/firebase-common-ktx-20.4.2/AndroidManifest.xml:14:17-82
+209            <meta-data
+209-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:35:13-37:85
+210                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
+210-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:36:17-109
+211                android:value="com.google.firebase.components.ComponentRegistrar" />
+211-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:37:17-82
+212            <meta-data
+212-->[com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:27:13-29:85
+213                android:name="com.google.firebase.components:com.google.firebase.datatransport.TransportRegistrar"
+213-->[com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:28:17-115
+214                android:value="com.google.firebase.components.ComponentRegistrar" />
+214-->[com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:29:17-82
+215        </service>
+216
 217        <activity
-217-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:47:9-64:20
-218            android:name="com.google.firebase.auth.internal.RecaptchaActivity"
-218-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:48:13-79
+217-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:29:9-46:20
+218            android:name="com.google.firebase.auth.internal.GenericIdpActivity"
+218-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:30:13-80
 219            android:excludeFromRecents="true"
-219-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:49:13-46
+219-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:31:13-46
 220            android:exported="true"
-220-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:50:13-36
+220-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:32:13-36
 221            android:launchMode="singleTask"
-221-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:51:13-44
+221-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:33:13-44
 222            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
-222-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:52:13-72
+222-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:34:13-72
 223            <intent-filter>
-223-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:53:13-63:29
+223-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:35:13-45:29
 224                <action android:name="android.intent.action.VIEW" />
-224-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:38:17-69
-224-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:38:25-66
+224-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:17-69
+224-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:25-66
 225
 226                <category android:name="android.intent.category.DEFAULT" />
-226-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:17-76
-226-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:27-73
+226-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-76
+226-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:27-73
 227                <category android:name="android.intent.category.BROWSABLE" />
-227-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:17-78
-227-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:27-75
+227-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:17-78
+227-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:27-75
 228
 229                <data
-229-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-43:42
+229-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:17-45:42
 230                    android:host="firebase.auth"
-230-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:21-39
+230-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:45:21-39
 231                    android:path="/"
-232                    android:scheme="recaptcha" />
-232-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:21-44
+232                    android:scheme="genericidp" />
+232-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:44:21-44
 233            </intent-filter>
 234        </activity>
 235        <activity
-235-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:8:9-13:61
-236            android:name="com.stripe.android.link.LinkForegroundActivity"
-236-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:9:13-74
-237            android:autoRemoveFromRecents="true"
-237-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:10:13-49
-238            android:configChanges="orientation|keyboard|keyboardHidden|screenLayout|screenSize|smallestScreenSize"
-238-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:11:13-115
-239            android:launchMode="singleTop"
-239-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:12:13-43
-240            android:theme="@style/StripeTransparentTheme" />
-240-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:13:13-58
-241        <activity
-241-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:14:9-31:20
-242            android:name="com.stripe.android.link.LinkRedirectHandlerActivity"
-242-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:15:13-79
-243            android:autoRemoveFromRecents="true"
-243-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:16:13-49
-244            android:exported="true"
-244-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:17:13-36
-245            android:launchMode="singleInstance"
-245-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:18:13-48
-246            android:theme="@style/StripeTransparentTheme" >
-246-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:19:13-58
-247            <intent-filter>
-247-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:20:13-30:29
-248                <action android:name="android.intent.action.VIEW" />
-248-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:38:17-69
-248-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:38:25-66
-249
-250                <category android:name="android.intent.category.DEFAULT" />
-250-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:17-76
-250-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:27-73
-251                <category android:name="android.intent.category.BROWSABLE" />
-251-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:17-78
-251-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:27-75
-252
-253                <data
-253-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-43:42
-254                    android:host="complete"
-254-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:21-39
-255                    android:path="/com.burner.app"
-256                    android:scheme="link-popup" />
-256-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:21-44
-257            </intent-filter>
-258        </activity>
+235-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:47:9-64:20
+236            android:name="com.google.firebase.auth.internal.RecaptchaActivity"
+236-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:48:13-79
+237            android:excludeFromRecents="true"
+237-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:49:13-46
+238            android:exported="true"
+238-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:50:13-36
+239            android:launchMode="singleTask"
+239-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:51:13-44
+240            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+240-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:52:13-72
+241            <intent-filter>
+241-->[com.google.firebase:firebase-auth:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/b03b523ec1a1ba3d9abaf38ce51cf547/transformed/firebase-auth-22.3.0/AndroidManifest.xml:53:13-63:29
+242                <action android:name="android.intent.action.VIEW" />
+242-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:17-69
+242-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:25-66
+243
+244                <category android:name="android.intent.category.DEFAULT" />
+244-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-76
+244-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:27-73
+245                <category android:name="android.intent.category.BROWSABLE" />
+245-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:17-78
+245-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:27-75
+246
+247                <data
+247-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:17-45:42
+248                    android:host="firebase.auth"
+248-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:45:21-39
+249                    android:path="/"
+250                    android:scheme="recaptcha" />
+250-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:44:21-44
+251            </intent-filter>
+252        </activity>
+253        <activity
+253-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:8:9-13:61
+254            android:name="com.stripe.android.link.LinkForegroundActivity"
+254-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:9:13-74
+255            android:autoRemoveFromRecents="true"
+255-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:10:13-49
+256            android:configChanges="orientation|keyboard|keyboardHidden|screenLayout|screenSize|smallestScreenSize"
+256-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:11:13-115
+257            android:launchMode="singleTop"
+257-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:12:13-43
+258            android:theme="@style/StripeTransparentTheme" />
+258-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:13:13-58
 259        <activity
-259-->[com.stripe:payments-ui-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/f5bbc221f71bb79ac8ac3c05575a9c3c/transformed/payments-ui-core-20.48.0/AndroidManifest.xml:8:9-11:69
-260            android:name="com.stripe.android.ui.core.cardscan.CardScanActivity"
-260-->[com.stripe:payments-ui-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/f5bbc221f71bb79ac8ac3c05575a9c3c/transformed/payments-ui-core-20.48.0/AndroidManifest.xml:9:13-80
-261            android:exported="false"
-261-->[com.stripe:payments-ui-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/f5bbc221f71bb79ac8ac3c05575a9c3c/transformed/payments-ui-core-20.48.0/AndroidManifest.xml:10:13-37
-262            android:theme="@style/StripePaymentSheetDefaultTheme" />
-262-->[com.stripe:payments-ui-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/f5bbc221f71bb79ac8ac3c05575a9c3c/transformed/payments-ui-core-20.48.0/AndroidManifest.xml:11:13-66
-263        <activity
-263-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:15:9-18:57
-264            android:name="com.stripe.android.view.AddPaymentMethodActivity"
-264-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:16:13-76
-265            android:exported="false"
-265-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:17:13-37
-266            android:theme="@style/StripeDefaultTheme" />
-266-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:18:13-54
-267        <activity
-267-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:19:9-22:57
-268            android:name="com.stripe.android.view.PaymentMethodsActivity"
-268-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:20:13-74
-269            android:exported="false"
-269-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:21:13-37
-270            android:theme="@style/StripeDefaultTheme" />
-270-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:22:13-54
-271        <activity
-271-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:23:9-26:57
-272            android:name="com.stripe.android.view.PaymentFlowActivity"
-272-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:24:13-71
-273            android:exported="false"
-273-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:25:13-37
-274            android:theme="@style/StripeDefaultTheme" />
-274-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:26:13-54
-275        <activity
-275-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:27:9-30:57
-276            android:name="com.stripe.android.view.PaymentAuthWebViewActivity"
-276-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:28:13-78
-277            android:exported="false"
-277-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:29:13-37
-278            android:theme="@style/StripeDefaultTheme" />
-278-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:30:13-54
-279        <activity
-279-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:31:9-34:61
-280            android:name="com.stripe.android.view.PaymentRelayActivity"
-280-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:32:13-72
-281            android:exported="false"
-281-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:33:13-37
-282            android:theme="@style/StripeTransparentTheme" />
-282-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:34:13-58
-283        <!--
-284        Set android:launchMode="singleTop" so that the StripeBrowserLauncherActivity instance that
-285        launched the browser Activity will also handle the return URL deep link.
-286        -->
-287        <activity
-287-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:40:9-44:61
-288            android:name="com.stripe.android.payments.StripeBrowserLauncherActivity"
-288-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:41:13-85
-289            android:exported="false"
-289-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:42:13-37
-290            android:launchMode="singleTask"
-290-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:43:13-44
-291            android:theme="@style/StripeTransparentTheme" />
-291-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:44:13-58
-292        <activity
-292-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:45:9-62:20
-293            android:name="com.stripe.android.payments.StripeBrowserProxyReturnActivity"
-293-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:46:13-88
-294            android:exported="true"
-294-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:47:13-36
-295            android:launchMode="singleTask"
-295-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:48:13-44
-296            android:theme="@style/StripeTransparentTheme" >
-296-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:49:13-58
-297            <intent-filter>
-297-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:50:13-61:29
-298                <action android:name="android.intent.action.VIEW" />
-298-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:38:17-69
-298-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:38:25-66
-299
-300                <category android:name="android.intent.category.DEFAULT" />
-300-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:17-76
-300-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:27-73
-301                <category android:name="android.intent.category.BROWSABLE" />
-301-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:17-78
-301-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:27-75
-302
-303                <!-- Must match `DefaultReturnUrl#value`. -->
-304                <data
-304-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-43:42
-305                    android:host="payment_return_url"
-305-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:21-39
-306                    android:path="/com.burner.app"
-307                    android:scheme="stripesdk" />
-307-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:21-44
-308            </intent-filter>
-309        </activity>
+259-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:14:9-31:20
+260            android:name="com.stripe.android.link.LinkRedirectHandlerActivity"
+260-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:15:13-79
+261            android:autoRemoveFromRecents="true"
+261-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:16:13-49
+262            android:exported="true"
+262-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:17:13-36
+263            android:launchMode="singleInstance"
+263-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:18:13-48
+264            android:theme="@style/StripeTransparentTheme" >
+264-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:19:13-58
+265            <intent-filter>
+265-->[com.stripe:link:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/AndroidManifest.xml:20:13-30:29
+266                <action android:name="android.intent.action.VIEW" />
+266-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:17-69
+266-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:25-66
+267
+268                <category android:name="android.intent.category.DEFAULT" />
+268-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-76
+268-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:27-73
+269                <category android:name="android.intent.category.BROWSABLE" />
+269-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:17-78
+269-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:27-75
+270
+271                <data
+271-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:17-45:42
+272                    android:host="complete"
+272-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:45:21-39
+273                    android:path="/com.burner.app"
+274                    android:scheme="link-popup" />
+274-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:44:21-44
+275            </intent-filter>
+276        </activity>
+277        <activity
+277-->[com.stripe:payments-ui-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/f5bbc221f71bb79ac8ac3c05575a9c3c/transformed/payments-ui-core-20.48.0/AndroidManifest.xml:8:9-11:69
+278            android:name="com.stripe.android.ui.core.cardscan.CardScanActivity"
+278-->[com.stripe:payments-ui-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/f5bbc221f71bb79ac8ac3c05575a9c3c/transformed/payments-ui-core-20.48.0/AndroidManifest.xml:9:13-80
+279            android:exported="false"
+279-->[com.stripe:payments-ui-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/f5bbc221f71bb79ac8ac3c05575a9c3c/transformed/payments-ui-core-20.48.0/AndroidManifest.xml:10:13-37
+280            android:theme="@style/StripePaymentSheetDefaultTheme" />
+280-->[com.stripe:payments-ui-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/f5bbc221f71bb79ac8ac3c05575a9c3c/transformed/payments-ui-core-20.48.0/AndroidManifest.xml:11:13-66
+281        <activity
+281-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:15:9-18:57
+282            android:name="com.stripe.android.view.AddPaymentMethodActivity"
+282-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:16:13-76
+283            android:exported="false"
+283-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:17:13-37
+284            android:theme="@style/StripeDefaultTheme" />
+284-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:18:13-54
+285        <activity
+285-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:19:9-22:57
+286            android:name="com.stripe.android.view.PaymentMethodsActivity"
+286-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:20:13-74
+287            android:exported="false"
+287-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:21:13-37
+288            android:theme="@style/StripeDefaultTheme" />
+288-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:22:13-54
+289        <activity
+289-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:23:9-26:57
+290            android:name="com.stripe.android.view.PaymentFlowActivity"
+290-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:24:13-71
+291            android:exported="false"
+291-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:25:13-37
+292            android:theme="@style/StripeDefaultTheme" />
+292-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:26:13-54
+293        <activity
+293-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:27:9-30:57
+294            android:name="com.stripe.android.view.PaymentAuthWebViewActivity"
+294-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:28:13-78
+295            android:exported="false"
+295-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:29:13-37
+296            android:theme="@style/StripeDefaultTheme" />
+296-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:30:13-54
+297        <activity
+297-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:31:9-34:61
+298            android:name="com.stripe.android.view.PaymentRelayActivity"
+298-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:32:13-72
+299            android:exported="false"
+299-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:33:13-37
+300            android:theme="@style/StripeTransparentTheme" />
+300-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:34:13-58
+301        <!--
+302        Set android:launchMode="singleTop" so that the StripeBrowserLauncherActivity instance that
+303        launched the browser Activity will also handle the return URL deep link.
+304        -->
+305        <activity
+305-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:40:9-44:61
+306            android:name="com.stripe.android.payments.StripeBrowserLauncherActivity"
+306-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:41:13-85
+307            android:exported="false"
+307-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:42:13-37
+308            android:launchMode="singleTask"
+308-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:43:13-44
+309            android:theme="@style/StripeTransparentTheme" />
+309-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:44:13-58
 310        <activity
-310-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:63:9-66:57
-311            android:name="com.stripe.android.payments.core.authentication.threeds2.Stripe3ds2TransactionActivity"
-311-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:64:13-114
-312            android:exported="false"
-312-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:65:13-37
-313            android:theme="@style/StripeDefaultTheme" />
-313-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:66:13-54
-314        <activity
-314-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:67:9-70:66
-315            android:name="com.stripe.android.googlepaylauncher.GooglePayLauncherActivity"
-315-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:68:13-90
-316            android:exported="false"
-316-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:69:13-37
-317            android:theme="@style/StripeGooglePayDefaultTheme" />
-317-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:70:13-63
-318        <activity
-318-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:71:9-74:66
-319            android:name="com.stripe.android.googlepaylauncher.GooglePayPaymentMethodLauncherActivity"
-319-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:72:13-103
-320            android:exported="false"
-320-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:73:13-37
-321            android:theme="@style/StripeGooglePayDefaultTheme" />
-321-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:74:13-63
-322        <activity
-322-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:75:9-78:68
-323            android:name="com.stripe.android.payments.paymentlauncher.PaymentLauncherConfirmationActivity"
-323-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:76:13-107
-324            android:exported="false"
-324-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:77:13-37
-325            android:theme="@style/StripePayLauncherDefaultTheme" />
-325-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:78:13-65
-326        <activity
-326-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:79:9-82:61
-327            android:name="com.stripe.android.payments.bankaccount.ui.CollectBankAccountActivity"
-327-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:80:13-97
-328            android:exported="false"
-328-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:81:13-37
-329            android:theme="@style/StripeTransparentTheme" />
-329-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:82:13-58
-330        <activity
-330-->[com.stripe:stripe-3ds2-android:6.1.8] /Users/sidrao/.gradle/caches/transforms-4/fc2cc0fe325f9299905a5e5b59e5686d/transformed/stripe-3ds2-android-6.1.8/AndroidManifest.xml:8:9-11:54
-331            android:name="com.stripe.android.stripe3ds2.views.ChallengeActivity"
-331-->[com.stripe:stripe-3ds2-android:6.1.8] /Users/sidrao/.gradle/caches/transforms-4/fc2cc0fe325f9299905a5e5b59e5686d/transformed/stripe-3ds2-android-6.1.8/AndroidManifest.xml:9:13-81
-332            android:exported="false"
-332-->[com.stripe:stripe-3ds2-android:6.1.8] /Users/sidrao/.gradle/caches/transforms-4/fc2cc0fe325f9299905a5e5b59e5686d/transformed/stripe-3ds2-android-6.1.8/AndroidManifest.xml:10:13-37
-333            android:theme="@style/Stripe3DS2Theme" />
-333-->[com.stripe:stripe-3ds2-android:6.1.8] /Users/sidrao/.gradle/caches/transforms-4/fc2cc0fe325f9299905a5e5b59e5686d/transformed/stripe-3ds2-android-6.1.8/AndroidManifest.xml:11:13-51
-334        <activity
-334-->[androidx.compose.ui:ui-tooling-android:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/812652471e5b7826fb145cbf8b219e8a/transformed/ui-tooling-release/AndroidManifest.xml:23:9-25:39
-335            android:name="androidx.compose.ui.tooling.PreviewActivity"
-335-->[androidx.compose.ui:ui-tooling-android:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/812652471e5b7826fb145cbf8b219e8a/transformed/ui-tooling-release/AndroidManifest.xml:24:13-71
-336            android:exported="true" />
-336-->[androidx.compose.ui:ui-tooling-android:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/812652471e5b7826fb145cbf8b219e8a/transformed/ui-tooling-release/AndroidManifest.xml:25:13-36
-337
-338        <provider
-338-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
-339            android:name="androidx.startup.InitializationProvider"
-339-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
-340            android:authorities="com.burner.app.androidx-startup"
-340-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
-341            android:exported="false" >
-341-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
-342            <meta-data
-342-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
-343                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-343-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
-344                android:value="androidx.startup" />
-344-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
-345            <meta-data
-345-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/sidrao/.gradle/caches/transforms-4/5c7c34b4168266849adc5443a5cad327/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:29:13-31:52
-346                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-346-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/sidrao/.gradle/caches/transforms-4/5c7c34b4168266849adc5443a5cad327/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:30:17-78
-347                android:value="androidx.startup" />
-347-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/sidrao/.gradle/caches/transforms-4/5c7c34b4168266849adc5443a5cad327/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:31:17-49
-348            <meta-data
-348-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
-349                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-349-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
-350                android:value="androidx.startup" />
-350-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
-351        </provider>
-352
-353        <activity
-353-->[androidx.compose.ui:ui-test-manifest:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/da5ae0331af149a3455481b53812fd5a/transformed/ui-test-manifest-1.6.4/AndroidManifest.xml:23:9-25:39
-354            android:name="androidx.activity.ComponentActivity"
-354-->[androidx.compose.ui:ui-test-manifest:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/da5ae0331af149a3455481b53812fd5a/transformed/ui-test-manifest-1.6.4/AndroidManifest.xml:24:13-63
-355            android:exported="true" />
-355-->[androidx.compose.ui:ui-test-manifest:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/da5ae0331af149a3455481b53812fd5a/transformed/ui-test-manifest-1.6.4/AndroidManifest.xml:25:13-36
-356
-357        <receiver
-357-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:29:9-40:20
-358            android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver"
-358-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:30:13-78
-359            android:exported="true"
-359-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:31:13-36
-360            android:permission="com.google.android.c2dm.permission.SEND" >
-360-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:32:13-73
-361            <intent-filter>
-361-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:33:13-35:29
-362                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-362-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:34:17-81
-362-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:34:25-78
-363            </intent-filter>
-364
-365            <meta-data
-365-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:37:13-39:40
-366                android:name="com.google.android.gms.cloudmessaging.FINISHED_AFTER_HANDLED"
-366-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:38:17-92
-367                android:value="true" />
-367-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:39:17-37
-368        </receiver>
-369        <!--
-370             FirebaseMessagingService performs security checks at runtime,
-371             but set to not exported to explicitly avoid allowing another app to call it.
-372        -->
-373        <service
-373-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:46:9-53:19
-374            android:name="com.google.firebase.messaging.FirebaseMessagingService"
-374-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:47:13-82
-375            android:directBootAware="true"
-375-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:48:13-43
-376            android:exported="false" >
-376-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:49:13-37
-377            <intent-filter android:priority="-500" >
-377-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:51:13-53:29
-378                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-378-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:52:17-78
-378-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:52:25-75
-379            </intent-filter>
-380        </service> <!-- Needs to be explicitly declared on P+ -->
-381        <uses-library
-381-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:39:9-41:40
-382            android:name="org.apache.http.legacy"
-382-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:40:13-50
-383            android:required="false" />
-383-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:41:13-37
-384
-385        <activity
-385-->[com.google.android.gms:play-services-base:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/d3f16295500760ac538f4ed66c1c8092/transformed/play-services-base-18.3.0/AndroidManifest.xml:20:9-22:45
-386            android:name="com.google.android.gms.common.api.GoogleApiActivity"
-386-->[com.google.android.gms:play-services-base:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/d3f16295500760ac538f4ed66c1c8092/transformed/play-services-base-18.3.0/AndroidManifest.xml:20:19-85
-387            android:exported="false"
-387-->[com.google.android.gms:play-services-base:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/d3f16295500760ac538f4ed66c1c8092/transformed/play-services-base-18.3.0/AndroidManifest.xml:22:19-43
-388            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-388-->[com.google.android.gms:play-services-base:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/d3f16295500760ac538f4ed66c1c8092/transformed/play-services-base-18.3.0/AndroidManifest.xml:21:19-78
+310-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:45:9-62:20
+311            android:name="com.stripe.android.payments.StripeBrowserProxyReturnActivity"
+311-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:46:13-88
+312            android:exported="true"
+312-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:47:13-36
+313            android:launchMode="singleTask"
+313-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:48:13-44
+314            android:theme="@style/StripeTransparentTheme" >
+314-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:49:13-58
+315            <intent-filter>
+315-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:50:13-61:29
+316                <action android:name="android.intent.action.VIEW" />
+316-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:17-69
+316-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:25-66
+317
+318                <category android:name="android.intent.category.DEFAULT" />
+318-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-76
+318-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:27-73
+319                <category android:name="android.intent.category.BROWSABLE" />
+319-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:17-78
+319-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:27-75
+320
+321                <!-- Must match `DefaultReturnUrl#value`. -->
+322                <data
+322-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:17-45:42
+323                    android:host="payment_return_url"
+323-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:45:21-39
+324                    android:path="/com.burner.app"
+325                    android:scheme="stripesdk" />
+325-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:44:21-44
+326            </intent-filter>
+327        </activity>
+328        <activity
+328-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:63:9-66:57
+329            android:name="com.stripe.android.payments.core.authentication.threeds2.Stripe3ds2TransactionActivity"
+329-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:64:13-114
+330            android:exported="false"
+330-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:65:13-37
+331            android:theme="@style/StripeDefaultTheme" />
+331-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:66:13-54
+332        <activity
+332-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:67:9-70:66
+333            android:name="com.stripe.android.googlepaylauncher.GooglePayLauncherActivity"
+333-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:68:13-90
+334            android:exported="false"
+334-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:69:13-37
+335            android:theme="@style/StripeGooglePayDefaultTheme" />
+335-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:70:13-63
+336        <activity
+336-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:71:9-74:66
+337            android:name="com.stripe.android.googlepaylauncher.GooglePayPaymentMethodLauncherActivity"
+337-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:72:13-103
+338            android:exported="false"
+338-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:73:13-37
+339            android:theme="@style/StripeGooglePayDefaultTheme" />
+339-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:74:13-63
+340        <activity
+340-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:75:9-78:68
+341            android:name="com.stripe.android.payments.paymentlauncher.PaymentLauncherConfirmationActivity"
+341-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:76:13-107
+342            android:exported="false"
+342-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:77:13-37
+343            android:theme="@style/StripePayLauncherDefaultTheme" />
+343-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:78:13-65
+344        <activity
+344-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:79:9-82:61
+345            android:name="com.stripe.android.payments.bankaccount.ui.CollectBankAccountActivity"
+345-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:80:13-97
+346            android:exported="false"
+346-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:81:13-37
+347            android:theme="@style/StripeTransparentTheme" />
+347-->[com.stripe:payments-core:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/AndroidManifest.xml:82:13-58
+348        <activity
+348-->[com.stripe:stripe-3ds2-android:6.1.8] /Users/sidrao/.gradle/caches/transforms-4/fc2cc0fe325f9299905a5e5b59e5686d/transformed/stripe-3ds2-android-6.1.8/AndroidManifest.xml:8:9-11:54
+349            android:name="com.stripe.android.stripe3ds2.views.ChallengeActivity"
+349-->[com.stripe:stripe-3ds2-android:6.1.8] /Users/sidrao/.gradle/caches/transforms-4/fc2cc0fe325f9299905a5e5b59e5686d/transformed/stripe-3ds2-android-6.1.8/AndroidManifest.xml:9:13-81
+350            android:exported="false"
+350-->[com.stripe:stripe-3ds2-android:6.1.8] /Users/sidrao/.gradle/caches/transforms-4/fc2cc0fe325f9299905a5e5b59e5686d/transformed/stripe-3ds2-android-6.1.8/AndroidManifest.xml:10:13-37
+351            android:theme="@style/Stripe3DS2Theme" />
+351-->[com.stripe:stripe-3ds2-android:6.1.8] /Users/sidrao/.gradle/caches/transforms-4/fc2cc0fe325f9299905a5e5b59e5686d/transformed/stripe-3ds2-android-6.1.8/AndroidManifest.xml:11:13-51
+352        <activity
+352-->[androidx.compose.ui:ui-tooling-android:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/812652471e5b7826fb145cbf8b219e8a/transformed/ui-tooling-release/AndroidManifest.xml:23:9-25:39
+353            android:name="androidx.compose.ui.tooling.PreviewActivity"
+353-->[androidx.compose.ui:ui-tooling-android:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/812652471e5b7826fb145cbf8b219e8a/transformed/ui-tooling-release/AndroidManifest.xml:24:13-71
+354            android:exported="true" />
+354-->[androidx.compose.ui:ui-tooling-android:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/812652471e5b7826fb145cbf8b219e8a/transformed/ui-tooling-release/AndroidManifest.xml:25:13-36
+355
+356        <provider
+356-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+357            android:name="androidx.startup.InitializationProvider"
+357-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
+358            android:authorities="com.burner.app.androidx-startup"
+358-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
+359            android:exported="false" >
+359-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
+360            <meta-data
+360-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+361                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+361-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
+362                android:value="androidx.startup" />
+362-->[androidx.emoji2:emoji2:1.3.0] /Users/sidrao/.gradle/caches/transforms-4/9b5e2f5bd16a792b7e32bb99d58a9246/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
+363            <meta-data
+363-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/sidrao/.gradle/caches/transforms-4/5c7c34b4168266849adc5443a5cad327/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:29:13-31:52
+364                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+364-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/sidrao/.gradle/caches/transforms-4/5c7c34b4168266849adc5443a5cad327/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:30:17-78
+365                android:value="androidx.startup" />
+365-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/sidrao/.gradle/caches/transforms-4/5c7c34b4168266849adc5443a5cad327/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:31:17-49
+366            <meta-data
+366-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
+367                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+367-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
+368                android:value="androidx.startup" />
+368-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
+369        </provider>
+370
+371        <activity
+371-->[androidx.compose.ui:ui-test-manifest:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/da5ae0331af149a3455481b53812fd5a/transformed/ui-test-manifest-1.6.4/AndroidManifest.xml:23:9-25:39
+372            android:name="androidx.activity.ComponentActivity"
+372-->[androidx.compose.ui:ui-test-manifest:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/da5ae0331af149a3455481b53812fd5a/transformed/ui-test-manifest-1.6.4/AndroidManifest.xml:24:13-63
+373            android:exported="true" />
+373-->[androidx.compose.ui:ui-test-manifest:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/da5ae0331af149a3455481b53812fd5a/transformed/ui-test-manifest-1.6.4/AndroidManifest.xml:25:13-36
+374
+375        <service
+375-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:9:9-15:19
+376            android:name="com.google.mlkit.common.internal.MlKitComponentDiscoveryService"
+376-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:10:13-91
+377            android:directBootAware="true"
+377-->[com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:17:13-43
+378            android:exported="false" >
+378-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:11:13-37
+379            <meta-data
+379-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:12:13-14:85
+380                android:name="com.google.firebase.components:com.google.mlkit.vision.barcode.internal.BarcodeRegistrar"
+380-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:13:17-120
+381                android:value="com.google.firebase.components.ComponentRegistrar" />
+381-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:14:17-82
+382            <meta-data
+382-->[com.google.mlkit:vision-common:17.3.0] /Users/sidrao/.gradle/caches/transforms-4/344b07f65029759ebf49f6827f7a6d49/transformed/vision-common-17.3.0/AndroidManifest.xml:12:13-14:85
+383                android:name="com.google.firebase.components:com.google.mlkit.vision.common.internal.VisionCommonRegistrar"
+383-->[com.google.mlkit:vision-common:17.3.0] /Users/sidrao/.gradle/caches/transforms-4/344b07f65029759ebf49f6827f7a6d49/transformed/vision-common-17.3.0/AndroidManifest.xml:13:17-124
+384                android:value="com.google.firebase.components.ComponentRegistrar" />
+384-->[com.google.mlkit:vision-common:17.3.0] /Users/sidrao/.gradle/caches/transforms-4/344b07f65029759ebf49f6827f7a6d49/transformed/vision-common-17.3.0/AndroidManifest.xml:14:17-82
+385            <meta-data
+385-->[com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:20:13-22:85
+386                android:name="com.google.firebase.components:com.google.mlkit.common.internal.CommonComponentRegistrar"
+386-->[com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:21:17-120
+387                android:value="com.google.firebase.components.ComponentRegistrar" />
+387-->[com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:22:17-82
+388        </service>
 389
 390        <provider
-390-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:23:9-28:39
-391            android:name="com.google.firebase.provider.FirebaseInitProvider"
-391-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:24:13-77
-392            android:authorities="com.burner.app.firebaseinitprovider"
-392-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:25:13-72
-393            android:directBootAware="true"
-393-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:26:13-43
-394            android:exported="false"
-394-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:27:13-37
-395            android:initOrder="100" />
-395-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:28:13-36
-396
-397        <meta-data
-397-->[com.google.android.gms:play-services-basement:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/255df94d8e0e299780305e4af3a16f2b/transformed/play-services-basement-18.3.0/AndroidManifest.xml:21:9-23:69
-398            android:name="com.google.android.gms.version"
-398-->[com.google.android.gms:play-services-basement:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/255df94d8e0e299780305e4af3a16f2b/transformed/play-services-basement-18.3.0/AndroidManifest.xml:22:13-58
-399            android:value="@integer/google_play_services_version" />
-399-->[com.google.android.gms:play-services-basement:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/255df94d8e0e299780305e4af3a16f2b/transformed/play-services-basement-18.3.0/AndroidManifest.xml:23:13-66
-400
-401        <receiver
-401-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
-402            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-402-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
-403            android:directBootAware="false"
-403-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
-404            android:enabled="true"
-404-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
-405            android:exported="true"
-405-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
-406            android:permission="android.permission.DUMP" >
-406-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
-407            <intent-filter>
-407-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
-408                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-408-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
-408-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
-409            </intent-filter>
-410            <intent-filter>
-410-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
-411                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-411-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
-411-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
-412            </intent-filter>
-413            <intent-filter>
-413-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
-414                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-414-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
-414-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
-415            </intent-filter>
-416            <intent-filter>
-416-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
-417                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-417-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
-417-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
+390-->[com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:9:9-13:38
+391            android:name="com.google.mlkit.common.internal.MlKitInitProvider"
+391-->[com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:10:13-78
+392            android:authorities="com.burner.app.mlkitinitprovider"
+392-->[com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:11:13-69
+393            android:exported="false"
+393-->[com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:12:13-37
+394            android:initOrder="99" />
+394-->[com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:13:13-35
+395
+396        <receiver
+396-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:29:9-40:20
+397            android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver"
+397-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:30:13-78
+398            android:exported="true"
+398-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:31:13-36
+399            android:permission="com.google.android.c2dm.permission.SEND" >
+399-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:32:13-73
+400            <intent-filter>
+400-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:33:13-35:29
+401                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+401-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:34:17-81
+401-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:34:25-78
+402            </intent-filter>
+403
+404            <meta-data
+404-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:37:13-39:40
+405                android:name="com.google.android.gms.cloudmessaging.FINISHED_AFTER_HANDLED"
+405-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:38:17-92
+406                android:value="true" />
+406-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:39:17-37
+407        </receiver>
+408        <!--
+409             FirebaseMessagingService performs security checks at runtime,
+410             but set to not exported to explicitly avoid allowing another app to call it.
+411        -->
+412        <service
+412-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:46:9-53:19
+413            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+413-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:47:13-82
+414            android:directBootAware="true"
+414-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:48:13-43
+415            android:exported="false" >
+415-->[com.google.firebase:firebase-messaging:23.4.0] /Users/sidrao/.gradle/caches/transforms-4/fdd6997580a462f26bc0d2c3271e0ace/transformed/firebase-messaging-23.4.0/AndroidManifest.xml:49:13-37
+416            <intent-filter android:priority="-500" >
+416-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:53:13-55:29
+417                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+417-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:54:17-78
+417-->/Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:54:25-75
 418            </intent-filter>
-419        </receiver>
-420
-421        <service
-421-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:28:9-34:19
-422            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
-422-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:29:13-103
-423            android:exported="false" >
-423-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:30:13-37
-424            <meta-data
-424-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:31:13-33:39
-425                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
-425-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:32:17-94
-426                android:value="cct" />
-426-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:33:17-36
-427        </service>
-428        <service
-428-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:26:9-30:19
-429            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
-429-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:27:13-117
-430            android:exported="false"
-430-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:28:13-37
-431            android:permission="android.permission.BIND_JOB_SERVICE" >
-431-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:29:13-69
-432        </service>
-433
-434        <receiver
-434-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:32:9-34:40
-435            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
-435-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:33:13-132
-436            android:exported="false" />
-436-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:34:13-37
-437
-438        <meta-data
-438-->[com.google.android.instantapps:instantapps:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/d9ba4cdaa934f27e026db6c3d2d5ffa6/transformed/instantapps-1.1.0/AndroidManifest.xml:10:9-12:33
-439            android:name="aia-compat-api-min-version"
-439-->[com.google.android.instantapps:instantapps:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/d9ba4cdaa934f27e026db6c3d2d5ffa6/transformed/instantapps-1.1.0/AndroidManifest.xml:11:13-54
-440            android:value="1" />
-440-->[com.google.android.instantapps:instantapps:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/d9ba4cdaa934f27e026db6c3d2d5ffa6/transformed/instantapps-1.1.0/AndroidManifest.xml:12:13-30
-441    </application>
-442
-443</manifest>
+419        </service> <!-- Needs to be explicitly declared on P+ -->
+420        <uses-library
+420-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:39:9-41:40
+421            android:name="org.apache.http.legacy"
+421-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:40:13-50
+422            android:required="false" />
+422-->[com.google.android.gms:play-services-maps:18.0.2] /Users/sidrao/.gradle/caches/transforms-4/77fb62acf906dd547ca6b0f70e853f87/transformed/play-services-maps-18.0.2/AndroidManifest.xml:41:13-37
+423
+424        <activity
+424-->[com.google.android.gms:play-services-base:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/d3f16295500760ac538f4ed66c1c8092/transformed/play-services-base-18.3.0/AndroidManifest.xml:20:9-22:45
+425            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+425-->[com.google.android.gms:play-services-base:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/d3f16295500760ac538f4ed66c1c8092/transformed/play-services-base-18.3.0/AndroidManifest.xml:20:19-85
+426            android:exported="false"
+426-->[com.google.android.gms:play-services-base:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/d3f16295500760ac538f4ed66c1c8092/transformed/play-services-base-18.3.0/AndroidManifest.xml:22:19-43
+427            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+427-->[com.google.android.gms:play-services-base:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/d3f16295500760ac538f4ed66c1c8092/transformed/play-services-base-18.3.0/AndroidManifest.xml:21:19-78
+428
+429        <provider
+429-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:23:9-28:39
+430            android:name="com.google.firebase.provider.FirebaseInitProvider"
+430-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:24:13-77
+431            android:authorities="com.burner.app.firebaseinitprovider"
+431-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:25:13-72
+432            android:directBootAware="true"
+432-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:26:13-43
+433            android:exported="false"
+433-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:27:13-37
+434            android:initOrder="100" />
+434-->[com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:28:13-36
+435
+436        <meta-data
+436-->[com.google.android.gms:play-services-basement:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/255df94d8e0e299780305e4af3a16f2b/transformed/play-services-basement-18.3.0/AndroidManifest.xml:21:9-23:69
+437            android:name="com.google.android.gms.version"
+437-->[com.google.android.gms:play-services-basement:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/255df94d8e0e299780305e4af3a16f2b/transformed/play-services-basement-18.3.0/AndroidManifest.xml:22:13-58
+438            android:value="@integer/google_play_services_version" />
+438-->[com.google.android.gms:play-services-basement:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/255df94d8e0e299780305e4af3a16f2b/transformed/play-services-basement-18.3.0/AndroidManifest.xml:23:13-66
+439
+440        <service
+440-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:28:9-34:19
+441            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+441-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:29:13-103
+442            android:exported="false" >
+442-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:30:13-37
+443            <meta-data
+443-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:31:13-33:39
+444                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+444-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:32:17-94
+445                android:value="cct" />
+445-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:33:17-36
+446        </service>
+447        <service
+447-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:26:9-30:19
+448            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
+448-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:27:13-117
+449            android:exported="false"
+449-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:28:13-37
+450            android:permission="android.permission.BIND_JOB_SERVICE" >
+450-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:29:13-69
+451        </service>
+452
+453        <receiver
+453-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:32:9-34:40
+454            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+454-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:33:13-132
+455            android:exported="false" />
+455-->[com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:34:13-37
+456        <receiver
+456-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
+457            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+457-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
+458            android:directBootAware="false"
+458-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
+459            android:enabled="true"
+459-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
+460            android:exported="true"
+460-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
+461            android:permission="android.permission.DUMP" >
+461-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
+462            <intent-filter>
+462-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
+463                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+463-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
+463-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
+464            </intent-filter>
+465            <intent-filter>
+465-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
+466                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+466-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
+466-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
+467            </intent-filter>
+468            <intent-filter>
+468-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
+469                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+469-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
+469-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
+470            </intent-filter>
+471            <intent-filter>
+471-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
+472                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+472-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
+472-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
+473            </intent-filter>
+474        </receiver>
+475
+476        <meta-data
+476-->[com.google.android.instantapps:instantapps:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/d9ba4cdaa934f27e026db6c3d2d5ffa6/transformed/instantapps-1.1.0/AndroidManifest.xml:10:9-12:33
+477            android:name="aia-compat-api-min-version"
+477-->[com.google.android.instantapps:instantapps:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/d9ba4cdaa934f27e026db6c3d2d5ffa6/transformed/instantapps-1.1.0/AndroidManifest.xml:11:13-54
+478            android:value="1" />
+478-->[com.google.android.instantapps:instantapps:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/d9ba4cdaa934f27e026db6c3d2d5ffa6/transformed/instantapps-1.1.0/AndroidManifest.xml:12:13-30
+479    </application>
+480
+481</manifest>

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.burner.app-mergeDebugResources-95:/values-ne/values-ne.xml",
+            "outputFile": "com.burner.app-mergeDebugResources-100:/values-ne/values-ne.xml",
             "map": [
                 {
                     "source": "/Users/sidrao/.gradle/caches/transforms-4/d3f16295500760ac538f4ed66c1c8092/transformed/play-services-base-18.3.0/res/values-ne/values.xml",

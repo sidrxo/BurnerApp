@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.burner.app-mergeDebugResources-95:/values-ms-rMY/values-ms-rMY.xml",
+            "outputFile": "com.burner.app-mergeDebugResources-100:/values-ms-rMY/values-ms-rMY.xml",
             "map": [
                 {
                     "source": "/Users/sidrao/.gradle/caches/transforms-4/fc2cc0fe325f9299905a5e5b59e5686d/transformed/stripe-3ds2-android-6.1.8/res/values-ms-rMY/values-ms-rMY.xml",

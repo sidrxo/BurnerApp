@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.burner.app-mergeDebugResources-95:/values-land/values-land.xml",
+            "outputFile": "com.burner.app-mergeDebugResources-100:/values-land/values-land.xml",
             "map": [
                 {
                     "source": "/Users/sidrao/.gradle/caches/transforms-4/c409c5d2ed1263f7484295227af97741/transformed/material-1.11.0/res/values-land/values-land.xml",

@@ -1,12 +1,17 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:2:1-62:12
-INJECTED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:2:1-62:12
-INJECTED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:2:1-62:12
-INJECTED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:2:1-62:12
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:2:1-64:12
+INJECTED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:2:1-64:12
+INJECTED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:2:1-64:12
+INJECTED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:2:1-64:12
 MERGED from [com.stripe:stripe-android:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b0f5521cc376d2b295584bfcd2dc537a/transformed/stripe-android-20.48.0/AndroidManifest.xml:2:1-7:12
 MERGED from [com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:2:1-45:12
 MERGED from [com.google.accompanist:accompanist-systemuicontroller:0.32.0] /Users/sidrao/.gradle/caches/transforms-4/c9587f16c3a05ea2ca75701d9961b6ab/transformed/accompanist-systemuicontroller-0.32.0/AndroidManifest.xml:17:1-23:12
+MERGED from [androidx.camera:camera-video:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/eeacfbacd04ce3f6f989c397ddf3574a/transformed/camera-video-1.3.1/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:17:1-36:12
+MERGED from [androidx.camera:camera-view:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/61d42df8fa1869794cde0aa62b860e81/transformed/camera-view-1.3.1/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.camera:camera-lifecycle:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/85451bc88abe2bf49f8e32f7cb495acc/transformed/camera-lifecycle-1.3.1/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.camera:camera-camera2:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/ec19a94885ee53f7371eaf079291f061/transformed/camera-camera2-1.3.1/AndroidManifest.xml:17:1-36:12
 MERGED from [com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:17:1-40:12
 MERGED from [androidx.hilt:hilt-navigation-compose:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/dc8bc54a1e30cdd2e2f8f8e7ba542747/transformed/hilt-navigation-compose-1.1.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.hilt:hilt-navigation:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/96d633cac428c9e86509250b0694dca8/transformed/hilt-navigation-1.1.0/AndroidManifest.xml:2:1-7:12
@@ -92,6 +97,11 @@ MERGED from [com.google.android.gms:play-services-location:21.0.1] /Users/sidrao
 MERGED from [com.google.android.gms:play-services-auth-api-phone:18.0.1] /Users/sidrao/.gradle/caches/transforms-4/7738e79bbfd28b160491118373fcbb3c/transformed/play-services-auth-api-phone-18.0.1/AndroidManifest.xml:2:1-7:12
 MERGED from [com.google.android.gms:play-services-auth-base:18.0.4] /Users/sidrao/.gradle/caches/transforms-4/a8c79abb2e9e2aefc99c5aaa4d67795a/transformed/play-services-auth-base-18.0.4/AndroidManifest.xml:2:1-7:12
 MERGED from [com.google.android.gms:play-services-fido:20.0.1] /Users/sidrao/.gradle/caches/transforms-4/8e3c192a3218118d4bfd8cea094a8517/transformed/play-services-fido-20.0.1/AndroidManifest.xml:2:1-10:12
+MERGED from [com.google.mlkit:barcode-scanning:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/aff38708306629a349c6552de47c0bf6/transformed/barcode-scanning-17.2.0/AndroidManifest.xml:2:1-7:12
+MERGED from [com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:2:1-18:12
+MERGED from [com.google.mlkit:barcode-scanning-common:17.0.0] /Users/sidrao/.gradle/caches/transforms-4/904f40e88b77c844380dd30ed201583f/transformed/barcode-scanning-common-17.0.0/AndroidManifest.xml:2:1-7:12
+MERGED from [com.google.mlkit:vision-common:17.3.0] /Users/sidrao/.gradle/caches/transforms-4/344b07f65029759ebf49f6827f7a6d49/transformed/vision-common-17.3.0/AndroidManifest.xml:2:1-18:12
+MERGED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:2:1-26:12
 MERGED from [com.google.firebase:firebase-functions-ktx:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/d12895e059026b134ac8d7a261d64887/transformed/firebase-functions-ktx-20.4.0/AndroidManifest.xml:2:1-18:12
 MERGED from [com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:2:1-24:12
 MERGED from [com.google.firebase:firebase-firestore-ktx:24.10.0] /Users/sidrao/.gradle/caches/transforms-4/8de9010674fa6fd9085225c593f5528e/transformed/firebase-firestore-ktx-24.10.0/AndroidManifest.xml:2:1-18:12
@@ -108,6 +118,7 @@ MERGED from [com.google.firebase:firebase-installations:17.2.0] /Users/sidrao/.g
 MERGED from [com.google.firebase:firebase-common-ktx:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/c8d8bb2bc4c4ec3ae2499aa71c25d150/transformed/firebase-common-ktx-20.4.2/AndroidManifest.xml:2:1-18:12
 MERGED from [com.google.firebase:firebase-auth-interop:20.0.0] /Users/sidrao/.gradle/caches/transforms-4/f174bc351850df89484088cf99ae0387/transformed/firebase-auth-interop-20.0.0/AndroidManifest.xml:2:1-10:12
 MERGED from [com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:15:1-41:12
+MERGED from [com.google.mlkit:vision-interfaces:16.2.0] /Users/sidrao/.gradle/caches/transforms-4/f0f5af0a7af15bfd9c374d87d30cc220/transformed/vision-interfaces-16.2.0/AndroidManifest.xml:2:1-7:12
 MERGED from [com.google.firebase:firebase-iid-interop:17.1.0] /Users/sidrao/.gradle/caches/transforms-4/83727fac88a410aa30588dfc937b59c2/transformed/firebase-iid-interop-17.1.0/AndroidManifest.xml:2:1-10:12
 MERGED from [com.google.android.recaptcha:recaptcha:18.1.2] /Users/sidrao/.gradle/caches/transforms-4/c6b53b1ec9ed00dd7e2ee6b324e8f603/transformed/recaptcha-18.1.2/AndroidManifest.xml:2:1-10:12
 MERGED from [com.google.android.play:integrity:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/4d1fb71648a8cf8e4d8d1457404ff474/transformed/integrity-1.1.0/AndroidManifest.xml:2:1-7:12
@@ -141,13 +152,13 @@ MERGED from [com.google.firebase:firebase-components:17.1.5] /Users/sidrao/.grad
 MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/sidrao/.gradle/caches/transforms-4/0d31b667724b72456bfbe9368a685dd4/transformed/interpolator-1.0.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/sidrao/.gradle/caches/transforms-4/2bc6543f0b6d6eca0fb5ad5ff321500b/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:17:1-27:12
 MERGED from [androidx.databinding:viewbinding:8.3.1] /Users/sidrao/.gradle/caches/transforms-4/aac72fa2373525347396a88330c0c0c8/transformed/viewbinding-8.3.1/AndroidManifest.xml:2:1-7:12
-MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:17:1-55:12
-MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] /Users/sidrao/.gradle/caches/transforms-4/c842628092e2008e7c698ef3553ba8fe/transformed/localbroadcastmanager-1.0.0/AndroidManifest.xml:17:1-22:12
 MERGED from [com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:15:1-33:12
 MERGED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:15:1-37:12
 MERGED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:15:1-41:12
-MERGED from [com.google.android.datatransport:transport-api:3.1.0] /Users/sidrao/.gradle/caches/transforms-4/ef41fcc8b7444eee74affba2effedf61/transformed/transport-api-3.1.0/AndroidManifest.xml:15:1-20:12
 MERGED from [com.google.firebase:firebase-encoders-json:18.0.0] /Users/sidrao/.gradle/caches/transforms-4/1eda2aaa0b82c6edde44fa48406983ae/transformed/firebase-encoders-json-18.0.0/AndroidManifest.xml:15:1-23:12
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:17:1-55:12
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] /Users/sidrao/.gradle/caches/transforms-4/c842628092e2008e7c698ef3553ba8fe/transformed/localbroadcastmanager-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [com.google.android.datatransport:transport-api:3.1.0] /Users/sidrao/.gradle/caches/transforms-4/ef41fcc8b7444eee74affba2effedf61/transformed/transport-api-3.1.0/AndroidManifest.xml:15:1-20:12
 MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] /Users/sidrao/.gradle/caches/transforms-4/93d87f905b67d06d541546785a670fb4/transformed/cursoradapter-1.0.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.cardview:cardview:1.0.0] /Users/sidrao/.gradle/caches/transforms-4/ff24250035aac313e41a5724ee04edeb/transformed/cardview-1.0.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.exifinterface:exifinterface:1.3.6] /Users/sidrao/.gradle/caches/transforms-4/450ecbdae715575b4ac64ff5f9147e1b/transformed/exifinterface-1.3.6/AndroidManifest.xml:17:1-24:12
@@ -159,6 +170,7 @@ MERGED from [androidx.print:print:1.0.0] /Users/sidrao/.gradle/caches/transforms
 MERGED from [com.google.dagger:dagger-lint-aar:2.48] /Users/sidrao/.gradle/caches/transforms-4/f1d53af426329b3fc0f3eac626c2498f/transformed/dagger-lint-aar-2.48/AndroidManifest.xml:16:1-19:12
 MERGED from [io.grpc:grpc-android:1.52.1] /Users/sidrao/.gradle/caches/transforms-4/79ad631d228158546601b55f02a79557/transformed/grpc-android-1.52.1/AndroidManifest.xml:2:1-11:12
 MERGED from [com.google.android.instantapps:instantapps:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/d9ba4cdaa934f27e026db6c3d2d5ffa6/transformed/instantapps-1.1.0/AndroidManifest.xml:2:1-15:12
+MERGED from [com.google.android.odml:image:1.0.0-beta1] /Users/sidrao/.gradle/caches/transforms-4/cf1610d594cd6e552dc1efafcf264470/transformed/image-1.0.0-beta1/AndroidManifest.xml:2:1-9:12
 MERGED from [com.google.firebase:protolite-well-known-types:18.0.0] /Users/sidrao/.gradle/caches/transforms-4/b52d427a5aaa01abad38e5b76f333c38/transformed/protolite-well-known-types-18.0.0/AndroidManifest.xml:2:1-11:12
 	package
 		INJECTED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml
@@ -238,11 +250,25 @@ uses-permission#android.permission.VIBRATE
 ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:11:5-66
 	android:name
 		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:11:22-63
+uses-permission#android.permission.CAMERA
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:12:5-65
+	android:name
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:12:22-62
+uses-feature#android.hardware.camera
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:13:5-85
+	android:required
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:13:58-82
+	android:name
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:13:19-57
 application
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:13:5-60:19
-INJECTED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:13:5-60:19
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:15:5-62:19
+INJECTED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:15:5-62:19
 MERGED from [com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:7:5-43:19
 MERGED from [com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:7:5-43:19
+MERGED from [androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:23:5-34:19
+MERGED from [androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:23:5-34:19
+MERGED from [androidx.camera:camera-camera2:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/ec19a94885ee53f7371eaf079291f061/transformed/camera-camera2-1.3.1/AndroidManifest.xml:23:5-34:19
+MERGED from [androidx.camera:camera-camera2:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/ec19a94885ee53f7371eaf079291f061/transformed/camera-camera2-1.3.1/AndroidManifest.xml:23:5-34:19
 MERGED from [com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:22:5-38:19
 MERGED from [com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:22:5-38:19
 MERGED from [com.google.firebase:firebase-auth-ktx:22.3.0] /Users/sidrao/.gradle/caches/transforms-4/364d0c88531b0306fc1527827620a023/transformed/firebase-auth-ktx-22.3.0/AndroidManifest.xml:7:5-15:19
@@ -273,6 +299,12 @@ MERGED from [com.google.android.gms:play-services-location:21.0.1] /Users/sidrao
 MERGED from [com.google.android.gms:play-services-location:21.0.1] /Users/sidrao/.gradle/caches/transforms-4/22adc1f7fa721422df9108c82c62d797/transformed/play-services-location-21.0.1/AndroidManifest.xml:7:5-20
 MERGED from [com.google.android.gms:play-services-fido:20.0.1] /Users/sidrao/.gradle/caches/transforms-4/8e3c192a3218118d4bfd8cea094a8517/transformed/play-services-fido-20.0.1/AndroidManifest.xml:7:5-8:19
 MERGED from [com.google.android.gms:play-services-fido:20.0.1] /Users/sidrao/.gradle/caches/transforms-4/8e3c192a3218118d4bfd8cea094a8517/transformed/play-services-fido-20.0.1/AndroidManifest.xml:7:5-8:19
+MERGED from [com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:8:5-16:19
+MERGED from [com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:8:5-16:19
+MERGED from [com.google.mlkit:vision-common:17.3.0] /Users/sidrao/.gradle/caches/transforms-4/344b07f65029759ebf49f6827f7a6d49/transformed/vision-common-17.3.0/AndroidManifest.xml:8:5-16:19
+MERGED from [com.google.mlkit:vision-common:17.3.0] /Users/sidrao/.gradle/caches/transforms-4/344b07f65029759ebf49f6827f7a6d49/transformed/vision-common-17.3.0/AndroidManifest.xml:8:5-16:19
+MERGED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:8:5-24:19
+MERGED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:8:5-24:19
 MERGED from [com.google.firebase:firebase-functions-ktx:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/d12895e059026b134ac8d7a261d64887/transformed/firebase-functions-ktx-20.4.0/AndroidManifest.xml:8:5-16:19
 MERGED from [com.google.firebase:firebase-functions-ktx:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/d12895e059026b134ac8d7a261d64887/transformed/firebase-functions-ktx-20.4.0/AndroidManifest.xml:8:5-16:19
 MERGED from [com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:11:5-22:19
@@ -319,104 +351,106 @@ MERGED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-
 MERGED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:28:5-89
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/sidrao/.gradle/caches/transforms-4/2bc6543f0b6d6eca0fb5ad5ff321500b/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/sidrao/.gradle/caches/transforms-4/2bc6543f0b6d6eca0fb5ad5ff321500b/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
-MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:23:5-53:19
-MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:23:5-53:19
 MERGED from [com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:23:5-31:19
 MERGED from [com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:23:5-31:19
 MERGED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:27:5-35:19
 MERGED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:27:5-35:19
 MERGED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:25:5-39:19
 MERGED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:25:5-39:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:23:5-53:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:23:5-53:19
 MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/sidrao/.gradle/caches/transforms-4/91ca4304a4986e992fc9c58b96c91ff5/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
 MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/sidrao/.gradle/caches/transforms-4/91ca4304a4986e992fc9c58b96c91ff5/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
 MERGED from [com.google.android.instantapps:instantapps:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/d9ba4cdaa934f27e026db6c3d2d5ffa6/transformed/instantapps-1.1.0/AndroidManifest.xml:9:5-13:19
 MERGED from [com.google.android.instantapps:instantapps:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/d9ba4cdaa934f27e026db6c3d2d5ffa6/transformed/instantapps-1.1.0/AndroidManifest.xml:9:5-13:19
+MERGED from [com.google.android.odml:image:1.0.0-beta1] /Users/sidrao/.gradle/caches/transforms-4/cf1610d594cd6e552dc1efafcf264470/transformed/image-1.0.0-beta1/AndroidManifest.xml:7:5-20
+MERGED from [com.google.android.odml:image:1.0.0-beta1] /Users/sidrao/.gradle/caches/transforms-4/cf1610d594cd6e552dc1efafcf264470/transformed/image-1.0.0-beta1/AndroidManifest.xml:7:5-20
 	android:extractNativeLibs
 		INJECTED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
 	android:supportsRtl
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:21:9-35
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:23:9-35
 	android:label
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:19:9-41
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:21:9-41
 	android:fullBackupContent
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:17:9-54
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:19:9-54
 	android:roundIcon
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:20:9-54
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:22:9-54
 	tools:targetApi
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:23:9-29
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:25:9-29
 	android:icon
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:18:9-43
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:20:9-43
 	android:allowBackup
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:15:9-35
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:17:9-35
 	android:theme
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:22:9-44
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:24:9-44
 	android:dataExtractionRules
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:16:9-65
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:18:9-65
 	android:name
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:14:9-42
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:16:9-42
 activity#com.burner.app.MainActivity
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:25:9-45:20
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:27:9-47:20
 	android:label
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:28:13-45
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:30:13-45
 	android:windowSoftInputMode
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:30:13-55
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:32:13-55
 	android:exported
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:27:13-36
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:29:13-36
 	android:theme
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:29:13-48
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:31:13-48
 	android:name
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:26:13-41
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:28:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:31:13-34:29
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:33:13-36:29
 action#android.intent.action.MAIN
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:32:17-69
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:34:17-69
 	android:name
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:32:25-66
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:34:25-66
 category#android.intent.category.LAUNCHER
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:33:17-77
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:35:17-77
 	android:name
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:33:27-74
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:35:27-74
 intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:host:app+data:scheme:burner
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:37:13-44:29
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:13-46:29
 	android:autoVerify
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:37:28-53
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:28-53
 action#android.intent.action.VIEW
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:38:17-69
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:17-69
 	android:name
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:38:25-66
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:25-66
 category#android.intent.category.DEFAULT
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:17-76
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-76
 	android:name
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:39:27-73
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:27-73
 category#android.intent.category.BROWSABLE
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:17-78
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:17-78
 	android:name
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:40:27-75
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:27-75
 data
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:41:17-43:42
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:17-45:42
 	android:host
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:43:21-39
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:45:21-39
 	android:scheme
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:42:21-44
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:44:21-44
 service#com.burner.app.services.BurnerFirebaseMessagingService
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:48:9-54:19
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:50:9-56:19
 	android:exported
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:50:13-37
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:52:13-37
 	android:name
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:49:13-68
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:51:13-68
 intent-filter#action:name:com.google.firebase.MESSAGING_EVENT
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:51:13-53:29
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:53:13-55:29
 action#com.google.firebase.MESSAGING_EVENT
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:52:17-78
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:54:17-78
 	android:name
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:52:25-75
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:54:25-75
 meta-data#com.google.firebase.messaging.default_notification_channel_id
-ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:56:9-58:52
+ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:58:9-60:52
 	android:value
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:58:13-49
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:60:13-49
 	android:name
-		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:57:13-89
+		ADDED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml:59:13-89
 uses-sdk
 INJECTED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /Users/sidrao/burner/android/app/src/main/AndroidManifest.xml
@@ -427,6 +461,16 @@ MERGED from [com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/trans
 MERGED from [com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:5:5-44
 MERGED from [com.google.accompanist:accompanist-systemuicontroller:0.32.0] /Users/sidrao/.gradle/caches/transforms-4/c9587f16c3a05ea2ca75701d9961b6ab/transformed/accompanist-systemuicontroller-0.32.0/AndroidManifest.xml:21:5-44
 MERGED from [com.google.accompanist:accompanist-systemuicontroller:0.32.0] /Users/sidrao/.gradle/caches/transforms-4/c9587f16c3a05ea2ca75701d9961b6ab/transformed/accompanist-systemuicontroller-0.32.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.camera:camera-video:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/eeacfbacd04ce3f6f989c397ddf3574a/transformed/camera-video-1.3.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.camera:camera-video:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/eeacfbacd04ce3f6f989c397ddf3574a/transformed/camera-video-1.3.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:21:5-44
+MERGED from [androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:21:5-44
+MERGED from [androidx.camera:camera-view:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/61d42df8fa1869794cde0aa62b860e81/transformed/camera-view-1.3.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.camera:camera-view:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/61d42df8fa1869794cde0aa62b860e81/transformed/camera-view-1.3.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.camera:camera-lifecycle:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/85451bc88abe2bf49f8e32f7cb495acc/transformed/camera-lifecycle-1.3.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.camera:camera-lifecycle:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/85451bc88abe2bf49f8e32f7cb495acc/transformed/camera-lifecycle-1.3.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.camera:camera-camera2:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/ec19a94885ee53f7371eaf079291f061/transformed/camera-camera2-1.3.1/AndroidManifest.xml:21:5-44
+MERGED from [androidx.camera:camera-camera2:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/ec19a94885ee53f7371eaf079291f061/transformed/camera-camera2-1.3.1/AndroidManifest.xml:21:5-44
 MERGED from [com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:20:5-44
 MERGED from [com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.hilt:hilt-navigation-compose:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/dc8bc54a1e30cdd2e2f8f8e7ba542747/transformed/hilt-navigation-compose-1.1.0/AndroidManifest.xml:5:5-44
@@ -597,6 +641,16 @@ MERGED from [com.google.android.gms:play-services-auth-base:18.0.4] /Users/sidra
 MERGED from [com.google.android.gms:play-services-auth-base:18.0.4] /Users/sidrao/.gradle/caches/transforms-4/a8c79abb2e9e2aefc99c5aaa4d67795a/transformed/play-services-auth-base-18.0.4/AndroidManifest.xml:5:5-44
 MERGED from [com.google.android.gms:play-services-fido:20.0.1] /Users/sidrao/.gradle/caches/transforms-4/8e3c192a3218118d4bfd8cea094a8517/transformed/play-services-fido-20.0.1/AndroidManifest.xml:5:5-44
 MERGED from [com.google.android.gms:play-services-fido:20.0.1] /Users/sidrao/.gradle/caches/transforms-4/8e3c192a3218118d4bfd8cea094a8517/transformed/play-services-fido-20.0.1/AndroidManifest.xml:5:5-44
+MERGED from [com.google.mlkit:barcode-scanning:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/aff38708306629a349c6552de47c0bf6/transformed/barcode-scanning-17.2.0/AndroidManifest.xml:5:5-44
+MERGED from [com.google.mlkit:barcode-scanning:17.2.0] /Users/sidrao/.gradle/caches/transforms-4/aff38708306629a349c6552de47c0bf6/transformed/barcode-scanning-17.2.0/AndroidManifest.xml:5:5-44
+MERGED from [com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:6:5-44
+MERGED from [com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:6:5-44
+MERGED from [com.google.mlkit:barcode-scanning-common:17.0.0] /Users/sidrao/.gradle/caches/transforms-4/904f40e88b77c844380dd30ed201583f/transformed/barcode-scanning-common-17.0.0/AndroidManifest.xml:5:5-44
+MERGED from [com.google.mlkit:barcode-scanning-common:17.0.0] /Users/sidrao/.gradle/caches/transforms-4/904f40e88b77c844380dd30ed201583f/transformed/barcode-scanning-common-17.0.0/AndroidManifest.xml:5:5-44
+MERGED from [com.google.mlkit:vision-common:17.3.0] /Users/sidrao/.gradle/caches/transforms-4/344b07f65029759ebf49f6827f7a6d49/transformed/vision-common-17.3.0/AndroidManifest.xml:6:5-44
+MERGED from [com.google.mlkit:vision-common:17.3.0] /Users/sidrao/.gradle/caches/transforms-4/344b07f65029759ebf49f6827f7a6d49/transformed/vision-common-17.3.0/AndroidManifest.xml:6:5-44
+MERGED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:6:5-44
+MERGED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:6:5-44
 MERGED from [com.google.firebase:firebase-functions-ktx:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/d12895e059026b134ac8d7a261d64887/transformed/firebase-functions-ktx-20.4.0/AndroidManifest.xml:5:5-44
 MERGED from [com.google.firebase:firebase-functions-ktx:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/d12895e059026b134ac8d7a261d64887/transformed/firebase-functions-ktx-20.4.0/AndroidManifest.xml:5:5-44
 MERGED from [com.google.firebase:firebase-functions:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/0ade2cf2f1e955dc5b16aad3754856ef/transformed/firebase-functions-20.4.0/AndroidManifest.xml:6:5-44
@@ -629,6 +683,8 @@ MERGED from [com.google.firebase:firebase-auth-interop:20.0.0] /Users/sidrao/.gr
 MERGED from [com.google.firebase:firebase-auth-interop:20.0.0] /Users/sidrao/.gradle/caches/transforms-4/f174bc351850df89484088cf99ae0387/transformed/firebase-auth-interop-20.0.0/AndroidManifest.xml:5:5-44
 MERGED from [com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:19:5-44
 MERGED from [com.google.firebase:firebase-common:20.4.2] /Users/sidrao/.gradle/caches/transforms-4/4e59cc1897becaa1141ac51944b37315/transformed/firebase-common-20.4.2/AndroidManifest.xml:19:5-44
+MERGED from [com.google.mlkit:vision-interfaces:16.2.0] /Users/sidrao/.gradle/caches/transforms-4/f0f5af0a7af15bfd9c374d87d30cc220/transformed/vision-interfaces-16.2.0/AndroidManifest.xml:5:5-44
+MERGED from [com.google.mlkit:vision-interfaces:16.2.0] /Users/sidrao/.gradle/caches/transforms-4/f0f5af0a7af15bfd9c374d87d30cc220/transformed/vision-interfaces-16.2.0/AndroidManifest.xml:5:5-44
 MERGED from [com.google.firebase:firebase-iid-interop:17.1.0] /Users/sidrao/.gradle/caches/transforms-4/83727fac88a410aa30588dfc937b59c2/transformed/firebase-iid-interop-17.1.0/AndroidManifest.xml:5:5-44
 MERGED from [com.google.firebase:firebase-iid-interop:17.1.0] /Users/sidrao/.gradle/caches/transforms-4/83727fac88a410aa30588dfc937b59c2/transformed/firebase-iid-interop-17.1.0/AndroidManifest.xml:5:5-44
 MERGED from [com.google.android.recaptcha:recaptcha:18.1.2] /Users/sidrao/.gradle/caches/transforms-4/c6b53b1ec9ed00dd7e2ee6b324e8f603/transformed/recaptcha-18.1.2/AndroidManifest.xml:5:5-44
@@ -695,20 +751,20 @@ MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/sidr
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/sidrao/.gradle/caches/transforms-4/2bc6543f0b6d6eca0fb5ad5ff321500b/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.databinding:viewbinding:8.3.1] /Users/sidrao/.gradle/caches/transforms-4/aac72fa2373525347396a88330c0c0c8/transformed/viewbinding-8.3.1/AndroidManifest.xml:5:5-44
 MERGED from [androidx.databinding:viewbinding:8.3.1] /Users/sidrao/.gradle/caches/transforms-4/aac72fa2373525347396a88330c0c0c8/transformed/viewbinding-8.3.1/AndroidManifest.xml:5:5-44
-MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:21:5-44
-MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:21:5-44
-MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] /Users/sidrao/.gradle/caches/transforms-4/c842628092e2008e7c698ef3553ba8fe/transformed/localbroadcastmanager-1.0.0/AndroidManifest.xml:20:5-44
-MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] /Users/sidrao/.gradle/caches/transforms-4/c842628092e2008e7c698ef3553ba8fe/transformed/localbroadcastmanager-1.0.0/AndroidManifest.xml:20:5-44
 MERGED from [com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:18:5-20:41
 MERGED from [com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:18:5-20:41
 MERGED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:18:5-20:41
 MERGED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:18:5-20:41
 MERGED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:18:5-20:41
 MERGED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:18:5-20:41
-MERGED from [com.google.android.datatransport:transport-api:3.1.0] /Users/sidrao/.gradle/caches/transforms-4/ef41fcc8b7444eee74affba2effedf61/transformed/transport-api-3.1.0/AndroidManifest.xml:18:5-44
-MERGED from [com.google.android.datatransport:transport-api:3.1.0] /Users/sidrao/.gradle/caches/transforms-4/ef41fcc8b7444eee74affba2effedf61/transformed/transport-api-3.1.0/AndroidManifest.xml:18:5-44
 MERGED from [com.google.firebase:firebase-encoders-json:18.0.0] /Users/sidrao/.gradle/caches/transforms-4/1eda2aaa0b82c6edde44fa48406983ae/transformed/firebase-encoders-json-18.0.0/AndroidManifest.xml:19:5-21:41
 MERGED from [com.google.firebase:firebase-encoders-json:18.0.0] /Users/sidrao/.gradle/caches/transforms-4/1eda2aaa0b82c6edde44fa48406983ae/transformed/firebase-encoders-json-18.0.0/AndroidManifest.xml:19:5-21:41
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:21:5-44
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:21:5-44
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] /Users/sidrao/.gradle/caches/transforms-4/c842628092e2008e7c698ef3553ba8fe/transformed/localbroadcastmanager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] /Users/sidrao/.gradle/caches/transforms-4/c842628092e2008e7c698ef3553ba8fe/transformed/localbroadcastmanager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.datatransport:transport-api:3.1.0] /Users/sidrao/.gradle/caches/transforms-4/ef41fcc8b7444eee74affba2effedf61/transformed/transport-api-3.1.0/AndroidManifest.xml:18:5-44
+MERGED from [com.google.android.datatransport:transport-api:3.1.0] /Users/sidrao/.gradle/caches/transforms-4/ef41fcc8b7444eee74affba2effedf61/transformed/transport-api-3.1.0/AndroidManifest.xml:18:5-44
 MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] /Users/sidrao/.gradle/caches/transforms-4/93d87f905b67d06d541546785a670fb4/transformed/cursoradapter-1.0.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] /Users/sidrao/.gradle/caches/transforms-4/93d87f905b67d06d541546785a670fb4/transformed/cursoradapter-1.0.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.cardview:cardview:1.0.0] /Users/sidrao/.gradle/caches/transforms-4/ff24250035aac313e41a5724ee04edeb/transformed/cardview-1.0.0/AndroidManifest.xml:20:5-44
@@ -731,6 +787,8 @@ MERGED from [io.grpc:grpc-android:1.52.1] /Users/sidrao/.gradle/caches/transform
 MERGED from [io.grpc:grpc-android:1.52.1] /Users/sidrao/.gradle/caches/transforms-4/79ad631d228158546601b55f02a79557/transformed/grpc-android-1.52.1/AndroidManifest.xml:5:5-7:41
 MERGED from [com.google.android.instantapps:instantapps:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/d9ba4cdaa934f27e026db6c3d2d5ffa6/transformed/instantapps-1.1.0/AndroidManifest.xml:5:5-7:41
 MERGED from [com.google.android.instantapps:instantapps:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/d9ba4cdaa934f27e026db6c3d2d5ffa6/transformed/instantapps-1.1.0/AndroidManifest.xml:5:5-7:41
+MERGED from [com.google.android.odml:image:1.0.0-beta1] /Users/sidrao/.gradle/caches/transforms-4/cf1610d594cd6e552dc1efafcf264470/transformed/image-1.0.0-beta1/AndroidManifest.xml:5:5-44
+MERGED from [com.google.android.odml:image:1.0.0-beta1] /Users/sidrao/.gradle/caches/transforms-4/cf1610d594cd6e552dc1efafcf264470/transformed/image-1.0.0-beta1/AndroidManifest.xml:5:5-44
 MERGED from [com.google.firebase:protolite-well-known-types:18.0.0] /Users/sidrao/.gradle/caches/transforms-4/b52d427a5aaa01abad38e5b76f333c38/transformed/protolite-well-known-types-18.0.0/AndroidManifest.xml:7:5-9:41
 MERGED from [com.google.firebase:protolite-well-known-types:18.0.0] /Users/sidrao/.gradle/caches/transforms-4/b52d427a5aaa01abad38e5b76f333c38/transformed/protolite-well-known-types-18.0.0/AndroidManifest.xml:7:5-9:41
 	tools:overrideLibrary
@@ -809,6 +867,24 @@ ADDED from [com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transf
 		ADDED from [com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:42:13-66
 	android:name
 		ADDED from [com.stripe:paymentsheet:20.48.0] /Users/sidrao/.gradle/caches/transforms-4/b77478f3e9e44bd7ba93b726c0b2f981/transformed/paymentsheet-20.48.0/AndroidManifest.xml:41:13-121
+service#androidx.camera.core.impl.MetadataHolderService
+ADDED from [androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:29:9-33:78
+MERGED from [androidx.camera:camera-camera2:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/ec19a94885ee53f7371eaf079291f061/transformed/camera-camera2-1.3.1/AndroidManifest.xml:24:9-33:19
+MERGED from [androidx.camera:camera-camera2:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/ec19a94885ee53f7371eaf079291f061/transformed/camera-camera2-1.3.1/AndroidManifest.xml:24:9-33:19
+	android:enabled
+		ADDED from [androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:31:13-36
+	android:exported
+		ADDED from [androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:32:13-37
+	tools:ignore
+		ADDED from [androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:33:13-75
+	android:name
+		ADDED from [androidx.camera:camera-core:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/42d8bc517e8ebf61971f81c53570ff07/transformed/camera-core-1.3.1/AndroidManifest.xml:30:13-75
+meta-data#androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER
+ADDED from [androidx.camera:camera-camera2:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/ec19a94885ee53f7371eaf079291f061/transformed/camera-camera2-1.3.1/AndroidManifest.xml:30:13-32:89
+	android:value
+		ADDED from [androidx.camera:camera-camera2:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/ec19a94885ee53f7371eaf079291f061/transformed/camera-camera2-1.3.1/AndroidManifest.xml:32:17-86
+	android:name
+		ADDED from [androidx.camera:camera-camera2:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/ec19a94885ee53f7371eaf079291f061/transformed/camera-camera2-1.3.1/AndroidManifest.xml:31:17-103
 activity#com.google.android.gms.auth.api.signin.internal.SignInHubActivity
 ADDED from [com.google.android.gms:play-services-auth:20.7.0] /Users/sidrao/.gradle/caches/transforms-4/298b28e015c79956945db409cc4394d0/transformed/play-services-auth-20.7.0/AndroidManifest.xml:23:9-27:75
 	android:excludeFromRecents
@@ -1099,6 +1175,48 @@ ADDED from [androidx.compose.ui:ui-test-manifest:1.6.4] /Users/sidrao/.gradle/ca
 		ADDED from [androidx.compose.ui:ui-test-manifest:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/da5ae0331af149a3455481b53812fd5a/transformed/ui-test-manifest-1.6.4/AndroidManifest.xml:25:13-36
 	android:name
 		ADDED from [androidx.compose.ui:ui-test-manifest:1.6.4] /Users/sidrao/.gradle/caches/transforms-4/da5ae0331af149a3455481b53812fd5a/transformed/ui-test-manifest-1.6.4/AndroidManifest.xml:24:13-63
+service#com.google.mlkit.common.internal.MlKitComponentDiscoveryService
+ADDED from [com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:9:9-15:19
+MERGED from [com.google.mlkit:vision-common:17.3.0] /Users/sidrao/.gradle/caches/transforms-4/344b07f65029759ebf49f6827f7a6d49/transformed/vision-common-17.3.0/AndroidManifest.xml:9:9-15:19
+MERGED from [com.google.mlkit:vision-common:17.3.0] /Users/sidrao/.gradle/caches/transforms-4/344b07f65029759ebf49f6827f7a6d49/transformed/vision-common-17.3.0/AndroidManifest.xml:9:9-15:19
+MERGED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:15:9-23:19
+MERGED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:15:9-23:19
+	android:exported
+		ADDED from [com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:11:13-37
+	tools:targetApi
+		ADDED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:19:13-32
+	android:directBootAware
+		ADDED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:17:13-43
+	android:name
+		ADDED from [com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:10:13-91
+meta-data#com.google.firebase.components:com.google.mlkit.vision.barcode.internal.BarcodeRegistrar
+ADDED from [com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:12:13-14:85
+	android:value
+		ADDED from [com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:14:17-82
+	android:name
+		ADDED from [com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /Users/sidrao/.gradle/caches/transforms-4/68b96b1d024c470448b208d43bb22a39/transformed/play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:13:17-120
+meta-data#com.google.firebase.components:com.google.mlkit.vision.common.internal.VisionCommonRegistrar
+ADDED from [com.google.mlkit:vision-common:17.3.0] /Users/sidrao/.gradle/caches/transforms-4/344b07f65029759ebf49f6827f7a6d49/transformed/vision-common-17.3.0/AndroidManifest.xml:12:13-14:85
+	android:value
+		ADDED from [com.google.mlkit:vision-common:17.3.0] /Users/sidrao/.gradle/caches/transforms-4/344b07f65029759ebf49f6827f7a6d49/transformed/vision-common-17.3.0/AndroidManifest.xml:14:17-82
+	android:name
+		ADDED from [com.google.mlkit:vision-common:17.3.0] /Users/sidrao/.gradle/caches/transforms-4/344b07f65029759ebf49f6827f7a6d49/transformed/vision-common-17.3.0/AndroidManifest.xml:13:17-124
+provider#com.google.mlkit.common.internal.MlKitInitProvider
+ADDED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:9:9-13:38
+	android:authorities
+		ADDED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:11:13-69
+	android:exported
+		ADDED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:12:13-37
+	android:initOrder
+		ADDED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:13:13-35
+	android:name
+		ADDED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:10:13-78
+meta-data#com.google.firebase.components:com.google.mlkit.common.internal.CommonComponentRegistrar
+ADDED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:20:13-22:85
+	android:value
+		ADDED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:22:17-82
+	android:name
+		ADDED from [com.google.mlkit:common:18.9.0] /Users/sidrao/.gradle/caches/transforms-4/190861b7077674869d78bba66aeb4a23/transformed/common-18.9.0/AndroidManifest.xml:21:17-120
 meta-data#com.google.firebase.components:com.google.firebase.functions.ktx.FirebaseFunctionsLegacyRegistrar
 ADDED from [com.google.firebase:firebase-functions-ktx:20.4.0] /Users/sidrao/.gradle/caches/transforms-4/d12895e059026b134ac8d7a261d64887/transformed/firebase-functions-ktx-20.4.0/AndroidManifest.xml:12:13-14:85
 	android:value
@@ -1289,6 +1407,40 @@ uses-permission#com.burner.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.12.0] /Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+meta-data#com.google.firebase.components:com.google.firebase.datatransport.TransportRegistrar
+ADDED from [com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:27:13-29:85
+	android:value
+		ADDED from [com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:29:17-82
+	android:name
+		ADDED from [com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:28:17-115
+service#com.google.android.datatransport.runtime.backends.TransportBackendDiscovery
+ADDED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:28:9-34:19
+MERGED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:36:9-38:40
+MERGED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:36:9-38:40
+	android:exported
+		ADDED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:30:13-37
+	android:name
+		ADDED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:29:13-103
+meta-data#backend:com.google.android.datatransport.cct.CctBackendFactory
+ADDED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:31:13-33:39
+	android:value
+		ADDED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:33:17-36
+	android:name
+		ADDED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:32:17-94
+service#com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService
+ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:26:9-30:19
+	android:exported
+		ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:28:13-37
+	android:permission
+		ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:29:13-69
+	android:name
+		ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:27:13-117
+receiver#com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver
+ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:32:9-34:40
+	android:exported
+		ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:34:13-37
+	android:name
+		ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:33:13-132
 meta-data#androidx.profileinstaller.ProfileInstallerInitializer
 ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
 	android:value
@@ -1331,40 +1483,6 @@ action#androidx.profileinstaller.action.BENCHMARK_OPERATION
 ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
 	android:name
 		ADDED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/sidrao/.gradle/caches/transforms-4/f6a964a20bfcff242ebecea7b7578523/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
-meta-data#com.google.firebase.components:com.google.firebase.datatransport.TransportRegistrar
-ADDED from [com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:27:13-29:85
-	android:value
-		ADDED from [com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:29:17-82
-	android:name
-		ADDED from [com.google.firebase:firebase-datatransport:18.1.7] /Users/sidrao/.gradle/caches/transforms-4/cfdf384657bfb63e599a02871ccd33e1/transformed/firebase-datatransport-18.1.7/AndroidManifest.xml:28:17-115
-service#com.google.android.datatransport.runtime.backends.TransportBackendDiscovery
-ADDED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:28:9-34:19
-MERGED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:36:9-38:40
-MERGED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:36:9-38:40
-	android:exported
-		ADDED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:30:13-37
-	android:name
-		ADDED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:29:13-103
-meta-data#backend:com.google.android.datatransport.cct.CctBackendFactory
-ADDED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:31:13-33:39
-	android:value
-		ADDED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:33:17-36
-	android:name
-		ADDED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/e93d9f39b84d1c5fde5b90ef761de7ef/transformed/transport-backend-cct-3.1.8/AndroidManifest.xml:32:17-94
-service#com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService
-ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:26:9-30:19
-	android:exported
-		ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:28:13-37
-	android:permission
-		ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:29:13-69
-	android:name
-		ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:27:13-117
-receiver#com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver
-ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:32:9-34:40
-	android:exported
-		ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:34:13-37
-	android:name
-		ADDED from [com.google.android.datatransport:transport-runtime:3.1.8] /Users/sidrao/.gradle/caches/transforms-4/baae6e850cb0cc29d14df6c5bc629b1a/transformed/transport-runtime-3.1.8/AndroidManifest.xml:33:13-132
 meta-data#aia-compat-api-min-version
 ADDED from [com.google.android.instantapps:instantapps:1.1.0] /Users/sidrao/.gradle/caches/transforms-4/d9ba4cdaa934f27e026db6c3d2d5ffa6/transformed/instantapps-1.1.0/AndroidManifest.xml:10:9-12:33
 	android:value

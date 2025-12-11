@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.burner.app-mergeDebugResources-95:/values-hi/values-hi.xml",
+            "outputFile": "com.burner.app-mergeDebugResources-100:/values-hi/values-hi.xml",
             "map": [
                 {
                     "source": "/Users/sidrao/.gradle/caches/transforms-4/164570d2387f58eb32c3058de54158f7/transformed/core-1.12.0/res/values-hi/values-hi.xml",

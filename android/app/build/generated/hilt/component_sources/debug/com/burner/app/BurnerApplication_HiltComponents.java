@@ -7,6 +7,7 @@ import com.burner.app.ui.screens.bookmarks.BookmarksViewModel_HiltModules;
 import com.burner.app.ui.screens.explore.EventDetailViewModel_HiltModules;
 import com.burner.app.ui.screens.explore.ExploreViewModel_HiltModules;
 import com.burner.app.ui.screens.onboarding.OnboardingViewModel_HiltModules;
+import com.burner.app.ui.screens.scanner.ScannerViewModel_HiltModules;
 import com.burner.app.ui.screens.search.SearchViewModel_HiltModules;
 import com.burner.app.ui.screens.settings.AccountDetailsViewModel_HiltModules;
 import com.burner.app.ui.screens.settings.NotificationSettingsViewModel_HiltModules;
@@ -177,6 +178,7 @@ public final class BurnerApplication_HiltComponents {
           NotificationSettingsViewModel_HiltModules.KeyModule.class,
           OnboardingViewModel_HiltModules.KeyModule.class,
           PaymentSettingsViewModel_HiltModules.KeyModule.class,
+          ScannerViewModel_HiltModules.KeyModule.class,
           SearchViewModel_HiltModules.KeyModule.class,
           SettingsViewModel_HiltModules.KeyModule.class,
           TicketDetailViewModel_HiltModules.KeyModule.class,
@@ -227,6 +229,7 @@ public final class BurnerApplication_HiltComponents {
           NotificationSettingsViewModel_HiltModules.BindsModule.class,
           OnboardingViewModel_HiltModules.BindsModule.class,
           PaymentSettingsViewModel_HiltModules.BindsModule.class,
+          ScannerViewModel_HiltModules.BindsModule.class,
           SearchViewModel_HiltModules.BindsModule.class,
           SettingsViewModel_HiltModules.BindsModule.class,
           TicketDetailViewModel_HiltModules.BindsModule.class,

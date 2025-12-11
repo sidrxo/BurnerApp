@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.burner.app-mergeDebugResources-95:/values-sk-rSK/values-sk-rSK.xml",
+            "outputFile": "com.burner.app-mergeDebugResources-100:/values-sk-rSK/values-sk-rSK.xml",
             "map": [
                 {
                     "source": "/Users/sidrao/.gradle/caches/transforms-4/ff15ae88e03594c9f66c45aba2b2883d/transformed/stripe-ui-core-20.48.0/res/values-sk-rSK/values-sk-rSK.xml",
