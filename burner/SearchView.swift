@@ -9,6 +9,7 @@ struct SearchView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var coordinator: NavigationCoordinator
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var onboardingManager: OnboardingManager
     @EnvironmentObject var eventViewModel: EventViewModel  // ✅ Single source of truth
     @EnvironmentObject var userLocationManager: UserLocationManager
     @Environment(\.heroNamespace) private var heroNamespace
@@ -162,7 +163,14 @@ struct SearchView: View {
             cancelActionTitle: "Cancel",
             primaryAction: {
                 showingSignInAlert = false
-                appState.isSignInSheetPresented = true
+
+                // If user has never signed in, show full onboarding
+                // Otherwise, just show the sign-in modal
+                if !onboardingManager.hasEverSignedIn {
+                    onboardingManager.shouldShowOnboarding = true
+                } else {
+                    appState.isSignInSheetPresented = true
+                }
             },
             primaryActionTitle: "Sign In",
             customContent: EmptyView()

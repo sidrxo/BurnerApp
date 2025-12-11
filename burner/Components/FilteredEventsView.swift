@@ -7,6 +7,7 @@ struct FilteredEventsView: View {
     let events: [Event]
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var onboardingManager: OnboardingManager
     @Environment(\.heroNamespace) private var heroNamespace
     @State private var showingSignInAlert = false
     
@@ -56,10 +57,15 @@ struct FilteredEventsView: View {
                     },
                     cancelActionTitle: "Cancel",
                     primaryAction: {
-                       
-                            showingSignInAlert = false
-                     
-                        appState.isSignInSheetPresented = true
+                        showingSignInAlert = false
+
+                        // If user has never signed in, show full onboarding
+                        // Otherwise, just show the sign-in modal
+                        if !onboardingManager.hasEverSignedIn {
+                            onboardingManager.shouldShowOnboarding = true
+                        } else {
+                            appState.isSignInSheetPresented = true
+                        }
                     },
                     primaryActionTitle: "Sign In",
                     customContent: EmptyView()

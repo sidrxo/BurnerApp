@@ -5,6 +5,7 @@ struct BookmarksView: View {
     @EnvironmentObject var bookmarkManager: BookmarkManager
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
+    @EnvironmentObject var onboardingManager: OnboardingManager
     @Environment(\.heroNamespace) private var heroNamespace
     @State private var searchText = ""
     @State private var showingSignInAlert = false
@@ -68,10 +69,15 @@ struct BookmarksView: View {
                     },
                     cancelActionTitle: "Cancel",
                     primaryAction: {
-                      
-                            showingSignInAlert = false
-                      
-                        appState.isSignInSheetPresented = true
+                        showingSignInAlert = false
+
+                        // If user has never signed in, show full onboarding
+                        // Otherwise, just show the sign-in modal
+                        if !onboardingManager.hasEverSignedIn {
+                            onboardingManager.shouldShowOnboarding = true
+                        } else {
+                            appState.isSignInSheetPresented = true
+                        }
                     },
                     primaryActionTitle: "Sign In",
                     customContent: EmptyView()

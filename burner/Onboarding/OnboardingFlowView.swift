@@ -143,10 +143,17 @@ struct OnboardingFlowView: View {
                         Group {
                             switch step {
                             case 0:
-                                AuthWelcomeSlide(
-                                    onLogin: { handleNextStep() },
-                                    onExplore: { handleNextStep() }
-                                )
+                                if onboardingManager.isFirstLaunch {
+                                    SimplifiedFirstLaunchSlide(
+                                        onLogin: { handleNextStep() },
+                                        onExplore: { dismissOnboarding() }
+                                    )
+                                } else {
+                                    AuthWelcomeSlide(
+                                        onLogin: { handleNextStep() },
+                                        onExplore: { dismissOnboarding() }
+                                    )
+                                }
                             case 1:
                                 LocationSlide(onLocationSet: { handleNextStep() })
                             case 2:
@@ -208,6 +215,15 @@ struct OnboardingFlowView: View {
                 currentStep += 1
             }
         }
+    }
+
+    private func dismissOnboarding() {
+        // Dismiss onboarding without marking as completed
+        // This allows it to show again on next launch if user hasn't signed in
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+
+        onboardingManager.shouldShowOnboarding = false
     }
 
     private func completeOnboarding() {
@@ -304,6 +320,49 @@ struct AuthWelcomeSlide: View {
 
             Spacer()
                 .frame(minHeight: 40)
+        }
+        .sheet(isPresented: $showingSignIn) {
+            SignInSheetView(showingSignIn: $showingSignIn, onSkip: {
+                onLogin()
+            })
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
+            showingSignIn = false
+            onLogin()
+        }
+    }
+}
+
+// MARK: - Simplified First Launch Slide (No Mosaic, Just Logo + Buttons)
+
+struct SimplifiedFirstLaunchSlide: View {
+    let onLogin: () -> Void
+    let onExplore: () -> Void
+
+    @State private var showingSignIn = false
+    @EnvironmentObject var appState: AppState
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            // Buttons centered
+            VStack(spacing: 14) {
+                BurnerButton("SIGN UP/IN", style: .primary, maxWidth: 200) {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    showingSignIn = true
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                BurnerButton("EXPLORE", style: .secondary, maxWidth: 160) {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    onExplore()
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal, 40)
+
+            Spacer()
         }
         .sheet(isPresented: $showingSignIn) {
             SignInSheetView(showingSignIn: $showingSignIn, onSkip: {
