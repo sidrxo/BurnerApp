@@ -136,12 +136,19 @@ struct BurnerApp: App {
                 
                 if showingVideoSplash {
                     VideoSplashView(videoName: "splash", loop: false) {
-                        Task { await self.waitAndPrefetchThenDismissSplash() }
+                        // Dismiss splash immediately when video ends
+                        withAnimation(.easeOut(duration: 0.5)) {
+                            self.showingVideoSplash = false
+                        }
+                        // Continue loading in background
+                        Task { await self.prefetchInBackground() }
                     }
+                    .transition(.opacity)
                     .zIndex(2000)
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: appState.showingBurnerLockScreen)
+            .animation(.easeInOut(duration: 0.4), value: showingVideoSplash)
             // ✅ MOVED HERE: Ensure initial load runs regardless of ZIndex layering
             .onAppear {
                 appState.loadInitialData()
@@ -173,9 +180,16 @@ struct BurnerApp: App {
 
         // Step 2: Prefetch images
         await appState.prefetchEventImages()
-        
+
         // Step 3: Dismiss splash
         await MainActor.run { showingVideoSplash = false }
+    }
+
+    private func prefetchInBackground() async {
+        // Wait for EventViewModel to load
+        await appState.eventViewModel.waitForInitialLoad()
+        // Prefetch images in background
+        await appState.prefetchEventImages()
     }
     
     // MARK: - URL Handling
