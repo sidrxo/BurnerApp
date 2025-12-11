@@ -7,9 +7,13 @@ import SwiftUI
 class OnboardingManager: ObservableObject {
     @Published var hasCompletedOnboarding: Bool
     @Published var shouldShowOnboarding: Bool = false
+    @Published var isFirstLaunch: Bool
+    @Published var hasEverSignedIn: Bool
 
     private let userDefaults = UserDefaults.standard
     private let onboardingCompletedKey = "hasCompletedOnboarding"
+    private let isFirstLaunchKey = "isFirstLaunch"
+    private let hasEverSignedInKey = "hasEverSignedIn"
     
     // Hold a reference to the AuthenticationService
     private var authService: AuthenticationService?
@@ -22,6 +26,19 @@ class OnboardingManager: ObservableObject {
         self.authService = authService
         self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
 
+        // Check if this is the first launch
+        if !userDefaults.bool(forKey: isFirstLaunchKey) {
+            // First launch ever
+            self.isFirstLaunch = true
+            userDefaults.set(true, forKey: isFirstLaunchKey)
+        } else {
+            // Not first launch
+            self.isFirstLaunch = false
+        }
+
+        // Check if user has ever signed in
+        self.hasEverSignedIn = userDefaults.bool(forKey: hasEverSignedInKey)
+
         // Set initial state immediately based on current auth status
         let isAuthenticated = authService.currentUser != nil
 
@@ -31,9 +48,15 @@ class OnboardingManager: ObservableObject {
         // - If signed OUT and COMPLETED -> Hide onboarding
         // - If signed OUT and NOT completed -> Show onboarding
         if isAuthenticated {
+            // Mark that user has signed in
+            if !hasEverSignedIn {
+                hasEverSignedIn = true
+                userDefaults.set(true, forKey: hasEverSignedInKey)
+            }
+
             // Signed in - check if they completed onboarding
             self.shouldShowOnboarding = !hasCompletedOnboarding
-            
+
             // If they completed before, load their preferences
             if hasCompletedOnboarding {
                 // Will load preferences after auth subscription is set up
@@ -51,6 +74,17 @@ class OnboardingManager: ObservableObject {
     init() {
         self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
         self.shouldShowOnboarding = !hasCompletedOnboarding
+
+        // Check if this is the first launch
+        if !userDefaults.bool(forKey: isFirstLaunchKey) {
+            self.isFirstLaunch = true
+            userDefaults.set(true, forKey: isFirstLaunchKey)
+        } else {
+            self.isFirstLaunch = false
+        }
+
+        // Check if user has ever signed in
+        self.hasEverSignedIn = userDefaults.bool(forKey: hasEverSignedInKey)
     }
 
     // MARK: - Subscription Setup
@@ -95,6 +129,12 @@ class OnboardingManager: ObservableObject {
         // - If signed OUT and NOT completed -> Show onboarding
 
         if isAuthenticated {
+            // Mark that user has signed in
+            if !hasEverSignedIn {
+                hasEverSignedIn = true
+                userDefaults.set(true, forKey: hasEverSignedInKey)
+            }
+
             // User is signed in
             if hasCompletedOnboarding {
                 // They've completed onboarding before, let them in
