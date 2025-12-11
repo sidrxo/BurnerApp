@@ -26,13 +26,14 @@ class OnboardingManager: ObservableObject {
         self.authService = authService
         self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
 
-        // Check if this is the first launch
-        if !userDefaults.bool(forKey: isFirstLaunchKey) {
-            // First launch ever
+        // Check if this is the first launch by checking if the key exists
+        if userDefaults.object(forKey: isFirstLaunchKey) == nil {
+            // First launch ever - key doesn't exist
             self.isFirstLaunch = true
             userDefaults.set(true, forKey: isFirstLaunchKey)
+            userDefaults.synchronize()
         } else {
-            // Not first launch
+            // Not first launch - key exists
             self.isFirstLaunch = false
         }
 
@@ -75,11 +76,14 @@ class OnboardingManager: ObservableObject {
         self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
         self.shouldShowOnboarding = !hasCompletedOnboarding
 
-        // Check if this is the first launch
-        if !userDefaults.bool(forKey: isFirstLaunchKey) {
+        // Check if this is the first launch by checking if the key exists
+        if userDefaults.object(forKey: isFirstLaunchKey) == nil {
+            // First launch ever - key doesn't exist
             self.isFirstLaunch = true
             userDefaults.set(true, forKey: isFirstLaunchKey)
+            userDefaults.synchronize()
         } else {
+            // Not first launch - key exists
             self.isFirstLaunch = false
         }
 
