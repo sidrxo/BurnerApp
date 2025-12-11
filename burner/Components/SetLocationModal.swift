@@ -142,7 +142,7 @@ struct CityLocation: Identifiable, Hashable {
     }
 }
 
-// MARK: - UK Cities Only
+// MARK: - UK Cities Only (England only)
 extension CityLocation {
     static let ukCities: [CityLocation] = [
         // England - Major Cities
@@ -188,28 +188,6 @@ extension CityLocation {
         CityLocation(name: "Hereford", region: "England", latitude: 52.0565, longitude: -2.7160),
         CityLocation(name: "Salisbury", region: "England", latitude: 51.0689, longitude: -1.7948),
         CityLocation(name: "Truro", region: "England", latitude: 50.2632, longitude: -5.0510),
-        
-        // Scotland
-        CityLocation(name: "Glasgow", region: "Scotland", latitude: 55.8642, longitude: -4.2518),
-        CityLocation(name: "Edinburgh", region: "Scotland", latitude: 55.9533, longitude: -3.1883),
-        CityLocation(name: "Aberdeen", region: "Scotland", latitude: 57.1497, longitude: -2.0943),
-        CityLocation(name: "Dundee", region: "Scotland", latitude: 56.4620, longitude: -2.9707),
-        CityLocation(name: "Inverness", region: "Scotland", latitude: 57.4778, longitude: -4.2247),
-        CityLocation(name: "Perth", region: "Scotland", latitude: 56.3956, longitude: -3.4370),
-        CityLocation(name: "Stirling", region: "Scotland", latitude: 56.1165, longitude: -3.9369),
-        
-        // Wales
-        CityLocation(name: "Cardiff", region: "Wales", latitude: 51.4816, longitude: -3.1791),
-        CityLocation(name: "Swansea", region: "Wales", latitude: 51.6214, longitude: -3.9436),
-        CityLocation(name: "Newport", region: "Wales", latitude: 51.5842, longitude: -2.9977),
-        CityLocation(name: "Wrexham", region: "Wales", latitude: 53.0462, longitude: -2.9930),
-        CityLocation(name: "Bangor", region: "Wales", latitude: 53.2282, longitude: -4.1291),
-        
-        // Northern Ireland
-        CityLocation(name: "Belfast", region: "Northern Ireland", latitude: 54.5973, longitude: -5.9301),
-        CityLocation(name: "Londonderry", region: "Northern Ireland", latitude: 54.9966, longitude: -7.3086),
-        CityLocation(name: "Lisburn", region: "Northern Ireland", latitude: 54.5162, longitude: -6.0581),
-        CityLocation(name: "Newry", region: "Northern Ireland", latitude: 54.1751, longitude: -6.3402),
     ].sorted { $0.name < $1.name }
 }
 
@@ -220,6 +198,7 @@ struct ManualCityEntryView: View {
     
     @State private var searchText = ""
     @State private var isProcessing = false
+    @State private var selectedCityName: String?
     @FocusState private var isFocused: Bool
     
     private var filteredCities: [CityLocation] {
@@ -309,30 +288,16 @@ struct ManualCityEntryView: View {
                                     selectCity(city)
                                 }) {
                                     HStack(spacing: 12) {
-                                        Image(systemName: "mappin.circle.fill")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(.white.opacity(0.6))
-                                        
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(city.name)
-                                                .appBody()
-                                                .foregroundColor(.white)
-                                            
-                                            Text(city.region)
-                                                .appCaption()
-                                                .foregroundColor(.white.opacity(0.5))
-                                        }
-                                        
+                                        Text(selectedCityName == city.name ? city.name.uppercased() : city.name)
+                                            .appBody()
+                                            .foregroundColor(.white)
+
                                         Spacer()
-                                        
-                                        if isProcessing {
+
+                                        if isProcessing && selectedCityName == city.name {
                                             ProgressView()
                                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                                 .scaleEffect(0.8)
-                                        } else {
-                                            Image(systemName: "chevron.right")
-                                                .font(.system(size: 14))
-                                                .foregroundColor(.white.opacity(0.3))
                                         }
                                     }
                                     .padding(.horizontal, 24)
@@ -356,10 +321,10 @@ struct ManualCityEntryView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("CANCEL") {
+                    Button("Cancel") {
                         onDismiss()
                     }
-                    .appButton()
+                    .appBody()
                     .foregroundColor(.white.opacity(0.7))
                 }
             }
@@ -369,17 +334,19 @@ struct ManualCityEntryView: View {
     }
     
     private func selectCity(_ city: CityLocation) {
+        // Show the selected city name
+        selectedCityName = city.name
         isProcessing = true
-        
+
         let userLocation = UserLocation(
             latitude: city.latitude,
             longitude: city.longitude,
             name: city.name,
             timestamp: Date()
         )
-        
-        // Add a small delay for UX smoothness
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+
+        // Show city for a second, then auto advance
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             locationManager.saveLocationDirectly(userLocation)
             isProcessing = false
             onDismiss()

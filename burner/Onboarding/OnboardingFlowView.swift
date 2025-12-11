@@ -638,40 +638,44 @@ struct NotificationsSlide: View {
     }
 }
 
-// MARK: - Slide 4: Complete (Success Screen with auto-advance)
+// MARK: - Slide 4: Complete (Terminal-style loading screen with auto-dismiss)
 struct CompleteSlide: View {
     let onComplete: () -> Void
     @State private var hasTriggeredCompletion = false
+    @State private var displayedLines: [String] = []
 
     // Externally-set to know when visible
     var isCurrentSlide: Bool = false
+
+    // Random terminal-style phrases
+    private let terminalPhrases = [
+        "$ initializing onboarding protocol...",
+        "✓ preferences saved",
+        "$ connecting to event database...",
+        "✓ database connection established",
+        "$ loading event data...",
+        "✓ 247 events loaded",
+        "$ configuring user profile...",
+        "✓ profile configured",
+        "$ granting app access...",
+        "✓ access granted",
+        "$ preparing experience...",
+        "✓ ready to explore"
+    ]
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
 
-            ZStack {
-                Circle()
-                    .fill(Color.white.opacity(0.1))
-                    .frame(width: 100, height: 100)
-
-                Image(systemName: "checkmark")
-                    .appFont(size: 50, weight: .bold)
-                    .foregroundColor(.white)
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(displayedLines, id: \.self) { line in
+                    Text(line)
+                        .appMonospaced(size: 13)
+                        .foregroundColor(line.hasPrefix("✓") ? .green : .white.opacity(0.8))
+                        .transition(.opacity)
+                }
             }
-            .padding(.bottom, 32)
-
-            VStack(spacing: 0) {
-                TightHeaderText("YOU'RE", "IN!", alignment: .center)
-                    .frame(maxWidth: .infinity)
-            }
-            .frame(height: 120)
-
-            Text("Let's explore what's happening near you.")
-                .appBody()
-                .foregroundColor(.white.opacity(0.7))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+            .padding(.horizontal, 40)
 
             Spacer()
         }
@@ -681,10 +685,25 @@ struct CompleteSlide: View {
             }
 
             hasTriggeredCompletion = true
+            animateTerminalLines()
+        }
+    }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                onComplete()
+    private func animateTerminalLines() {
+        // Randomly select phrases to display
+        let selectedPhrases = terminalPhrases.shuffled().prefix(6)
+
+        for (index, phrase) in selectedPhrases.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.15) {
+                withAnimation(.easeIn(duration: 0.1)) {
+                    displayedLines.append(phrase)
+                }
             }
+        }
+
+        // Dismiss after all lines are shown
+        DispatchQueue.main.asyncAfter(deadline: .now() + Double(selectedPhrases.count) * 0.15 + 0.5) {
+            onComplete()
         }
     }
 }
@@ -899,9 +918,9 @@ struct GenrePill: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Text(title.lowercased())
-                    .appMonospaced(size: 16)
+                    .appBody()
                     .lineLimit(1)
-                
+
             }
             .foregroundColor(isSelected ? .black : .white)
             .padding(.horizontal, 10)
