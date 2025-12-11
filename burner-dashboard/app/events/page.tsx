@@ -34,6 +34,7 @@ function EventsPageContent() {
     availableTags,
     filtered,
     onToggleFeatured,
+    onSetTopFeatured,
     onDelete,
     getEventStatus,
     getTicketProgress,
@@ -113,6 +114,7 @@ function EventsPageContent() {
                   ticketProgress={ticketProgress}
                   user={user}
                   onToggleFeatured={onToggleFeatured}
+                  onSetTopFeatured={onSetTopFeatured}
                   onDelete={onDelete}
                   onEditClick={() => router.push(`/events/${ev.id}/edit`)}
                 />

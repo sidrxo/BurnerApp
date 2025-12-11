@@ -211,7 +211,7 @@ function DebugToolsPageContent() {
             <div className="flex-1">
               <h3 className="font-semibold mb-1">Simulate Event Starting Soon</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                Sets the soonest event to start in 5 minutes and end 10 minutes later.
+                Sets the soonest event to start in 5 minutes and end 15 minutes later.
                 Useful for testing event notifications and real-time features.
               </p>
               <Button

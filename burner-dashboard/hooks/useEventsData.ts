@@ -36,6 +36,7 @@ export interface Event {
   maxTickets: number;
   ticketsSold: number;
   isFeatured?: boolean;
+  featuredPriority?: number; // Lower number = higher priority (0 = top)
   imageUrl?: string | null;
   status?: EventStatus | string | null;
   category?: string | null;
@@ -303,6 +304,34 @@ export function useEventsData() {
     }
   };
 
+  const onSetTopFeatured = async (ev: Event) => {
+    if (!user || user.role !== "siteAdmin") {
+      toast.error("Only site administrators can manage featured events");
+      return;
+    }
+
+    try {
+      // Set this event as top priority (0) and make it featured if not already
+      await updateDoc(doc(db, "events", ev.id), {
+        isFeatured: true,
+        featuredPriority: 0,
+        updatedAt: Timestamp.now(),
+      });
+
+      setEvents((prev) =>
+        prev.map((event) =>
+          event.id === ev.id
+            ? { ...event, isFeatured: true, featuredPriority: 0 }
+            : event
+        )
+      );
+
+      toast.success(`"${ev.name}" is now the top featured event`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to set top featured event");
+    }
+  };
+
   const onDelete = async (ev: Event) => {
     try {
       const ticketsSnap = await getDocs(collection(db, "events", ev.id, "tickets"));
@@ -378,6 +407,7 @@ export function useEventsData() {
     availableTags,
     filtered,
     onToggleFeatured,
+    onSetTopFeatured,
     onDelete,
     getEventStatus,
     getTicketProgress,

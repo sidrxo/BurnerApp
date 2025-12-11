@@ -117,7 +117,7 @@ export async function simulateEventStartingSoon(): Promise<{ success: boolean; e
     // Set start time to 5 minutes from now
     const now = new Date();
     const newStartTime = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes from now
-    const newEndTime = new Date(newStartTime.getTime() + 10 * 60 * 1000); // 10 minutes after start (15 minutes from now)
+    const newEndTime = new Date(newStartTime.getTime() + 15 * 60 * 1000); // 15 minutes after start (20 minutes from now)
 
     // Update the event
     await updateDoc(doc(db, "events", soonestEvent.id), {

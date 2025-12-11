@@ -37,10 +37,20 @@ struct ExploreView: View {
             }
             return true
         }
-        let calendar = Calendar.current
-        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: Date()) ?? 0
-        var rng = SeededRandomNumberGenerator(seed: UInt64(dayOfYear))
-        return featured.shuffled(using: &rng)
+        // Sort by priority (lower number = higher priority), then by start time
+        return featured.sorted { event1, event2 in
+            let priority1 = event1.featuredPriority ?? 999
+            let priority2 = event2.featuredPriority ?? 999
+
+            if priority1 != priority2 {
+                return priority1 < priority2
+            }
+
+            // If same priority, sort by start time
+            let time1 = event1.startTime ?? Date.distantFuture
+            let time2 = event2.startTime ?? Date.distantFuture
+            return time1 < time2
+        }
     }
     
     var thisWeekEvents: [Event] {
