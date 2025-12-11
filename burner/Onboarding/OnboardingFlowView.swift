@@ -1,13 +1,5 @@
-// OnboardingFlowView.swift
-// Burner
-//
-// Created by ChatGPT on 2025-12-08.
-// Fixed: use Event.imageUrl directly (no KVC / .image).
-// Fixed: Removed marquee animation from event mosaic.
-// Updated: Ensure event images are not repeated across mosaic rows and only use events with valid images.
-// Updated: ALIGNMENT CHANGED TO RIGHT EDGE.
-// Updated: Added gradient fade to black at the bottom of the mosaic and bottom padding.
-// Fixed: Added safeAreaPadding.top to push header down from Dynamic Island/status bar.
+// OnboardingFlowView.swift - OPTIMIZED FOR INSTANT LOAD
+// Shows cached images immediately, loads fresh data in background
 
 import SwiftUI
 import CoreLocation
@@ -15,7 +7,59 @@ import UserNotifications
 import Kingfisher
 import Combine
 
-// MARK: - OnboardingFlowView (Full)
+
+
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = FlowResult(
+            in: proposal.replacingUnspecifiedDimensions().width,
+            subviews: subviews,
+            spacing: spacing
+        )
+        return result.size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = FlowResult(
+            in: bounds.width,
+            subviews: subviews,
+            spacing: spacing
+        )
+        for (index, subview) in subviews.enumerated() {
+            subview.place(at: CGPoint(x: bounds.minX + result.positions[index].x, y: bounds.minY + result.positions[index].y), proposal: .unspecified)
+        }
+    }
+
+    struct FlowResult {
+        var size: CGSize = .zero
+        var positions: [CGPoint] = []
+
+        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
+            var currentX: CGFloat = 0
+            var currentY: CGFloat = 0
+            var lineHeight: CGFloat = 0
+
+            for subview in subviews {
+                let size = subview.sizeThatFits(.unspecified)
+
+                if currentX + size.width > maxWidth && currentX > 0 {
+                    currentX = 0
+                    currentY += lineHeight + spacing
+                    lineHeight = 0
+                }
+
+                positions.append(CGPoint(x: currentX, y: currentY))
+                currentX += size.width + spacing
+                lineHeight = max(lineHeight, size.height)
+                self.size.width = max(self.size.width, currentX - spacing)
+                self.size.height = currentY + lineHeight
+            }
+        }
+    }
+}
+
 
 struct OnboardingFlowView: View {
     @EnvironmentObject var onboardingManager: OnboardingManager
@@ -71,8 +115,6 @@ struct OnboardingFlowView: View {
 
                     // 1. Center: Logo or Progress Indicator
                     VStack(spacing: 0) {
-                        // Removed redundant Spacer().frame(height: 20) inside AuthHeader logic
-                        
                         if currentStep == 0 {
                             // Show Auth Header with Logo
                             AuthHeader()
@@ -106,7 +148,6 @@ struct OnboardingFlowView: View {
                                     .foregroundColor(.white.opacity(0.6))
                                     .frame(width: 44, height: 44)
                             }
-                            // Adjust alignment to look right with the added safeAreaPadding
                             .padding(.top, currentStep == 0 ? 0 : 4)
                             .padding(.leading, 20)
                             Spacer()
@@ -124,17 +165,13 @@ struct OnboardingFlowView: View {
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 10)
                             }
-                            // Adjust alignment to look right with the added safeAreaPadding
                             .padding(.top, currentStep == 0 ? 0 : 4)
                             .padding(.trailing, 20)
                         }
                     }
                 }
-                // Add system-level safe area padding to push content down
                 .safeAreaPadding(.top)
-                // Set fixed height for the content inside the header ZStack
                 .frame(height: 60)
-                // Add a small spacer padding below the header block
                 .padding(.bottom, 4)
 
                 // Content Slides using ZStack and Offset
@@ -181,12 +218,7 @@ struct OnboardingFlowView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SkipOnboardingToExplore"))) { _ in
             completeOnboarding()
         }
-        .onAppear {
-            // Onboarding flow started
-        }
-        .onDisappear {
-            // Onboarding flow ended
-        }
+        
     }
 
     // Custom Slide Transition Logic
@@ -217,7 +249,17 @@ struct OnboardingFlowView: View {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
 
+        savePreferences()
+
         onboardingManager.completeOnboarding()
+    }
+
+    private func savePreferences() {
+        localPreferences.saveToUserDefaults()
+
+        Task {
+            let syncService = PreferencesSyncService()
+        }
     }
 }
 
@@ -273,9 +315,8 @@ struct AuthWelcomeSlide: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Put the mosaic carousel above the header
+            // ✅ OPTIMIZED: Always show mosaic immediately, even if loading
             EventMosaicCarousel(eventImages: eventImageURLs)
-                // Reduced top padding as safeAreaPadding is now on the header
                 .padding(.top, 24)
 
             // Header — keep the same visual hierarchy
@@ -316,6 +357,127 @@ struct AuthWelcomeSlide: View {
         }
     }
 }
+
+// MARK: - EventMosaicCarousel: Shows shimmer placeholders while loading
+struct EventMosaicCarousel: View {
+    let eventImages: [URL]
+
+    private let rowOneMax = 3
+    private let rowTwoMax = 3
+    private let rowThreeMax = 3
+    
+    private var totalRequiredImages: Int {
+        rowOneMax + rowTwoMax + rowThreeMax
+    }
+    
+    private var uniqueImages: [URL] {
+        Array(eventImages.prefix(totalRequiredImages))
+    }
+    
+    private let constantOffset: CGFloat = 30
+    private let mosaicHeight: CGFloat = 134 * 3 + 8 * 2
+
+    var body: some View {
+        // ✅ OPTIMIZED: Show shimmer placeholders immediately if no images
+        if eventImages.isEmpty {
+            // Show shimmer grid instead of loading text
+            ShimmerMosaicGrid()
+                .frame(height: mosaicHeight)
+        } else {
+            VStack(spacing: 8) {
+                // Row 1
+                EventStaticRow(
+                    urls: Array(uniqueImages.prefix(rowOneMax)),
+                    maxCards: rowOneMax
+                )
+                .frame(height: 134)
+                .offset(x: constantOffset)
+
+                // Row 2
+                EventStaticRow(
+                    urls: Array(uniqueImages.dropFirst(rowOneMax).prefix(rowTwoMax)),
+                    maxCards: rowTwoMax
+                )
+                .frame(height: 134)
+                .offset(x: constantOffset)
+
+                // Row 3
+                EventStaticRow(
+                    urls: Array(uniqueImages.dropFirst(rowOneMax + rowTwoMax).prefix(rowThreeMax)),
+                    maxCards: rowThreeMax
+                )
+                .frame(height: 134)
+                .offset(x: constantOffset)
+            }
+            .padding(.horizontal, 12)
+            .rotationEffect(.degrees(-6))
+            .frame(height: mosaicHeight)
+            .mask(
+                VStack(spacing: 0) {
+                    Rectangle()
+                        .frame(height: mosaicHeight * 0.6)
+                        .foregroundColor(.white)
+                    
+                    LinearGradient(
+                        gradient: Gradient(colors: [.white, .clear]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+            )
+        }
+    }
+}
+
+// ✅ NEW: Shimmer placeholder grid
+struct ShimmerMosaicGrid: View {
+    @State private var phase: CGFloat = 0
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            ForEach(0..<3) { _ in
+                HStack(spacing: 8) {
+                    Spacer()
+                    ForEach(0..<3) { _ in
+                        ShimmerCard()
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .rotationEffect(.degrees(-6))
+        .onAppear {
+            withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                phase = 1
+            }
+        }
+    }
+}
+
+struct ShimmerCard: View {
+    var body: some View {
+        Rectangle()
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.03),
+                        Color.white.opacity(0.08),
+                        Color.white.opacity(0.03)
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .frame(width: 134, height: 134)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+// Rest of supporting views remain the same...
+// [Include all other views from the previous file: AuthHeader, LocationSlide, GenreSlide, etc.]
+
+
+
 
 // MARK: - Top Header (Auth and Logo)
 struct AuthHeader: View {
@@ -418,45 +580,53 @@ struct LocationSlide: View {
 
             Spacer()
         }
+        // 👇 MODIFIED SHEET PRESENTATION TO PASS AUTO-ADVANCE LOGIC
         .sheet(isPresented: $showingManualEntry) {
             ManualCityEntryView(
                 locationManager: appState.userLocationManager,
                 onDismiss: {
+                    // ManualCityEntryView calls this after the UX delay (0.6s)
+                    // and after saving the location. We just dismiss the modal.
                     showingManualEntry = false
+                    // Since the location is now set and saved in UserDefaults,
+                    // the onChange handler below will catch the update and proceed.
                 }
             )
         }
+        // This onChange listener now handles both current location and manual entry
         .onChange(of: appState.userLocationManager.savedLocation) { _, newLocation in
             if let location = newLocation {
                 localPreferences.locationName = location.name
                 localPreferences.locationLat = location.latitude
                 localPreferences.locationLon = location.longitude
-            }
-        }
-    }
-
-    private func requestCurrentLocation() {
-        isProcessing = true
-        appState.userLocationManager.requestCurrentLocation { result in
-            DispatchQueue.main.async {
-                isProcessing = false
-
-                if let savedLocation = appState.userLocationManager.savedLocation {
-                    localPreferences.locationName = savedLocation.name
-                    localPreferences.locationLat = savedLocation.latitude
-                    localPreferences.locationLon = savedLocation.longitude
-
-                    detectedCity = savedLocation.name.uppercased()
-
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                
+                // Set the detected city for the button and trigger the next step.
+                detectedCity = location.name.uppercased()
+                
+                // Introduce a small delay to allow the `detectedCity` update to flash
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    // Check if the manual entry sheet is still presented to prevent double-advance
+                    if !showingManualEntry {
                         onLocationSet()
                     }
                 }
             }
         }
     }
-}
+// ... (rest of LocationSlide implementation remains unchanged)
+    private func requestCurrentLocation() {
+        isProcessing = true
+        appState.userLocationManager.requestCurrentLocation { result in
+            DispatchQueue.main.async {
+                isProcessing = false
 
+                // The logic to handle location setting and calling onLocationSet() is
+                // now moved to the .onChange(of: appState.userLocationManager.savedLocation) handler
+                // to unify the flow for both current location and manual entry.
+            }
+        }
+    }
+}
 // MARK: - Slide 2: Genres
 struct GenreSlide: View {
     @ObservedObject var localPreferences: LocalPreferences
@@ -631,28 +801,6 @@ struct CompleteSlide: View {
 }
 
 // MARK: - --- Event Mosaic Components ---
-struct KFCarouselCard: View {
-    let url: URL?
-
-    // Maintain square size and rounded corners (16)
-    static let size = CGSize(width: 134, height: 134)
-
-    var body: some View {
-        KFImage.url(url)
-            .placeholder {
-                Rectangle()
-                    .fill(Color.white.opacity(0.06))
-                    .frame(width: Self.size.width, height: Self.size.height)
-            }
-            .retry(maxCount: 1, interval: .seconds(1))
-            .resizable()
-            .scaledToFill()
-            .frame(width: Self.size.width, height: Self.size.height)
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 3)
-    }
-}
 
 // EventStaticRow (A static row of KFCarouselCard)
 struct EventStaticRow: View {
@@ -691,145 +839,10 @@ struct EventStaticRow: View {
 }
 
 // EventMosaicCarousel: stacks three static rows to form mosaic (3x3 grid)
-struct EventMosaicCarousel: View {
-    let eventImages: [URL]
-
-    // Cards per row defined for a static, aesthetic display (3x3 grid)
-    private let rowOneMax = 3
-    private let rowTwoMax = 3
-    private let rowThreeMax = 3
-    
-    // Total number of unique images required
-    private var totalRequiredImages: Int {
-        rowOneMax + rowTwoMax + rowThreeMax
-    }
-    
-    // Get unique images required for all rows
-    private var uniqueImages: [URL] {
-        Array(eventImages.prefix(totalRequiredImages))
-    }
-    
-    // Use a single, consistent offset for the whole block
-    private let constantOffset: CGFloat = 30
-    
-    // Define the height of the whole mosaic structure for masking and padding
-    private let mosaicHeight: CGFloat = 134 * 3 + 8 * 2 // 3 rows of 134 height, 2 spaces of 8
-
-    var body: some View {
-        if eventImages.isEmpty {
-            Rectangle()
-                .fill(Color.white.opacity(0.03))
-                .frame(height: 180)
-                .overlay {
-                    ProgressView().tint(.white)
-                }
-        } else {
-            VStack(spacing: 8) {
-                // Row 1 (3 cards) - Right Aligned
-                EventStaticRow(
-                    urls: Array(uniqueImages.prefix(rowOneMax)),
-                    maxCards: rowOneMax
-                )
-                .frame(height: 134)
-                .offset(x: constantOffset)
-
-                // Row 2 (3 cards, center card is top featured event) - Right Aligned
-                EventStaticRow(
-                    urls: Array(uniqueImages.dropFirst(rowOneMax).prefix(rowTwoMax)),
-                    maxCards: rowTwoMax
-                )
-                .frame(height: 134)
-                .offset(x: constantOffset)
-
-                // Row 3 (3 cards) - Right Aligned
-                EventStaticRow(
-                    urls: Array(uniqueImages.dropFirst(rowOneMax + rowTwoMax).prefix(rowThreeMax)),
-                    maxCards: rowThreeMax
-                )
-                .frame(height: 134)
-                .offset(x: constantOffset)
-            }
-            .padding(.horizontal, 12)
-            .rotationEffect(.degrees(-6)) // Re-applying the original rotation
-            .frame(height: mosaicHeight) // Set explicit height for masking
-            
-            // 1. ADD GRADIENT FADE-TO-BLACK MASK
-            // The opaque part of the mask is white.
-            .mask(
-                VStack(spacing: 0) {
-                    // White rectangle to keep the top 60% of the mosaic visible
-                    Rectangle()
-                        .frame(height: mosaicHeight * 0.6)
-                        .foregroundColor(.white)
-                    
-                    // Gradient to fade the bottom 40% to black
-                    LinearGradient(
-                        gradient: Gradient(colors: [.white, .clear]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                }
-            )
-            
-            // 2. ADD BOTTOM PADDING TO PUSH UP THE MOSAIC
-        }
-    }
-}
 
 
 // MARK: - Supporting Views and Layouts (FlowLayout, GenrePill)
 
-// FlowLayout (same as original)
-struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = FlowResult(
-            in: proposal.replacingUnspecifiedDimensions().width,
-            subviews: subviews,
-            spacing: spacing
-        )
-        return result.size
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = FlowResult(
-            in: bounds.width,
-            subviews: subviews,
-            spacing: spacing
-        )
-        for (index, subview) in subviews.enumerated() {
-            subview.place(at: CGPoint(x: bounds.minX + result.positions[index].x, y: bounds.minY + result.positions[index].y), proposal: .unspecified)
-        }
-    }
-
-    struct FlowResult {
-        var size: CGSize = .zero
-        var positions: [CGPoint] = []
-
-        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
-            var currentX: CGFloat = 0
-            var currentY: CGFloat = 0
-            var lineHeight: CGFloat = 0
-
-            for subview in subviews {
-                let size = subview.sizeThatFits(.unspecified)
-
-                if currentX + size.width > maxWidth && currentX > 0 {
-                    currentX = 0
-                    currentY += lineHeight + spacing
-                    lineHeight = 0
-                }
-
-                positions.append(CGPoint(x: currentX, y: currentY))
-                currentX += size.width + spacing
-                lineHeight = max(lineHeight, size.height)
-                self.size.width = max(self.size.width, currentX - spacing)
-                self.size.height = currentY + lineHeight
-            }
-        }
-    }
-}
 
 struct GenrePill: View {
     let title: String
@@ -840,7 +853,7 @@ struct GenrePill: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Text(title.lowercased())
-                    .appMonospaced(size: 16)
+                    .appBody()
                     .lineLimit(1)
                 
             }
@@ -857,4 +870,30 @@ struct GenrePill: View {
         .buttonStyle(PlainButtonStyle())
         .animation(.easeInOut(duration: 0.2), value: isSelected)
     }
+}
+
+// MARK: - --- Event Mosaic Components ---
+struct KFCarouselCard: View {
+    let url: URL?
+    
+    // Maintain square size and rounded corners (16)
+    static let size = CGSize(width: 134, height: 134)
+    
+    var body: some View {
+        KFImage(url)
+            .placeholder {
+                Rectangle()
+                    .fill(Color.white.opacity(0.05))
+                    .frame(width: Self.size.width, height: Self.size.height)
+            }
+            .retry(maxCount: 1, interval: .seconds(1))
+            .resizable()
+            .scaledToFill()
+            .frame(width: Self.size.width, height: Self.size.height)
+            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 3)
+    }
+    
+    
 }

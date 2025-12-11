@@ -23,6 +23,10 @@ class EventViewModel: ObservableObject {
     // Track refresh state to prevent concurrent refreshes
     private var isRefreshing = false
     
+    // ✅ NEW: Explicit flags for initial load synchronization
+    private var initialDataLoadContinuation: CheckedContinuation<Void, Never>?
+    private var hasInitialLoadCompleted = false
+    
     init(
         eventRepository: EventRepository,
         ticketRepository: TicketRepository
@@ -37,6 +41,7 @@ class EventViewModel: ObservableObject {
             isLoading = false
             events = []
             userTicketStatus = [:]
+            resumeInitialLoadContinuation()
             return
         }
 
@@ -49,6 +54,9 @@ class EventViewModel: ObservableObject {
                 guard !self.isSimulatingEmptyData else { return }
 
                 self.isLoading = false
+                
+                // ✅ KEY FIX: Mark load as completed regardless of the result count
+                self.hasInitialLoadCompleted = true
 
                 switch result {
                 case .success(let events):
@@ -58,9 +66,33 @@ class EventViewModel: ObservableObject {
                 case .failure(let error):
                     self.errorMessage = "Failed to load events: \(error.localizedDescription)"
                 }
+                
+                // ✅ Resume the splash screen wait
+                self.resumeInitialLoadContinuation()
             }
         }
     }
+    
+    private func resumeInitialLoadContinuation() {
+        initialDataLoadContinuation?.resume(returning: ())
+        initialDataLoadContinuation = nil
+    }
+    
+    // ✅ NEW: Wait for the first fetch attempt to complete (success or failure)
+    func waitForInitialLoad() async {
+        // If already loaded, return immediately
+        if hasInitialLoadCompleted { return }
+
+        await withCheckedContinuation { continuation in
+            // Double-check inside closure to handle race conditions
+            if self.hasInitialLoadCompleted {
+                continuation.resume(returning: ())
+            } else {
+                self.initialDataLoadContinuation = continuation
+            }
+        }
+    }
+
 
     // MARK: - Refresh Events (Improved for pull-to-refresh)
     func refreshEvents() async {
@@ -302,10 +334,7 @@ class TicketsViewModel: ObservableObject {
         errorMessage = nil
     }
 
-
-
     // MARK: - Debug helpers
-    
     func simulateEmptyData() {
         isSimulatingEmptyData = true
         ticketRepository.stopObserving()
@@ -313,7 +342,6 @@ class TicketsViewModel: ObservableObject {
         isLoading = false
         errorMessage = nil
     }
-    
 
     func resumeFromSimulation() {
         guard isSimulatingEmptyData else { return }
@@ -322,19 +350,13 @@ class TicketsViewModel: ObservableObject {
     }
     
     // MARK: - Debug Methods for Live Activity Testing
-    
-    /// Adds a debug ticket to the tickets list for testing purposes
     func addDebugTicket(_ ticket: Ticket) {
-        // Add to the tickets array
         self.tickets.append(ticket)
-        
-        // Sort by event start time to keep it organized
         self.tickets.sort { ticket1, ticket2 in
             ticket1.startTime < ticket2.startTime
         }
     }
     
-    /// Removes all debug tickets (those with IDs starting with "debug_")
     func removeDebugTickets() {
         self.tickets.removeAll { ticket in
             ticket.id?.hasPrefix("debug_ticket_") == true ||

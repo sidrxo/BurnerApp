@@ -698,7 +698,7 @@ public final class DaggerBurnerApplication_HiltComponents_SingletonC {
     }
 
     @Override
-    public void injectBurnerApplication(BurnerApplication arg0) {
+    public void injectBurnerApplication(BurnerApplication burnerApplication) {
     }
 
     @Override

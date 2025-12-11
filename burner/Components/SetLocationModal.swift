@@ -104,7 +104,7 @@ struct SetLocationModal: View {
         .sheet(isPresented: $showingManualEntry) {
             ManualCityEntryView(locationManager: appState.userLocationManager, onDismiss: {
                 showingManualEntry = false
-                dismiss()
+                dismiss() // This dismisses the SetLocationModal
             })
         }
     }
@@ -309,18 +309,14 @@ struct ManualCityEntryView: View {
                                     selectCity(city)
                                 }) {
                                     HStack(spacing: 12) {
-                                        Image(systemName: "mappin.circle.fill")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(.white.opacity(0.6))
+                                        // Removed pin icon
                                         
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(city.name)
                                                 .appBody()
                                                 .foregroundColor(.white)
                                             
-                                            Text(city.region)
-                                                .appCaption()
-                                                .foregroundColor(.white.opacity(0.5))
+                                            // Removed region text (the country from beneath the city)
                                         }
                                         
                                         Spacer()
@@ -378,7 +374,7 @@ struct ManualCityEntryView: View {
             timestamp: Date()
         )
         
-        // Add a small delay for UX smoothness
+        // Brief delay (0.6s) to show the selected city before dismissal/auto-advance
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             locationManager.saveLocationDirectly(userLocation)
             isProcessing = false

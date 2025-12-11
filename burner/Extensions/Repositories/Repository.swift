@@ -53,34 +53,32 @@ class EventRepository: BaseRepository {
                 }
 
                 guard let snapshot = snapshot else {
-                    // Don't return empty array on nil snapshot - wait for actual data
+                    // Return empty array on nil snapshot
+                    completion(.success([]))
                     return
                 }
 
-                // On fresh install with empty cache, wait for server fetch
-                // Only return empty array if we got data from server and it's actually empty
-                if snapshot.documents.isEmpty && snapshot.metadata.isFromCache {
-                    // Empty cache - wait for server fetch
-                    return
-                }
-
+                // ✅ FIXED: Always return data immediately from cache or server
+                // This gives instant feedback to the UI
                 let events = snapshot.documents.compactMap { doc -> Event? in
                     var event = try? doc.data(as: Event.self)
                     event?.id = doc.documentID
                     return event
                 }
 
+                // Always call completion - UI shows cached data immediately
+                // Listener will fire again when server data arrives
                 completion(.success(events))
             }
 
         setListener(listener)
     }
     
-    // MARK: - Fetch Events from Server (for Refresh) <-- NEW FUNCTION
+    // MARK: - Fetch Events from Server (for Refresh)
     func fetchEventsFromServer(since date: Date) async throws -> [Event] {
         let snapshot = try await db.collection("events")
             .whereField("startTime", isGreaterThanOrEqualTo: Timestamp(date: date))
-            .getDocuments(source: .server) // <-- FORCES SERVER READ
+            .getDocuments(source: .server) // Forces server read
         
         return snapshot.documents.compactMap { doc -> Event? in
             var event = try? doc.data(as: Event.self)
