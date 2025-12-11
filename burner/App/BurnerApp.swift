@@ -136,12 +136,8 @@ struct BurnerApp: App {
                 
                 if showingVideoSplash {
                     VideoSplashView(videoName: "splash", loop: false) {
-                        // Dismiss splash immediately when video ends
-                        withAnimation(.easeOut(duration: 0.5)) {
-                            self.showingVideoSplash = false
-                        }
-                        // Continue loading in background
-                        Task { await self.prefetchInBackground() }
+                        // Wait for events to load, then dismiss splash
+                        Task { await self.dismissSplashAfterEventsLoad() }
                     }
                     .transition(.opacity)
                     .zIndex(2000)
@@ -174,21 +170,18 @@ struct BurnerApp: App {
         }
     }
     
-    private func waitAndPrefetchThenDismissSplash() async {
+    private func dismissSplashAfterEventsLoad() async {
         // Step 1: Wait for EventViewModel to signal load completion (success or failure)
         await appState.eventViewModel.waitForInitialLoad()
 
-        // Step 2: Prefetch images
-        await appState.prefetchEventImages()
+        // Step 2: Dismiss splash with animation
+        await MainActor.run {
+            withAnimation(.easeOut(duration: 0.5)) {
+                showingVideoSplash = false
+            }
+        }
 
-        // Step 3: Dismiss splash
-        await MainActor.run { showingVideoSplash = false }
-    }
-
-    private func prefetchInBackground() async {
-        // Wait for EventViewModel to load
-        await appState.eventViewModel.waitForInitialLoad()
-        // Prefetch images in background
+        // Step 3: Continue prefetching images in background
         await appState.prefetchEventImages()
     }
     
