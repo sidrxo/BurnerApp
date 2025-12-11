@@ -35,14 +35,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             authService.authStateFlow.collect { user ->
                 if (user != null) {
-                    val userProfile = authService.getUserProfile(user.uid)
-                    val role = userProfile?.role
-                    val canAccessScanner = role in listOf(
-                        UserRole.SCANNER,
-                        UserRole.VENUE_ADMIN,
-                        UserRole.SUB_ADMIN,
-                        UserRole.SITE_ADMIN
-                    )
+                    // Fetch role from custom claims (authoritative source)
+                    val role = authService.getUserRole() ?: UserRole.USER
 
                     _uiState.update {
                         it.copy(
@@ -50,7 +44,7 @@ class SettingsViewModel @Inject constructor(
                             userEmail = user.email,
                             userName = user.displayName,
                             userRole = role,
-                            canAccessScanner = canAccessScanner
+                            canAccessScanner = true  // Allow all users to see scanner
                         )
                     }
                 } else {

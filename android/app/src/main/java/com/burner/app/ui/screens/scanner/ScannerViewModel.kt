@@ -58,19 +58,11 @@ class ScannerViewModel @Inject constructor(
             }
 
             try {
-                val userProfile = authService.getUserProfile(userId)
-                val hasAccess = userProfile?.role in listOf(
-                    UserRole.SCANNER,
-                    UserRole.VENUE_ADMIN,
-                    UserRole.SUB_ADMIN,
-                    UserRole.SITE_ADMIN
-                )
+                // Fetch role from custom claims (authoritative source)
+                val role = authService.getUserRole() ?: UserRole.USER
 
-                if (hasAccess) {
-                    loadTodayEvents(userProfile?.role)
-                } else {
-                    _uiState.update { it.copy(isLoading = false, canAccessScanner = false) }
-                }
+                // Allow all authenticated users to access scanner
+                loadTodayEvents(role)
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
