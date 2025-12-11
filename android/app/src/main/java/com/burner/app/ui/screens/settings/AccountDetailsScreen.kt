@@ -88,27 +88,12 @@ fun AccountDetailsScreen(
                 value = uiState.provider?.replaceFirstChar { it.uppercase() } ?: "Email"
             )
 
-            Spacer(modifier = Modifier.height(BurnerDimensions.spacingXxl))
-
-            // Preferences
-            SectionHeader(title = "PREFERENCES")
-
             Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
 
+            // Role
             AccountInfoRow(
-                label = "Location",
-                value = uiState.locationName ?: "Not set"
-            )
-
-            Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
-
-            AccountInfoRow(
-                label = "Favourite genres",
-                value = if (uiState.selectedGenres.isNotEmpty()) {
-                    uiState.selectedGenres.joinToString(", ")
-                } else {
-                    "None selected"
-                }
+                label = "Role",
+                value = uiState.userRole ?: "user"
             )
 
             Spacer(modifier = Modifier.height(BurnerDimensions.spacingXxl))

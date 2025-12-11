@@ -172,4 +172,15 @@ class AuthService @Inject constructor(
             Result.failure(e)
         }
     }
+
+    // Get user role from custom claims (authoritative source)
+    suspend fun getUserRole(): String? {
+        return try {
+            val user = auth.currentUser ?: return null
+            val tokenResult = user.getIdToken(false).await()
+            tokenResult.claims["role"] as? String
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
