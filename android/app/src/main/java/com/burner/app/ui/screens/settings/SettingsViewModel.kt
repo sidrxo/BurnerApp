@@ -2,6 +2,7 @@ package com.burner.app.ui.screens.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.burner.app.data.models.UserRole
 import com.burner.app.data.repository.PreferencesRepository
 import com.burner.app.services.AuthService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,7 +13,9 @@ import javax.inject.Inject
 data class SettingsUiState(
     val isAuthenticated: Boolean = false,
     val userEmail: String? = null,
-    val userName: String? = null
+    val userName: String? = null,
+    val userRole: String? = null,
+    val canAccessScanner: Boolean = false
 )
 
 @HiltViewModel
@@ -31,12 +34,35 @@ class SettingsViewModel @Inject constructor(
     private fun observeAuthState() {
         viewModelScope.launch {
             authService.authStateFlow.collect { user ->
-                _uiState.update {
-                    it.copy(
-                        isAuthenticated = user != null,
-                        userEmail = user?.email,
-                        userName = user?.displayName
+                if (user != null) {
+                    val userProfile = authService.getUserProfile(user.uid)
+                    val role = userProfile?.role
+                    val canAccessScanner = role in listOf(
+                        UserRole.SCANNER,
+                        UserRole.VENUE_ADMIN,
+                        UserRole.SUB_ADMIN,
+                        UserRole.SITE_ADMIN
                     )
+
+                    _uiState.update {
+                        it.copy(
+                            isAuthenticated = true,
+                            userEmail = user.email,
+                            userName = user.displayName,
+                            userRole = role,
+                            canAccessScanner = canAccessScanner
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isAuthenticated = false,
+                            userEmail = null,
+                            userName = null,
+                            userRole = null,
+                            canAccessScanner = false
+                        )
+                    }
                 }
             }
         }

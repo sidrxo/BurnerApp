@@ -48,6 +48,9 @@ sealed class Routes(val route: String) {
     object TermsOfService : Routes("settings/terms")
     object PrivacyPolicy : Routes("settings/privacy")
 
+    // Scanner
+    object Scanner : Routes("scanner")
+
     // Burner Mode (stub)
     object BurnerModeSetup : Routes("burner/setup")
     object BurnerModeLockScreen : Routes("burner/lock")
