@@ -37,12 +37,7 @@ class SettingsViewModel @Inject constructor(
                 if (user != null) {
                     val userProfile = authService.getUserProfile(user.uid)
                     val role = userProfile?.role
-                    val canAccessScanner = role in listOf(
-                        UserRole.SCANNER,
-                        UserRole.VENUE_ADMIN,
-                        UserRole.SUB_ADMIN,
-                        UserRole.SITE_ADMIN
-                    )
+                    val canAccessScanner = role == UserRole.SITE_ADMIN
 
                     _uiState.update {
                         it.copy(
