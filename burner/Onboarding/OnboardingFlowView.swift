@@ -143,17 +143,10 @@ struct OnboardingFlowView: View {
                         Group {
                             switch step {
                             case 0:
-                                if onboardingManager.isFirstLaunch {
-                                    SimplifiedFirstLaunchSlide(
-                                        onLogin: { handleNextStep() },
-                                        onExplore: { dismissOnboarding() }
-                                    )
-                                } else {
-                                    AuthWelcomeSlide(
-                                        onLogin: { handleNextStep() },
-                                        onExplore: { dismissOnboarding() }
-                                    )
-                                }
+                                AuthWelcomeSlide(
+                                    onLogin: { handleNextStep() },
+                                    onExplore: { dismissOnboarding() }
+                                )
                             case 1:
                                 LocationSlide(onLocationSet: { handleNextStep() })
                             case 2:
@@ -320,61 +313,6 @@ struct AuthWelcomeSlide: View {
 
             Spacer()
                 .frame(minHeight: 40)
-        }
-        .sheet(isPresented: $showingSignIn) {
-            SignInSheetView(showingSignIn: $showingSignIn, onSkip: {
-                onLogin()
-            })
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
-            showingSignIn = false
-            onLogin()
-        }
-    }
-}
-
-// MARK: - Simplified First Launch Slide (No Mosaic, Just Logo + Buttons)
-
-struct SimplifiedFirstLaunchSlide: View {
-    let onLogin: () -> Void
-    let onExplore: () -> Void
-
-    @State private var showingSignIn = false
-    @EnvironmentObject var appState: AppState
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Logo at top (same as AuthHeader but without the header wrapper)
-            HStack {
-                Spacer()
-                Image("transparent")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 28, height: 28)
-                    .padding(.top, 44)
-                Spacer()
-            }
-            .padding(.bottom, 20)
-
-            Spacer()
-
-            // Buttons centered
-            VStack(spacing: 14) {
-                BurnerButton("SIGN UP/IN", style: .primary, maxWidth: 200) {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    showingSignIn = true
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                BurnerButton("EXPLORE", style: .secondary, maxWidth: 160) {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    onExplore()
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            .padding(.horizontal, 40)
-
-            Spacer()
         }
         .sheet(isPresented: $showingSignIn) {
             SignInSheetView(showingSignIn: $showingSignIn, onSkip: {

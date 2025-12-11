@@ -99,6 +99,7 @@ struct BurnerApp: App {
     @StateObject private var appState = AppState()
     @State private var shouldResetApp = false
     @State private var showingVideoSplash = true
+    @State private var showingTerminalLoading = false
     @Environment(\.scenePhase) private var scenePhase
     
     init() {
@@ -123,7 +124,6 @@ struct BurnerApp: App {
                         handleIncomingURL(url)
                     }
                     .onAppear {
-                        appState.loadInitialData()
                         setupResetObserver()
                         setupNotificationObserver()
                     }
@@ -151,10 +151,20 @@ struct BurnerApp: App {
                     .zIndex(1001)
                 }
                 
+                // Terminal loading screen - shows after video splash
+                if showingTerminalLoading {
+                    TerminalLoadingScreen(onComplete: {
+                        showingTerminalLoading = false
+                    })
+                    .environmentObject(appState)
+                    .zIndex(1999)
+                }
+
                 // Video splash - separate from error block
                 if showingVideoSplash {
                     VideoSplashView(videoName: "splash", loop: false) {
                         showingVideoSplash = false
+                        showingTerminalLoading = true
                     }
                     .zIndex(2000)
                 }
@@ -167,6 +177,7 @@ struct BurnerApp: App {
             // Dismiss splash screen if app is backgrounded or becomes inactive during splash
             if showingVideoSplash && (newPhase == .background || newPhase == .inactive) {
                 showingVideoSplash = false
+                showingTerminalLoading = true
             }
             
             // Update live activities when app becomes active

@@ -7,12 +7,10 @@ import SwiftUI
 class OnboardingManager: ObservableObject {
     @Published var hasCompletedOnboarding: Bool
     @Published var shouldShowOnboarding: Bool = false
-    @Published var isFirstLaunch: Bool
     @Published var hasEverSignedIn: Bool
 
     private let userDefaults = UserDefaults.standard
     private let onboardingCompletedKey = "hasCompletedOnboarding"
-    private let isFirstLaunchKey = "isFirstLaunch"
     private let hasEverSignedInKey = "hasEverSignedIn"
     
     // Hold a reference to the AuthenticationService
@@ -25,19 +23,6 @@ class OnboardingManager: ObservableObject {
     init(authService: AuthenticationService) {
         self.authService = authService
         self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
-
-        // Check if this is the first launch by checking if the key exists
-        if userDefaults.object(forKey: isFirstLaunchKey) == nil {
-            // First launch ever - key doesn't exist
-            self.isFirstLaunch = true
-            userDefaults.set(true, forKey: isFirstLaunchKey)
-            userDefaults.synchronize()
-        } else {
-            // Not first launch - key exists
-            self.isFirstLaunch = false
-        }
-
-        // Check if user has ever signed in
         self.hasEverSignedIn = userDefaults.bool(forKey: hasEverSignedInKey)
 
         // Set initial state immediately based on current auth status
@@ -75,19 +60,6 @@ class OnboardingManager: ObservableObject {
     init() {
         self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
         self.shouldShowOnboarding = !hasCompletedOnboarding
-
-        // Check if this is the first launch by checking if the key exists
-        if userDefaults.object(forKey: isFirstLaunchKey) == nil {
-            // First launch ever - key doesn't exist
-            self.isFirstLaunch = true
-            userDefaults.set(true, forKey: isFirstLaunchKey)
-            userDefaults.synchronize()
-        } else {
-            // Not first launch - key exists
-            self.isFirstLaunch = false
-        }
-
-        // Check if user has ever signed in
         self.hasEverSignedIn = userDefaults.bool(forKey: hasEverSignedInKey)
     }
 
