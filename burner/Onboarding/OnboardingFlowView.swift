@@ -232,13 +232,43 @@ struct AuthWelcomeSlide: View {
 
     // Build event image URLs from your appState.eventViewModel.events, filtering for valid URLs
     private var eventImageURLs: [URL] {
-        appState.eventViewModel.events.compactMap {
-            // Only include events with a non-empty imageUrl string
-            guard !$0.imageUrl.isEmpty, let url = URL(string: $0.imageUrl) else {
-                return nil
-            }
-            return url
+        let events = appState.eventViewModel.events
+
+        // Find the top featured event (priority 0)
+        let topFeatured = events.first { event in
+            event.isFeatured && event.featuredPriority == 0 && !event.imageUrl.isEmpty
         }
+
+        // Get other events (excluding the top featured one)
+        let otherEvents = events.filter { event in
+            guard !event.imageUrl.isEmpty else { return false }
+            // Exclude the top featured event
+            if let topFeatured = topFeatured, event.id == topFeatured.id {
+                return false
+            }
+            return true
+        }
+
+        // Build the 3x3 grid with top featured in center (index 4)
+        var gridUrls: [URL?] = Array(repeating: nil, count: 9)
+
+        // Place top featured event in center (index 4)
+        if let topFeatured = topFeatured, let url = URL(string: topFeatured.imageUrl) {
+            gridUrls[4] = url
+        }
+
+        // Fill remaining positions with other events
+        let otherUrls = otherEvents.compactMap { URL(string: $0.imageUrl) }
+        var otherIndex = 0
+        for i in 0..<9 {
+            if i == 4 { continue } // Skip center position
+            if otherIndex < otherUrls.count {
+                gridUrls[i] = otherUrls[otherIndex]
+                otherIndex += 1
+            }
+        }
+
+        return gridUrls.compactMap { $0 }
     }
 
     var body: some View {
@@ -660,14 +690,14 @@ struct EventStaticRow: View {
     }
 }
 
-// EventMosaicCarousel: stacks three static rows to form mosaic
+// EventMosaicCarousel: stacks three static rows to form mosaic (3x3 grid)
 struct EventMosaicCarousel: View {
     let eventImages: [URL]
 
-    // Cards per row defined for a static, aesthetic display
-    private let rowOneMax = 4
-    private let rowTwoMax = 4
-    private let rowThreeMax = 4
+    // Cards per row defined for a static, aesthetic display (3x3 grid)
+    private let rowOneMax = 3
+    private let rowTwoMax = 3
+    private let rowThreeMax = 3
     
     // Total number of unique images required
     private var totalRequiredImages: Int {
@@ -695,7 +725,7 @@ struct EventMosaicCarousel: View {
                 }
         } else {
             VStack(spacing: 8) {
-                // Row 1 (Max 2 cards) - Right Aligned
+                // Row 1 (3 cards) - Right Aligned
                 EventStaticRow(
                     urls: Array(uniqueImages.prefix(rowOneMax)),
                     maxCards: rowOneMax
@@ -703,7 +733,7 @@ struct EventMosaicCarousel: View {
                 .frame(height: 134)
                 .offset(x: constantOffset)
 
-                // Row 2 (Max 3 cards) - Right Aligned
+                // Row 2 (3 cards, center card is top featured event) - Right Aligned
                 EventStaticRow(
                     urls: Array(uniqueImages.dropFirst(rowOneMax).prefix(rowTwoMax)),
                     maxCards: rowTwoMax
@@ -711,7 +741,7 @@ struct EventMosaicCarousel: View {
                 .frame(height: 134)
                 .offset(x: constantOffset)
 
-                // Row 3 (Max 2 cards) - Right Aligned
+                // Row 3 (3 cards) - Right Aligned
                 EventStaticRow(
                     urls: Array(uniqueImages.dropFirst(rowOneMax + rowTwoMax).prefix(rowThreeMax)),
                     maxCards: rowThreeMax
