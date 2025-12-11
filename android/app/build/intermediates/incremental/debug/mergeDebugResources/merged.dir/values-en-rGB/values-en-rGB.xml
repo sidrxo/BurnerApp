@@ -75,7 +75,7 @@
     <string msgid="4566929209979330987" name="fallback_menu_item_copy_link">"Copy link"</string>
     <string msgid="3413186855122069269" name="fallback_menu_item_open_in_browser">"Open in browser"</string>
     <string msgid="7145444925855055364" name="fallback_menu_item_share_link">"Share link"</string>
-    <string name="gpay_logo_description">Google Pay</string>
+    <string name="gpay_logo_description">Google Pay</string>
     <string name="icon_content_description">Dialogue Icon</string>
     <string msgid="6827826412747255547" name="in_progress">"In progress"</string>
     <string msgid="7933458017204019916" name="indeterminate">"Partially ticked"</string>
@@ -154,18 +154,22 @@
     <string name="mtrl_exceed_max_badge_number_content_description" ns2:ignore="PluralsCandidate">More than %1$d new notifications</string>
     <string name="mtrl_picker_a11y_next_month">Change to next month</string>
     <string name="mtrl_picker_a11y_prev_month">Change to previous month</string>
+    <string name="mtrl_picker_announce_current_range_selection">Start date selection: %1$s – end date selection: %2$s</string>
     <string name="mtrl_picker_announce_current_selection">Current selection: %1$s</string>
+    <string name="mtrl_picker_announce_current_selection_none">none</string>
     <string name="mtrl_picker_cancel">Cancel</string>
     <string name="mtrl_picker_confirm">OK</string>
     <string name="mtrl_picker_date_header_selected">%1$s</string>
     <string name="mtrl_picker_date_header_title">Select date</string>
     <string name="mtrl_picker_date_header_unselected">Selected date</string>
     <string name="mtrl_picker_day_of_week_column_header">Column of days: %1$s</string>
+    <string name="mtrl_picker_end_date_description">End date %1$s</string>
     <string name="mtrl_picker_invalid_format">Invalid format.</string>
     <string name="mtrl_picker_invalid_format_example">Example: %1$s</string>
     <string name="mtrl_picker_invalid_format_use">Use: %1$s</string>
     <string name="mtrl_picker_invalid_range">Invalid range.</string>
-    <string name="mtrl_picker_navigate_to_year_description">Navigate to year %1$s</string>
+    <string name="mtrl_picker_navigate_to_current_year_description">Navigate to current year %1$d</string>
+    <string name="mtrl_picker_navigate_to_year_description">Navigate to year %1$d</string>
     <string name="mtrl_picker_out_of_range">Out of range: %1$s</string>
     <string name="mtrl_picker_range_header_only_end_selected">Start date – %1$s</string>
     <string name="mtrl_picker_range_header_only_start_selected">%1$s – End date</string>
@@ -173,16 +177,18 @@
     <string name="mtrl_picker_range_header_title">Select range</string>
     <string name="mtrl_picker_range_header_unselected">Start date – End date</string>
     <string name="mtrl_picker_save">Save</string>
+    <string name="mtrl_picker_start_date_description">Start date %1$s</string>
     <string name="mtrl_picker_text_input_date_hint">Date</string>
     <string name="mtrl_picker_text_input_date_range_end_hint">End date</string>
     <string name="mtrl_picker_text_input_date_range_start_hint">Start date</string>
     <string name="mtrl_picker_text_input_day_abbr">d</string>
     <string name="mtrl_picker_text_input_month_abbr">m</string>
     <string name="mtrl_picker_text_input_year_abbr">y</string>
+    <string name="mtrl_picker_today_description">Today %1$s</string>
     <string name="mtrl_picker_toggle_to_calendar_input_mode">Switch to calendar input mode</string>
-    <string name="mtrl_picker_toggle_to_day_selection">Tap to switch to selecting a day</string>
+    <string name="mtrl_picker_toggle_to_day_selection">Tap to switch to calendar view</string>
     <string name="mtrl_picker_toggle_to_text_input_mode">Switch to text input mode</string>
-    <string name="mtrl_picker_toggle_to_year_selection">Tap to switch to selecting a year</string>
+    <string name="mtrl_picker_toggle_to_year_selection">Tap to switch to year view</string>
     <string name="mtrl_timepicker_cancel">Cancel</string>
     <string name="mtrl_timepicker_confirm">OK</string>
     <string msgid="542007171693138492" name="navigation_menu">"Navigation menu"</string>
@@ -278,6 +284,7 @@
     <string name="stripe_address_zip_postal_invalid">Your ZIP/Postal code is invalid</string>
     <string name="stripe_affirm_buy_now_pay_later">Pay over time with &lt;img src=\"affirm\">.</string>
     <string name="stripe_afterpay_clearpay_message"><![CDATA[Pay in <num_installments/> interest-free payments of <installment_price/> with <img/>]]></string>
+    <string name="stripe_amazon_pay_mandate">By confirming your payment with Amazon Pay, you allow %s to charge your Amazon Pay account for future payments in accordance with their terms.</string>
     <string name="stripe_au_becs_account_name">Name on account</string>
     <string name="stripe_au_becs_bsb_number">BSB number</string>
     <string name="stripe_au_becs_mandate">By providing your bank account details and confirming this payment, you agree to this Direct Debit Request and the &lt;a href=\"https://stripe.com/au-becs-dd-service-agreement/legal\">Direct Debit Request service agreement&lt;/a>, and authorise Stripe Payments Australia Pty Ltd ACN 160 180 343 Direct Debit User ID number 507156 (“Stripe”) to debit your account through the Bulk Electronic Clearing System (BECS) on behalf of %s (the \"Merchant\") for any amounts separately communicated to you by the Merchant. You certify that you are either an account holder or an authorised signatory on the account listed above.</string>
@@ -345,7 +352,7 @@
     <string name="stripe_incomplete_blik_code">Your BLIK code is incomplete.</string>
     <string name="stripe_incomplete_expiry_date">Your card\'s expiration date is incomplete.</string>
     <string name="stripe_incomplete_phone_number">Incomplete phone number</string>
-    <string name="stripe_inline_sign_up_header">Save my info for secure 1-click checkout</string>
+    <string name="stripe_inline_sign_up_header">Save your info for secure 1-click checkout with Link</string>
     <string name="stripe_internal_error">An internal error occurred.</string>
     <string name="stripe_invalid_bank_account_iban">The IBAN you entered is invalid.</string>
     <string name="stripe_invalid_blik_code">Your BLIK code is invalid.</string>
@@ -359,6 +366,7 @@
     <string name="stripe_invalid_upi_id">Invalid UPI ID</string>
     <string name="stripe_invalid_zip">Your postcode is incomplete.</string>
     <string name="stripe_klarna_buy_now_pay_later">Buy now or pay later with Klarna.</string>
+    <string name="stripe_klarna_mandate">By continuing to Klarna, you allow %1$s to charge your Klarna account for future payments in accordance with their terms and Klarna\'s terms. You can change this at any time in your Klarna app or by reaching out to %2$s.</string>
     <string name="stripe_klarna_pay_later">Pay later with Klarna.</string>
     <string name="stripe_konbini_confirmation_number_label">Phone</string>
     <string name="stripe_log_out">Log out of Link</string>
@@ -372,24 +380,38 @@
     <string name="stripe_paymentsheet_ach_continue_mandate"><![CDATA[By continuing, you agree to authorize payments pursuant to <terms>these terms</terms>.]]></string>
     <string name="stripe_paymentsheet_ach_save_mandate"><![CDATA[By saving your bank account for %s you agree to authorize payments pursuant to <terms>these terms</terms>.]]></string>
     <string name="stripe_paymentsheet_ach_something_went_wrong">Something went wrong when linking your account.\nPlease try again later.</string>
+    <string name="stripe_paymentsheet_add_new_card">Add new card</string>
     <string name="stripe_paymentsheet_add_payment_method_button_label">+ Add</string>
     <string name="stripe_paymentsheet_add_payment_method_card_information">Card information</string>
     <string name="stripe_paymentsheet_add_payment_method_title">Add your payment information</string>
+    <string name="stripe_paymentsheet_add_us_bank_account">Add US bank account</string>
     <string name="stripe_paymentsheet_address_element_primary_button">Save address</string>
     <string name="stripe_paymentsheet_address_element_shipping_address">Shipping Address</string>
+    <string name="stripe_paymentsheet_bacs_email_mandate">An email will be sent to %s within three business days to confirm the setup of this debit instruction.</string>
+    <string name="stripe_paymentsheet_bacs_mandate_title">Confirm your Direct Debit details</string>
+    <string name="stripe_paymentsheet_bacs_modify_details_button_label">Modify details</string>
+    <string name="stripe_paymentsheet_bacs_notice_mandate">Additionally, you will receive two days advance notice via email of any amount to be debited under this instruction. Payments will show as \'%s\' on your bank statement.</string>
+    <string name="stripe_paymentsheet_bacs_protection_mandate">Your payments are protected by the %s.</string>
     <string name="stripe_paymentsheet_buy_using_upi_id">Buy using a UPI ID</string>
     <string name="stripe_paymentsheet_choose_payment_method">Choose a payment method</string>
     <string name="stripe_paymentsheet_close">Close</string>
     <string name="stripe_paymentsheet_confirm">Confirm</string>
+    <string name="stripe_paymentsheet_confirm_your_cvc">Confirm your CVC</string>
     <string name="stripe_paymentsheet_enter_address_manually">Enter address manually</string>
+    <string name="stripe_paymentsheet_manage_payment_methods">Manage payment methods</string>
     <string name="stripe_paymentsheet_manage_your_payment_methods">Manage your payment methods</string>
     <string name="stripe_paymentsheet_microdeposit">Stripe will deposit $0.01 to your account in 1-2 business days. Then you’ll get an email with instructions to complete payment to %s.</string>
+    <string name="stripe_paymentsheet_modify_pm">Edit %s</string>
+    <string name="stripe_paymentsheet_new_pm">New payment method</string>
     <string name="stripe_paymentsheet_or_pay_using">Or pay using</string>
     <string name="stripe_paymentsheet_or_pay_with_card">Or pay with a card</string>
+    <string name="stripe_paymentsheet_or_use">Or use</string>
+    <string name="stripe_paymentsheet_or_use_a_card">Or use a card</string>
     <string name="stripe_paymentsheet_pay_button_label">Pay</string>
     <string name="stripe_paymentsheet_pay_using">Pay using</string>
     <string name="stripe_paymentsheet_pay_with_bank_title">Pay with your bank account in just a few steps.</string>
     <string name="stripe_paymentsheet_payment_method_au_becs_debit">AU BECS Direct Debit</string>
+    <string name="stripe_paymentsheet_payment_method_bacs_debit">Bacs Direct Debit</string>
     <string name="stripe_paymentsheet_payment_method_card">Card</string>
     <string name="stripe_paymentsheet_payment_method_konbini">Konbini</string>
     <string name="stripe_paymentsheet_payment_method_sepa_debit">SEPA Debit</string>
@@ -397,11 +419,13 @@
     <string name="stripe_paymentsheet_remove_bank_account_title">Remove bank account</string>
     <string name="stripe_paymentsheet_remove_card">Remove card</string>
     <string name="stripe_paymentsheet_remove_pm">Remove %s</string>
+    <string name="stripe_paymentsheet_remove_pm_title">Remove payment method</string>
     <string name="stripe_paymentsheet_save">Save</string>
     <string name="stripe_paymentsheet_save_a_new_payment_method">Save a new payment method</string>
     <string name="stripe_paymentsheet_save_bank_title">Save your bank account in just a few steps.</string>
     <string name="stripe_paymentsheet_save_for_future_payments">Save for future payments</string>
     <string name="stripe_paymentsheet_save_this_card_with_merchant_name">Save this card for future %s payments</string>
+    <string name="stripe_paymentsheet_saved">Saved</string>
     <string name="stripe_paymentsheet_select_payment_method">Select your payment method</string>
     <string name="stripe_paymentsheet_total_amount">Total: %s</string>
     <string name="stripe_paypal_mandate">By confirming your payment with PayPal, you allow %s to charge your PayPal account for future payments in accordance with their terms.</string>
@@ -419,14 +443,18 @@
     <string name="stripe_show_menu">Show menu</string>
     <string name="stripe_sign_up">Join Link</string>
     <string name="stripe_sign_up_header">Secure 1⁠-⁠click checkout</string>
-    <string name="stripe_sign_up_message">Pay faster at %s and thousands of merchants.</string>
+    <string name="stripe_sign_up_message">Pay faster at %s and thousands of businesses.</string>
     <string name="stripe_sign_up_terms"><![CDATA[By joining Link, you agree to the <terms>Terms</terms> and <privacy>Privacy Policy</privacy>.]]></string>
+    <string name="stripe_sign_up_terms_alternative"><![CDATA[By providing your email, you agree to create a Link account and save your payment info to Link, according to the <terms>Link Terms</terms> and <privacy>Privacy Policy</privacy>.]]></string>
+    <string name="stripe_sign_up_terms_alternative_with_phone_number"><![CDATA[By providing your phone number, you agree to create a Link account and save your payment info to Link, according to the <terms>Link Terms</terms> and <privacy>Privacy Policy</privacy>.]]></string>
     <string name="stripe_something_went_wrong">Something went wrong</string>
     <string name="stripe_title_add_a_card">Add a card</string>
     <string name="stripe_title_add_an_address">Set Address</string>
     <string name="stripe_title_bank_account">Bank Account</string>
     <string name="stripe_title_payment_method">Payment Method</string>
     <string name="stripe_title_select_shipping_method">Select Shipping Method</string>
+    <string name="stripe_title_update_card">Update card</string>
+    <string name="stripe_update">Update</string>
     <string name="stripe_upi_id_label">UPI ID</string>
     <string name="stripe_upi_polling_cancel">Cancel and pay another way</string>
     <string name="stripe_upi_polling_header">Approve payment</string>
@@ -442,6 +470,7 @@
     <string name="stripe_verification_not_email">Not %s?</string>
     <string name="stripe_verification_resend">Resend code</string>
     <string name="stripe_verify_your_payment">Verify your payment</string>
+    <string name="stripe_view_more">View more</string>
     <string name="stripe_wallet_bank_account_terms"><![CDATA[By continuing, you agree to authorise payments pursuant to these <terms>terms</terms>.]]></string>
     <string name="stripe_wallet_collapsed_payment">Payment</string>
     <string name="stripe_wallet_default">Default</string>

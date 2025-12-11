@@ -64,7 +64,7 @@
     <string name="common_google_play_services_updating_text">%1$s ne fonctionnera pas sans les services Google Play, qui sont actuellement mis à jour.</string>
     <string name="common_google_play_services_wear_update_text">La nouvelle version des services Google Play est nécessaire. Elle sera bientôt installée automatiquement.</string>
     <string name="common_open_on_phone">Ouvrir sur le téléphone</string>
-    <string name="common_signin_button_text">Connexion</string>
+    <string name="common_signin_button_text">Se connecter</string>
     <string name="common_signin_button_text_long">Se connecter avec Google</string>
     <string msgid="3260749812566568062" name="copy_toast_msg">"Lien copié dans le presse-papiers"</string>
     <string msgid="8038256446254964252" name="default_error_message">"Entrée incorrecte"</string>
@@ -75,7 +75,7 @@
     <string msgid="4566929209979330987" name="fallback_menu_item_copy_link">"Copier le lien"</string>
     <string msgid="3413186855122069269" name="fallback_menu_item_open_in_browser">"Ouvrir dans le navigateur"</string>
     <string msgid="7145444925855055364" name="fallback_menu_item_share_link">"Partager le lien"</string>
-    <string name="gpay_logo_description">Google Pay</string>
+    <string name="gpay_logo_description">Google Pay</string>
     <string name="icon_content_description">Icône de boîte de dialogue</string>
     <string msgid="6827826412747255547" name="in_progress">"En cours…"</string>
     <string msgid="7933458017204019916" name="indeterminate">"Partiellement vérifié"</string>
@@ -154,18 +154,22 @@
     <string name="mtrl_exceed_max_badge_number_content_description" ns2:ignore="PluralsCandidate">Plus de %1$d nouvelles notifications</string>
     <string name="mtrl_picker_a11y_next_month">Passer au mois suivant</string>
     <string name="mtrl_picker_a11y_prev_month">Passer au mois précédent</string>
+    <string name="mtrl_picker_announce_current_range_selection">Sélection de la date de début : %1$s – Sélection de la date de fin : %2$s</string>
     <string name="mtrl_picker_announce_current_selection">Sélection actuelle : %1$s</string>
+    <string name="mtrl_picker_announce_current_selection_none">aucune</string>
     <string name="mtrl_picker_cancel">Annuler</string>
     <string name="mtrl_picker_confirm">OK</string>
     <string name="mtrl_picker_date_header_selected">%1$s</string>
     <string name="mtrl_picker_date_header_title">Sélectionnez la date</string>
     <string name="mtrl_picker_date_header_unselected">Date sélectionnée</string>
     <string name="mtrl_picker_day_of_week_column_header">Colonne des jours : %1$s</string>
+    <string name="mtrl_picker_end_date_description">Date de fin : %1$s</string>
     <string name="mtrl_picker_invalid_format">Format incorrect</string>
     <string name="mtrl_picker_invalid_format_example">Exemple : %1$s</string>
     <string name="mtrl_picker_invalid_format_use">Utiliser : %1$s</string>
     <string name="mtrl_picker_invalid_range">Plage incorrecte.</string>
-    <string name="mtrl_picker_navigate_to_year_description">Naviguer vers l\'année %1$s</string>
+    <string name="mtrl_picker_navigate_to_current_year_description">Naviguer à l\'année en cours %1$d</string>
+    <string name="mtrl_picker_navigate_to_year_description">Naviguer vers l\'année %1$d</string>
     <string name="mtrl_picker_out_of_range">Hors de la plage : %1$s</string>
     <string name="mtrl_picker_range_header_only_end_selected">Du (date de début) au %1$s</string>
     <string name="mtrl_picker_range_header_only_start_selected">Du %1$s au (date de fin)</string>
@@ -173,16 +177,18 @@
     <string name="mtrl_picker_range_header_title">Sélectionnez la plage</string>
     <string name="mtrl_picker_range_header_unselected">Du (date de début) au (date de fin)</string>
     <string name="mtrl_picker_save">Enregistrer</string>
+    <string name="mtrl_picker_start_date_description">Date de début : %1$s</string>
     <string name="mtrl_picker_text_input_date_hint">Date</string>
     <string name="mtrl_picker_text_input_date_range_end_hint">Date de fin</string>
     <string name="mtrl_picker_text_input_date_range_start_hint">Date de début</string>
     <string name="mtrl_picker_text_input_day_abbr">j</string>
     <string name="mtrl_picker_text_input_month_abbr">m</string>
     <string name="mtrl_picker_text_input_year_abbr">a</string>
+    <string name="mtrl_picker_today_description">%1$s Aujourd\'hui</string>
     <string name="mtrl_picker_toggle_to_calendar_input_mode">Passer au mode d\'entrée Agenda</string>
-    <string name="mtrl_picker_toggle_to_day_selection">Touchez pour passer à la sélection de jour</string>
+    <string name="mtrl_picker_toggle_to_day_selection">Toucher pour passer à la vue du calendrier</string>
     <string name="mtrl_picker_toggle_to_text_input_mode">Passer au mode d\'entrée Texte</string>
-    <string name="mtrl_picker_toggle_to_year_selection">Touchez pour passer à la sélection d\'année</string>
+    <string name="mtrl_picker_toggle_to_year_selection">Toucher pour passer à la vue de l\'année</string>
     <string name="mtrl_timepicker_cancel">Annuler</string>
     <string name="mtrl_timepicker_confirm">OK</string>
     <string msgid="542007171693138492" name="navigation_menu">"Menu de navigation"</string>
@@ -278,6 +284,7 @@
     <string name="stripe_address_zip_postal_invalid">Votre code postal n\'est pas valide</string>
     <string name="stripe_affirm_buy_now_pay_later">Payez par versements échelonnés avec &lt;img src=\"affirm\">.</string>
     <string name="stripe_afterpay_clearpay_message"><![CDATA[Payer en <num_installments/> versements sans intérêts de <installment_price/> avec <img/>]]></string>
+    <string name="stripe_amazon_pay_mandate">En confirmant votre paiement avec Amazon Pay, vous autorisez %s à débiter votre compte Amazon Pay pour les paiements à venir, conformément à ses conditions.</string>
     <string name="stripe_au_becs_account_name">Nom du titulaire du compte</string>
     <string name="stripe_au_becs_bsb_number">Numéro BSB</string>
     <string name="stripe_au_becs_mandate">En fournissant vos coordonnées bancaires et en confirmant ce paiement, vous acceptez cette demande de prélèvement automatique et le &lt;a href=\"https://stripe.com/au-becs-dd-service-agreement/legal\">Contrat d\'utlisation du service de demande de prélèvement automatique&lt;/a>. Vous autorisez également Stripe Payments Australia Pty Ltd ACN 160 180 343 ID d\'utilisateur de prélèvement automatique 507156 (“Stripe”) à débiter votre compte par le biais du Bulk Electronic Clearing System (BECS) pour le compte du %s (the \"Marchand\") pour tout montant vous ayant été communiqué individuellement par le Marchand. Vous certifiez être le titulaire du compte ou un signataire autorisé du compte indiqué ci-dessus.</string>
@@ -345,7 +352,7 @@
     <string name="stripe_incomplete_blik_code">Votre code BLIK est incomplet.</string>
     <string name="stripe_incomplete_expiry_date">La date d\'expiration de votre carte est incomplète.</string>
     <string name="stripe_incomplete_phone_number">Numéro de téléphone incomplet</string>
-    <string name="stripe_inline_sign_up_header">Enregistrer mes informations pour le paiement sécurisé en un clic</string>
+    <string name="stripe_inline_sign_up_header">Enregistrer mes informations pour payer en un clic de façon sécurisée avec Link</string>
     <string name="stripe_internal_error">Une erreur interne s\'est produite.</string>
     <string name="stripe_invalid_bank_account_iban">L\'IBAN que vous avez saisi n\'est pas valide.</string>
     <string name="stripe_invalid_blik_code">Votre code BLIK n\'est pas valide.</string>
@@ -359,6 +366,7 @@
     <string name="stripe_invalid_upi_id">ID d\'UPI non valide</string>
     <string name="stripe_invalid_zip">Votre code postal est incomplet.</string>
     <string name="stripe_klarna_buy_now_pay_later">Payez maintenant ou plus tard avec Klarna.</string>
+    <string name="stripe_klarna_mandate">En poursuivant sur Klarna, vous autorisez %1$s à débiter votre compte Klarna pour les paiements à venir, conformément aux conditions du marchand et de Klarna. Vous pouvez modifier cela à tout moment dans votre application Klarna ou en contactant %2$s.</string>
     <string name="stripe_klarna_pay_later">Payez plus tard avec Klarna.</string>
     <string name="stripe_konbini_confirmation_number_label">Téléphone</string>
     <string name="stripe_log_out">Déconnexion de Link with Stripe</string>
@@ -372,24 +380,38 @@
     <string name="stripe_paymentsheet_ach_continue_mandate"><![CDATA[En continuant, vous autorisez les paiements conformément à <terms>ces conditions</terms>.]]></string>
     <string name="stripe_paymentsheet_ach_save_mandate"><![CDATA[En enregistrant votre compte bancaire pour %s, vous autorisez les paiements conformément à <terms>ces conditions</terms>.]]></string>
     <string name="stripe_paymentsheet_ach_something_went_wrong">Un problème est survenu lors de l\'association de votre compte.\nVeuillez réessayer ultérieurement.</string>
+    <string name="stripe_paymentsheet_add_new_card">Ajouter une carte</string>
     <string name="stripe_paymentsheet_add_payment_method_button_label">+ Ajouter</string>
     <string name="stripe_paymentsheet_add_payment_method_card_information">Informations de la carte</string>
     <string name="stripe_paymentsheet_add_payment_method_title">Ajoutez vos informations de paiement</string>
+    <string name="stripe_paymentsheet_add_us_bank_account">Ajouter un compte bancaire américain</string>
     <string name="stripe_paymentsheet_address_element_primary_button">Enregistrer l\'adresse</string>
     <string name="stripe_paymentsheet_address_element_shipping_address">Adresse de livraison</string>
+    <string name="stripe_paymentsheet_bacs_email_mandate">Un courriel sera envoyé à l\'adresse %s sous trois jours ouvrables pour confirmer la configuration de cet ordre de prélèvement.</string>
+    <string name="stripe_paymentsheet_bacs_mandate_title">Confirmez les informations de votre prélèvement automatique</string>
+    <string name="stripe_paymentsheet_bacs_modify_details_button_label">Mettre à jour les informations</string>
+    <string name="stripe_paymentsheet_bacs_notice_mandate">En outre, vous recevrez par courriel un préavis de deux jours pour tout prélèvement effectué en vertu de cet ordre. Les paiements apparaîtront sur votre relevé bancaire sous le libellé « %s ».</string>
+    <string name="stripe_paymentsheet_bacs_protection_mandate">Vos paiements sont protégés par la %s.</string>
     <string name="stripe_paymentsheet_buy_using_upi_id">Acheter à l\'aide d\'un ID d\'UPI</string>
     <string name="stripe_paymentsheet_choose_payment_method">Choisir un moyen de paiement</string>
     <string name="stripe_paymentsheet_close">Fermer</string>
     <string name="stripe_paymentsheet_confirm">Confirmer</string>
+    <string name="stripe_paymentsheet_confirm_your_cvc">Confirmez votre CVC</string>
     <string name="stripe_paymentsheet_enter_address_manually">Saisir l\'adresse manuellement</string>
+    <string name="stripe_paymentsheet_manage_payment_methods">Gérer vos moyens de paiement</string>
     <string name="stripe_paymentsheet_manage_your_payment_methods">Gérer vos moyens de paiement</string>
     <string name="stripe_paymentsheet_microdeposit">Stripe va effectuer un versement de 0,01 $ sur votre compte sous 1 ou 2 jours ouvrables. Vous recevrez ensuite un courriel contenant des instructions pour finaliser le paiement à %s.</string>
+    <string name="stripe_paymentsheet_modify_pm">Mettre à jour %s</string>
+    <string name="stripe_paymentsheet_new_pm">Nouveau moyen de paiement</string>
     <string name="stripe_paymentsheet_or_pay_using">Ou payer avec</string>
     <string name="stripe_paymentsheet_or_pay_with_card">Ou payez par carte</string>
+    <string name="stripe_paymentsheet_or_use">Ou utiliser</string>
+    <string name="stripe_paymentsheet_or_use_a_card">Ou utiliser une carte</string>
     <string name="stripe_paymentsheet_pay_button_label">Payer</string>
     <string name="stripe_paymentsheet_pay_using">Payer avec</string>
     <string name="stripe_paymentsheet_pay_with_bank_title">Payez avec votre compte bancaire en quelques étapes.</string>
     <string name="stripe_paymentsheet_payment_method_au_becs_debit">Prélèvement automatique BECS (Australie)</string>
+    <string name="stripe_paymentsheet_payment_method_bacs_debit">Prélèvement automatique Bacs</string>
     <string name="stripe_paymentsheet_payment_method_card">Carte</string>
     <string name="stripe_paymentsheet_payment_method_konbini">Konbini</string>
     <string name="stripe_paymentsheet_payment_method_sepa_debit">Prélèvement SEPA</string>
@@ -397,11 +419,13 @@
     <string name="stripe_paymentsheet_remove_bank_account_title">Supprimer le compte bancaire</string>
     <string name="stripe_paymentsheet_remove_card">Retirer la carte</string>
     <string name="stripe_paymentsheet_remove_pm">Supprimer %s</string>
+    <string name="stripe_paymentsheet_remove_pm_title">Supprimer le moyen de paiement</string>
     <string name="stripe_paymentsheet_save">Enregistrer</string>
     <string name="stripe_paymentsheet_save_a_new_payment_method">Enregistrer un nouveau moyen de paiement</string>
     <string name="stripe_paymentsheet_save_bank_title">Enregistrez votre compte bancaire en quelques clics.</string>
     <string name="stripe_paymentsheet_save_for_future_payments">Enregistrer pour les prochains achats</string>
     <string name="stripe_paymentsheet_save_this_card_with_merchant_name">Enregistrer cette carte pour vos prochains achats chez %s</string>
+    <string name="stripe_paymentsheet_saved">Enregistré</string>
     <string name="stripe_paymentsheet_select_payment_method">Sélectionnez votre moyen de paiement</string>
     <string name="stripe_paymentsheet_total_amount">Total : %s</string>
     <string name="stripe_paypal_mandate">En confirmant votre paiement via PayPal, vous autorisez %s à débiter votre compte PayPal pour les paiements à venir, conformément à ses conditions.</string>
@@ -421,12 +445,16 @@
     <string name="stripe_sign_up_header">Paiement sécurisé en un clic</string>
     <string name="stripe_sign_up_message">Réglez plus rapidement auprès de %s et des milliers d\'autres marchands.</string>
     <string name="stripe_sign_up_terms"><![CDATA[En rejoignant Link, vous acceptez les <terms>Conditions</terms> et la <privacy>Politique de confidentialité</privacy>.]]></string>
+    <string name="stripe_sign_up_terms_alternative"><![CDATA[En fournissant votre adresse de courriel, vous acceptez de créer un compte Link et d\'enregistrer vos informations de paiement sur Link, conformément aux <terms>Conditions</terms> et à la <privacy>Politique de confidentialité</privacy> de Link.]]></string>
+    <string name="stripe_sign_up_terms_alternative_with_phone_number"><![CDATA[En fournissant votre numéro de téléphone, vous acceptez de créer un compte Link et d\'enregistrer vos informations de paiement sur Link, conformément aux <terms>Conditions</terms> et à la <privacy>Politique de confidentialité</privacy> de Link.]]></string>
     <string name="stripe_something_went_wrong">Un problème est survenu</string>
     <string name="stripe_title_add_a_card">Ajouter une carte</string>
     <string name="stripe_title_add_an_address">Définir l\'adresse</string>
     <string name="stripe_title_bank_account">Compte bancaire</string>
     <string name="stripe_title_payment_method">Moyen de paiement</string>
     <string name="stripe_title_select_shipping_method">Choisir mode de livraison</string>
+    <string name="stripe_title_update_card">Mettre à jour la carte</string>
+    <string name="stripe_update">Mettre à jour</string>
     <string name="stripe_upi_id_label">ID d\'UPI</string>
     <string name="stripe_upi_polling_cancel">Annuler et utiliser un autre moyen de paiement</string>
     <string name="stripe_upi_polling_header">Autoriser le paiement</string>
@@ -442,6 +470,7 @@
     <string name="stripe_verification_not_email">Vous n\'êtes pas %s?</string>
     <string name="stripe_verification_resend">Renvoyer le code</string>
     <string name="stripe_verify_your_payment">Vérifiez votre paiement</string>
+    <string name="stripe_view_more">Voir plus</string>
     <string name="stripe_wallet_bank_account_terms"><![CDATA[En continuant, vous autorisez les paiements conformément à ces <terms>conditions</terms>.]]></string>
     <string name="stripe_wallet_collapsed_payment">Paiement</string>
     <string name="stripe_wallet_default">Par défaut</string>

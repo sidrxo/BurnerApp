@@ -17,7 +17,6 @@ import com.burner.app.di.AppModule;
 import com.burner.app.di.AppModule_ProvideDataStoreFactory;
 import com.burner.app.di.AppModule_ProvideFirebaseAuthFactory;
 import com.burner.app.di.AppModule_ProvideFirebaseFirestoreFactory;
-import com.burner.app.di.AppModule_ProvideFirebaseFunctionsFactory;
 import com.burner.app.navigation.NavigationViewModel;
 import com.burner.app.navigation.NavigationViewModel_HiltModules_KeyModule_ProvideFactory;
 import com.burner.app.services.AuthService;
@@ -52,7 +51,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.functions.FirebaseFunctions;
 import dagger.hilt.android.ActivityRetainedLifecycle;
 import dagger.hilt.android.ViewModelLifecycle;
 import dagger.hilt.android.flags.HiltWrapper_FragmentGetContextFix_FragmentGetContextFixModule;
@@ -535,10 +533,10 @@ public final class DaggerBurnerApplication_HiltComponents_SingletonC {
           return (T) new BookmarksViewModel(singletonCImpl.bookmarkRepositoryProvider.get(), singletonCImpl.eventRepositoryProvider.get(), singletonCImpl.authServiceProvider.get());
 
           case 3: // com.burner.app.ui.screens.explore.EventDetailViewModel 
-          return (T) new EventDetailViewModel(singletonCImpl.eventRepositoryProvider.get(), singletonCImpl.bookmarkRepositoryProvider.get());
+          return (T) new EventDetailViewModel(singletonCImpl.eventRepositoryProvider.get(), singletonCImpl.bookmarkRepositoryProvider.get(), singletonCImpl.ticketRepositoryProvider.get());
 
           case 4: // com.burner.app.ui.screens.explore.ExploreViewModel 
-          return (T) new ExploreViewModel(singletonCImpl.eventRepositoryProvider.get(), singletonCImpl.bookmarkRepositoryProvider.get(), singletonCImpl.preferencesRepositoryProvider.get());
+          return (T) new ExploreViewModel(singletonCImpl.eventRepositoryProvider.get(), singletonCImpl.bookmarkRepositoryProvider.get(), singletonCImpl.preferencesRepositoryProvider.get(), singletonCImpl.tagRepositoryProvider.get());
 
           case 5: // com.burner.app.navigation.NavigationViewModel 
           return (T) new NavigationViewModel(singletonCImpl.preferencesRepositoryProvider.get(), singletonCImpl.authServiceProvider.get());
@@ -562,7 +560,7 @@ public final class DaggerBurnerApplication_HiltComponents_SingletonC {
           return (T) new TicketDetailViewModel(singletonCImpl.ticketRepositoryProvider.get());
 
           case 12: // com.burner.app.ui.screens.tickets.TicketPurchaseViewModel 
-          return (T) new TicketPurchaseViewModel(singletonCImpl.eventRepositoryProvider.get(), singletonCImpl.ticketRepositoryProvider.get(), singletonCImpl.paymentServiceProvider.get());
+          return (T) new TicketPurchaseViewModel(singletonCImpl.eventRepositoryProvider.get(), singletonCImpl.paymentServiceProvider.get());
 
           case 13: // com.burner.app.ui.screens.tickets.TicketsViewModel 
           return (T) new TicketsViewModel(singletonCImpl.ticketRepositoryProvider.get(), singletonCImpl.eventRepositoryProvider.get(), singletonCImpl.authServiceProvider.get());
@@ -660,13 +658,11 @@ public final class DaggerBurnerApplication_HiltComponents_SingletonC {
 
     private Provider<EventRepository> eventRepositoryProvider;
 
+    private Provider<TicketRepository> ticketRepositoryProvider;
+
     private Provider<TagRepository> tagRepositoryProvider;
 
-    private Provider<FirebaseFunctions> provideFirebaseFunctionsProvider;
-
     private Provider<PaymentService> paymentServiceProvider;
-
-    private Provider<TicketRepository> ticketRepositoryProvider;
 
     private SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
       this.applicationContextModule = applicationContextModuleParam;
@@ -683,14 +679,13 @@ public final class DaggerBurnerApplication_HiltComponents_SingletonC {
       this.preferencesRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<PreferencesRepository>(singletonCImpl, 3));
       this.bookmarkRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<BookmarkRepository>(singletonCImpl, 5));
       this.eventRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<EventRepository>(singletonCImpl, 6));
-      this.tagRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<TagRepository>(singletonCImpl, 7));
-      this.provideFirebaseFunctionsProvider = DoubleCheck.provider(new SwitchingProvider<FirebaseFunctions>(singletonCImpl, 9));
-      this.paymentServiceProvider = DoubleCheck.provider(new SwitchingProvider<PaymentService>(singletonCImpl, 8));
-      this.ticketRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<TicketRepository>(singletonCImpl, 10));
+      this.ticketRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<TicketRepository>(singletonCImpl, 7));
+      this.tagRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<TagRepository>(singletonCImpl, 8));
+      this.paymentServiceProvider = DoubleCheck.provider(new SwitchingProvider<PaymentService>(singletonCImpl, 9));
     }
 
     @Override
-    public void injectBurnerApplication(BurnerApplication burnerApplication) {
+    public void injectBurnerApplication(BurnerApplication arg0) {
     }
 
     @Override
@@ -743,17 +738,14 @@ public final class DaggerBurnerApplication_HiltComponents_SingletonC {
           case 6: // com.burner.app.data.repository.EventRepository 
           return (T) new EventRepository(singletonCImpl.provideFirebaseFirestoreProvider.get());
 
-          case 7: // com.burner.app.data.repository.TagRepository 
+          case 7: // com.burner.app.data.repository.TicketRepository 
+          return (T) new TicketRepository(singletonCImpl.provideFirebaseFirestoreProvider.get(), singletonCImpl.authServiceProvider.get(), singletonCImpl.eventRepositoryProvider.get());
+
+          case 8: // com.burner.app.data.repository.TagRepository 
           return (T) new TagRepository(singletonCImpl.provideFirebaseFirestoreProvider.get());
 
-          case 8: // com.burner.app.services.PaymentService 
-          return (T) new PaymentService(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.provideFirebaseFunctionsProvider.get(), singletonCImpl.authServiceProvider.get());
-
-          case 9: // com.google.firebase.functions.FirebaseFunctions 
-          return (T) AppModule_ProvideFirebaseFunctionsFactory.provideFirebaseFunctions();
-
-          case 10: // com.burner.app.data.repository.TicketRepository 
-          return (T) new TicketRepository(singletonCImpl.provideFirebaseFirestoreProvider.get(), singletonCImpl.authServiceProvider.get(), singletonCImpl.eventRepositoryProvider.get());
+          case 9: // com.burner.app.services.PaymentService 
+          return (T) new PaymentService(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
           default: throw new AssertionError(id);
         }

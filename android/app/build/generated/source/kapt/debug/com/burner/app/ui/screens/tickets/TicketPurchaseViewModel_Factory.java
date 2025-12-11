@@ -1,7 +1,6 @@
 package com.burner.app.ui.screens.tickets;
 
 import com.burner.app.data.repository.EventRepository;
-import com.burner.app.data.repository.TicketRepository;
 import com.burner.app.services.PaymentService;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
@@ -26,32 +25,27 @@ import javax.inject.Provider;
 public final class TicketPurchaseViewModel_Factory implements Factory<TicketPurchaseViewModel> {
   private final Provider<EventRepository> eventRepositoryProvider;
 
-  private final Provider<TicketRepository> ticketRepositoryProvider;
-
   private final Provider<PaymentService> paymentServiceProvider;
 
   public TicketPurchaseViewModel_Factory(Provider<EventRepository> eventRepositoryProvider,
-      Provider<TicketRepository> ticketRepositoryProvider,
       Provider<PaymentService> paymentServiceProvider) {
     this.eventRepositoryProvider = eventRepositoryProvider;
-    this.ticketRepositoryProvider = ticketRepositoryProvider;
     this.paymentServiceProvider = paymentServiceProvider;
   }
 
   @Override
   public TicketPurchaseViewModel get() {
-    return newInstance(eventRepositoryProvider.get(), ticketRepositoryProvider.get(), paymentServiceProvider.get());
+    return newInstance(eventRepositoryProvider.get(), paymentServiceProvider.get());
   }
 
   public static TicketPurchaseViewModel_Factory create(
       Provider<EventRepository> eventRepositoryProvider,
-      Provider<TicketRepository> ticketRepositoryProvider,
       Provider<PaymentService> paymentServiceProvider) {
-    return new TicketPurchaseViewModel_Factory(eventRepositoryProvider, ticketRepositoryProvider, paymentServiceProvider);
+    return new TicketPurchaseViewModel_Factory(eventRepositoryProvider, paymentServiceProvider);
   }
 
   public static TicketPurchaseViewModel newInstance(EventRepository eventRepository,
-      TicketRepository ticketRepository, PaymentService paymentService) {
-    return new TicketPurchaseViewModel(eventRepository, ticketRepository, paymentService);
+      PaymentService paymentService) {
+    return new TicketPurchaseViewModel(eventRepository, paymentService);
   }
 }

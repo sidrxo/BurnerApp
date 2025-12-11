@@ -1,4 +1,3 @@
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -91,8 +90,8 @@ dependencies {
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:20.7.0")
 
-    // Stripe Payments
-    implementation("com.stripe:stripe-android:20.35.1")
+    // Stripe Payments (Updated for Payment Sheet)
+    implementation("com.stripe:stripe-android:20.48.0")
 
     // Image Loading (Coil)
     implementation("io.coil-kt:coil-compose:2.5.0")

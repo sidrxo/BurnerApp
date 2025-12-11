@@ -38,23 +38,6 @@
                     }
                 },
                 {
-                    "source": "/Users/sidrao/.gradle/caches/transforms-4/735ea192330ad89789f1bb8e2ea5f172/transformed/play-services-wallet-19.2.1/res/values-en-rAU/values.xml",
-                    "from": {
-                        "startLines": "4,5",
-                        "startColumns": "0,0",
-                        "startOffsets": "206,263",
-                        "endColumns": "56,70",
-                        "endOffsets": "262,333"
-                    },
-                    "to": {
-                        "startLines": "45,118",
-                        "startColumns": "4,4",
-                        "startOffsets": "4338,11733",
-                        "endColumns": "60,74",
-                        "endOffsets": "4394,11803"
-                    }
-                },
-                {
                     "source": "/Users/sidrao/.gradle/caches/transforms-4/974d04891c78361b8fd0d834b3b57045/transformed/appcompat-1.6.1/res/values-en-rAU/values-en-rAU.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29",
@@ -72,7 +55,24 @@
                     }
                 },
                 {
-                    "source": "/Users/sidrao/.gradle/caches/transforms-4/534bbf9ca42cf6be33f9c40d089ab2fe/transformed/browser-1.5.0/res/values-en-rAU/values-en-rAU.xml",
+                    "source": "/Users/sidrao/.gradle/caches/transforms-4/546711eb044612947b5fd54e5647dc2c/transformed/play-services-wallet-19.3.0/res/values-en-rAU/values.xml",
+                    "from": {
+                        "startLines": "4,5",
+                        "startColumns": "0,0",
+                        "startOffsets": "206,263",
+                        "endColumns": "56,70",
+                        "endOffsets": "262,333"
+                    },
+                    "to": {
+                        "startLines": "45,118",
+                        "startColumns": "4,4",
+                        "startOffsets": "4338,11733",
+                        "endColumns": "60,74",
+                        "endOffsets": "4394,11803"
+                    }
+                },
+                {
+                    "source": "/Users/sidrao/.gradle/caches/transforms-4/c8daad7abd10fe9f443372e1d8caab1f/transformed/browser-1.7.0/res/values-en-rAU/values-en-rAU.xml",
                     "from": {
                         "startLines": "2,3,4,5",
                         "startColumns": "4,4,4,4",

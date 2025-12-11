@@ -2,6 +2,7 @@ package com.burner.app.ui.screens.explore;
 
 import com.burner.app.data.repository.BookmarkRepository;
 import com.burner.app.data.repository.EventRepository;
+import com.burner.app.data.repository.TicketRepository;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
 import dagger.internal.QualifierMetadata;
@@ -27,25 +28,30 @@ public final class EventDetailViewModel_Factory implements Factory<EventDetailVi
 
   private final Provider<BookmarkRepository> bookmarkRepositoryProvider;
 
+  private final Provider<TicketRepository> ticketRepositoryProvider;
+
   public EventDetailViewModel_Factory(Provider<EventRepository> eventRepositoryProvider,
-      Provider<BookmarkRepository> bookmarkRepositoryProvider) {
+      Provider<BookmarkRepository> bookmarkRepositoryProvider,
+      Provider<TicketRepository> ticketRepositoryProvider) {
     this.eventRepositoryProvider = eventRepositoryProvider;
     this.bookmarkRepositoryProvider = bookmarkRepositoryProvider;
+    this.ticketRepositoryProvider = ticketRepositoryProvider;
   }
 
   @Override
   public EventDetailViewModel get() {
-    return newInstance(eventRepositoryProvider.get(), bookmarkRepositoryProvider.get());
+    return newInstance(eventRepositoryProvider.get(), bookmarkRepositoryProvider.get(), ticketRepositoryProvider.get());
   }
 
   public static EventDetailViewModel_Factory create(
       Provider<EventRepository> eventRepositoryProvider,
-      Provider<BookmarkRepository> bookmarkRepositoryProvider) {
-    return new EventDetailViewModel_Factory(eventRepositoryProvider, bookmarkRepositoryProvider);
+      Provider<BookmarkRepository> bookmarkRepositoryProvider,
+      Provider<TicketRepository> ticketRepositoryProvider) {
+    return new EventDetailViewModel_Factory(eventRepositoryProvider, bookmarkRepositoryProvider, ticketRepositoryProvider);
   }
 
   public static EventDetailViewModel newInstance(EventRepository eventRepository,
-      BookmarkRepository bookmarkRepository) {
-    return new EventDetailViewModel(eventRepository, bookmarkRepository);
+      BookmarkRepository bookmarkRepository, TicketRepository ticketRepository) {
+    return new EventDetailViewModel(eventRepository, bookmarkRepository, ticketRepository);
   }
 }

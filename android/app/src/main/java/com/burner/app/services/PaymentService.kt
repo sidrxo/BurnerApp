@@ -2,484 +2,209 @@ package com.burner.app.services
 
 import android.content.Context
 import android.util.Log
-import androidx.annotation.StringRes
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.functions.FirebaseFunctions
-import com.burner.app.data.models.Event
-import com.burner.app.data.models.PaymentIntentResponse
-import com.burner.app.data.models.PaymentState
-import com.burner.app.data.models.SavedCard
 import com.stripe.android.PaymentConfiguration
-import com.stripe.android.Stripe
-import com.stripe.android.model.ConfirmPaymentIntentParams
-import com.stripe.android.model.PaymentMethodCreateParams
+import com.stripe.android.paymentsheet.PaymentSheet
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
+import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.pow
 
-/**
- * Payment Service matching iOS StripePaymentService functionality
- */
 @Singleton
 class PaymentService @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val functions: FirebaseFunctions,
-    private val authService: AuthService
+    @ApplicationContext private val context: Context
 ) {
     companion object {
         private const val TAG = "PaymentService"
+        // Ensure this matches your Stripe Dashboard
         private const val STRIPE_PUBLISHABLE_KEY = "pk_test_51SKOqrFxXnVDuRLXw30ABLXPF9QyorMesOCHN9sMbRAIokEIL8gptsxxX4APRJSO0b8SRGvyAUBNzBZqCCgOSvVI00fxiHOZNe"
-        private const val MAX_RETRIES = 3
+        private const val REGION = "europe-west2" // Matches your iOS/Backend region
     }
 
-    private val _paymentState = MutableStateFlow<PaymentState>(PaymentState.Idle)
-    val paymentState: StateFlow<PaymentState> = _paymentState.asStateFlow()
+    private val functions = FirebaseFunctions.getInstance(REGION)
+    private val auth = FirebaseAuth.getInstance()
 
-    private val _savedCards = MutableStateFlow<List<SavedCard>>(emptyList())
-    val savedCards: StateFlow<List<SavedCard>> = _savedCards.asStateFlow()
-
-    private val _isProcessing = MutableStateFlow(false)
-    val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
-
-    private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
-
-    // Prepared payment intent (for faster checkout like iOS)
+    // Preparation State (Matching iOS Logic)
     private var preparedClientSecret: String? = null
     private var preparedIntentId: String? = null
     private var preparedEventId: String? = null
-
-    private lateinit var stripe: Stripe
+    private var cleanupJob: Job? = null
+    private val isPreparing = AtomicBoolean(false)
 
     init {
-        // Initialize Stripe
         PaymentConfiguration.init(context, STRIPE_PUBLISHABLE_KEY)
-        stripe = Stripe(context, STRIPE_PUBLISHABLE_KEY)
     }
 
+    data class PaymentIntentConfig(
+        val clientSecret: String,
+        val paymentIntentId: String
+    )
+
+    data class PaymentResult(
+        val success: Boolean,
+        val message: String,
+        val ticketId: String?
+    )
+
+    // ------------------------------------------------------------------------
+    // Public Methods
+    // ------------------------------------------------------------------------
+
     /**
-     * Prepare payment intent in advance (like iOS preparePayment)
+     * Pre-loads a PaymentIntent to speed up the UI when the user eventually clicks buy.
+     * Matches iOS preparePayment(eventId:)
      */
-    suspend fun preparePayment(eventId: String) {
-        if (_isProcessing.value) return
-        if (preparedEventId == eventId && preparedIntentId != null) return
+    suspend fun preparePayment(eventId: String) = withContext(Dispatchers.IO) {
+        if (isPreparing.get()) return@withContext
+        if (preparedEventId == eventId && preparedIntentId != null) return@withContext
+
+        // Cancel previous cleanup timer
+        cleanupJob?.cancel()
+        isPreparing.set(true)
 
         try {
             val result = createPaymentIntent(eventId)
-            result.onSuccess { response ->
-                preparedClientSecret = response.clientSecret
-                preparedIntentId = response.paymentIntentId
-                preparedEventId = eventId
-                Log.d(TAG, "Payment prepared for event: $eventId")
+
+            preparedClientSecret = result.clientSecret
+            preparedIntentId = result.paymentIntentId
+            preparedEventId = eventId
+
+            Log.d(TAG, "Payment prepared for event: $eventId")
+
+            // Auto-clear after 10 minutes (Matching iOS logic)
+            cleanupJob = launch {
+                delay(10 * 60 * 1000L)
+                clearPreparedIntent(result.paymentIntentId)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to prepare payment: ${e.message}")
+        } finally {
+            isPreparing.set(false)
         }
     }
 
     /**
-     * Clear prepared payment intent
+     * Gets config for PaymentSheet. Uses prepared intent if available, otherwise creates new.
+     * Matches iOS withPaymentIntent logic.
      */
-    fun clearPreparedIntent() {
-        preparedClientSecret = null
-        preparedIntentId = null
-        preparedEventId = null
-    }
+    suspend fun getPaymentConfig(eventId: String): Result<PaymentIntentConfig> = withContext(Dispatchers.IO) {
+        try {
+            if (auth.currentUser == null) {
+                return@withContext Result.failure(Exception("Please sign in to purchase tickets"))
+            }
 
-    /**
-     * Create payment intent via Firebase Cloud Function
-     */
-    suspend fun createPaymentIntent(
-        eventId: String,
-        quantity: Int = 1
-    ): Result<PaymentIntentResponse> {
-        return try {
-            val userId = authService.currentUserId
-                ?: return Result.failure(PaymentError.NotAuthenticated)
+            // Consume prepared intent if matches
+            if (preparedEventId == eventId && preparedIntentId != null && preparedClientSecret != null) {
+                Log.d(TAG, "Using prepared payment intent")
+                val config = PaymentIntentConfig(preparedClientSecret!!, preparedIntentId!!)
+                clearPreparedIntent(preparedIntentId) // Clear local cache as we are consuming it
+                return@withContext Result.success(config)
+            }
 
-            val data = hashMapOf(
-                "eventId" to eventId,
-                "quantity" to quantity
-            )
-
-            val result = functions
-                .getHttpsCallable("createPaymentIntent")
-                .call(data)
-                .await()
-
-            @Suppress("UNCHECKED_CAST")
-            val response = result.data as Map<String, Any>
-
-            Result.success(
-                PaymentIntentResponse(
-                    clientSecret = response["clientSecret"] as String,
-                    paymentIntentId = response["paymentIntentId"] as String,
-                    ephemeralKey = response["ephemeralKey"] as? String,
-                    customerId = response["customerId"] as? String
-                )
-            )
+            // Otherwise create new
+            val config = createPaymentIntent(eventId)
+            Result.success(config)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to create payment intent: ${e.message}")
+            Log.e(TAG, "Error getting payment config: ${e.message}")
             Result.failure(e)
         }
     }
 
     /**
-     * Process card payment (like iOS processCardPayment)
+     * Calls backend confirmPurchase with retry logic (Exponential backoff).
+     * Matches iOS confirmPurchase with retryCount.
      */
-    suspend fun processCardPayment(
-        eventId: String,
-        cardNumber: String,
-        expiryMonth: Int,
-        expiryYear: Int,
-        cvc: String,
-        onResult: (PaymentResult) -> Unit
-    ) {
-        if (_isProcessing.value) return
+    suspend fun confirmPurchaseWithRetry(paymentIntentId: String): PaymentResult = withContext(Dispatchers.IO) {
+        val maxRetries = 3
+        var currentAttempt = 0
+        var lastException: Exception? = null
 
-        _isProcessing.value = true
-        _errorMessage.value = null
-        _paymentState.value = PaymentState.Processing
-
-        try {
-            // Get or create payment intent
-            val (clientSecret, intentId) = getPaymentIntent(eventId)
-                ?: run {
-                    handleError(PaymentError.InvalidResponse, onResult)
-                    return
-                }
-
-            // Create card params
-            val cardParams = PaymentMethodCreateParams.Card.Builder()
-                .setNumber(cardNumber.replace(" ", ""))
-                .setExpiryMonth(expiryMonth)
-                .setExpiryYear(expiryYear)
-                .setCvc(cvc)
-                .build()
-
-            val paymentMethodParams = PaymentMethodCreateParams.create(cardParams)
-
-            // Create payment method
-            val paymentMethod = withContext(Dispatchers.IO) {
-                stripe.createPaymentMethodSynchronous(paymentMethodParams)
-            } ?: run {
-                handleError(PaymentError.InvalidCard, onResult)
-                return
-            }
-
-            // Confirm payment intent (using SDK - server sets use_stripe_sdk: true)
-            val confirmParams = ConfirmPaymentIntentParams
-                .createWithPaymentMethodId(
-                    paymentMethodId = paymentMethod.id!!,
-                    clientSecret = clientSecret
-                )
-
-            val paymentIntent = withContext(Dispatchers.IO) {
-                stripe.confirmPaymentIntentSynchronous(confirmParams)
-            }
-
-            if (paymentIntent?.status?.name == "Succeeded") {
-                // Confirm purchase and create ticket
-                val ticketResult = confirmPurchase(intentId)
-                _isProcessing.value = false
-                _paymentState.value = if (ticketResult.success) {
-                    PaymentState.Success(ticketResult.ticketId ?: "")
+        while (currentAttempt <= maxRetries) {
+            try {
+                return@withContext confirmPurchaseCall(paymentIntentId)
+            } catch (e: Exception) {
+                lastException = e
+                if (isNetworkError(e) && currentAttempt < maxRetries) {
+                    val delayTime = 1000L * (2.0.pow(currentAttempt.toDouble())).toLong()
+                    Log.w(TAG, "Network error, retrying ($currentAttempt/$maxRetries) after ${delayTime}ms")
+                    delay(delayTime)
+                    currentAttempt++
                 } else {
-                    PaymentState.Error(ticketResult.message)
+                    break
                 }
-                onResult(ticketResult)
-            } else {
-                handleError(PaymentError.PaymentFailed, onResult)
             }
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Card payment error: ${e.message}")
-            handleError(PaymentError.fromException(e), onResult)
-        }
-    }
-
-    /**
-     * Process saved card payment (like iOS processSavedCardPayment)
-     */
-    suspend fun processSavedCardPayment(
-        eventId: String,
-        paymentMethodId: String,
-        onResult: (PaymentResult) -> Unit
-    ) {
-        if (_isProcessing.value) return
-
-        _isProcessing.value = true
-        _errorMessage.value = null
-        _paymentState.value = PaymentState.Processing
-
-        try {
-            val (clientSecret, intentId) = getPaymentIntent(eventId)
-                ?: run {
-                    handleError(PaymentError.InvalidResponse, onResult)
-                    return
-                }
-
-            // Confirm with saved payment method
-            val confirmParams = ConfirmPaymentIntentParams
-                .createWithPaymentMethodId(
-                    paymentMethodId = paymentMethodId,
-                    clientSecret = clientSecret
-                )
-
-            val paymentIntent = withContext(Dispatchers.IO) {
-                stripe.confirmPaymentIntentSynchronous(confirmParams)
-            }
-
-            if (paymentIntent?.status?.name == "Succeeded") {
-                val ticketResult = confirmPurchase(intentId)
-                _isProcessing.value = false
-                _paymentState.value = if (ticketResult.success) {
-                    PaymentState.Success(ticketResult.ticketId ?: "")
-                } else {
-                    PaymentState.Error(ticketResult.message)
-                }
-                onResult(ticketResult)
-            } else {
-                handleError(PaymentError.PaymentFailed, onResult)
-            }
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Saved card payment error: ${e.message}")
-            handleError(PaymentError.fromException(e), onResult)
-        }
-    }
-
-    /**
-     * Confirm purchase and create ticket (with retry logic like iOS)
-     */
-    private suspend fun confirmPurchase(
-        paymentIntentId: String,
-        retryCount: Int = 0
-    ): PaymentResult {
-        return try {
-            val result = functions
-                .getHttpsCallable("confirmPurchase")
-                .call(hashMapOf("paymentIntentId" to paymentIntentId))
-                .await()
-
-            @Suppress("UNCHECKED_CAST")
-            val data = result.data as Map<String, Any>
-            val success = data["success"] as? Boolean ?: false
-            val message = data["message"] as? String ?: "Purchase completed"
-            val ticketId = data["ticketId"] as? String
-
-            PaymentResult(success = success, message = message, ticketId = ticketId)
-
-        } catch (e: Exception) {
-            // Retry on network errors
-            if (isNetworkError(e) && retryCount < MAX_RETRIES) {
-                val delayMs = 1000L * (1 shl retryCount) // Exponential backoff: 1s, 2s, 4s
-                Log.w(TAG, "Network error, retrying (${retryCount + 1}/$MAX_RETRIES) after ${delayMs}ms...")
-                delay(delayMs)
-                return confirmPurchase(paymentIntentId, retryCount + 1)
-            }
-            PaymentResult(success = false, message = e.message ?: "Failed to create ticket", ticketId = null)
-        }
-    }
-
-    /**
-     * Get payment intent (uses prepared if available)
-     */
-    private suspend fun getPaymentIntent(eventId: String): Pair<String, String>? {
-        // Use prepared intent if available
-        if (preparedEventId == eventId && preparedClientSecret != null && preparedIntentId != null) {
-            val result = Pair(preparedClientSecret!!, preparedIntentId!!)
-            clearPreparedIntent()
-            return result
         }
 
-        // Create new intent
-        val result = createPaymentIntent(eventId)
-        return result.getOrNull()?.let { Pair(it.clientSecret, it.paymentIntentId) }
+        // Final fallback error
+        PaymentResult(
+            success = false,
+            message = lastException?.message ?: "Failed to confirm purchase",
+            ticketId = null
+        )
     }
 
-    /**
-     * Load saved payment methods
-     */
-    suspend fun loadSavedCards() {
-        try {
-            val result = functions
-                .getHttpsCallable("getPaymentMethods")
-                .call()
-                .await()
+    // ------------------------------------------------------------------------
+    // Private Helpers
+    // ------------------------------------------------------------------------
 
-            @Suppress("UNCHECKED_CAST")
-            val data = result.data as? Map<String, Any>
-            val methods = data?.get("paymentMethods") as? List<Map<String, Any>>
+    private suspend fun createPaymentIntent(eventId: String): PaymentIntentConfig {
+        //
+        val result = functions
+            .getHttpsCallable("createPaymentIntent")
+            .call(mapOf("eventId" to eventId))
+            .await()
 
-            val cards = methods?.mapNotNull { cardData ->
-                try {
-                    SavedCard(
-                        id = cardData["id"] as String,
-                        brand = cardData["brand"] as? String ?: "card",
-                        last4 = cardData["last4"] as String,
-                        expiryMonth = (cardData["expMonth"] as? Long)?.toInt() ?: 0,
-                        expiryYear = (cardData["expYear"] as? Long)?.toInt() ?: 0,
-                        isDefault = cardData["isDefault"] as? Boolean ?: false
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-            } ?: emptyList()
+        @Suppress("UNCHECKED_CAST")
+        val data = result.data as? Map<String, Any>
+            ?: throw Exception("Invalid response from server")
 
-            _savedCards.value = cards
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to load saved cards: ${e.message}")
+        val clientSecret = data["clientSecret"] as? String
+            ?: throw Exception("Missing clientSecret")
+        val paymentIntentId = data["paymentIntentId"] as? String
+            ?: throw Exception("Missing paymentIntentId")
+
+        return PaymentIntentConfig(clientSecret, paymentIntentId)
+    }
+
+    private suspend fun confirmPurchaseCall(paymentIntentId: String): PaymentResult {
+        //
+        val result = functions
+            .getHttpsCallable("confirmPurchase")
+            .call(mapOf("paymentIntentId" to paymentIntentId))
+            .await()
+
+        @Suppress("UNCHECKED_CAST")
+        val data = result.data as? Map<String, Any>
+            ?: throw Exception("Invalid response from server")
+
+        val success = data["success"] as? Boolean ?: false
+        val message = data["message"] as? String ?: "Purchase completed"
+        val ticketId = data["ticketId"] as? String
+
+        if (!success) throw Exception(message)
+
+        return PaymentResult(success, message, ticketId)
+    }
+
+    private fun clearPreparedIntent(intentId: String?) {
+        if (intentId == null || preparedIntentId == intentId) {
+            preparedClientSecret = null
+            preparedIntentId = null
+            preparedEventId = null
+            cleanupJob?.cancel()
+            cleanupJob = null
         }
-    }
-
-    /**
-     * Save a new payment method
-     */
-    suspend fun savePaymentMethod(
-        cardNumber: String,
-        expiryMonth: Int,
-        expiryYear: Int,
-        cvc: String,
-        setAsDefault: Boolean = false
-    ): Result<Unit> {
-        return try {
-            val cardParams = PaymentMethodCreateParams.Card.Builder()
-                .setNumber(cardNumber.replace(" ", ""))
-                .setExpiryMonth(expiryMonth)
-                .setExpiryYear(expiryYear)
-                .setCvc(cvc)
-                .build()
-
-            val paymentMethodParams = PaymentMethodCreateParams.create(cardParams)
-            val paymentMethod = withContext(Dispatchers.IO) {
-                stripe.createPaymentMethodSynchronous(paymentMethodParams)
-            } ?: return Result.failure(PaymentError.InvalidCard)
-
-            functions
-                .getHttpsCallable("savePaymentMethod")
-                .call(hashMapOf(
-                    "paymentMethodId" to paymentMethod.id,
-                    "setAsDefault" to setAsDefault
-                ))
-                .await()
-
-            loadSavedCards()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    /**
-     * Delete a payment method
-     */
-    suspend fun deletePaymentMethod(paymentMethodId: String): Result<Unit> {
-        return try {
-            functions
-                .getHttpsCallable("deletePaymentMethod")
-                .call(hashMapOf("paymentMethodId" to paymentMethodId))
-                .await()
-
-            loadSavedCards()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    /**
-     * Set default payment method
-     */
-    suspend fun setDefaultPaymentMethod(paymentMethodId: String): Result<Unit> {
-        return try {
-            functions
-                .getHttpsCallable("setDefaultPaymentMethod")
-                .call(hashMapOf("paymentMethodId" to paymentMethodId))
-                .await()
-
-            loadSavedCards()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    /**
-     * Calculate total price
-     */
-    fun calculateTotal(event: Event, quantity: Int = 1): Double {
-        return event.price * quantity
-    }
-
-    /**
-     * Reset payment state
-     */
-    fun resetPaymentState() {
-        _paymentState.value = PaymentState.Idle
-        _isProcessing.value = false
-        _errorMessage.value = null
-    }
-
-    private fun handleError(error: PaymentError, onResult: (PaymentResult) -> Unit) {
-        _isProcessing.value = false
-        _errorMessage.value = error.message
-        _paymentState.value = PaymentState.Error(error.message)
-        onResult(PaymentResult(success = false, message = error.message, ticketId = null))
     }
 
     private fun isNetworkError(e: Exception): Boolean {
-        val message = e.message?.lowercase() ?: ""
-        return message.contains("network") ||
-               message.contains("connection") ||
-               message.contains("timeout") ||
-               e is java.net.UnknownHostException ||
-               e is java.net.SocketTimeoutException
-    }
-}
-
-/**
- * Payment result matching iOS PaymentResult
- */
-data class PaymentResult(
-    val success: Boolean,
-    val message: String,
-    val ticketId: String?
-)
-
-/**
- * Payment errors matching iOS PaymentError
- */
-sealed class PaymentError(override val message: String) : Exception(message) {
-    object NotAuthenticated : PaymentError("Please sign in to purchase tickets")
-    object InvalidResponse : PaymentError("Invalid response from server. Please try again.")
-    object PaymentFailed : PaymentError("Payment failed. Please try again")
-    object Cancelled : PaymentError("Payment was cancelled")
-    object CardDeclined : PaymentError("Card declined. Please try another payment method")
-    object InsufficientFunds : PaymentError("Insufficient funds. Please use another card")
-    object ExpiredCard : PaymentError("Card expired. Please update your payment method")
-    object NetworkError : PaymentError("Network error. Please check your connection and try again")
-    object InvalidCard : PaymentError("Invalid card details. Please check and try again")
-    object ProcessingError : PaymentError("Payment succeeded but ticket creation failed. Please contact support.")
-    object EventSoldOut : PaymentError("This event is sold out")
-
-    companion object {
-        fun fromException(e: Exception): PaymentError {
-            val message = e.message?.lowercase() ?: ""
-            return when {
-                message.contains("declined") -> CardDeclined
-                message.contains("insufficient") -> InsufficientFunds
-                message.contains("expired") -> ExpiredCard
-                message.contains("invalid") -> InvalidCard
-                message.contains("network") || message.contains("connection") -> NetworkError
-                else -> PaymentFailed
-            }
-        }
+        return e is IOException ||
+                e.message?.lowercase()?.contains("network") == true ||
+                e.message?.lowercase()?.contains("timeout") == true ||
+                e.message?.lowercase()?.contains("connection") == true
     }
 }

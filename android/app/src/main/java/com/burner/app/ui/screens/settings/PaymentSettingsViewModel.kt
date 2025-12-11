@@ -29,10 +29,7 @@ class PaymentSettingsViewModel @Inject constructor(
     private fun loadSavedCards() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            paymentService.loadSavedCards()
-            paymentService.savedCards.collect { cards ->
-                _uiState.update { it.copy(savedCards = cards, isLoading = false) }
-            }
+
         }
     }
 

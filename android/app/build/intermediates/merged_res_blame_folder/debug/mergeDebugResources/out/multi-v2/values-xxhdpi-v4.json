@@ -4,7 +4,7 @@
             "outputFile": "com.burner.app-mergeDebugResources-95:/values-xxhdpi-v4/values-xxhdpi-v4.xml",
             "map": [
                 {
-                    "source": "/Users/sidrao/.gradle/caches/transforms-4/b52d804b4fa8e26741a59e18c7424b22/transformed/payments-core-20.35.1/res/values-xxhdpi-v4/values-xxhdpi-v4.xml",
+                    "source": "/Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/res/values-xxhdpi-v4/values-xxhdpi-v4.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

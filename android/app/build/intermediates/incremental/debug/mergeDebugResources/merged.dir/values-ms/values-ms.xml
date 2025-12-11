@@ -154,18 +154,22 @@
     <string name="mtrl_exceed_max_badge_number_content_description" ns2:ignore="PluralsCandidate">Lebih daripada %1$d pemberitahuan baharu</string>
     <string name="mtrl_picker_a11y_next_month">Tukar kepada bulan seterusnya</string>
     <string name="mtrl_picker_a11y_prev_month">Tukar kepada bulan sebelumnya</string>
+    <string name="mtrl_picker_announce_current_range_selection">Pilihan tarikh mula: %1$s – Pilihan tarikh tamat: %2$s</string>
     <string name="mtrl_picker_announce_current_selection">Pilihan semasa: %1$s</string>
+    <string name="mtrl_picker_announce_current_selection_none">tiada</string>
     <string name="mtrl_picker_cancel">Batal</string>
     <string name="mtrl_picker_confirm">OK</string>
     <string name="mtrl_picker_date_header_selected">%1$s</string>
     <string name="mtrl_picker_date_header_title">Pilih Tarikh</string>
     <string name="mtrl_picker_date_header_unselected">Tarikh dipilih</string>
     <string name="mtrl_picker_day_of_week_column_header">Lajur hari: %1$s</string>
+    <string name="mtrl_picker_end_date_description">Tarikh tamat %1$s</string>
     <string name="mtrl_picker_invalid_format">Format tidak sah.</string>
     <string name="mtrl_picker_invalid_format_example">Contoh: %1$s</string>
     <string name="mtrl_picker_invalid_format_use">Gunakan: %1$s</string>
     <string name="mtrl_picker_invalid_range">Julat tidak sah.</string>
-    <string name="mtrl_picker_navigate_to_year_description">Navigasi ke tahun %1$s</string>
+    <string name="mtrl_picker_navigate_to_current_year_description">Navigasi ke tahun semasa %1$d</string>
+    <string name="mtrl_picker_navigate_to_year_description">Navigasi ke tahun %1$d</string>
     <string name="mtrl_picker_out_of_range">Di luar julat: %1$s</string>
     <string name="mtrl_picker_range_header_only_end_selected">Tarikh mula – %1$s</string>
     <string name="mtrl_picker_range_header_only_start_selected">%1$s – Tarikh tamat</string>
@@ -173,16 +177,18 @@
     <string name="mtrl_picker_range_header_title">Pilih Julat</string>
     <string name="mtrl_picker_range_header_unselected">Tarikh mula – Tarikh tamat</string>
     <string name="mtrl_picker_save">Simpan</string>
+    <string name="mtrl_picker_start_date_description">Tarikh mula %1$s</string>
     <string name="mtrl_picker_text_input_date_hint">Tarikh</string>
     <string name="mtrl_picker_text_input_date_range_end_hint">Tarikh tamat</string>
     <string name="mtrl_picker_text_input_date_range_start_hint">Tarikh mula</string>
     <string name="mtrl_picker_text_input_day_abbr">h</string>
     <string name="mtrl_picker_text_input_month_abbr">b</string>
     <string name="mtrl_picker_text_input_year_abbr">t</string>
+    <string name="mtrl_picker_today_description">Hari ini %1$s</string>
     <string name="mtrl_picker_toggle_to_calendar_input_mode">Beralih kepada mod input kalendar</string>
-    <string name="mtrl_picker_toggle_to_day_selection">Ketik untuk beralih kepada pemilihan hari</string>
+    <string name="mtrl_picker_toggle_to_day_selection">Ketik untuk menukar kepada paparan Kalendar</string>
     <string name="mtrl_picker_toggle_to_text_input_mode">Beralih kepada mod input teks</string>
-    <string name="mtrl_picker_toggle_to_year_selection">Ketik untuk beralih kepada pemilihan tahun</string>
+    <string name="mtrl_picker_toggle_to_year_selection">Ketik untuk menukar kepada paparan tahun</string>
     <string name="mtrl_timepicker_cancel">Batal</string>
     <string name="mtrl_timepicker_confirm">OK</string>
     <string msgid="542007171693138492" name="navigation_menu">"Menu navigasi"</string>
@@ -195,6 +201,7 @@
     <string msgid="6264217191555673260" name="search_menu_title">"Cari"</string>
     <string msgid="6043586758067023" name="selected">"Dipilih"</string>
     <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string name="stripe_hcaptcha_loading_text">Mengesahkan anda adalah manusia</string>
     <string msgid="2561197295334830845" name="switch_role">"Tukar"</string>
     <string msgid="1672349317127674378" name="tab">"Tab"</string>
     <string msgid="5946805113151406391" name="template_percent">"Peratus <ns1:g id="PERCENTAGE">%1$d</ns1:g>."</string>

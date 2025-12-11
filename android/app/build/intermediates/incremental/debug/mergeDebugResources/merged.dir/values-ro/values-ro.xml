@@ -49,24 +49,24 @@
     <string name="clear_text_end_icon_content_description">Ștergeți textul</string>
     <string msgid="406453423630273620" name="close_drawer">"Închide meniul de navigare"</string>
     <string msgid="7573152094250666567" name="close_sheet">"Închide foaia"</string>
-    <string msgid="2523291102206661146" name="common_google_play_services_enable_button">Activați</string>
-    <string msgid="227660514972886228" name="common_google_play_services_enable_text">%1$s nu va funcționa decât dacă activați serviciile Google Play.</string>
-    <string msgid="5122002158466380389" name="common_google_play_services_enable_title">Activați serviciile Google Play</string>
-    <string msgid="7153882981874058840" name="common_google_play_services_install_button">Instalați</string>
-    <string name="common_google_play_services_install_text">%1$s nu va rula fără serviciile Google Play, care lipsesc de pe dispozitivul dvs.</string>
-    <string msgid="7215213145546190223" name="common_google_play_services_install_title">Descărcați serviciile Google Play</string>
+    <string msgid="2523291102206661146" name="common_google_play_services_enable_button">Activează</string>
+    <string msgid="227660514972886228" name="common_google_play_services_enable_text">%1$s nu va funcționa decât dacă activezi serviciile Google Play.</string>
+    <string msgid="5122002158466380389" name="common_google_play_services_enable_title">Activează serviciile Google Play</string>
+    <string msgid="7153882981874058840" name="common_google_play_services_install_button">Instalează</string>
+    <string name="common_google_play_services_install_text">%1$s nu va rula fără serviciile Google Play, care lipsesc de pe dispozitivul tău.</string>
+    <string msgid="7215213145546190223" name="common_google_play_services_install_title">Descarcă serviciile Google Play</string>
     <string name="common_google_play_services_notification_channel_name">Disponibilitatea serviciilor Google Play</string>
     <string name="common_google_play_services_notification_ticker">Eroare a serviciilor Google Play</string>
     <string name="common_google_play_services_unknown_issue">%1$s întâmpină probleme privind serviciile Google Play. Încearcă din nou.</string>
-    <string name="common_google_play_services_unsupported_text">%1$s nu va rula fără serviciile Google Play, care nu sunt acceptate de dispozitivul dvs.</string>
-    <string msgid="6556509956452265614" name="common_google_play_services_update_button">Actualizați</string>
-    <string msgid="9053896323427875356" name="common_google_play_services_update_text">%1$s nu va rula decât dacă actualizați serviciile Google Play.</string>
-    <string msgid="6006316683626838685" name="common_google_play_services_update_title">Actualizați serviciile Google Play</string>
+    <string name="common_google_play_services_unsupported_text">%1$s nu va rula fără serviciile Google Play, care nu sunt acceptate de dispozitivul tău.</string>
+    <string msgid="6556509956452265614" name="common_google_play_services_update_button">Actualizează</string>
+    <string msgid="9053896323427875356" name="common_google_play_services_update_text">%1$s nu va rula decât dacă actualizezi serviciile Google Play.</string>
+    <string msgid="6006316683626838685" name="common_google_play_services_update_title">Actualizează serviciile Google Play</string>
     <string name="common_google_play_services_updating_text">%1$s nu va rula fără serviciile Google Play, care momentan se actualizează.</string>
     <string name="common_google_play_services_wear_update_text">Este necesară o nouă versiune a serviciilor Google Play. Se vor actualiza automat în curând.</string>
-    <string name="common_open_on_phone">Deschideți pe telefon</string>
-    <string name="common_signin_button_text">Conectați-vă</string>
-    <string name="common_signin_button_text_long">Conectați-vă cu Google</string>
+    <string name="common_open_on_phone">Deschide pe telefon</string>
+    <string name="common_signin_button_text">Conectează-te</string>
+    <string name="common_signin_button_text_long">Conectează-te cu Google</string>
     <string msgid="3260749812566568062" name="copy_toast_msg">"Linkul a fost copiat în clipboard"</string>
     <string msgid="8038256446254964252" name="default_error_message">"Intrare nevalidă"</string>
     <string msgid="6312721426453364202" name="default_popup_window_title">"Fereastră pop-up"</string>
@@ -155,18 +155,22 @@
     <string name="mtrl_exceed_max_badge_number_content_description" ns2:ignore="PluralsCandidate">Peste %1$d notificări noi</string>
     <string name="mtrl_picker_a11y_next_month">Treceți la luna următoare</string>
     <string name="mtrl_picker_a11y_prev_month">Treceți la luna anterioară</string>
+    <string name="mtrl_picker_announce_current_range_selection">Selectarea datei de începere: %1$s – selectarea datei de încheiere: %2$s</string>
     <string name="mtrl_picker_announce_current_selection">Selecția actuală: %1$s</string>
+    <string name="mtrl_picker_announce_current_selection_none">niciuna</string>
     <string name="mtrl_picker_cancel">Anulați</string>
     <string name="mtrl_picker_confirm">OK</string>
     <string name="mtrl_picker_date_header_selected">%1$s</string>
     <string name="mtrl_picker_date_header_title">Selectați data</string>
     <string name="mtrl_picker_date_header_unselected">Data selectată</string>
     <string name="mtrl_picker_day_of_week_column_header">Coloana cu zile: %1$s</string>
+    <string name="mtrl_picker_end_date_description">Data de încheiere: %1$s</string>
     <string name="mtrl_picker_invalid_format">Format nevalid.</string>
     <string name="mtrl_picker_invalid_format_example">Exemplu: %1$s</string>
     <string name="mtrl_picker_invalid_format_use">Folosiți: %1$s</string>
     <string name="mtrl_picker_invalid_range">Interval nevalid.</string>
-    <string name="mtrl_picker_navigate_to_year_description">Navigați la anul %1$s</string>
+    <string name="mtrl_picker_navigate_to_current_year_description">Navigați la anul actual %1$d</string>
+    <string name="mtrl_picker_navigate_to_year_description">Navigați la anul %1$d</string>
     <string name="mtrl_picker_out_of_range">Fără acoperire: %1$s</string>
     <string name="mtrl_picker_range_header_only_end_selected">Data de începere – %1$s</string>
     <string name="mtrl_picker_range_header_only_start_selected">%1$s – data de încheiere</string>
@@ -174,16 +178,18 @@
     <string name="mtrl_picker_range_header_title">Selectați intervalul</string>
     <string name="mtrl_picker_range_header_unselected">Data de începere – data de încheiere</string>
     <string name="mtrl_picker_save">Salvați</string>
+    <string name="mtrl_picker_start_date_description">Data de începere: %1$s</string>
     <string name="mtrl_picker_text_input_date_hint">Dată</string>
     <string name="mtrl_picker_text_input_date_range_end_hint">Data de încheiere</string>
     <string name="mtrl_picker_text_input_date_range_start_hint">Data de începere</string>
     <string name="mtrl_picker_text_input_day_abbr">z</string>
     <string name="mtrl_picker_text_input_month_abbr">l</string>
     <string name="mtrl_picker_text_input_year_abbr">a</string>
+    <string name="mtrl_picker_today_description">Astăzi, la %1$s</string>
     <string name="mtrl_picker_toggle_to_calendar_input_mode">Comutați la modul introducere în calendar</string>
-    <string name="mtrl_picker_toggle_to_day_selection">Atingeți pentru a comuta la selectarea unei zile</string>
+    <string name="mtrl_picker_toggle_to_day_selection">Atingeți pentru a comuta la afișarea Calendar</string>
     <string name="mtrl_picker_toggle_to_text_input_mode">Comutați la modul de introducere a textului</string>
-    <string name="mtrl_picker_toggle_to_year_selection">Atingeți pentru a comuta la selectarea unui an</string>
+    <string name="mtrl_picker_toggle_to_year_selection">Atingeți pentru a comuta la afișarea An</string>
     <string name="mtrl_timepicker_cancel">Anulați</string>
     <string name="mtrl_timepicker_confirm">OK</string>
     <string msgid="542007171693138492" name="navigation_menu">"Meniu de navigare"</string>
@@ -196,6 +202,7 @@
     <string msgid="6264217191555673260" name="search_menu_title">"Căutați"</string>
     <string msgid="6043586758067023" name="selected">"Selectat"</string>
     <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string name="stripe_hcaptcha_loading_text">Verificăm dacă ești om</string>
     <string msgid="2561197295334830845" name="switch_role">"Comută"</string>
     <string msgid="1672349317127674378" name="tab">"Filă"</string>
     <string msgid="5946805113151406391" name="template_percent">"<ns1:g id="PERCENTAGE">%1$d</ns1:g> %%."</string>

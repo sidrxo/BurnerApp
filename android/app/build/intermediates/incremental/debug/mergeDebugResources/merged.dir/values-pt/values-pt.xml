@@ -110,6 +110,7 @@
     <string msgid="6264217191555673260" name="search_menu_title">"Pesquisar"</string>
     <string msgid="6043586758067023" name="selected">"Selecionado"</string>
     <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string name="stripe_hcaptcha_loading_text">Verificando se você é humano</string>
     <string msgid="2561197295334830845" name="switch_role">"Chave"</string>
     <string msgid="1672349317127674378" name="tab">"Guia"</string>
     <string msgid="5946805113151406391" name="template_percent">"<ns1:g id="PERCENTAGE">%1$d</ns1:g>%%"</string>

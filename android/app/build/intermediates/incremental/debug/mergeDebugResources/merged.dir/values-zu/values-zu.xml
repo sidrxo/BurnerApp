@@ -75,7 +75,7 @@
     <string msgid="4566929209979330987" name="fallback_menu_item_copy_link">"Kopisha isixhumanisi"</string>
     <string msgid="3413186855122069269" name="fallback_menu_item_open_in_browser">"Vula kusiphequluli"</string>
     <string msgid="7145444925855055364" name="fallback_menu_item_share_link">"Yabelana ngesixhumanisi"</string>
-    <string name="gpay_logo_description">Google Pay</string>
+    <string name="gpay_logo_description">I-Google Pay</string>
     <string name="icon_content_description">Isithonjana sebhokisi</string>
     <string msgid="6827826412747255547" name="in_progress">"Kuyaqhubeka"</string>
     <string msgid="7933458017204019916" name="indeterminate">"Kuhlolwe kancane"</string>
@@ -154,18 +154,22 @@
     <string name="mtrl_exceed_max_badge_number_content_description" ns2:ignore="PluralsCandidate">Izaziso ezintsha ezingaphezu kokungu-%1$d</string>
     <string name="mtrl_picker_a11y_next_month">Shintshela kunyanga elandelayo</string>
     <string name="mtrl_picker_a11y_prev_month">Shintshela kunyanga edlule</string>
+    <string name="mtrl_picker_announce_current_range_selection">Ukukhethwa kosuku lokuqala: %1$s – Ukukhethwa kosuku lokuphela: %2$s</string>
     <string name="mtrl_picker_announce_current_selection">Ukukhetha kwamanje: %1$s</string>
+    <string name="mtrl_picker_announce_current_selection_none">lutho</string>
     <string name="mtrl_picker_cancel">Khansela</string>
     <string name="mtrl_picker_confirm">KULUNGILE</string>
     <string name="mtrl_picker_date_header_selected">%1$s</string>
     <string name="mtrl_picker_date_header_title">Khetha Idethi</string>
     <string name="mtrl_picker_date_header_unselected">Khetha idethi</string>
     <string name="mtrl_picker_day_of_week_column_header">Ikholomu yezinsuku: %1$s</string>
+    <string name="mtrl_picker_end_date_description">Ilanga lokuphela %1$s</string>
     <string name="mtrl_picker_invalid_format">Ifomethi engavumelekile.</string>
     <string name="mtrl_picker_invalid_format_example">Isibonelo: %1$s</string>
     <string name="mtrl_picker_invalid_format_use">Sebenzisa: %1$s</string>
     <string name="mtrl_picker_invalid_range">Ibanga elingavumelekile.</string>
-    <string name="mtrl_picker_navigate_to_year_description">Zulela onyakeni %1$s</string>
+    <string name="mtrl_picker_navigate_to_current_year_description">Funa onyakeni wamanje %1$d</string>
+    <string name="mtrl_picker_navigate_to_year_description">Zulela onyakeni %1$d</string>
     <string name="mtrl_picker_out_of_range">Ikude kubanga: %1$s</string>
     <string name="mtrl_picker_range_header_only_end_selected">Idethi yokuqala – %1$s</string>
     <string name="mtrl_picker_range_header_only_start_selected">%1$s – Idethi yokuphela</string>
@@ -173,16 +177,18 @@
     <string name="mtrl_picker_range_header_title">Khetha Ibanga</string>
     <string name="mtrl_picker_range_header_unselected">Idethi yokuqala – Idethi yokuphela</string>
     <string name="mtrl_picker_save">Londoloza</string>
+    <string name="mtrl_picker_start_date_description">Ilanga lokuqala %1$s</string>
     <string name="mtrl_picker_text_input_date_hint">Idethi</string>
     <string name="mtrl_picker_text_input_date_range_end_hint">Idethi yokuphela</string>
     <string name="mtrl_picker_text_input_date_range_start_hint">Idethi yokuqala</string>
     <string name="mtrl_picker_text_input_day_abbr">d</string>
     <string name="mtrl_picker_text_input_month_abbr">m</string>
     <string name="mtrl_picker_text_input_year_abbr">y</string>
+    <string name="mtrl_picker_today_description">Namuhla %1$s</string>
     <string name="mtrl_picker_toggle_to_calendar_input_mode">Shintshela kwimodi yokufaka yekhalenda</string>
-    <string name="mtrl_picker_toggle_to_day_selection">Thepha ukuze ushintshe ekukhetheni usuku</string>
+    <string name="mtrl_picker_toggle_to_day_selection">Thepha ukuze ushintshele ekubukeni Kwekhalenda</string>
     <string name="mtrl_picker_toggle_to_text_input_mode">Shintshela kwimodi yokufaka yombhalo</string>
-    <string name="mtrl_picker_toggle_to_year_selection">Thepha ukuze ushintshele ekukhetheni unyaka</string>
+    <string name="mtrl_picker_toggle_to_year_selection">Thepha ukuze ushintshele ekubukeni konyaka</string>
     <string name="mtrl_timepicker_cancel">Khansela</string>
     <string name="mtrl_timepicker_confirm">KULUNGILE</string>
     <string msgid="542007171693138492" name="navigation_menu">"Imenyu yokuzulazula"</string>
@@ -195,6 +201,7 @@
     <string msgid="6264217191555673260" name="search_menu_title">"Sesha"</string>
     <string msgid="6043586758067023" name="selected">"Okukhethiwe"</string>
     <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string name="stripe_hcaptcha_loading_text">Ukuqinisekisa ukuthi ungumuntu</string>
     <string msgid="2561197295334830845" name="switch_role">"Shintsha"</string>
     <string msgid="1672349317127674378" name="tab">"Ithebhu"</string>
     <string msgid="5946805113151406391" name="template_percent">"<ns1:g id="PERCENTAGE">%1$d</ns1:g> amaphesenti."</string>
