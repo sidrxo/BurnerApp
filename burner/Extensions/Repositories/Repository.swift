@@ -52,12 +52,19 @@ class EventRepository: BaseRepository {
                     return
                 }
 
-                guard let documents = snapshot?.documents else {
-                    completion(.success([]))
+                guard let snapshot = snapshot else {
+                    // Don't return empty array on nil snapshot - wait for actual data
                     return
                 }
 
-                let events = documents.compactMap { doc -> Event? in
+                // On fresh install with empty cache, wait for server fetch
+                // Only return empty array if we got data from server and it's actually empty
+                if snapshot.documents.isEmpty && snapshot.metadata.isFromCache {
+                    // Empty cache - wait for server fetch
+                    return
+                }
+
+                let events = snapshot.documents.compactMap { doc -> Event? in
                     var event = try? doc.data(as: Event.self)
                     event?.id = doc.documentID
                     return event
