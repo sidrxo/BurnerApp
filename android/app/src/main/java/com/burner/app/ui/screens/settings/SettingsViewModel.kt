@@ -35,8 +35,9 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             authService.authStateFlow.collect { user ->
                 if (user != null) {
-                    // Fetch role from custom claims (authoritative source)
-                    val role = authService.getUserRole() ?: UserRole.USER
+                    val userProfile = authService.getUserProfile(user.uid)
+                    val role = userProfile?.role
+                    val canAccessScanner = role == UserRole.SITE_ADMIN
 
                     _uiState.update {
                         it.copy(
