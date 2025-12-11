@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Plus, Edit, Trash2, Star, StarOff, Calendar, MapPin,
-  Clock, Users, AlertCircle
+  Clock, Users, AlertCircle, Pin
 } from "lucide-react";
 import { Event, Venue, useEventForm } from "@/hooks/useEventsData";
 import { EVENT_STATUS_OPTIONS } from "@/lib/constants";
@@ -275,6 +275,7 @@ export function EventCard({
   ticketProgress,
   user,
   onToggleFeatured,
+  onSetTopFeatured,
   onDelete,
   onEditClick
 }: {
@@ -284,6 +285,7 @@ export function EventCard({
   ticketProgress: number;
   user: any;
   onToggleFeatured: (event: Event) => void;
+  onSetTopFeatured: (event: Event) => void;
   onDelete: (event: Event) => void;
   onEditClick: () => void;
 }) {
@@ -437,67 +439,86 @@ export function EventCard({
       <Separator />
 
       <CardFooter className="p-4 bg-muted/30">
-        <div className="flex gap-2 w-full">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onEditClick}
-            className="flex-1 hover:bg-primary hover:text-primary-foreground transition-colors"
-          >
-            <Edit className="h-3 w-3 mr-2" />
-            Edit
-          </Button>
-          
-          {/* Only show feature button for site admins */}
-          {user.role === "siteAdmin" && (
-            <Button 
-              variant="outline" 
+        <div className="flex flex-col gap-2 w-full">
+          <div className="flex gap-2 w-full">
+            <Button
+              variant="outline"
               size="sm"
-              onClick={() => onToggleFeatured(ev)}
-              className={`flex-1 transition-colors ${
-                ev.isFeatured 
-                  ? 'hover:bg-yellow-500 hover:text-white' 
-                  : 'hover:bg-yellow-500 hover:text-white'
+              onClick={onEditClick}
+              className="flex-1 hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              <Edit className="h-3 w-3 mr-2" />
+              Edit
+            </Button>
+
+            {/* Only show feature button for site admins */}
+            {user.role === "siteAdmin" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onToggleFeatured(ev)}
+                className={`flex-1 transition-colors ${
+                  ev.isFeatured
+                    ? 'hover:bg-yellow-500 hover:text-white'
+                    : 'hover:bg-yellow-500 hover:text-white'
+                }`}
+              >
+                {ev.isFeatured ? (
+                  <>
+                    <StarOff className="h-3 w-3 mr-2" />
+                    Unfeature
+                  </>
+                ) : (
+                  <>
+                    <Star className="h-3 w-3 mr-2" />
+                    Feature
+                  </>
+                )}
+              </Button>
+            )}
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="hover:bg-destructive hover:text-destructive-foreground transition-colors">
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-destructive" />
+                    Delete Event
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete "{ev.name}"? This will also remove all associated tickets and cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(ev)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete Event
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+
+          {/* Set as Top Featured button - only for site admins */}
+          {user.role === "siteAdmin" && (
+            <Button
+              variant={ev.featuredPriority === 0 ? "default" : "outline"}
+              size="sm"
+              onClick={() => onSetTopFeatured(ev)}
+              className={`w-full transition-colors ${
+                ev.featuredPriority === 0
+                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white'
+                  : 'hover:bg-gradient-to-r hover:from-yellow-500 hover:to-orange-500 hover:text-white'
               }`}
             >
-              {ev.isFeatured ? (
-                <>
-                  <StarOff className="h-3 w-3 mr-2" />
-                  Unfeature
-                </>
-              ) : (
-                <>
-                  <Star className="h-3 w-3 mr-2" />
-                  Feature
-                </>
-              )}
+              <Pin className="h-3 w-3 mr-2" />
+              {ev.featuredPriority === 0 ? 'Top Featured Event' : 'Set as Top Featured'}
             </Button>
           )}
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="hover:bg-destructive hover:text-destructive-foreground transition-colors">
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-destructive" />
-                  Delete Event
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete "{ev.name}"? This will also remove all associated tickets and cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => onDelete(ev)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Delete Event
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
       </CardFooter>
     </Card>
