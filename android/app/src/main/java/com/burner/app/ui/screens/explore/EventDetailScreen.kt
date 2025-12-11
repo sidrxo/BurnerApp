@@ -1,6 +1,7 @@
 package com.burner.app.ui.screens.explore
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -64,6 +66,11 @@ fun EventDetailScreen(
         } else {
             val event = uiState.event!!
 
+            // Calculate dynamic hero height (matching iOS: 50% screen height, 350-550dp range)
+            val configuration = LocalConfiguration.current
+            val screenHeight = configuration.screenHeightDp.dp
+            val heroHeight = (screenHeight * 0.50f).coerceIn(350.dp, 550.dp)
+
             Box(modifier = Modifier.fillMaxSize()) {
                 Column(
                     modifier = Modifier
@@ -94,36 +101,60 @@ fun EventDetailScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(400.dp),
+                            .height(heroHeight + 52.dp) // heroHeight + top(24dp) + bottom(28dp)
+                            .padding(top = 24.dp, bottom = 28.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        // Blurred background
+                        // Blurred background (90% of hero height, matching iOS)
                         AsyncImage(
                             model = event.imageUrl,
                             contentDescription = null,
                             modifier = Modifier
-                                .fillMaxSize()
+                                .fillMaxWidth()
+                                .height(heroHeight * 0.9f)
                                 .blur(40.dp)
                                 .alpha(0.9f),
                             contentScale = ContentScale.Crop
                         )
 
-                        // Main rounded image
-                        AsyncImage(
-                            model = event.imageUrl,
-                            contentDescription = event.name,
+                        // Main rounded image with border overlay (matching iOS)
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp)
-                                .height(380.dp)
-                                .clip(RoundedCornerShape(28.dp)),
-                            contentScale = ContentScale.Crop
-                        )
+                        ) {
+                            AsyncImage(
+                                model = event.imageUrl,
+                                contentDescription = event.name,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(heroHeight)
+                                    .clip(RoundedCornerShape(28.dp))
+                                    .shadow(
+                                        elevation = 18.dp,
+                                        shape = RoundedCornerShape(28.dp),
+                                        spotColor = Color.Black.copy(alpha = 0.3f)
+                                    ),
+                                contentScale = ContentScale.Crop
+                            )
+
+                            // White border overlay
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(heroHeight)
+                                    .clip(RoundedCornerShape(28.dp))
+                                    .background(Color.Transparent)
+                                    .border(
+                                        width = 1.dp,
+                                        color = BurnerColors.White.copy(alpha = 0.08f),
+                                        shape = RoundedCornerShape(28.dp)
+                                    )
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(28.dp))
-
-                    // Content
+                    // Content (spacing handled by hero image bottom padding)
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -180,69 +211,79 @@ fun EventDetailScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        // About section (matching iOS - comes before details)
+                        // About section (matching iOS)
                         if (!event.description.isNullOrBlank()) {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "About",
+                                    style = BurnerTypography.body,
+                                    color = BurnerColors.White
+                                )
+
+                                Text(
+                                    text = event.description,
+                                    style = BurnerTypography.body,
+                                    color = BurnerColors.TextSecondary,
+                                    maxLines = Int.MAX_VALUE
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+
+                        // Event Details section (matching iOS)
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             Text(
-                                text = "About",
+                                text = "Event Details",
                                 style = BurnerTypography.body,
                                 color = BurnerColors.White
                             )
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                // Date
+                                event.startDate?.let { date ->
+                                    EventDetailRow(
+                                        icon = "calendar",
+                                        title = "Date",
+                                        value = formatFullDate(date)
+                                    )
+                                }
 
-                            Text(
-                                text = event.description,
-                                style = BurnerTypography.body,
-                                color = BurnerColors.TextSecondary
-                            )
+                                // Time
+                                event.startDate?.let { date ->
+                                    EventDetailRow(
+                                        icon = "clock",
+                                        title = "Time",
+                                        value = formatTime(date, event.endDate)
+                                    )
+                                }
 
-                            Spacer(modifier = Modifier.height(24.dp))
-                        }
-
-                        // Event Details section (matching iOS - simple rows, no icons)
-                        Text(
-                            text = "Event Details",
-                            style = BurnerTypography.body,
-                            color = BurnerColors.White
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            // Date
-                            event.startDate?.let { date ->
+                                // Venue
                                 EventDetailRow(
-                                    title = "Date",
-                                    value = formatFullDate(date)
+                                    icon = "location",
+                                    title = "Venue",
+                                    value = event.venue
                                 )
-                            }
 
-                            // Time
-                            event.startDate?.let { date ->
+                                // Price
                                 EventDetailRow(
-                                    title = "Time",
-                                    value = formatTime(date, event.endDate)
+                                    icon = "creditcard",
+                                    title = "Price",
+                                    value = "£${String.format("%.2f", event.price)}"
                                 )
-                            }
 
-                            // Venue
-                            EventDetailRow(
-                                title = "Venue",
-                                value = event.venue
-                            )
-
-                            // Price
-                            EventDetailRow(
-                                title = "Price",
-                                value = "£${String.format("%.2f", event.price)}"
-                            )
-
-                            // Genre (Tags)
-                            if (!event.tags.isNullOrEmpty()) {
-                                EventDetailRow(
-                                    title = "Genre",
-                                    value = event.tags.joinToString(", ")
-                                )
+                                // Genre (Tags)
+                                if (!event.tags.isNullOrEmpty()) {
+                                    EventDetailRow(
+                                        icon = "tag",
+                                        title = "Genre",
+                                        value = event.tags.joinToString(", ")
+                                    )
+                                }
                             }
                         }
 
@@ -275,9 +316,10 @@ fun EventDetailScreen(
     }
 }
 
-// Simple EventDetailRow matching iOS design - no icons, just text
+// EventDetailRow matching iOS design with icons and vertical layout
 @Composable
 private fun EventDetailRow(
+    icon: String,
     title: String,
     value: String
 ) {
@@ -285,26 +327,49 @@ private fun EventDetailRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                BurnerColors.White.copy(alpha = 0.05f),
+                BurnerColors.TextSecondary.copy(alpha = 0.1f),
                 RoundedCornerShape(8.dp)
             )
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = title,
-            style = BurnerTypography.secondary,
-            color = BurnerColors.TextSecondary
+        // Icon
+        Icon(
+            imageVector = when (icon) {
+                "calendar" -> Icons.Filled.DateRange
+                "clock" -> Icons.Filled.Schedule
+                "location" -> Icons.Filled.LocationOn
+                "creditcard" -> Icons.Filled.CreditCard
+                "tag" -> Icons.Filled.Label
+                else -> Icons.Filled.Info
+            },
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = BurnerColors.White
         )
 
-        Text(
-            text = value,
-            style = BurnerTypography.body,
-            color = BurnerColors.White,
-            textAlign = TextAlign.End,
-            modifier = Modifier.weight(1f, fill = false)
-        )
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Title and Value in vertical stack
+        Column(
+            verticalArrangement = Arrangement.spacedBy(1.dp)
+        ) {
+            Text(
+                text = title,
+                style = BurnerTypography.secondary,
+                color = BurnerColors.TextSecondary
+            )
+
+            Text(
+                text = value,
+                style = BurnerTypography.body,
+                color = BurnerColors.White,
+                maxLines = 2
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
     }
 }
 
