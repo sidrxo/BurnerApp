@@ -344,6 +344,18 @@ struct SimplifiedFirstLaunchSlide: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // Logo at top (same as AuthHeader but without the header wrapper)
+            HStack {
+                Spacer()
+                Image("transparent")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 28, height: 28)
+                    .padding(.top, 44)
+                Spacer()
+            }
+            .padding(.bottom, 20)
+
             Spacer()
 
             // Buttons centered
