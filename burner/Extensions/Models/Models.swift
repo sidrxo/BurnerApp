@@ -10,19 +10,20 @@ struct Event: Identifiable, Codable, Sendable {
     var name: String
     var venue: String // Keep for display
     var venueId: String? // Reference to venues collection
-    
+
     // Date fields
     var startTime: Date? // Event start time
     var endTime: Date?   // Event end time
-    
+
     var price: Double
     var maxTickets: Int
     var ticketsSold: Int
     var imageUrl: String
     var isFeatured: Bool
+    var featuredPriority: Int? // Lower number = higher priority (0 = top)
     var description: String?
-    
-    
+
+
     var status: String?
     var tags: [String]?
 

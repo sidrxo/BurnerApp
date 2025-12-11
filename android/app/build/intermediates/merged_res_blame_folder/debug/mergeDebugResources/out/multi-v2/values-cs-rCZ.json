@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.burner.app-mergeDebugResources-95:/values-cs-rCZ/values-cs-rCZ.xml",
+            "outputFile": "com.burner.app-mergeDebugResources-100:/values-cs-rCZ/values-cs-rCZ.xml",
             "map": [
                 {
                     "source": "/Users/sidrao/.gradle/caches/transforms-4/675e4d889e80f8d8a44d40c9be7f9844/transformed/payments-core-20.48.0/res/values-cs-rCZ/values-cs-rCZ.xml",

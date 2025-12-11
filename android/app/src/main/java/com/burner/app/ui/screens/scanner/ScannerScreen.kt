@@ -350,6 +350,7 @@ private fun EventSelector(
     }
 }
 
+@androidx.annotation.OptIn(ExperimentalGetImage::class)
 @Composable
 private fun CameraPreview(
     onQRCodeScanned: (String) -> Unit

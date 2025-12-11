@@ -17,6 +17,7 @@ import com.burner.app.di.AppModule;
 import com.burner.app.di.AppModule_ProvideDataStoreFactory;
 import com.burner.app.di.AppModule_ProvideFirebaseAuthFactory;
 import com.burner.app.di.AppModule_ProvideFirebaseFirestoreFactory;
+import com.burner.app.di.AppModule_ProvideFirebaseFunctionsFactory;
 import com.burner.app.navigation.NavigationViewModel;
 import com.burner.app.navigation.NavigationViewModel_HiltModules_KeyModule_ProvideFactory;
 import com.burner.app.services.AuthService;
@@ -31,6 +32,8 @@ import com.burner.app.ui.screens.explore.ExploreViewModel;
 import com.burner.app.ui.screens.explore.ExploreViewModel_HiltModules_KeyModule_ProvideFactory;
 import com.burner.app.ui.screens.onboarding.OnboardingViewModel;
 import com.burner.app.ui.screens.onboarding.OnboardingViewModel_HiltModules_KeyModule_ProvideFactory;
+import com.burner.app.ui.screens.scanner.ScannerViewModel;
+import com.burner.app.ui.screens.scanner.ScannerViewModel_HiltModules_KeyModule_ProvideFactory;
 import com.burner.app.ui.screens.search.SearchViewModel;
 import com.burner.app.ui.screens.search.SearchViewModel_HiltModules_KeyModule_ProvideFactory;
 import com.burner.app.ui.screens.settings.AccountDetailsViewModel;
@@ -51,6 +54,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.functions.FirebaseFunctions;
 import dagger.hilt.android.ActivityRetainedLifecycle;
 import dagger.hilt.android.ViewModelLifecycle;
 import dagger.hilt.android.flags.HiltWrapper_FragmentGetContextFix_FragmentGetContextFixModule;
@@ -414,7 +418,7 @@ public final class DaggerBurnerApplication_HiltComponents_SingletonC {
 
     @Override
     public Set<String> getViewModelKeys() {
-      return ImmutableSet.<String>of(AccountDetailsViewModel_HiltModules_KeyModule_ProvideFactory.provide(), AuthViewModel_HiltModules_KeyModule_ProvideFactory.provide(), BookmarksViewModel_HiltModules_KeyModule_ProvideFactory.provide(), EventDetailViewModel_HiltModules_KeyModule_ProvideFactory.provide(), ExploreViewModel_HiltModules_KeyModule_ProvideFactory.provide(), NavigationViewModel_HiltModules_KeyModule_ProvideFactory.provide(), NotificationSettingsViewModel_HiltModules_KeyModule_ProvideFactory.provide(), OnboardingViewModel_HiltModules_KeyModule_ProvideFactory.provide(), PaymentSettingsViewModel_HiltModules_KeyModule_ProvideFactory.provide(), SearchViewModel_HiltModules_KeyModule_ProvideFactory.provide(), SettingsViewModel_HiltModules_KeyModule_ProvideFactory.provide(), TicketDetailViewModel_HiltModules_KeyModule_ProvideFactory.provide(), TicketPurchaseViewModel_HiltModules_KeyModule_ProvideFactory.provide(), TicketsViewModel_HiltModules_KeyModule_ProvideFactory.provide());
+      return ImmutableSet.<String>of(AccountDetailsViewModel_HiltModules_KeyModule_ProvideFactory.provide(), AuthViewModel_HiltModules_KeyModule_ProvideFactory.provide(), BookmarksViewModel_HiltModules_KeyModule_ProvideFactory.provide(), EventDetailViewModel_HiltModules_KeyModule_ProvideFactory.provide(), ExploreViewModel_HiltModules_KeyModule_ProvideFactory.provide(), NavigationViewModel_HiltModules_KeyModule_ProvideFactory.provide(), NotificationSettingsViewModel_HiltModules_KeyModule_ProvideFactory.provide(), OnboardingViewModel_HiltModules_KeyModule_ProvideFactory.provide(), PaymentSettingsViewModel_HiltModules_KeyModule_ProvideFactory.provide(), ScannerViewModel_HiltModules_KeyModule_ProvideFactory.provide(), SearchViewModel_HiltModules_KeyModule_ProvideFactory.provide(), SettingsViewModel_HiltModules_KeyModule_ProvideFactory.provide(), TicketDetailViewModel_HiltModules_KeyModule_ProvideFactory.provide(), TicketPurchaseViewModel_HiltModules_KeyModule_ProvideFactory.provide(), TicketsViewModel_HiltModules_KeyModule_ProvideFactory.provide());
     }
 
     @Override
@@ -458,6 +462,8 @@ public final class DaggerBurnerApplication_HiltComponents_SingletonC {
 
     private Provider<PaymentSettingsViewModel> paymentSettingsViewModelProvider;
 
+    private Provider<ScannerViewModel> scannerViewModelProvider;
+
     private Provider<SearchViewModel> searchViewModelProvider;
 
     private Provider<SettingsViewModel> settingsViewModelProvider;
@@ -490,16 +496,17 @@ public final class DaggerBurnerApplication_HiltComponents_SingletonC {
       this.notificationSettingsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 6);
       this.onboardingViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 7);
       this.paymentSettingsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 8);
-      this.searchViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 9);
-      this.settingsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 10);
-      this.ticketDetailViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 11);
-      this.ticketPurchaseViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 12);
-      this.ticketsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 13);
+      this.scannerViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 9);
+      this.searchViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 10);
+      this.settingsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 11);
+      this.ticketDetailViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 12);
+      this.ticketPurchaseViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 13);
+      this.ticketsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 14);
     }
 
     @Override
     public Map<String, Provider<ViewModel>> getHiltViewModelMap() {
-      return ImmutableMap.<String, Provider<ViewModel>>builderWithExpectedSize(14).put("com.burner.app.ui.screens.settings.AccountDetailsViewModel", ((Provider) accountDetailsViewModelProvider)).put("com.burner.app.ui.screens.auth.AuthViewModel", ((Provider) authViewModelProvider)).put("com.burner.app.ui.screens.bookmarks.BookmarksViewModel", ((Provider) bookmarksViewModelProvider)).put("com.burner.app.ui.screens.explore.EventDetailViewModel", ((Provider) eventDetailViewModelProvider)).put("com.burner.app.ui.screens.explore.ExploreViewModel", ((Provider) exploreViewModelProvider)).put("com.burner.app.navigation.NavigationViewModel", ((Provider) navigationViewModelProvider)).put("com.burner.app.ui.screens.settings.NotificationSettingsViewModel", ((Provider) notificationSettingsViewModelProvider)).put("com.burner.app.ui.screens.onboarding.OnboardingViewModel", ((Provider) onboardingViewModelProvider)).put("com.burner.app.ui.screens.settings.PaymentSettingsViewModel", ((Provider) paymentSettingsViewModelProvider)).put("com.burner.app.ui.screens.search.SearchViewModel", ((Provider) searchViewModelProvider)).put("com.burner.app.ui.screens.settings.SettingsViewModel", ((Provider) settingsViewModelProvider)).put("com.burner.app.ui.screens.tickets.TicketDetailViewModel", ((Provider) ticketDetailViewModelProvider)).put("com.burner.app.ui.screens.tickets.TicketPurchaseViewModel", ((Provider) ticketPurchaseViewModelProvider)).put("com.burner.app.ui.screens.tickets.TicketsViewModel", ((Provider) ticketsViewModelProvider)).build();
+      return ImmutableMap.<String, Provider<ViewModel>>builderWithExpectedSize(15).put("com.burner.app.ui.screens.settings.AccountDetailsViewModel", ((Provider) accountDetailsViewModelProvider)).put("com.burner.app.ui.screens.auth.AuthViewModel", ((Provider) authViewModelProvider)).put("com.burner.app.ui.screens.bookmarks.BookmarksViewModel", ((Provider) bookmarksViewModelProvider)).put("com.burner.app.ui.screens.explore.EventDetailViewModel", ((Provider) eventDetailViewModelProvider)).put("com.burner.app.ui.screens.explore.ExploreViewModel", ((Provider) exploreViewModelProvider)).put("com.burner.app.navigation.NavigationViewModel", ((Provider) navigationViewModelProvider)).put("com.burner.app.ui.screens.settings.NotificationSettingsViewModel", ((Provider) notificationSettingsViewModelProvider)).put("com.burner.app.ui.screens.onboarding.OnboardingViewModel", ((Provider) onboardingViewModelProvider)).put("com.burner.app.ui.screens.settings.PaymentSettingsViewModel", ((Provider) paymentSettingsViewModelProvider)).put("com.burner.app.ui.screens.scanner.ScannerViewModel", ((Provider) scannerViewModelProvider)).put("com.burner.app.ui.screens.search.SearchViewModel", ((Provider) searchViewModelProvider)).put("com.burner.app.ui.screens.settings.SettingsViewModel", ((Provider) settingsViewModelProvider)).put("com.burner.app.ui.screens.tickets.TicketDetailViewModel", ((Provider) ticketDetailViewModelProvider)).put("com.burner.app.ui.screens.tickets.TicketPurchaseViewModel", ((Provider) ticketPurchaseViewModelProvider)).put("com.burner.app.ui.screens.tickets.TicketsViewModel", ((Provider) ticketsViewModelProvider)).build();
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
@@ -550,19 +557,22 @@ public final class DaggerBurnerApplication_HiltComponents_SingletonC {
           case 8: // com.burner.app.ui.screens.settings.PaymentSettingsViewModel 
           return (T) new PaymentSettingsViewModel(singletonCImpl.paymentServiceProvider.get());
 
-          case 9: // com.burner.app.ui.screens.search.SearchViewModel 
+          case 9: // com.burner.app.ui.screens.scanner.ScannerViewModel 
+          return (T) new ScannerViewModel(singletonCImpl.authServiceProvider.get(), singletonCImpl.eventRepositoryProvider.get(), singletonCImpl.provideFirebaseFirestoreProvider.get(), singletonCImpl.provideFirebaseFunctionsProvider.get());
+
+          case 10: // com.burner.app.ui.screens.search.SearchViewModel 
           return (T) new SearchViewModel(singletonCImpl.eventRepositoryProvider.get(), singletonCImpl.bookmarkRepositoryProvider.get(), singletonCImpl.preferencesRepositoryProvider.get());
 
-          case 10: // com.burner.app.ui.screens.settings.SettingsViewModel 
+          case 11: // com.burner.app.ui.screens.settings.SettingsViewModel 
           return (T) new SettingsViewModel(singletonCImpl.authServiceProvider.get(), singletonCImpl.preferencesRepositoryProvider.get());
 
-          case 11: // com.burner.app.ui.screens.tickets.TicketDetailViewModel 
+          case 12: // com.burner.app.ui.screens.tickets.TicketDetailViewModel 
           return (T) new TicketDetailViewModel(singletonCImpl.ticketRepositoryProvider.get());
 
-          case 12: // com.burner.app.ui.screens.tickets.TicketPurchaseViewModel 
+          case 13: // com.burner.app.ui.screens.tickets.TicketPurchaseViewModel 
           return (T) new TicketPurchaseViewModel(singletonCImpl.eventRepositoryProvider.get(), singletonCImpl.paymentServiceProvider.get());
 
-          case 13: // com.burner.app.ui.screens.tickets.TicketsViewModel 
+          case 14: // com.burner.app.ui.screens.tickets.TicketsViewModel 
           return (T) new TicketsViewModel(singletonCImpl.ticketRepositoryProvider.get(), singletonCImpl.eventRepositoryProvider.get(), singletonCImpl.authServiceProvider.get());
 
           default: throw new AssertionError(id);
@@ -664,6 +674,8 @@ public final class DaggerBurnerApplication_HiltComponents_SingletonC {
 
     private Provider<PaymentService> paymentServiceProvider;
 
+    private Provider<FirebaseFunctions> provideFirebaseFunctionsProvider;
+
     private SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
       this.applicationContextModule = applicationContextModuleParam;
       initialize(applicationContextModuleParam);
@@ -682,6 +694,7 @@ public final class DaggerBurnerApplication_HiltComponents_SingletonC {
       this.ticketRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<TicketRepository>(singletonCImpl, 7));
       this.tagRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<TagRepository>(singletonCImpl, 8));
       this.paymentServiceProvider = DoubleCheck.provider(new SwitchingProvider<PaymentService>(singletonCImpl, 9));
+      this.provideFirebaseFunctionsProvider = DoubleCheck.provider(new SwitchingProvider<FirebaseFunctions>(singletonCImpl, 10));
     }
 
     @Override
@@ -746,6 +759,9 @@ public final class DaggerBurnerApplication_HiltComponents_SingletonC {
 
           case 9: // com.burner.app.services.PaymentService 
           return (T) new PaymentService(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 10: // com.google.firebase.functions.FirebaseFunctions 
+          return (T) AppModule_ProvideFirebaseFunctionsFactory.provideFirebaseFunctions();
 
           default: throw new AssertionError(id);
         }

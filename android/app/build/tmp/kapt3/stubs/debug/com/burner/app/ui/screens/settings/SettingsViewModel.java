@@ -1,6 +1,7 @@
 package com.burner.app.ui.screens.settings;
 
 import androidx.lifecycle.ViewModel;
+import com.burner.app.data.models.UserRole;
 import com.burner.app.data.repository.PreferencesRepository;
 import com.burner.app.services.AuthService;
 import dagger.hilt.android.lifecycle.HiltViewModel;

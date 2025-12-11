@@ -689,6 +689,7 @@ attr imagePanX
 attr imagePanY
 attr imageRotate
 attr imageZoom
+attr implementationMode
 attr indeterminateAnimationType
 attr indeterminateProgressStyle
 attr indicatorColor
@@ -1084,6 +1085,7 @@ attr roundPercent
 attr route
 attr saturation
 attr scaleFromTextSize
+attr scaleType
 attr scopeUris
 attr scrimAnimationDuration
 attr scrimBackground
@@ -3721,6 +3723,7 @@ id clockwise
 id closest
 id coil_request_manager
 id collapseActionView
+id compatible
 id compose_view_saveable_id_tag
 id compress
 id confirm_button
@@ -3827,6 +3830,9 @@ id expiry_date_edit_text
 id expiry_date_text_input_layout
 id fade
 id fill
+id fillCenter
+id fillEnd
+id fillStart
 id fill_horizontal
 id fill_vertical
 id filled
@@ -4026,6 +4032,7 @@ id pay_button_view
 id payment_system_image
 id peekHeight
 id percent
+id performance
 id pin
 id pooling_container_listener_holder_tag
 id position
@@ -6486,6 +6493,7 @@ styleable OnSwipe autoCompleteMode dragDirection dragScale dragThreshold limitBo
 styleable PayButtonAttributes buttonTheme cornerRadius
 styleable PopupWindow android_popupBackground android_popupAnimationStyle overlapAnchor
 styleable PopupWindowBackgroundState state_above_anchor
+styleable PreviewView implementationMode scaleType
 styleable PropertySet android_visibility android_alpha layout_constraintTag motionProgress visibilityMode
 styleable RadialViewGroup materialCircleRadius
 styleable RangeSlider minSeparation values

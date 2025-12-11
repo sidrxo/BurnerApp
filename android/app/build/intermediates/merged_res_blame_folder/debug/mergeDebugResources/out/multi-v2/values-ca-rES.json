@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.burner.app-mergeDebugResources-95:/values-ca-rES/values-ca-rES.xml",
+            "outputFile": "com.burner.app-mergeDebugResources-100:/values-ca-rES/values-ca-rES.xml",
             "map": [
                 {
                     "source": "/Users/sidrao/.gradle/caches/transforms-4/0327ae33888293a1ba423662c4cc1f23/transformed/link-20.48.0/res/values-ca-rES/values-ca-rES.xml",

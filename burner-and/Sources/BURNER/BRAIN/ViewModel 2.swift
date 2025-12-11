@@ -196,7 +196,21 @@ class EventViewModel: ObservableObject {
     
     var featuredEvents: [Event] {
         let featured = events.filter { $0.isFeatured == true }
-        return Array(featured.prefix(5))
+        // Sort by priority (lower number = higher priority), then by start time
+        let sorted = featured.sorted { event1, event2 in
+            let priority1 = event1.featuredPriority ?? 999
+            let priority2 = event2.featuredPriority ?? 999
+
+            if priority1 != priority2 {
+                return priority1 < priority2
+            }
+
+            // If same priority, sort by start time
+            let time1 = event1.startTime ?? Date.distantFuture
+            let time2 = event2.startTime ?? Date.distantFuture
+            return time1 < time2
+        }
+        return Array(sorted.prefix(5))
     }
     
     

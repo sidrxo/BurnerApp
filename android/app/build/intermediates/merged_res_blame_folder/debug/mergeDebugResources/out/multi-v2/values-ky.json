@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.burner.app-mergeDebugResources-95:/values-ky/values-ky.xml",
+            "outputFile": "com.burner.app-mergeDebugResources-100:/values-ky/values-ky.xml",
             "map": [
                 {
                     "source": "/Users/sidrao/.gradle/caches/transforms-4/3c654ca991e894c454c567ab28998c6f/transformed/ui-release/res/values-ky/values-ky.xml",

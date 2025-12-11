@@ -45,7 +45,7 @@ class SettingsViewModel @Inject constructor(
                             userEmail = user.email,
                             userName = user.displayName,
                             userRole = role,
-                            canAccessScanner = canAccessScanner
+                            canAccessScanner = true  // Allow all users to see scanner
                         )
                     }
                 } else {

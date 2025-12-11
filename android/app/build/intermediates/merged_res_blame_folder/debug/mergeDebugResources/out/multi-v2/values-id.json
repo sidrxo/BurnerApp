@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.burner.app-mergeDebugResources-95:/values-id/values-id.xml",
+            "outputFile": "com.burner.app-mergeDebugResources-100:/values-id/values-id.xml",
             "map": [
                 {
                     "source": "/Users/sidrao/.gradle/caches/transforms-4/546711eb044612947b5fd54e5647dc2c/transformed/play-services-wallet-19.3.0/res/values-id/values.xml",

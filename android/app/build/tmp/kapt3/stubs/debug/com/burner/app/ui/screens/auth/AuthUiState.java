@@ -8,55 +8,16 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
 import kotlinx.coroutines.flow.StateFlow;
 import javax.inject.Inject;
 
-@kotlin.Metadata(mv = {1, 9, 0}, k = 1, xi = 48, d1 = {"\u0000\"\n\u0002\u0018\u0002\n\u0002\u0010\u0000\n\u0000\n\u0002\u0010\u000e\n\u0002\b\u0003\n\u0002\u0010\u000b\n\u0002\b!\n\u0002\u0010\b\n\u0002\b\u0002\b\u0086\b\u0018\u00002\u00020\u0001B{\u0012\b\b\u0002\u0010\u0002\u001a\u00020\u0003\u0012\b\b\u0002\u0010\u0004\u001a\u00020\u0003\u0012\b\b\u0002\u0010\u0005\u001a\u00020\u0003\u0012\b\b\u0002\u0010\u0006\u001a\u00020\u0007\u0012\b\b\u0002\u0010\b\u001a\u00020\u0007\u0012\b\b\u0002\u0010\t\u001a\u00020\u0007\u0012\n\b\u0002\u0010\n\u001a\u0004\u0018\u00010\u0003\u0012\n\b\u0002\u0010\u000b\u001a\u0004\u0018\u00010\u0003\u0012\n\b\u0002\u0010\f\u001a\u0004\u0018\u00010\u0003\u0012\n\b\u0002\u0010\r\u001a\u0004\u0018\u00010\u0003\u0012\b\b\u0002\u0010\u000e\u001a\u00020\u0007\u00a2\u0006\u0002\u0010\u000fJ\t\u0010\u001a\u001a\u00020\u0003H\u00c6\u0003J\u000b\u0010\u001b\u001a\u0004\u0018\u00010\u0003H\u00c6\u0003J\t\u0010\u001c\u001a\u00020\u0007H\u00c6\u0003J\t\u0010\u001d\u001a\u00020\u0003H\u00c6\u0003J\t\u0010\u001e\u001a\u00020\u0003H\u00c6\u0003J\t\u0010\u001f\u001a\u00020\u0007H\u00c6\u0003J\t\u0010 \u001a\u00020\u0007H\u00c6\u0003J\t\u0010!\u001a\u00020\u0007H\u00c6\u0003J\u000b\u0010\"\u001a\u0004\u0018\u00010\u0003H\u00c6\u0003J\u000b\u0010#\u001a\u0004\u0018\u00010\u0003H\u00c6\u0003J\u000b\u0010$\u001a\u0004\u0018\u00010\u0003H\u00c6\u0003J\u007f\u0010%\u001a\u00020\u00002\b\b\u0002\u0010\u0002\u001a\u00020\u00032\b\b\u0002\u0010\u0004\u001a\u00020\u00032\b\b\u0002\u0010\u0005\u001a\u00020\u00032\b\b\u0002\u0010\u0006\u001a\u00020\u00072\b\b\u0002\u0010\b\u001a\u00020\u00072\b\b\u0002\u0010\t\u001a\u00020\u00072\n\b\u0002\u0010\n\u001a\u0004\u0018\u00010\u00032\n\b\u0002\u0010\u000b\u001a\u0004\u0018\u00010\u00032\n\b\u0002\u0010\f\u001a\u0004\u0018\u00010\u00032\n\b\u0002\u0010\r\u001a\u0004\u0018\u00010\u00032\b\b\u0002\u0010\u000e\u001a\u00020\u0007H\u00c6\u0001J\u0013\u0010&\u001a\u00020\u00072\b\u0010\'\u001a\u0004\u0018\u00010\u0001H\u00d6\u0003J\t\u0010(\u001a\u00020)H\u00d6\u0001J\t\u0010*\u001a\u00020\u0003H\u00d6\u0001R\u0011\u0010\u0005\u001a\u00020\u0003\u00a2\u0006\b\n\u0000\u001a\u0004\b\u0010\u0010\u0011R\u0013\u0010\r\u001a\u0004\u0018\u00010\u0003\u00a2\u0006\b\n\u0000\u001a\u0004\b\u0012\u0010\u0011R\u0011\u0010\u0002\u001a\u00020\u0003\u00a2\u0006\b\n\u0000\u001a\u0004\b\u0013\u0010\u0011R\u0013\u0010\u000b\u001a\u0004\u0018\u00010\u0003\u00a2\u0006\b\n\u0000\u001a\u0004\b\u0014\u0010\u0011R\u0013\u0010\n\u001a\u0004\u0018\u00010\u0003\u00a2\u0006\b\n\u0000\u001a\u0004\b\u0015\u0010\u0011R\u0011\u0010\b\u001a\u00020\u0007\u00a2\u0006\b\n\u0000\u001a\u0004\b\b\u0010\u0016R\u0011\u0010\u0006\u001a\u00020\u0007\u00a2\u0006\b\n\u0000\u001a\u0004\b\u0006\u0010\u0016R\u0011\u0010\t\u001a\u00020\u0007\u00a2\u0006\b\n\u0000\u001a\u0004\b\t\u0010\u0016R\u0011\u0010\u0004\u001a\u00020\u0003\u00a2\u0006\b\n\u0000\u001a\u0004\b\u0017\u0010\u0011R\u0013\u0010\f\u001a\u0004\u0018\u00010\u0003\u00a2\u0006\b\n\u0000\u001a\u0004\b\u0018\u0010\u0011R\u0011\u0010\u000e\u001a\u00020\u0007\u00a2\u0006\b\n\u0000\u001a\u0004\b\u0019\u0010\u0016\u00a8\u0006+"}, d2 = {"Lcom/burner/app/ui/screens/auth/AuthUiState;", "", "email", "", "password", "confirmPassword", "isSignUp", "", "isLoading", "isSignedIn", "error", "emailError", "passwordError", "confirmPasswordError", "passwordResetSent", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V", "getConfirmPassword", "()Ljava/lang/String;", "getConfirmPasswordError", "getEmail", "getEmailError", "getError", "()Z", "getPassword", "getPasswordError", "getPasswordResetSent", "component1", "component10", "component11", "component2", "component3", "component4", "component5", "component6", "component7", "component8", "component9", "copy", "equals", "other", "hashCode", "", "toString", "app_debug"})
+@kotlin.Metadata(mv = {1, 9, 0}, k = 1, xi = 48, d1 = {"\u0000\"\n\u0002\u0018\u0002\n\u0002\u0010\u0000\n\u0000\n\u0002\u0010\u000b\n\u0002\b\u0002\n\u0002\u0010\u000e\n\u0002\b\u000b\n\u0002\u0010\b\n\u0002\b\u0002\b\u0086\b\u0018\u00002\u00020\u0001B%\u0012\b\b\u0002\u0010\u0002\u001a\u00020\u0003\u0012\b\b\u0002\u0010\u0004\u001a\u00020\u0003\u0012\n\b\u0002\u0010\u0005\u001a\u0004\u0018\u00010\u0006\u00a2\u0006\u0002\u0010\u0007J\t\u0010\u000b\u001a\u00020\u0003H\u00c6\u0003J\t\u0010\f\u001a\u00020\u0003H\u00c6\u0003J\u000b\u0010\r\u001a\u0004\u0018\u00010\u0006H\u00c6\u0003J)\u0010\u000e\u001a\u00020\u00002\b\b\u0002\u0010\u0002\u001a\u00020\u00032\b\b\u0002\u0010\u0004\u001a\u00020\u00032\n\b\u0002\u0010\u0005\u001a\u0004\u0018\u00010\u0006H\u00c6\u0001J\u0013\u0010\u000f\u001a\u00020\u00032\b\u0010\u0010\u001a\u0004\u0018\u00010\u0001H\u00d6\u0003J\t\u0010\u0011\u001a\u00020\u0012H\u00d6\u0001J\t\u0010\u0013\u001a\u00020\u0006H\u00d6\u0001R\u0013\u0010\u0005\u001a\u0004\u0018\u00010\u0006\u00a2\u0006\b\n\u0000\u001a\u0004\b\b\u0010\tR\u0011\u0010\u0002\u001a\u00020\u0003\u00a2\u0006\b\n\u0000\u001a\u0004\b\u0002\u0010\nR\u0011\u0010\u0004\u001a\u00020\u0003\u00a2\u0006\b\n\u0000\u001a\u0004\b\u0004\u0010\n\u00a8\u0006\u0014"}, d2 = {"Lcom/burner/app/ui/screens/auth/AuthUiState;", "", "isLoading", "", "isSignedIn", "error", "", "(ZZLjava/lang/String;)V", "getError", "()Ljava/lang/String;", "()Z", "component1", "component2", "component3", "copy", "equals", "other", "hashCode", "", "toString", "app_debug"})
 public final class AuthUiState {
-    @org.jetbrains.annotations.NotNull()
-    private final java.lang.String email = null;
-    @org.jetbrains.annotations.NotNull()
-    private final java.lang.String password = null;
-    @org.jetbrains.annotations.NotNull()
-    private final java.lang.String confirmPassword = null;
-    private final boolean isSignUp = false;
     private final boolean isLoading = false;
     private final boolean isSignedIn = false;
     @org.jetbrains.annotations.Nullable()
     private final java.lang.String error = null;
-    @org.jetbrains.annotations.Nullable()
-    private final java.lang.String emailError = null;
-    @org.jetbrains.annotations.Nullable()
-    private final java.lang.String passwordError = null;
-    @org.jetbrains.annotations.Nullable()
-    private final java.lang.String confirmPasswordError = null;
-    private final boolean passwordResetSent = false;
     
-    public AuthUiState(@org.jetbrains.annotations.NotNull()
-    java.lang.String email, @org.jetbrains.annotations.NotNull()
-    java.lang.String password, @org.jetbrains.annotations.NotNull()
-    java.lang.String confirmPassword, boolean isSignUp, boolean isLoading, boolean isSignedIn, @org.jetbrains.annotations.Nullable()
-    java.lang.String error, @org.jetbrains.annotations.Nullable()
-    java.lang.String emailError, @org.jetbrains.annotations.Nullable()
-    java.lang.String passwordError, @org.jetbrains.annotations.Nullable()
-    java.lang.String confirmPasswordError, boolean passwordResetSent) {
+    public AuthUiState(boolean isLoading, boolean isSignedIn, @org.jetbrains.annotations.Nullable()
+    java.lang.String error) {
         super();
-    }
-    
-    @org.jetbrains.annotations.NotNull()
-    public final java.lang.String getEmail() {
-        return null;
-    }
-    
-    @org.jetbrains.annotations.NotNull()
-    public final java.lang.String getPassword() {
-        return null;
-    }
-    
-    @org.jetbrains.annotations.NotNull()
-    public final java.lang.String getConfirmPassword() {
-        return null;
-    }
-    
-    public final boolean isSignUp() {
-        return false;
     }
     
     public final boolean isLoading() {
@@ -72,89 +33,26 @@ public final class AuthUiState {
         return null;
     }
     
-    @org.jetbrains.annotations.Nullable()
-    public final java.lang.String getEmailError() {
-        return null;
-    }
-    
-    @org.jetbrains.annotations.Nullable()
-    public final java.lang.String getPasswordError() {
-        return null;
-    }
-    
-    @org.jetbrains.annotations.Nullable()
-    public final java.lang.String getConfirmPasswordError() {
-        return null;
-    }
-    
-    public final boolean getPasswordResetSent() {
-        return false;
-    }
-    
     public AuthUiState() {
         super();
     }
     
-    @org.jetbrains.annotations.NotNull()
-    public final java.lang.String component1() {
-        return null;
-    }
-    
-    @org.jetbrains.annotations.Nullable()
-    public final java.lang.String component10() {
-        return null;
-    }
-    
-    public final boolean component11() {
+    public final boolean component1() {
         return false;
     }
     
-    @org.jetbrains.annotations.NotNull()
-    public final java.lang.String component2() {
-        return null;
+    public final boolean component2() {
+        return false;
     }
     
-    @org.jetbrains.annotations.NotNull()
+    @org.jetbrains.annotations.Nullable()
     public final java.lang.String component3() {
         return null;
     }
     
-    public final boolean component4() {
-        return false;
-    }
-    
-    public final boolean component5() {
-        return false;
-    }
-    
-    public final boolean component6() {
-        return false;
-    }
-    
-    @org.jetbrains.annotations.Nullable()
-    public final java.lang.String component7() {
-        return null;
-    }
-    
-    @org.jetbrains.annotations.Nullable()
-    public final java.lang.String component8() {
-        return null;
-    }
-    
-    @org.jetbrains.annotations.Nullable()
-    public final java.lang.String component9() {
-        return null;
-    }
-    
     @org.jetbrains.annotations.NotNull()
-    public final com.burner.app.ui.screens.auth.AuthUiState copy(@org.jetbrains.annotations.NotNull()
-    java.lang.String email, @org.jetbrains.annotations.NotNull()
-    java.lang.String password, @org.jetbrains.annotations.NotNull()
-    java.lang.String confirmPassword, boolean isSignUp, boolean isLoading, boolean isSignedIn, @org.jetbrains.annotations.Nullable()
-    java.lang.String error, @org.jetbrains.annotations.Nullable()
-    java.lang.String emailError, @org.jetbrains.annotations.Nullable()
-    java.lang.String passwordError, @org.jetbrains.annotations.Nullable()
-    java.lang.String confirmPasswordError, boolean passwordResetSent) {
+    public final com.burner.app.ui.screens.auth.AuthUiState copy(boolean isLoading, boolean isSignedIn, @org.jetbrains.annotations.Nullable()
+    java.lang.String error) {
         return null;
     }
     
