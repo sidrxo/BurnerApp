@@ -217,6 +217,9 @@ struct OnboardingFlowView: View {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
 
+        // Request notification permissions when user completes onboarding
+        appState.burnerManager.requestNotificationPermissions()
+
         onboardingManager.completeOnboarding()
     }
 }
