@@ -44,7 +44,6 @@ class BurnerModeManager: ObservableObject {
         loadHasCompletedSetup()
         setupAuthorizationMonitoring()
         checkSetupCompliance()
-        requestNotificationPermissions()
     }
 
     private func loadHasCompletedSetup() {
@@ -163,7 +162,7 @@ class BurnerModeManager: ObservableObject {
     }
 
     // MARK: - Notification Permissions
-    private func requestNotificationPermissions() {
+    func requestNotificationPermissions() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
                 print("⚠️ Error requesting notification permissions: \(error.localizedDescription)")
