@@ -22,6 +22,7 @@ fun SettingsScreen(
     onAccountClick: () -> Unit,
     onPaymentClick: () -> Unit,
     onNotificationsClick: () -> Unit,
+    onScannerClick: () -> Unit,
     onSupportClick: () -> Unit,
     onFAQClick: () -> Unit,
     onTermsClick: () -> Unit,
@@ -70,6 +71,21 @@ fun SettingsScreen(
                     title = "Notifications",
                     icon = Icons.Filled.Notifications,
                     onClick = onNotificationsClick
+                )
+            }
+
+            // Scanner section (for authorized roles)
+            if (uiState.canAccessScanner) {
+                SectionHeader(
+                    title = "SCANNER",
+                    modifier = Modifier.padding(top = BurnerDimensions.spacingXl)
+                )
+
+                SettingsRow(
+                    title = "Scan Tickets",
+                    subtitle = "Scan QR codes on tickets",
+                    icon = Icons.Filled.QrCodeScanner,
+                    onClick = onScannerClick
                 )
             }
 

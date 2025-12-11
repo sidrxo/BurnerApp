@@ -27,6 +27,7 @@ import com.burner.app.ui.screens.explore.EventDetailScreen
 import com.burner.app.ui.screens.explore.ExploreScreen
 import com.burner.app.ui.screens.onboarding.OnboardingFlowScreen
 import com.burner.app.ui.screens.search.SearchScreen
+import com.burner.app.ui.screens.scanner.ScannerScreen
 import com.burner.app.ui.screens.settings.*
 import com.burner.app.ui.screens.tickets.TicketDetailScreen
 import com.burner.app.ui.screens.tickets.TicketPurchaseScreen
@@ -272,6 +273,7 @@ fun BurnerNavHost(
                         onAccountClick = { navController.navigate(Routes.AccountDetails.route) },
                         onPaymentClick = { navController.navigate(Routes.PaymentSettings.route) },
                         onNotificationsClick = { navController.navigate(Routes.NotificationSettings.route) },
+                        onScannerClick = { navController.navigate(Routes.Scanner.route) },
                         onSupportClick = { navController.navigate(Routes.Support.route) },
                         onFAQClick = { navController.navigate(Routes.FAQ.route) },
                         onTermsClick = { navController.navigate(Routes.TermsOfService.route) },
@@ -313,6 +315,25 @@ fun BurnerNavHost(
 
                 composable(Routes.PrivacyPolicy.route) {
                     PrivacyPolicyScreen(onBackClick = { navController.popBackStack() })
+                }
+
+                // Scanner
+                composable(
+                    Routes.Scanner.route,
+                    enterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(300)
+                        )
+                    },
+                    exitTransition = {
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(300)
+                        )
+                    }
+                ) {
+                    ScannerScreen(onBackClick = { navController.popBackStack() })
                 }
             }
         }
