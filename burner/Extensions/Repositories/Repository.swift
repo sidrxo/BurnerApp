@@ -40,17 +40,12 @@ protocol Repository {
 class EventRepository: BaseRepository {
 
     // MARK: - Fetch Events with Real-time Updates
-    // NOTE: Requires Firestore composite index: events (startTime ASC)
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void) {
         let calendar = Calendar.current
         let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
 
-        // Limit to 500 events to prevent excessive data transfer and improve performance
-        // This covers ~71 events/day over 7 days, which is reasonable for most use cases
         let listener = db.collection("events")
             .whereField("startTime", isGreaterThanOrEqualTo: Timestamp(date: sevenDaysAgo))
-            .order(by: "startTime", descending: false)
-            .limit(to: 500)
             .addSnapshotListener { snapshot, error in
                 if let error = error {
                     completion(.failure(error))
@@ -74,15 +69,12 @@ class EventRepository: BaseRepository {
         setListener(listener)
     }
     
-    // MARK: - Fetch Events from Server (for Refresh)
-    // Forces a server fetch, bypassing local cache for fresh data
+    // MARK: - Fetch Events from Server (for Refresh) <-- NEW FUNCTION
     func fetchEventsFromServer(since date: Date) async throws -> [Event] {
         let snapshot = try await db.collection("events")
             .whereField("startTime", isGreaterThanOrEqualTo: Timestamp(date: date))
-            .order(by: "startTime", descending: false)
-            .limit(to: 500)
-            .getDocuments(source: .server) // Forces server read, bypassing cache
-
+            .getDocuments(source: .server) // <-- FORCES SERVER READ
+        
         return snapshot.documents.compactMap { doc -> Event? in
             var event = try? doc.data(as: Event.self)
             event?.id = doc.documentID

@@ -315,7 +315,7 @@ class AppState: ObservableObject {
             ticketsViewModel.simulateEmptyData()
             bookmarkManager.simulateEmptyData()
         } else {
-            eventViewModel.fetchEvents() // ⬅️ This call now sets up the loading task
+            eventViewModel.fetchEvents()
 
             if authService.currentUser != nil {
                 ticketsViewModel.fetchUserTickets()

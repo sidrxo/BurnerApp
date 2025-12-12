@@ -22,7 +22,7 @@ class EventViewModel: ObservableObject {
     
     // Track refresh state to prevent concurrent refreshes
     private var isRefreshing = false
-
+    
     init(
         eventRepository: EventRepository,
         ticketRepository: TicketRepository
@@ -30,7 +30,7 @@ class EventViewModel: ObservableObject {
         self.eventRepository = eventRepository
         self.ticketRepository = ticketRepository
     }
-
+    
     // MARK: - Fetch Events
     func fetchEvents() {
         guard !isSimulatingEmptyData else {

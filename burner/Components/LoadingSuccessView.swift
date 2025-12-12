@@ -1,3 +1,5 @@
+// LoadingSuccessView.swift - Updated with completion callback
+
 import SwiftUI
 
 struct LoadingSuccessView: View {
@@ -12,21 +14,26 @@ struct LoadingSuccessView: View {
     let size: CGFloat
     let lineWidth: CGFloat
     let color: Color
+    var onAnimationComplete: (() -> Void)? = nil
     
     init(
         isLoading: Binding<Bool>,
         size: CGFloat = 120,
         lineWidth: CGFloat = 12,
-        color: Color = .white
+        color: Color = .white,
+        onAnimationComplete: (() -> Void)? = nil
     ) {
         self._isLoading = isLoading
         self.size = size
         self.lineWidth = lineWidth
         self.color = color
+        self.onAnimationComplete = onAnimationComplete
     }
     
     var body: some View {
         ZStack {
+            Color.black.ignoresSafeArea()
+            
             if isLoading {
                 // Custom loading indicator
                 CustomLoadingIndicator(size: size)
@@ -95,6 +102,11 @@ struct LoadingSuccessView: View {
             withAnimation(.easeInOut(duration: 0.3)) {
                 fadeOut = true
             }
+            
+            // Call completion callback after fade out
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                onAnimationComplete?()
+            }
         }
     }
 }
@@ -145,43 +157,4 @@ struct CheckmarkShape: Shape {
         
         return path
     }
-}
-
-// MARK: - Demo View
-struct LoadingSuccessDemo: View {
-    @State private var isLoading = true
-    
-    var body: some View {
-        VStack(spacing: 40) {
-            LoadingSuccessView(
-                isLoading: $isLoading,
-                size: 120,
-                lineWidth: 12,
-                color: .white
-            )
-            
-            Button(action: {
-                isLoading.toggle()
-                
-                // Reset after animation completes
-                if !isLoading {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                        isLoading = true
-                    }
-                }
-            }) {
-                Text(isLoading ? "Complete Loading" : "Start Loading")
-                    .padding()
-                    .background(Color.white)
-                    .foregroundColor(.black)
-                    .cornerRadius(10)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
-    }
-}
-
-#Preview {
-    LoadingSuccessDemo()
 }

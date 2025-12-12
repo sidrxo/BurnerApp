@@ -145,7 +145,7 @@ struct OnboardingFlowView: View {
                             case 0:
                                 AuthWelcomeSlide(
                                     onLogin: { handleNextStep() },
-                                    onExplore: { dismissOnboarding() }
+                                    onExplore: { handleNextStep() }
                                 )
                             case 1:
                                 LocationSlide(onLocationSet: { handleNextStep() })
@@ -162,8 +162,6 @@ struct OnboardingFlowView: View {
                                     onComplete: { completeOnboarding() },
                                     isCurrentSlide: step == currentStep
                                 )
-                                // 🌟 NEW: Inject appState for CompleteSlide to use the wait function 🌟
-                                .environmentObject(appState)
                             default:
                                 EmptyView()
                             }
@@ -212,15 +210,6 @@ struct OnboardingFlowView: View {
         }
     }
 
-    private func dismissOnboarding() {
-        // Dismiss onboarding without marking as completed
-        // This allows it to show again on next launch if user hasn't signed in
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
-
-        onboardingManager.shouldShowOnboarding = false
-    }
-
     private func completeOnboarding() {
         guard !isCompleting else { return }
         isCompleting = true
@@ -234,7 +223,6 @@ struct OnboardingFlowView: View {
 
 // MARK: - Step 0: Auth Welcome Slide (uses Event Mosaic)
 
-
 struct AuthWelcomeSlide: View {
     let onLogin: () -> Void
     let onExplore: () -> Void
@@ -244,55 +232,23 @@ struct AuthWelcomeSlide: View {
 
     // Build event image URLs from your appState.eventViewModel.events, filtering for valid URLs
     private var eventImageURLs: [URL] {
-        let events = appState.eventViewModel.events
-
-        // Find the top featured event (priority 0)
-        let topFeatured = events.first { event in
-            event.isFeatured && event.featuredPriority == 0 && !event.imageUrl.isEmpty
-        }
-
-        // Get other events (excluding the top featured one)
-        let otherEvents = events.filter { event in
-            guard !event.imageUrl.isEmpty else { return false }
-            // Exclude the top featured event
-            if let topFeatured = topFeatured, event.id == topFeatured.id {
-                return false
+        appState.eventViewModel.events.compactMap {
+            // Only include events with a non-empty imageUrl string
+            guard !$0.imageUrl.isEmpty, let url = URL(string: $0.imageUrl) else {
+                return nil
             }
-            return true
+            return url
         }
-
-        // Build the 3x3 grid with top featured in center (index 4)
-        var gridUrls: [URL?] = Array(repeating: nil, count: 9)
-
-        // Place top featured event in center (index 4)
-        if let topFeatured = topFeatured, let url = URL(string: topFeatured.imageUrl) {
-            gridUrls[4] = url
-        }
-
-        // Fill remaining positions with other events
-        let otherUrls = otherEvents.compactMap { URL(string: $0.imageUrl) }
-        var otherIndex = 0
-        for i in 0..<9 {
-            if i == 4 { continue } // Skip center position
-            if otherIndex < otherUrls.count {
-                gridUrls[i] = otherUrls[otherIndex]
-                otherIndex += 1
-            }
-        }
-
-        return gridUrls.compactMap { $0 }
     }
 
     var body: some View {
         VStack(spacing: 0) {
             // Put the mosaic carousel above the header
-            // The Mosaic handles its own empty state (Color.clear), so it's safe to render immediately
             EventMosaicCarousel(eventImages: eventImageURLs)
                 // Reduced top padding as safeAreaPadding is now on the header
                 .padding(.top, 24)
-           
+
             // Header — keep the same visual hierarchy
-            // REMOVED: if isDataLoaded check. Always show text/buttons.
             VStack(spacing: 0) {
                 TightHeaderText("MEET ME IN THE", "MOMENT", alignment: .center)
                     .frame(maxWidth: .infinity)
@@ -319,8 +275,6 @@ struct AuthWelcomeSlide: View {
             Spacer()
                 .frame(minHeight: 40)
         }
-        // REMOVED: .opacity(isDataLoaded ? 1.0 : 0.0) modifier
-        // REMOVED: .animation(...) that was attached to loading
         .sheet(isPresented: $showingSignIn) {
             SignInSheetView(showingSignIn: $showingSignIn, onSkip: {
                 onLogin()
@@ -330,9 +284,9 @@ struct AuthWelcomeSlide: View {
             showingSignIn = false
             onLogin()
         }
-      
     }
 }
+
 // MARK: - Top Header (Auth and Logo)
 struct AuthHeader: View {
     var body: some View {
@@ -595,81 +549,53 @@ struct NotificationsSlide: View {
     }
 }
 
-// MARK: - Slide 4: Complete (Terminal-style loading screen with auto-dismiss)
+// MARK: - Slide 4: Complete (Success Screen with auto-advance)
 struct CompleteSlide: View {
     let onComplete: () -> Void
     @State private var hasTriggeredCompletion = false
-    @State private var displayedLines: [String] = []
-    
-    // 🌟 ADDED: Access AppState to wait for data 🌟
-    @EnvironmentObject var appState: AppState
 
     // Externally-set to know when visible
     var isCurrentSlide: Bool = false
-
-    // Random terminal-style phrases
-    private let terminalPhrases = [
-        "$ initializing onboarding protocol...",
-        "✓ preferences saved",
-        "$ connecting to event database...",
-        "✓ database connection established",
-        "$ loading event data...",
-        "247 events loaded",
-        "configuring user profile...",
-        "profile configured",
-        "granting app access...",
-        "access granted",
-        "preparing experience...",
-        "ready to explore"
-    ]
-    
-    // Adjusted line delay for completion slide
-    private let lineDisplayDelay: Double = 0.15
-    private let fadeOutDuration: Double = 0.5
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
 
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(displayedLines, id: \.self) { line in
-                    Text(line)
-                        .appMonospaced(size: 13)
-                        .foregroundColor(.white.opacity(0.8))
-                        .transition(.opacity)
-                }
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(width: 100, height: 100)
+
+                Image(systemName: "checkmark")
+                    .appFont(size: 50, weight: .bold)
+                    .foregroundColor(.white)
             }
-            .frame(maxWidth: .infinity, alignment: .leading) // Ensure left alignment and stable center frame
-            .padding(.horizontal, 40)
+            .padding(.bottom, 32)
+
+            VStack(spacing: 0) {
+                TightHeaderText("YOU'RE", "IN!", alignment: .center)
+                    .frame(maxWidth: .infinity)
+            }
+            .frame(height: 120)
+
+            Text("Let's explore what's happening near you.")
+                .appBody()
+                .foregroundColor(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
 
             Spacer()
         }
-        .onChange(of: isCurrentSlide) { _, newValue in
+        .onChange(of: isCurrentSlide) { oldValue, newValue in
             guard newValue == true, !hasTriggeredCompletion else {
                 return
             }
 
             hasTriggeredCompletion = true
-            animateTerminalLines()
-        }
-    }
 
-    private func animateTerminalLines() {
-        // Randomly select phrases to display
-        let selectedPhrases = terminalPhrases.shuffled().prefix(6)
-        let totalDisplayTime = Double(selectedPhrases.count) * lineDisplayDelay
-
-        for (index, phrase) in selectedPhrases.enumerated() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * lineDisplayDelay) {
-                withAnimation(.easeIn(duration: 0.1)) {
-                    displayedLines.append(phrase)
-                }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                onComplete()
             }
-        }
-
-        // Call onComplete after all phrases are displayed plus a small delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + totalDisplayTime + 0.5) {
-            onComplete()
         }
     }
 }
@@ -712,9 +638,10 @@ struct EventStaticRow: View {
 
     var body: some View {
         GeometryReader { geo in
-            // 🌟 MODIFIED: Use Color.clear placeholder instead of the old Rectangle/ProgressView 🌟
             if urls.isEmpty {
-                Color.clear
+                // Placeholder
+                Rectangle()
+                    .fill(Color.white.opacity(0.03))
                     .frame(height: cardSize.height)
             } else {
                 HStack(spacing: spacing) {
@@ -722,7 +649,7 @@ struct EventStaticRow: View {
                     Spacer(minLength: 0)
                     
                     ForEach(displayedUrls.indices, id: \.self) { i in
-                                            KFCarouselCard(url: displayedUrls[i])
+                        KFCarouselCard(url: displayedUrls[i])
                     }
                 }
                 // Alignment is explicitly set to trailing
@@ -733,14 +660,14 @@ struct EventStaticRow: View {
     }
 }
 
-// EventMosaicCarousel: stacks three static rows to form mosaic (3x3 grid)
+// EventMosaicCarousel: stacks three static rows to form mosaic
 struct EventMosaicCarousel: View {
     let eventImages: [URL]
 
-    // Cards per row defined for a static, aesthetic display (3x3 grid)
-    private let rowOneMax = 3
-    private let rowTwoMax = 3
-    private let rowThreeMax = 3
+    // Cards per row defined for a static, aesthetic display
+    private let rowOneMax = 4
+    private let rowTwoMax = 4
+    private let rowThreeMax = 4
     
     // Total number of unique images required
     private var totalRequiredImages: Int {
@@ -759,13 +686,16 @@ struct EventMosaicCarousel: View {
     private let mosaicHeight: CGFloat = 134 * 3 + 8 * 2 // 3 rows of 134 height, 2 spaces of 8
 
     var body: some View {
-        // 🌟 MODIFIED: Use Color.clear placeholder instead of the old Rectangle/ProgressView 🌟
         if eventImages.isEmpty {
-            Color.clear
-                .frame(height: mosaicHeight)
+            Rectangle()
+                .fill(Color.white.opacity(0.03))
+                .frame(height: 180)
+                .overlay {
+                    ProgressView().tint(.white)
+                }
         } else {
             VStack(spacing: 8) {
-                // Row 1 (3 cards) - Right Aligned
+                // Row 1 (Max 2 cards) - Right Aligned
                 EventStaticRow(
                     urls: Array(uniqueImages.prefix(rowOneMax)),
                     maxCards: rowOneMax
@@ -773,7 +703,7 @@ struct EventMosaicCarousel: View {
                 .frame(height: 134)
                 .offset(x: constantOffset)
 
-                // Row 2 (3 cards, center card is top featured event) - Right Aligned
+                // Row 2 (Max 3 cards) - Right Aligned
                 EventStaticRow(
                     urls: Array(uniqueImages.dropFirst(rowOneMax).prefix(rowTwoMax)),
                     maxCards: rowTwoMax
@@ -781,7 +711,7 @@ struct EventMosaicCarousel: View {
                 .frame(height: 134)
                 .offset(x: constantOffset)
 
-                // Row 3 (3 cards) - Right Aligned
+                // Row 3 (Max 2 cards) - Right Aligned
                 EventStaticRow(
                     urls: Array(uniqueImages.dropFirst(rowOneMax + rowTwoMax).prefix(rowThreeMax)),
                     maxCards: rowThreeMax
@@ -880,9 +810,9 @@ struct GenrePill: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Text(title.lowercased())
-                    .appBody()
+                    .appMonospaced(size: 16)
                     .lineLimit(1)
-
+                
             }
             .foregroundColor(isSelected ? .black : .white)
             .padding(.horizontal, 10)

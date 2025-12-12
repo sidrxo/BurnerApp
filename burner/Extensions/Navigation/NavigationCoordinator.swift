@@ -387,3 +387,4 @@ class NavigationCoordinator: ObservableObject {
         shouldHideTabBar = false
     }
 }
+

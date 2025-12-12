@@ -74,12 +74,10 @@ class TagViewModel: ObservableObject {
                     if let error = error {
                         self.error = error.localizedDescription
                         // Fall back to default tags if error
-                        self.setDefaultTags()
                         return
                     }
 
                     guard let documents = snapshot?.documents else {
-                        self.setDefaultTags()
                         return
                     }
 
@@ -88,7 +86,6 @@ class TagViewModel: ObservableObject {
                     }
 
                     if fetchedTags.isEmpty {
-                        self.setDefaultTags()
                     } else {
                         self.tags = fetchedTags
                     }
@@ -96,21 +93,4 @@ class TagViewModel: ObservableObject {
             }
     }
 
-    // Fallback to default tags if Firestore is empty or has errors
-    private func setDefaultTags() {
-        let defaultTagNames = ["Techno", "House", "Drum & Bass", "Trance", "Hip Hop"]
-        tags = defaultTagNames.enumerated().map { index, name in
-            Tag(
-                id: name.lowercased(),
-                name: name,
-                nameLowercase: name.lowercased(),
-                description: nil,
-                color: nil,
-                order: index,
-                active: true,
-                createdAt: Date(),
-                updatedAt: Date()
-            )
-        }
-    }
 }

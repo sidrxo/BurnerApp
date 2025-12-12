@@ -833,6 +833,7 @@ struct SignInSheetView: View {
         }
     }
     
+
     private func completeSignIn() {
         DispatchQueue.main.async {
             withAnimation {
@@ -843,7 +844,10 @@ struct SignInSheetView: View {
 
             // ✅ Delay notification to allow UI to update before modal dismisses
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
+                // ✅ Only post notification if onSkip callback is provided (meaning we're in onboarding flow)
+                if self.onSkip != nil {
+                    NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
+                }
 
                 // ✅ Merge local preferences with Firebase preferences
                 Task { @MainActor in
@@ -864,8 +868,10 @@ struct SignInSheetView: View {
                                 // Just load Firebase preferences
                                 firebasePrefs.saveToUserDefaults()
                             }
-                            // User has preferences, skip onboarding
-                            NotificationCenter.default.post(name: NSNotification.Name("SkipOnboardingToExplore"), object: nil)
+                            // ✅ Only skip onboarding if we're in the onboarding flow
+                            if self.onSkip != nil {
+                                NotificationCenter.default.post(name: NSNotification.Name("SkipOnboardingToExplore"), object: nil)
+                            }
                         } else if hasLocalPrefs {
                             // User has local but no Firebase preferences, sync local to Firebase
                             await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
@@ -883,6 +889,7 @@ struct SignInSheetView: View {
             }
         }
     }
+    
     
     private func triggerSuccessFeedback() {
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
