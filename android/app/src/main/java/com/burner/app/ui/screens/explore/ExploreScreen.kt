@@ -184,6 +184,36 @@ fun ExploreScreen(
                     }
                 }
 
+                // Fourth Featured Hero Card (if available, matching iOS)
+                if (uiState.featuredEvents.size > 3) {
+                    item {
+                        FeaturedHeroCard(
+                            event = uiState.featuredEvents[3],
+                            isBookmarked = uiState.bookmarkedEventIds.contains(uiState.featuredEvents[3].id),
+                            onBookmarkClick = { viewModel.toggleBookmark(it) },
+                            onClick = { uiState.featuredEvents[3].id?.let { onEventClick(it) } },
+                            modifier = Modifier
+                                .padding(horizontal = 10.dp)
+                                .padding(bottom = 40.dp)
+                        )
+                    }
+                }
+
+                // Fifth Featured Hero Card (if available, matching iOS)
+                if (uiState.featuredEvents.size > 4) {
+                    item {
+                        FeaturedHeroCard(
+                            event = uiState.featuredEvents[4],
+                            isBookmarked = uiState.bookmarkedEventIds.contains(uiState.featuredEvents[4].id),
+                            onBookmarkClick = { viewModel.toggleBookmark(it) },
+                            onClick = { uiState.featuredEvents[4].id?.let { onEventClick(it) } },
+                            modifier = Modifier
+                                .padding(horizontal = 10.dp)
+                                .padding(bottom = 40.dp)
+                        )
+                    }
+                }
+
                 // Empty state
                 if (uiState.allEvents.isEmpty() && !uiState.isLoading) {
                     item {

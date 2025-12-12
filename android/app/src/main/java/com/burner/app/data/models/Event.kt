@@ -31,6 +31,8 @@ data class Event(
     val imageUrl: String = "",
     @PropertyName("isFeatured")
     val isFeatured: Boolean = false,
+    @PropertyName("featuredPriority")
+    val featuredPriority: Int? = null,
     val description: String? = null,
     val status: String? = null,
     val tags: List<String>? = null,
