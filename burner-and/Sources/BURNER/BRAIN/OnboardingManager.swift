@@ -26,14 +26,13 @@ class OnboardingManager: ObservableObject {
         let isAuthenticated = authService.currentUser != nil
 
         // LOGIC:
-        // - If signed IN and COMPLETED -> Hide onboarding
-        // - If signed IN but NOT completed -> Show onboarding (they need to finish)
+        // - If signed IN -> Never show onboarding
         // - If signed OUT and COMPLETED -> Hide onboarding
         // - If signed OUT and NOT completed -> Show onboarding
         if isAuthenticated {
-            // Signed in - check if they completed onboarding
-            self.shouldShowOnboarding = !hasCompletedOnboarding
-            
+            // Signed in - never show onboarding
+            self.shouldShowOnboarding = false
+
             // If they completed before, load their preferences
             if hasCompletedOnboarding {
                 // Will load preferences after auth subscription is set up
@@ -89,21 +88,15 @@ class OnboardingManager: ObservableObject {
         let previousValue = shouldShowOnboarding
 
         // LOGIC:
-        // - If signed IN and COMPLETED onboarding -> Hide onboarding (let them into app)
-        // - If signed IN but NOT completed -> Keep showing onboarding (they need to finish the flow)
+        // - If signed IN -> Never show onboarding (let them into app)
         // - If signed OUT and COMPLETED -> Hide onboarding (let them explore)
         // - If signed OUT and NOT completed -> Show onboarding
 
         if isAuthenticated {
-            // User is signed in
+            // User is signed in - never show onboarding on sign-in
+            self.shouldShowOnboarding = false
             if hasCompletedOnboarding {
-                // They've completed onboarding before, let them in
-                self.shouldShowOnboarding = false
                 loadUserPreferences()
-            } else {
-                // They signed in but haven't completed onboarding yet
-                // Keep them in onboarding to set preferences
-                self.shouldShowOnboarding = true
             }
         } else {
             // User is signed out - check if they've completed onboarding
