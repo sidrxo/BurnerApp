@@ -330,12 +330,7 @@ struct AuthWelcomeSlide: View {
             showingSignIn = false
             onLogin()
         }
-        .onAppear {
-            // Optional: Force a refresh if needed
-            Task {
-                await appState.eventViewModel.fetchEvents()
-            }
-        }
+      
     }
 }
 // MARK: - Top Header (Auth and Logo)
@@ -672,19 +667,6 @@ struct CompleteSlide: View {
             }
         }
 
-        // 🌟 MODIFIED: Wait for lines to finish AND data to load 🌟
-        Task { @MainActor in
-            // Wait for lines to finish animating + a small buffer
-            try? await Task.sleep(for: .seconds(totalDisplayTime + 0.5))
-            
-            // Wait for events to load using the new async function
-            await appState.eventViewModel.waitForEventsToLoad()
-
-            // Start final fade-out
-            withAnimation(.easeOut(duration: fadeOutDuration)) {
-                onComplete()
-            }
-        }
     }
 }
 

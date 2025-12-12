@@ -1,5 +1,6 @@
 package com.burner.app.ui.components;
 
+import androidx.compose.animation.core.Spring;
 import androidx.compose.foundation.layout.*;
 import androidx.compose.material.icons.Icons;
 import androidx.compose.runtime.Composable;
