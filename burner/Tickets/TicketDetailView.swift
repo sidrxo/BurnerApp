@@ -14,7 +14,8 @@ struct TicketDetailView: View {
     @State private var liveActivityUpdateTimer: Timer?
     @State private var flipped = true
     @State private var qrCodeImage: UIImage? = nil
-    
+    @State private var burnerSetupCompleted = false
+
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
     @Environment(\.dismiss) private var dismiss
@@ -76,6 +77,8 @@ struct TicketDetailView: View {
                 burnerManager: appState.burnerManager,
                 onSkip: {
                     showBurnerSetup = false
+                    // Mark that burner setup was completed to trigger refresh
+                    burnerSetupCompleted = true
                 }
             )
         }
@@ -83,7 +86,7 @@ struct TicketDetailView: View {
             Task {
                 qrCodeImage = await generateQRCode(from: qrCodeData, size: 300)
             }
-            
+
             autoStartLiveActivityForEventDay()
             checkLiveActivityStatus()
             updateLiveActivityIfNeeded()
@@ -91,10 +94,18 @@ struct TicketDetailView: View {
             liveActivityUpdateTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { _ in
                 updateLiveActivityIfNeeded()
             }
-            
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                     flipped = false
+                }
+            }
+        }
+        .onChange(of: burnerSetupCompleted) { _, newValue in
+            if newValue {
+                // Force view to refresh by regenerating QR code
+                Task {
+                    qrCodeImage = await generateQRCode(from: qrCodeData, size: 300)
                 }
             }
         }

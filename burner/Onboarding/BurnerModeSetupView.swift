@@ -222,7 +222,12 @@ struct BurnerModeSetupView: View {
         case 0: return "Get Started"
         case 1, 2: return "Continue"
         case 3: return authorizationGranted ? "Continue" : "Grant Access"
-        case 4: return burnerManager.isSetupValid ? "Continue" : "Select Categories"
+        case 4:
+            if !burnerManager.isSetupValid {
+                return "Select Categories"
+            } else {
+                return "Continue"
+            }
         case 5: return "Complete Setup"
         default: return "Next"
         }
@@ -232,19 +237,26 @@ struct BurnerModeSetupView: View {
         switch currentStep {
         case 0, 1, 2: return true
         case 3: return true  // Always allow button on Screen Time page (button handles both grant and continue)
-        case 4: return true  // Always allow button on Categories page (button handles both select and continue)
+        case 4: return burnerManager.isSetupValid  // Only allow if categories are selected
         case 5: return true
         default: return false
         }
     }
-    
+
     private func handleNextButton() {
         if currentStep == 3 && !authorizationGranted {
             // Request authorization (will check status first, and auto-advance on success)
             requestAuthorization()
-        } else if currentStep == 4 && !burnerManager.isSetupValid {
-            // Show app picker (will auto-advance on valid selection)
-            showingAppPicker = true
+        } else if currentStep == 4 {
+            if !burnerManager.isSetupValid {
+                // Show app picker to select categories
+                showingAppPicker = true
+            } else {
+                // Categories already selected, advance to next step
+                withAnimation {
+                    currentStep += 1
+                }
+            }
         } else if currentStep < totalSteps - 1 {
             // Advance to next step
             withAnimation {
@@ -644,11 +656,11 @@ struct CategorySelectionSlideContent: View {
     @Binding var showingAppPicker: Bool
     @Binding var currentStep: Int
     @State private var hasAutoAdvanced = false
-    
+
     private var categoryCount: Int {
         burnerManager.selectedApps.categoryTokens.count
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Consistent header spacing
@@ -677,10 +689,10 @@ struct CategorySelectionSlideContent: View {
                 .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 16)
-            
+
             Spacer()
                 .frame(height: 32)
-            
+
             if burnerManager.isSetupValid {
                 HStack(spacing: 12) {
                     Image(systemName: "checkmark.circle.fill")
@@ -691,7 +703,7 @@ struct CategorySelectionSlideContent: View {
                         Text("All categories selected")
                             .appFont(size: 17, weight: .semibold)
                             .foregroundColor(.white)
-                        
+
                         Text("Ready to continue")
                             .font(.appFont(size: 14))
                             .kerning(-0.3)
@@ -703,21 +715,13 @@ struct CategorySelectionSlideContent: View {
                 .background(Color.white.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            
+
             Spacer()
         }
         .padding(.horizontal, 24)
         .onChange(of: burnerManager.isSetupValid) { oldValue, newValue in
-            // Only auto-advance the first time categories are selected
-            if newValue == true && !hasAutoAdvanced {
-                hasAutoAdvanced = true
-                // Auto-advance after showing success briefly
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                    withAnimation {
-                        currentStep += 1
-                    }
-                }
-            }
+            // Removed auto-advance to prevent skipping category selection
+            // User must manually click Continue button after selecting categories
         }
         .onAppear {
             // Reset the auto-advance flag when returning to this slide
