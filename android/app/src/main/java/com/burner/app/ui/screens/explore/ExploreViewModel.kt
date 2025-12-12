@@ -73,6 +73,11 @@ class ExploreViewModel @Inject constructor(
                     .sortedWith(compareBy<Event> { it.featuredPriority ?: 999 }
                         .thenBy { it.startDate ?: Date(Long.MAX_VALUE) })
 
+                Log.d("ExploreViewModel", "Total events: ${events.size}, Featured events: ${featured.size}")
+                featured.forEachIndexed { index, event ->
+                    Log.d("ExploreViewModel", "Featured[$index]: ${event.name}, isFeatured=${event.isFeatured}, priority=${event.featuredPriority}, startDate=${event.startDate}")
+                }
+
                 // This week events (non-featured, starts within 7 days)
                 val thisWeekEventIds = mutableSetOf<String>()
                 val thisWeek = events
