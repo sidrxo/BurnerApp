@@ -91,7 +91,6 @@ class BookmarksViewModel @Inject constructor(
             maxTickets = 100,
             ticketsSold = 0,
             imageUrl = bookmark.eventImageUrl,
-            isFeatured = false,
             description = null
         )
     }
