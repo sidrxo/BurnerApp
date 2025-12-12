@@ -1,10 +1,3 @@
-//
-//  VideoSplashView.swift
-//  burner
-//
-//  Created by Sid Rao on 06/11/2025.
-//
-
 import SwiftUI
 import AVFoundation
 import AVKit
@@ -20,7 +13,7 @@ struct VideoSplashView: View {
             loop: loop,
             onFinish: onFinished
         )
-        .scaleEffect(x: 0.8, y: 0.8)
+        // REMOVED: .scaleEffect(x: 0.8, y: 0.8) to make it edge-to-edge
         .background(Color.black)
         .ignoresSafeArea()
     }

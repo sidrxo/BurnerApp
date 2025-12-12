@@ -1,21 +1,8 @@
-// OnboardingFlowView.swift
-// Burner
-//
-// Created by ChatGPT on 2025-12-08.
-// Fixed: use Event.imageUrl directly (no KVC / .image).
-// Fixed: Removed marquee animation from event mosaic.
-// Updated: Ensure event images are not repeated across mosaic rows and only use events with valid images.
-// Updated: ALIGNMENT CHANGED TO RIGHT EDGE.
-// Updated: Added gradient fade to black at the bottom of the mosaic and bottom padding.
-// Fixed: Added safeAreaPadding.top to push header down from Dynamic Island/status bar.
-
 import SwiftUI
 import CoreLocation
 import UserNotifications
 import Kingfisher
 import Combine
-
-// MARK: - OnboardingFlowView (Full)
 
 struct OnboardingFlowView: View {
     @EnvironmentObject var onboardingManager: OnboardingManager
@@ -28,12 +15,11 @@ struct OnboardingFlowView: View {
     @State private var currentStep = 0
     @State private var isRequesting = false
     @State private var isCompleting = false
+    @State private var isFirstLaunch = !UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
 
-    // Total screens: AuthWelcome (0) -> Location(1) -> Genres(2) -> Notifications(3) -> Complete(4)
     private let totalSlides = 5
-    private let flowSteps = 3 // Location (1) -> Genres (2) -> Notifications (3)
+    private let flowSteps = 3
 
-    // MARK: - Navigation Logic
     private var progressStep: Int {
         return max(0, currentStep - 1)
     }
@@ -60,24 +46,16 @@ struct OnboardingFlowView: View {
         }
     }
 
-    // MARK: - Body
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Header Area with Back and Skip Buttons
                 ZStack {
-
-                    // 1. Center: Logo or Progress Indicator
                     VStack(spacing: 0) {
-                        // Removed redundant Spacer().frame(height: 20) inside AuthHeader logic
-                        
                         if currentStep == 0 {
-                            // Show Auth Header with Logo
                             AuthHeader()
                         } else if currentStep > 0 && currentStep < totalSlides - 1 {
-                            // Show Progress Line (Steps 1, 2, 3)
                             HStack {
                                 Spacer()
                                 ProgressLineView(
@@ -91,13 +69,11 @@ struct OnboardingFlowView: View {
                             }
                             .padding(.horizontal, 20)
                         } else {
-                            // Invisible spacer to maintain height
                             Spacer().frame(height: 24)
                         }
                     }
                     .frame(maxWidth: .infinity)
 
-                    // 2. Top Left: Back Button
                     if showBackButton {
                         HStack {
                             Button(action: { handleBackButton() }) {
@@ -106,14 +82,12 @@ struct OnboardingFlowView: View {
                                     .foregroundColor(.white.opacity(0.6))
                                     .frame(width: 44, height: 44)
                             }
-                            // Adjust alignment to look right with the added safeAreaPadding
                             .padding(.top, currentStep == 0 ? 0 : 4)
                             .padding(.leading, 20)
                             Spacer()
                         }
                     }
 
-                    // 3. Top Right: Skip Button
                     if let skipText = getSkipText() {
                         HStack {
                             Spacer()
@@ -124,20 +98,15 @@ struct OnboardingFlowView: View {
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 10)
                             }
-                            // Adjust alignment to look right with the added safeAreaPadding
                             .padding(.top, currentStep == 0 ? 0 : 4)
                             .padding(.trailing, 20)
                         }
                     }
                 }
-                // Add system-level safe area padding to push content down
                 .safeAreaPadding(.top)
-                // Set fixed height for the content inside the header ZStack
                 .frame(height: 60)
-                // Add a small spacer padding below the header block
                 .padding(.bottom, 4)
 
-                // Content Slides using ZStack and Offset
                 ZStack {
                     ForEach(0..<totalSlides, id: \.self) { step in
                         Group {
@@ -145,7 +114,8 @@ struct OnboardingFlowView: View {
                             case 0:
                                 AuthWelcomeSlide(
                                     onLogin: { handleNextStep() },
-                                    onExplore: { handleNextStep() }
+                                    onExplore: { handleNextStep() },
+                                    isFirstLaunch: isFirstLaunch
                                 )
                             case 1:
                                 LocationSlide(onLocationSet: { handleNextStep() })
@@ -178,24 +148,21 @@ struct OnboardingFlowView: View {
             }
         }
         .environmentObject(localPreferences)
+        // MARK: - Set 'hasLaunchedBefore' immediately upon view appearance
+        .onAppear {
+            if isFirstLaunch {
+                UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SkipOnboardingToExplore"))) { _ in
             completeOnboarding()
         }
-        .onAppear {
-            // Onboarding flow started
-        }
-        .onDisappear {
-            // Onboarding flow ended
-        }
     }
 
-    // Custom Slide Transition Logic
     private func slideOffset(for step: Int) -> CGFloat {
         let screenWidth = UIScreen.main.bounds.width
         return screenWidth * CGFloat(step - currentStep)
     }
-
-    // MARK: - Logic
 
     private func handleSkip() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -221,34 +188,43 @@ struct OnboardingFlowView: View {
     }
 }
 
-// MARK: - Step 0: Auth Welcome Slide (uses Event Mosaic)
-
 struct AuthWelcomeSlide: View {
     let onLogin: () -> Void
     let onExplore: () -> Void
+    let isFirstLaunch: Bool
 
     @State private var showingSignIn = false
     @EnvironmentObject var appState: AppState
 
-    // Build event image URLs from your appState.eventViewModel.events, filtering for valid URLs
+    // MARK: - Publisher to trigger image pre-fetching when event data is ready
+    @State private var cancellables = Set<AnyCancellable>()
+
+
     private var eventImageURLs: [URL] {
         appState.eventViewModel.events.compactMap {
-            // Only include events with a non-empty imageUrl string
             guard !$0.imageUrl.isEmpty, let url = URL(string: $0.imageUrl) else {
                 return nil
             }
             return url
         }
     }
+    
+    private func prefetchImages(urls: [URL]) {
+        // Use ImagePrefetcher to download images in the background
+        ImagePrefetcher(urls: urls.prefix(12).map { $0 }, completionHandler:  {skippedResources,failedResources,completedResources in
+            // Pre-fetch is complete
+            // print("Kingfisher pre-fetch complete for welcome slide.")
+        })
+        .start()
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Put the mosaic carousel above the header
+            
+            // MARK: - Show the Carousel/Mosaic slide unconditionally (as requested previously)
             EventMosaicCarousel(eventImages: eventImageURLs)
-                // Reduced top padding as safeAreaPadding is now on the header
                 .padding(.top, 24)
 
-            // Header — keep the same visual hierarchy
             VStack(spacing: 0) {
                 TightHeaderText("MEET ME IN THE", "MOMENT", alignment: .center)
                     .frame(maxWidth: .infinity)
@@ -256,7 +232,6 @@ struct AuthWelcomeSlide: View {
             .frame(height: 120)
             .padding(.bottom, 22)
 
-            // Buttons
             VStack(spacing: 14) {
                 BurnerButton("SIGN UP/IN", style: .primary, maxWidth: 200) {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -266,7 +241,7 @@ struct AuthWelcomeSlide: View {
 
                 BurnerButton("EXPLORE", style: .secondary, maxWidth: 160) {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    onExplore()
+                    NotificationCenter.default.post(name: NSNotification.Name("SkipOnboardingToExplore"), object: nil)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -284,10 +259,22 @@ struct AuthWelcomeSlide: View {
             showingSignIn = false
             onLogin()
         }
+        // MARK: - Pre-fetch images as soon as this view appears and we have URLs
+        .onAppear {
+            // Subscribe to the eventViewModel's changes to trigger prefetch once events are loaded
+            appState.eventViewModel.$events
+                .sink { events in
+                    let urls = self.eventImageURLs
+                    if !urls.isEmpty {
+                        self.prefetchImages(urls: urls)
+                        self.cancellables.removeAll() // Stop listening after successful pre-fetch
+                    }
+                }
+                .store(in: &cancellables)
+        }
     }
 }
 
-// MARK: - Top Header (Auth and Logo)
 struct AuthHeader: View {
     var body: some View {
         HStack {
@@ -296,16 +283,12 @@ struct AuthHeader: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 28, height: 28)
-                // Reduced padding to account for safeAreaPadding in parent
                 .padding(.top, 20)
             Spacer()
         }
     }
-    
 }
 
-
-// MARK: - Slide 1: Location
 struct LocationSlide: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var localPreferences: LocalPreferences
@@ -317,7 +300,6 @@ struct LocationSlide: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Reduced to provide more vertical space
             Color.clear.frame(height: 40)
 
             VStack(spacing: 0) {
@@ -427,7 +409,6 @@ struct LocationSlide: View {
     }
 }
 
-// MARK: - Slide 2: Genres
 struct GenreSlide: View {
     @ObservedObject var localPreferences: LocalPreferences
     @ObservedObject var tagViewModel: TagViewModel
@@ -435,7 +416,6 @@ struct GenreSlide: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Reduced to provide more vertical space
             Color.clear.frame(height: 40)
 
             VStack(spacing: 0) {
@@ -504,14 +484,12 @@ struct GenreSlide: View {
     }
 }
 
-// MARK: - Slide 3: Notifications
 struct NotificationsSlide: View {
     @EnvironmentObject var localPreferences: LocalPreferences
     let onContinue: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
-            // Reduced to provide more vertical space
             Color.clear.frame(height: 40)
 
             VStack(spacing: 0) {
@@ -528,11 +506,20 @@ struct NotificationsSlide: View {
                 .lineSpacing(4)
                 .padding(.bottom, 40)
 
-            BurnerButton("I'M IN", style: .primary, maxWidth: 140) {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                requestNotifications()
+            VStack(spacing: 14) {
+                BurnerButton("I'M IN", style: .primary, maxWidth: 200) {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    requestNotifications()
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                BurnerButton("NAH", style: .secondary, maxWidth: 160) {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    localPreferences.hasEnabledNotifications = false
+                    onContinue()
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
             .padding(.horizontal, 40)
 
             Spacer()
@@ -549,12 +536,10 @@ struct NotificationsSlide: View {
     }
 }
 
-// MARK: - Slide 4: Complete (Success Screen with auto-advance)
 struct CompleteSlide: View {
     let onComplete: () -> Void
     @State private var hasTriggeredCompletion = false
 
-    // Externally-set to know when visible
     var isCurrentSlide: Bool = false
 
     var body: some View {
@@ -600,11 +585,9 @@ struct CompleteSlide: View {
     }
 }
 
-// MARK: - --- Event Mosaic Components ---
 struct KFCarouselCard: View {
     let url: URL?
 
-    // Maintain square size and rounded corners (16)
     static let size = CGSize(width: 134, height: 134)
 
     var body: some View {
@@ -621,38 +604,35 @@ struct KFCarouselCard: View {
             .clipped()
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 3)
+            // MARK: - Apply fade-in effect to the card when it appears
+            .transition(.opacity.animation(.easeIn(duration: 0.5)))
     }
 }
 
-// EventStaticRow (A static row of KFCarouselCard)
 struct EventStaticRow: View {
     let urls: [URL]
     let cardSize: CGSize = KFCarouselCard.size
     let spacing: CGFloat = 8
-    let maxCards: Int // Property to limit static display
+    let maxCards: Int
 
     private var displayedUrls: [URL] {
-        // Only show up to maxCards
         Array(urls.prefix(maxCards))
     }
 
     var body: some View {
         GeometryReader { geo in
             if urls.isEmpty {
-                // Placeholder
                 Rectangle()
                     .fill(Color.white.opacity(0.03))
                     .frame(height: cardSize.height)
             } else {
                 HStack(spacing: spacing) {
-                    // PUSHES CONTENT TO THE RIGHT
                     Spacer(minLength: 0)
                     
                     ForEach(displayedUrls.indices, id: \.self) { i in
                         KFCarouselCard(url: displayedUrls[i])
                     }
                 }
-                // Alignment is explicitly set to trailing
                 .frame(width: geo.size.width, height: cardSize.height, alignment: .trailing)
             }
         }
@@ -660,30 +640,23 @@ struct EventStaticRow: View {
     }
 }
 
-// EventMosaicCarousel: stacks three static rows to form mosaic
 struct EventMosaicCarousel: View {
     let eventImages: [URL]
 
-    // Cards per row defined for a static, aesthetic display
     private let rowOneMax = 4
     private let rowTwoMax = 4
     private let rowThreeMax = 4
     
-    // Total number of unique images required
     private var totalRequiredImages: Int {
         rowOneMax + rowTwoMax + rowThreeMax
     }
     
-    // Get unique images required for all rows
     private var uniqueImages: [URL] {
         Array(eventImages.prefix(totalRequiredImages))
     }
     
-    // Use a single, consistent offset for the whole block
     private let constantOffset: CGFloat = 30
-    
-    // Define the height of the whole mosaic structure for masking and padding
-    private let mosaicHeight: CGFloat = 134 * 3 + 8 * 2 // 3 rows of 134 height, 2 spaces of 8
+    private let mosaicHeight: CGFloat = 134 * 3 + 8 * 2
 
     var body: some View {
         if eventImages.isEmpty {
@@ -695,7 +668,6 @@ struct EventMosaicCarousel: View {
                 }
         } else {
             VStack(spacing: 8) {
-                // Row 1 (Max 2 cards) - Right Aligned
                 EventStaticRow(
                     urls: Array(uniqueImages.prefix(rowOneMax)),
                     maxCards: rowOneMax
@@ -703,7 +675,6 @@ struct EventMosaicCarousel: View {
                 .frame(height: 134)
                 .offset(x: constantOffset)
 
-                // Row 2 (Max 3 cards) - Right Aligned
                 EventStaticRow(
                     urls: Array(uniqueImages.dropFirst(rowOneMax).prefix(rowTwoMax)),
                     maxCards: rowTwoMax
@@ -711,7 +682,6 @@ struct EventMosaicCarousel: View {
                 .frame(height: 134)
                 .offset(x: constantOffset)
 
-                // Row 3 (Max 2 cards) - Right Aligned
                 EventStaticRow(
                     urls: Array(uniqueImages.dropFirst(rowOneMax + rowTwoMax).prefix(rowThreeMax)),
                     maxCards: rowThreeMax
@@ -720,19 +690,14 @@ struct EventMosaicCarousel: View {
                 .offset(x: constantOffset)
             }
             .padding(.horizontal, 12)
-            .rotationEffect(.degrees(-6)) // Re-applying the original rotation
-            .frame(height: mosaicHeight) // Set explicit height for masking
-            
-            // 1. ADD GRADIENT FADE-TO-BLACK MASK
-            // The opaque part of the mask is white.
+            .rotationEffect(.degrees(-6))
+            .frame(height: mosaicHeight)
             .mask(
                 VStack(spacing: 0) {
-                    // White rectangle to keep the top 60% of the mosaic visible
                     Rectangle()
                         .frame(height: mosaicHeight * 0.6)
                         .foregroundColor(.white)
                     
-                    // Gradient to fade the bottom 40% to black
                     LinearGradient(
                         gradient: Gradient(colors: [.white, .clear]),
                         startPoint: .top,
@@ -740,16 +705,10 @@ struct EventMosaicCarousel: View {
                     )
                 }
             )
-            
-            // 2. ADD BOTTOM PADDING TO PUSH UP THE MOSAIC
         }
     }
 }
 
-
-// MARK: - Supporting Views and Layouts (FlowLayout, GenrePill)
-
-// FlowLayout (same as original)
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
 
@@ -810,9 +769,8 @@ struct GenrePill: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Text(title.lowercased())
-                    .appMonospaced(size: 16)
+                    .appBody()
                     .lineLimit(1)
-                
             }
             .foregroundColor(isSelected ? .black : .white)
             .padding(.horizontal, 10)

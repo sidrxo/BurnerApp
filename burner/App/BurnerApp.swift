@@ -7,51 +7,27 @@ import Kingfisher
 import ActivityKit
 import UserNotifications
 
-// MARK: - AppDelegate
 class AppDelegate: NSObject, UIApplicationDelegate {
     let notificationDelegate = NotificationDelegate()
     
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        // Configure Firebase
         FirebaseApp.configure()
 
-        // Enable Firestore offline persistence for better caching and reduced reads
-        // This also helps prevent early network connection warnings
         let firestoreSettings = Firestore.firestore().settings
         firestoreSettings.cacheSettings = PersistentCacheSettings(
             sizeBytes: FirestoreCacheSizeUnlimited as NSNumber
         )
-        firestoreSettings.isSSLEnabled = true
         Firestore.firestore().settings = firestoreSettings
 
-        // Disable automatic network connectivity checks to prevent early connection warnings
-        // Network will still be used when needed, but won't attempt immediate connection
-        Firestore.firestore().disableNetwork { error in
-            if let error = error {
-                print("⚠️ Error disabling network: \(error.localizedDescription)")
-            }
-            // Re-enable network after a brief delay to allow app to fully initialize
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                Firestore.firestore().enableNetwork { error in
-                    if let error = error {
-                        print("⚠️ Error enabling network: \(error.localizedDescription)")
-                    }
-                }
-            }
-        }
-
-        // Configure Kingfisher for optimized image loading
         let cache = ImageCache.default
-        cache.memoryStorage.config.totalCostLimit = 100 * 1024 * 1024 // 100 MB memory cache
-        cache.diskStorage.config.sizeLimit = 300 * 1024 * 1024 // 300 MB disk cache
-        cache.diskStorage.config.expiration = .days(7) // 7 days expiration
+        cache.memoryStorage.config.totalCostLimit = 100 * 1024 * 1024
+        cache.diskStorage.config.sizeLimit = 300 * 1024 * 1024
+        cache.diskStorage.config.expiration = .days(7)
 
-        // Configure downloader
         let downloader = ImageDownloader.default
-        downloader.downloadTimeout = 15.0 // 15 seconds timeout
+        downloader.downloadTimeout = 15.0
 
-        // Setup notification delegate
         UNUserNotificationCenter.current().delegate = notificationDelegate
 
         return true
@@ -67,9 +43,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 }
 
-// MARK: - Global Appearance
 private func configureGlobalAppearance() {
-    // Navigation Bar
     let nav = UINavigationBarAppearance()
     nav.configureWithOpaqueBackground()
     nav.backgroundColor = .black
@@ -87,7 +61,6 @@ private func configureGlobalAppearance() {
     UINavigationBar.appearance().compactAppearance = nav
     UINavigationBar.appearance().tintColor = .white
 
-    // Tab Bar
     let tab = UITabBarAppearance()
     tab.configureWithOpaqueBackground()
     tab.backgroundColor = .black
@@ -104,12 +77,9 @@ private func configureGlobalAppearance() {
     UITabBar.appearance().tintColor = .white
     UITabBar.appearance().unselectedItemTintColor = .lightGray
 
-    // UILabel (for all UIKit text)
     UILabel.appearance().textColor = .white
 }
 
-
-// MARK: - App
 @main
 struct BurnerApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
@@ -118,9 +88,11 @@ struct BurnerApp: App {
     @State private var showingVideoSplash = true
     @Environment(\.scenePhase) private var scenePhase
     
+    // Check if this is the very first launch.
+    private let isInitialAppLaunch = !UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
+    
     init() {
         configureGlobalAppearance()
-        
     }
     
     var body: some Scene {
@@ -168,9 +140,10 @@ struct BurnerApp: App {
                     .zIndex(1001)
                 }
                 
-                // Video splash - separate from error block
                 if showingVideoSplash {
-                    VideoSplashView(videoName: "splash", loop: false) {
+                    // MARK: - Updated logic for video selection
+                    let videoToPlay = isInitialAppLaunch ? "launch" : "splash"
+                    VideoSplashView(videoName: videoToPlay, loop: false) {
                         showingVideoSplash = false
                     }
                     .zIndex(2000)
@@ -181,14 +154,12 @@ struct BurnerApp: App {
         .onChange(of: scenePhase) { oldPhase, newPhase in
             configureGlobalAppearance()
             
-            // Dismiss splash screen if app is backgrounded or becomes inactive during splash
-            if showingVideoSplash && (newPhase == .background || newPhase == .inactive) {
+            // MARK: - Updated logic to only dismiss splash on background if it's NOT the initial launch (to ensure 'launch' video plays fully)
+            if !isInitialAppLaunch && showingVideoSplash && (newPhase == .background || newPhase == .inactive) {
                 showingVideoSplash = false
             }
             
-            // Update live activities when app becomes active
             if newPhase == .active {
-                // FIX: Use UNUserNotificationCenter to clear the application badge
                 UNUserNotificationCenter.current().setBadgeCount(0) { error in
                     if let error = error {
                         print("⚠️ Error clearing badge count: \(error.localizedDescription)")
@@ -202,19 +173,15 @@ struct BurnerApp: App {
         }
     }
     
-    // MARK: - URL Handling
     private func handleIncomingURL(_ url: URL) {
-        // 1) Google Sign-In first
         if GIDSignIn.sharedInstance.handle(url) {
             return
         }
         
-        // 2) Check for Firebase passwordless sign-in link
         if appState.passwordlessAuthHandler.handleSignInLink(url: url) {
             return
         }
         
-        // 3) Our custom scheme(s)
         guard url.scheme?.lowercased() == "burner" else {
             return
         }
@@ -226,7 +193,6 @@ struct BurnerApp: App {
             case .ticket(let id):
                 navigateToTicket(ticketId: id)
             case .auth(let link):
-                // Handle the passwordless auth link
                 if let linkUrl = URL(string: link) {
                     _ = appState.passwordlessAuthHandler.handleSignInLink(url: linkUrl)
                 }
@@ -245,15 +211,12 @@ struct BurnerApp: App {
             return nil
         }
         
-        // ✅ SECURITY: Validate URL scheme strictly
         guard url.scheme?.lowercased() == "burner" else {
             return nil
         }
         
-        // Case A: burner://auth?link=<url> (passwordless auth)
         if comps.host == "auth" {
             if let linkParam = comps.queryItems?.first(where: { $0.name == "link" })?.value {
-                // ✅ SECURITY: Validate auth link URL
                 guard let authURL = URL(string: linkParam),
                       let authScheme = authURL.scheme?.lowercased(),
                       (authScheme == "https" || authScheme == "http"),
@@ -266,27 +229,22 @@ struct BurnerApp: App {
             return nil
         }
         
-        // Case B: burner://event/12345 (host-based)
         if comps.host == "event" {
             let id = url.lastPathComponent
-            // ✅ SECURITY: Validate ID format (alphanumeric + hyphens/underscores only)
             guard !id.isEmpty, isValidID(id) else {
                 return nil
             }
             return .event(id)
         }
         
-        // Case B2: burner://ticket/12345 (host-based)
         if comps.host == "ticket" {
             let id = url.lastPathComponent
-            // ✅ SECURITY: Validate ID format
             guard !id.isEmpty, isValidID(id) else {
                 return nil
             }
             return .ticket(id)
         }
         
-        // Case C: burner:///event/12345 or burner:///ticket/12345 (path-based)
         let parts = url.pathComponents.filter { $0 != "/" }
         
         if parts.count >= 2 {
@@ -308,27 +266,22 @@ struct BurnerApp: App {
         return nil
     }
     
-    // ✅ SECURITY: Validate ID format to prevent injection
     private func isValidID(_ id: String) -> Bool {
-        // Allow alphanumeric characters, hyphens, and underscores only
-        // Typical Firestore IDs are 20-28 characters
         let allowedCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
         let idCharacterSet = CharacterSet(charactersIn: id)
         guard allowedCharacters.isSuperset(of: idCharacterSet),
               id.count >= 1,
-              id.count <= 100 else { // Reasonable length limit
+              id.count <= 100 else {
             return false
         }
         return true
     }
     
     private func navigateToEvent(eventId: String) {
-        // Use NavigationCoordinator for deep linking
         appState.navigationCoordinator.handleDeepLink(eventId: eventId)
     }
     
     private func navigateToTicket(ticketId: String) {
-        // Use NavigationCoordinator for ticket deep linking
         appState.navigationCoordinator.handleTicketDeepLink(ticketId: ticketId)
     }
     
