@@ -34,10 +34,30 @@ class EventRepository @Inject constructor(
                     return@addSnapshotListener
                 }
 
+                val totalDocs = snapshot?.documents?.size ?: 0
+                android.util.Log.d("EventRepository", "Fetched $totalDocs documents from Firestore")
+
                 val events = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Event::class.java)
+                    try {
+                        val event = doc.toObject(Event::class.java)
+                        if (event == null) {
+                            android.util.Log.w("EventRepository", "Failed to deserialize document ${doc.id}")
+                            // Log the raw data to see what fields exist
+                            android.util.Log.d("EventRepository", "Raw document data: ${doc.data}")
+                        } else {
+                            // Log featured events specifically
+                            if (doc.data?.get("isFeatured") == true) {
+                                android.util.Log.d("EventRepository", "Found featured event: ${event.name}, isFeatured=${event.isFeatured}, raw=${doc.data?.get("isFeatured")}")
+                            }
+                        }
+                        event
+                    } catch (e: Exception) {
+                        android.util.Log.e("EventRepository", "Error deserializing document ${doc.id}: ${e.message}", e)
+                        null
+                    }
                 } ?: emptyList()
 
+                android.util.Log.d("EventRepository", "Successfully deserialized ${events.size} events")
                 trySend(events)
             }
 

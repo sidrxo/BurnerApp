@@ -29,10 +29,6 @@ data class Event(
     val ticketsSold: Int = 0,
     @PropertyName("imageUrl")
     val imageUrl: String = "",
-    @PropertyName("isFeatured")
-    val isFeatured: Boolean = false,
-    @PropertyName("featuredPriority")
-    val featuredPriority: Int? = null,
     val description: String? = null,
     val status: String? = null,
     val tags: List<String>? = null,
@@ -41,6 +37,30 @@ data class Event(
     @PropertyName("updatedAt")
     val updatedAt: Timestamp? = null
 ) {
+    // Featured fields - must be var for Firestore deserialization
+    @get:Exclude
+    var isFeatured: Boolean = false
+        private set
+
+    @set:PropertyName("isFeatured")
+    var isFeaturedValue: Boolean = false
+        set(value) {
+            field = value
+            isFeatured = value
+        }
+
+    @get:Exclude
+    var featuredPriority: Int? = null
+        private set
+
+    @set:PropertyName("featuredPriority")
+    var featuredPriorityValue: Int? = null
+        set(value) {
+            field = value
+            featuredPriority = value
+        }
+
+    // Coordinates handling
     @get:Exclude
     var coordinates: GeoPoint? = null
 
