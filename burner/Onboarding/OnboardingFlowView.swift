@@ -162,6 +162,8 @@ struct OnboardingFlowView: View {
                                     onComplete: { completeOnboarding() },
                                     isCurrentSlide: step == currentStep
                                 )
+                                // 🌟 NEW: Inject appState for CompleteSlide to use the wait function 🌟
+                                .environmentObject(appState)
                             default:
                                 EmptyView()
                             }
@@ -232,6 +234,7 @@ struct OnboardingFlowView: View {
 
 // MARK: - Step 0: Auth Welcome Slide (uses Event Mosaic)
 
+
 struct AuthWelcomeSlide: View {
     let onLogin: () -> Void
     let onExplore: () -> Void
@@ -283,11 +286,13 @@ struct AuthWelcomeSlide: View {
     var body: some View {
         VStack(spacing: 0) {
             // Put the mosaic carousel above the header
+            // The Mosaic handles its own empty state (Color.clear), so it's safe to render immediately
             EventMosaicCarousel(eventImages: eventImageURLs)
                 // Reduced top padding as safeAreaPadding is now on the header
                 .padding(.top, 24)
-
+           
             // Header — keep the same visual hierarchy
+            // REMOVED: if isDataLoaded check. Always show text/buttons.
             VStack(spacing: 0) {
                 TightHeaderText("MEET ME IN THE", "MOMENT", alignment: .center)
                     .frame(maxWidth: .infinity)
@@ -314,6 +319,8 @@ struct AuthWelcomeSlide: View {
             Spacer()
                 .frame(minHeight: 40)
         }
+        // REMOVED: .opacity(isDataLoaded ? 1.0 : 0.0) modifier
+        // REMOVED: .animation(...) that was attached to loading
         .sheet(isPresented: $showingSignIn) {
             SignInSheetView(showingSignIn: $showingSignIn, onSkip: {
                 onLogin()
@@ -323,9 +330,14 @@ struct AuthWelcomeSlide: View {
             showingSignIn = false
             onLogin()
         }
+        .onAppear {
+            // Optional: Force a refresh if needed
+            Task {
+                await appState.eventViewModel.fetchEvents()
+            }
+        }
     }
 }
-
 // MARK: - Top Header (Auth and Logo)
 struct AuthHeader: View {
     var body: some View {
@@ -593,6 +605,9 @@ struct CompleteSlide: View {
     let onComplete: () -> Void
     @State private var hasTriggeredCompletion = false
     @State private var displayedLines: [String] = []
+    
+    // 🌟 ADDED: Access AppState to wait for data 🌟
+    @EnvironmentObject var appState: AppState
 
     // Externally-set to know when visible
     var isCurrentSlide: Bool = false
@@ -604,14 +619,18 @@ struct CompleteSlide: View {
         "$ connecting to event database...",
         "✓ database connection established",
         "$ loading event data...",
-        "✓ 247 events loaded",
-        "$ configuring user profile...",
-        "✓ profile configured",
-        "$ granting app access...",
-        "✓ access granted",
-        "$ preparing experience...",
-        "✓ ready to explore"
+        "247 events loaded",
+        "configuring user profile...",
+        "profile configured",
+        "granting app access...",
+        "access granted",
+        "preparing experience...",
+        "ready to explore"
     ]
+    
+    // Adjusted line delay for completion slide
+    private let lineDisplayDelay: Double = 0.15
+    private let fadeOutDuration: Double = 0.5
 
     var body: some View {
         VStack(spacing: 0) {
@@ -621,15 +640,16 @@ struct CompleteSlide: View {
                 ForEach(displayedLines, id: \.self) { line in
                     Text(line)
                         .appMonospaced(size: 13)
-                        .foregroundColor(line.hasPrefix("✓") ? .green : .white.opacity(0.8))
+                        .foregroundColor(.white.opacity(0.8))
                         .transition(.opacity)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading) // Ensure left alignment and stable center frame
             .padding(.horizontal, 40)
 
             Spacer()
         }
-        .onChange(of: isCurrentSlide) { oldValue, newValue in
+        .onChange(of: isCurrentSlide) { _, newValue in
             guard newValue == true, !hasTriggeredCompletion else {
                 return
             }
@@ -642,18 +662,28 @@ struct CompleteSlide: View {
     private func animateTerminalLines() {
         // Randomly select phrases to display
         let selectedPhrases = terminalPhrases.shuffled().prefix(6)
-
+        let totalDisplayTime = Double(selectedPhrases.count) * lineDisplayDelay
+        
         for (index, phrase) in selectedPhrases.enumerated() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.15) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * lineDisplayDelay) {
                 withAnimation(.easeIn(duration: 0.1)) {
                     displayedLines.append(phrase)
                 }
             }
         }
 
-        // Dismiss after all lines are shown
-        DispatchQueue.main.asyncAfter(deadline: .now() + Double(selectedPhrases.count) * 0.15 + 0.5) {
-            onComplete()
+        // 🌟 MODIFIED: Wait for lines to finish AND data to load 🌟
+        Task { @MainActor in
+            // Wait for lines to finish animating + a small buffer
+            try? await Task.sleep(for: .seconds(totalDisplayTime + 0.5))
+            
+            // Wait for events to load using the new async function
+            await appState.eventViewModel.waitForEventsToLoad()
+
+            // Start final fade-out
+            withAnimation(.easeOut(duration: fadeOutDuration)) {
+                onComplete()
+            }
         }
     }
 }
@@ -696,10 +726,9 @@ struct EventStaticRow: View {
 
     var body: some View {
         GeometryReader { geo in
+            // 🌟 MODIFIED: Use Color.clear placeholder instead of the old Rectangle/ProgressView 🌟
             if urls.isEmpty {
-                // Placeholder
-                Rectangle()
-                    .fill(Color.white.opacity(0.03))
+                Color.clear
                     .frame(height: cardSize.height)
             } else {
                 HStack(spacing: spacing) {
@@ -707,7 +736,7 @@ struct EventStaticRow: View {
                     Spacer(minLength: 0)
                     
                     ForEach(displayedUrls.indices, id: \.self) { i in
-                        KFCarouselCard(url: displayedUrls[i])
+                                            KFCarouselCard(url: displayedUrls[i])
                     }
                 }
                 // Alignment is explicitly set to trailing
@@ -744,13 +773,10 @@ struct EventMosaicCarousel: View {
     private let mosaicHeight: CGFloat = 134 * 3 + 8 * 2 // 3 rows of 134 height, 2 spaces of 8
 
     var body: some View {
+        // 🌟 MODIFIED: Use Color.clear placeholder instead of the old Rectangle/ProgressView 🌟
         if eventImages.isEmpty {
-            Rectangle()
-                .fill(Color.white.opacity(0.03))
-                .frame(height: 180)
-                .overlay {
-                    ProgressView().tint(.white)
-                }
+            Color.clear
+                .frame(height: mosaicHeight)
         } else {
             VStack(spacing: 8) {
                 // Row 1 (3 cards) - Right Aligned

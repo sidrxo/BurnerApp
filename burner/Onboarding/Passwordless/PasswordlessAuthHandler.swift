@@ -16,7 +16,6 @@ class PasswordlessAuthHandler: ObservableObject {
     @Published var isProcessing = false
     @Published var error: String?
     
-    /// Call this from your App or SceneDelegate when handling deep links
     func handleSignInLink(url: URL) -> Bool {
         // Check if this is a sign-in link
         guard Auth.auth().isSignIn(withEmailLink: url.absoluteString) else {

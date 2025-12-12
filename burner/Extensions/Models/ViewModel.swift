@@ -23,6 +23,9 @@ class EventViewModel: ObservableObject {
     // Track refresh state to prevent concurrent refreshes
     private var isRefreshing = false
     
+    // 🌟 NEW: Task that completes when events are fetched 🌟
+    private var initialLoadTask: Task<Void, Error>?
+    
     init(
         eventRepository: EventRepository,
         ticketRepository: TicketRepository
@@ -31,7 +34,7 @@ class EventViewModel: ObservableObject {
         self.ticketRepository = ticketRepository
     }
     
-    // MARK: - Fetch Events
+    // MARK: - Fetch Events (MODIFIED to support waiting)
     func fetchEvents() {
         guard !isSimulatingEmptyData else {
             isLoading = false
@@ -41,25 +44,44 @@ class EventViewModel: ObservableObject {
         }
 
         isLoading = true
+        
+        // 🌟 NEW: Create the task here 🌟
+        initialLoadTask = Task {
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                self.eventRepository.observeEvents { [weak self] result in
+                    guard let self = self else {
+                        continuation.resume(returning: ())
+                        return
+                    }
 
-        eventRepository.observeEvents { [weak self] result in
-            guard let self = self else { return }
+                    Task { @MainActor in
+                        guard !self.isSimulatingEmptyData else {
+                            continuation.resume(returning: ())
+                            return
+                        }
 
-            Task { @MainActor in
-                guard !self.isSimulatingEmptyData else { return }
+                        self.isLoading = false
 
-                self.isLoading = false
+                        switch result {
+                        case .success(let events):
+                            self.events = events
+                            await self.refreshUserTicketStatus()
 
-                switch result {
-                case .success(let events):
-                    self.events = events
-                    await self.refreshUserTicketStatus()
-
-                case .failure(let error):
-                    self.errorMessage = "Failed to load events: \(error.localizedDescription)"
+                        case .failure(let error):
+                            self.errorMessage = "Failed to load events: \(error.localizedDescription)"
+                        }
+                        // Resume the continuation once processing is done
+                        continuation.resume(returning: ())
+                    }
                 }
             }
         }
+    }
+    
+    // 🌟 NEW: Method to wait for the initial load 🌟
+    func waitForEventsToLoad() async {
+        // Wait for the task to finish, ignoring errors if needed
+        _ = await initialLoadTask?.result
     }
 
     // MARK: - Refresh Events (Improved for pull-to-refresh)

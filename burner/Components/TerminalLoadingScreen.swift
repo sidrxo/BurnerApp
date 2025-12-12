@@ -5,21 +5,23 @@ struct TerminalLoadingScreen: View {
     @EnvironmentObject var appState: AppState
 
     @State private var displayedLines: [String] = []
-    @State private var hasStartedFetching = false
+    @State private var hasStartedLoading = false
+    @State private var screenOpacity: Double = 1.0
 
-    // Terminal phrases for loading
-    private let terminalPhrases = [
+    private let terminalPhrases: [String] = [
+        "$ initializing system...",
+        "| searching local caches...",
+        "| fetching remote configuration...",
         "$ initializing burner...",
+        "| validating security protocols...",
+        "| compiling assets...",
         "✓ system ready",
-        "$ connecting to firebase...",
-        "✓ connection established",
-        "$ fetching event database...",
-        "✓ events loaded",
-        "$ loading images...",
-        "✓ images cached",
-        "$ configuring experience...",
-        "✓ ready to explore"
     ]
+    
+    private let lineDisplayDelay: Double = 0.4
+    private let lineAnimationDuration: Double = 0.2
+    private let textBufferDelay: Double = 0.8
+    private let fadeOutDuration: Double = 1.0
 
     var body: some View {
         ZStack {
@@ -28,45 +30,60 @@ struct TerminalLoadingScreen: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                VStack(alignment: .leading, spacing: 6) {
+                // 🌟 MODIFIED VStack ALIGNMENT & FRAME 🌟
+                VStack(alignment: .leading, spacing: 6) { // Change from .center to **.leading**
+                    // Displayed Lines
                     ForEach(displayedLines, id: \.self) { line in
                         Text(line)
                             .appMonospaced(size: 14)
-                            .foregroundColor(line.hasPrefix("✓") ? .green : .white.opacity(0.8))
+                            .foregroundColor(.white.opacity(0.8))
                             .transition(.opacity)
                     }
                 }
+                // 🌟 IMPORTANT: Add .frame(maxWidth: .infinity, alignment: .leading) 🌟
+                // This forces the inner VStack to take up the available width and
+                // left-align its content, preventing it from resizing and shifting.
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 40)
-
+                
                 Spacer()
             }
         }
+        .opacity(screenOpacity)
         .onAppear {
             startLoadingSequence()
         }
     }
 
     private func startLoadingSequence() {
-        guard !hasStartedFetching else { return }
-        hasStartedFetching = true
+        // ... (rest of the function is unchanged)
+        guard !hasStartedLoading else { return }
+        hasStartedLoading = true
 
-        // Start fetching events in background
         appState.loadInitialData()
 
-        // Randomly select phrases to display
-        let selectedPhrases = terminalPhrases.shuffled().prefix(8)
-
-        for (index, phrase) in selectedPhrases.enumerated() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.2) {
-                withAnimation(.easeIn(duration: 0.1)) {
+        for (index, phrase) in terminalPhrases.enumerated() {
+            let delay = Double(index) * lineDisplayDelay
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                withAnimation(.easeIn(duration: lineAnimationDuration)) {
                     displayedLines.append(phrase)
                 }
             }
         }
 
-        // Complete after all lines are shown
-        DispatchQueue.main.asyncAfter(deadline: .now() + Double(selectedPhrases.count) * 0.2 + 0.5) {
-            onComplete()
+        let totalLines = terminalPhrases.count
+        let transitionStartDelay = Double(totalLines) * lineDisplayDelay + textBufferDelay
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + transitionStartDelay) {
+            
+            withAnimation(.easeOut(duration: fadeOutDuration)) {
+                screenOpacity = 0.0
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + fadeOutDuration) {
+                onComplete()
+            }
         }
     }
 }

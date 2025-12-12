@@ -59,8 +59,9 @@ class OnboardingManager: ObservableObject {
     // Secondary Initializer: For backward compatibility/Previews where Auth is unavailable
     init() {
         self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
-        self.shouldShowOnboarding = !hasCompletedOnboarding
         self.hasEverSignedIn = userDefaults.bool(forKey: hasEverSignedInKey)
+        self.shouldShowOnboarding = !hasCompletedOnboarding
+
     }
 
     // MARK: - Subscription Setup

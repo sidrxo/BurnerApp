@@ -96,15 +96,23 @@ private func configureGlobalAppearance() {
 @main
 struct BurnerApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    
+    // MARK: State
     @StateObject private var appState = AppState()
+    
+    // Persistent flag to track first launch (defaults to false)
+    @AppStorage("hasLaunchedBefore") var hasLaunchedBefore: Bool = false
+    
     @State private var shouldResetApp = false
-    @State private var showingVideoSplash = true
+    
+    // Will be set in onAppear based on hasLaunchedBefore
+    @State private var showingVideoSplash = false
     @State private var showingTerminalLoading = false
+    
     @Environment(\.scenePhase) private var scenePhase
     
     init() {
         configureGlobalAppearance()
-        
     }
     
     var body: some Scene {
@@ -124,6 +132,15 @@ struct BurnerApp: App {
                         handleIncomingURL(url)
                     }
                     .onAppear {
+                        // Determine which splash screen to show based on launch history
+                        if !hasLaunchedBefore {
+                            // First launch: show terminal only
+                            showingTerminalLoading = true
+                        } else {
+                            // Subsequent launches: show video only
+                            showingVideoSplash = true
+                        }
+                        
                         setupResetObserver()
                         setupNotificationObserver()
                     }
@@ -131,14 +148,14 @@ struct BurnerApp: App {
                     .tint(.white)
                     .foregroundColor(.white)
                     .preferredColorScheme(.dark)
-                
+               
                 if appState.showingBurnerLockScreen {
                     BurnerModeLockScreen()
                         .environmentObject(appState)
                         .transition(.opacity)
                         .zIndex(1000)
                 }
-                
+               
                 if appState.showingError {
                     CustomAlertView(
                         title: "Error",
@@ -150,21 +167,23 @@ struct BurnerApp: App {
                     .transition(.opacity)
                     .zIndex(1001)
                 }
-                
-                // Terminal loading screen - shows after video splash
+               
+                // Terminal loading screen - shows ONLY on first launch
                 if showingTerminalLoading {
                     TerminalLoadingScreen(onComplete: {
+                        // Mark as launched and hide terminal
                         showingTerminalLoading = false
+                        hasLaunchedBefore = true
                     })
                     .environmentObject(appState)
                     .zIndex(1999)
                 }
 
-                // Video splash - separate from error block
+                // Video splash - Shows only on subsequent launches
                 if showingVideoSplash {
                     VideoSplashView(videoName: "splash", loop: false) {
+                        // Hide the video when complete
                         showingVideoSplash = false
-                        showingTerminalLoading = true
                     }
                     .zIndex(2000)
                 }
@@ -174,15 +193,20 @@ struct BurnerApp: App {
         .onChange(of: scenePhase) { oldPhase, newPhase in
             configureGlobalAppearance()
             
-            // Dismiss splash screen if app is backgrounded or becomes inactive during splash
-            if showingVideoSplash && (newPhase == .background || newPhase == .inactive) {
+            // Dismiss splash screens if app is backgrounded or becomes inactive during splash
+            if (showingVideoSplash || showingTerminalLoading) &&
+               (newPhase == .background || newPhase == .inactive) {
                 showingVideoSplash = false
-                showingTerminalLoading = true
+                showingTerminalLoading = false
+                
+                // If terminal was interrupted on first launch, mark as launched anyway
+                if !hasLaunchedBefore {
+                    hasLaunchedBefore = true
+                }
             }
             
             // Update live activities when app becomes active
             if newPhase == .active {
-                // FIX: Use UNUserNotificationCenter to clear the application badge
                 UNUserNotificationCenter.current().setBadgeCount(0) { error in
                     if let error = error {
                         print("⚠️ Error clearing badge count: \(error.localizedDescription)")
@@ -202,17 +226,17 @@ struct BurnerApp: App {
         if GIDSignIn.sharedInstance.handle(url) {
             return
         }
-        
+       
         // 2) Check for Firebase passwordless sign-in link
         if appState.passwordlessAuthHandler.handleSignInLink(url: url) {
             return
         }
-        
+       
         // 3) Our custom scheme(s)
         guard url.scheme?.lowercased() == "burner" else {
             return
         }
-        
+       
         if let deeplink = parseBurnerDeepLink(url) {
             switch deeplink {
             case .event(let id):
@@ -238,12 +262,12 @@ struct BurnerApp: App {
         guard let comps = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
             return nil
         }
-        
+       
         // ✅ SECURITY: Validate URL scheme strictly
         guard url.scheme?.lowercased() == "burner" else {
             return nil
         }
-        
+       
         // Case A: burner://auth?link=<url> (passwordless auth)
         if comps.host == "auth" {
             if let linkParam = comps.queryItems?.first(where: { $0.name == "link" })?.value {
@@ -259,7 +283,7 @@ struct BurnerApp: App {
             }
             return nil
         }
-        
+       
         // Case B: burner://event/12345 (host-based)
         if comps.host == "event" {
             let id = url.lastPathComponent
@@ -269,7 +293,7 @@ struct BurnerApp: App {
             }
             return .event(id)
         }
-        
+       
         // Case B2: burner://ticket/12345 (host-based)
         if comps.host == "ticket" {
             let id = url.lastPathComponent
@@ -279,10 +303,10 @@ struct BurnerApp: App {
             }
             return .ticket(id)
         }
-        
+       
         // Case C: burner:///event/12345 or burner:///ticket/12345 (path-based)
         let parts = url.pathComponents.filter { $0 != "/" }
-        
+       
         if parts.count >= 2 {
             if parts[0] == "event" {
                 let id = parts[1]
@@ -298,7 +322,7 @@ struct BurnerApp: App {
                 return .ticket(id)
             }
         }
-        
+       
         return nil
     }
     
