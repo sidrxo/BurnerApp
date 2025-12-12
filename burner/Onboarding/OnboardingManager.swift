@@ -64,29 +64,14 @@ class OnboardingManager: ObservableObject {
     }
 
     // MARK: - Subscription Setup
-    
+
     private func setupAuthSubscription() {
         // Observe sign-in/sign-out status
+        // The authService.$currentUser publisher already handles all auth state changes,
+        // so we don't need redundant notification listeners that cause UI flashing
         authService?.$currentUser
             .dropFirst() // Skip the initial value since we handle it in init
             .sink { [weak self] user in
-                self?.updateOnboardingStatus()
-            }
-            .store(in: &cancellables)
-        
-        // Also listen for explicit sign-in notifications
-        NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))
-            .sink { [weak self] _ in
-                // Small delay to ensure auth state is fully updated
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    self?.updateOnboardingStatus()
-                }
-            }
-            .store(in: &cancellables)
-            
-        // Listen for sign-out notifications
-        NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedOut"))
-            .sink { [weak self] _ in
                 self?.updateOnboardingStatus()
             }
             .store(in: &cancellables)
