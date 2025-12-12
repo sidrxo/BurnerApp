@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
@@ -75,17 +74,7 @@ fun FeaturedHeroCard(
             contentScale = ContentScale.Crop
         )
 
-        // Variable blur effect approximation (matching iOS VariableBlurView)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(cardHeight * 0.5f) // Blur bottom 50%
-                .align(Alignment.BottomCenter)
-                .blur(radius = 8.dp) // Approximate blur effect
-                .background(Color.Transparent)
-        )
-
-        // Gradient overlay (matching iOS - starts at 0.3 vertical position)
+        // Gradient overlay (matching iOS visual style)
         Box(
             modifier = Modifier
                 .fillMaxSize()

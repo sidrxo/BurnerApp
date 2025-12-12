@@ -70,6 +70,15 @@ fun ExploreScreen(
                     )
                 }
 
+                // Debug: Show featured event count
+                item {
+                    Text(
+                        text = "DEBUG: Featured events count: ${uiState.featuredEvents.size}",
+                        color = BurnerColors.White,
+                        modifier = Modifier.padding(20.dp)
+                    )
+                }
+
                 // First Featured Hero Card (like iOS)
                 if (uiState.featuredEvents.isNotEmpty()) {
                     item {
