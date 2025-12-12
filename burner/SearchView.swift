@@ -163,14 +163,7 @@ struct SearchView: View {
             cancelActionTitle: "Cancel",
             primaryAction: {
                 showingSignInAlert = false
-
-                // If user has never signed in, show full onboarding
-                // Otherwise, just show the sign-in modal
-                if !onboardingManager.hasEverSignedIn {
-                    onboardingManager.shouldShowOnboarding = true
-                } else {
-                    appState.isSignInSheetPresented = true
-                }
+                appState.isSignInSheetPresented = true
             },
             primaryActionTitle: "Sign In",
             customContent: EmptyView()
