@@ -67,11 +67,11 @@ class ExploreViewModel @Inject constructor(
                 calendar.add(Calendar.DAY_OF_YEAR, 7)
                 val endOfWeek = calendar.time
 
-                // Featured events - shuffle with day-based seed like iOS
-                val dayOfYear = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
+                // Featured events - sort by priority (lower = higher priority), then by start time (matching iOS)
                 val featured = events
                     .filter { it.isFeatured && (it.startDate?.after(now) == true) }
-                    .shuffled(Random(dayOfYear.toLong()))
+                    .sortedWith(compareBy<Event> { it.featuredPriority ?: 999 }
+                        .thenBy { it.startDate ?: Date(Long.MAX_VALUE) })
 
                 // This week events (non-featured, starts within 7 days)
                 val thisWeekEventIds = mutableSetOf<String>()
