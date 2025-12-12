@@ -113,8 +113,12 @@ struct BurnerApp: App {
     
     init() {
         configureGlobalAppearance()
+
+        // Set splash state immediately to prevent flash
+        _showingTerminalLoading = State(initialValue: !hasLaunchedBefore)
+        _showingVideoSplash = State(initialValue: hasLaunchedBefore)
     }
-    
+
     var body: some Scene {
         WindowGroup {
             ZStack {
@@ -132,15 +136,6 @@ struct BurnerApp: App {
                         handleIncomingURL(url)
                     }
                     .onAppear {
-                        // Determine which splash screen to show based on launch history
-                        if !hasLaunchedBefore {
-                            // First launch: show terminal only
-                            showingTerminalLoading = true
-                        } else {
-                            // Subsequent launches: show video only
-                            showingVideoSplash = true
-                        }
-                        
                         setupResetObserver()
                         setupNotificationObserver()
                     }
@@ -148,6 +143,7 @@ struct BurnerApp: App {
                     .tint(.white)
                     .foregroundColor(.white)
                     .preferredColorScheme(.dark)
+                    .opacity(showingTerminalLoading || showingVideoSplash ? 0 : 1)
                
                 if appState.showingBurnerLockScreen {
                     BurnerModeLockScreen()

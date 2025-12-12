@@ -658,7 +658,7 @@ struct CompleteSlide: View {
         // Randomly select phrases to display
         let selectedPhrases = terminalPhrases.shuffled().prefix(6)
         let totalDisplayTime = Double(selectedPhrases.count) * lineDisplayDelay
-        
+
         for (index, phrase) in selectedPhrases.enumerated() {
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * lineDisplayDelay) {
                 withAnimation(.easeIn(duration: 0.1)) {
@@ -667,6 +667,10 @@ struct CompleteSlide: View {
             }
         }
 
+        // Call onComplete after all phrases are displayed plus a small delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + totalDisplayTime + 0.5) {
+            onComplete()
+        }
     }
 }
 

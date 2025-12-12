@@ -224,14 +224,19 @@ struct AccountDetailsView: View {
     private func signOut() {
         isSigningOut = true
         do {
+            // End all live activities before signing out
+            if #available(iOS 16.1, *) {
+                TicketLiveActivityManager.endLiveActivity()
+            }
+
             // ✅ FIXED: Notify AppState before signing out
             appState.handleManualSignOut()
-            
+
             try Auth.auth().signOut()
-            
+
             // ✅ Post notification for SettingsView to update
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
-            
+
             // Dismiss the view
             presentationMode.wrappedValue.dismiss()
         } catch {
@@ -256,6 +261,11 @@ struct AccountDetailsView: View {
                     showingDeleteError = true
                 }
             } else {
+                // End all live activities before deleting account
+                if #available(iOS 16.1, *) {
+                    TicketLiveActivityManager.endLiveActivity()
+                }
+
                 // Success - notify AppState and sign out
                 appState.handleManualSignOut()
                 NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
@@ -276,6 +286,11 @@ struct AccountDetailsView: View {
                 deleteErrorMessage = error.localizedDescription
                 showingDeleteError = true
             } else {
+                // End all live activities before deleting account
+                if #available(iOS 16.1, *) {
+                    TicketLiveActivityManager.endLiveActivity()
+                }
+
                 // Success - notify AppState and sign out
                 appState.handleManualSignOut()
                 NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)

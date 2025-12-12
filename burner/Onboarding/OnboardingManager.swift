@@ -8,11 +8,13 @@ class OnboardingManager: ObservableObject {
     @Published var hasCompletedOnboarding: Bool
     @Published var shouldShowOnboarding: Bool = false
     @Published var hasEverSignedIn: Bool
+    @Published var appLaunchCount: Int
 
     private let userDefaults = UserDefaults.standard
     private let onboardingCompletedKey = "hasCompletedOnboarding"
     private let hasEverSignedInKey = "hasEverSignedIn"
-    
+    private let appLaunchCountKey = "appLaunchCount"
+
     // Hold a reference to the AuthenticationService
     private var authService: AuthenticationService?
     private var cancellables = Set<AnyCancellable>()
@@ -24,6 +26,11 @@ class OnboardingManager: ObservableObject {
         self.authService = authService
         self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
         self.hasEverSignedIn = userDefaults.bool(forKey: hasEverSignedInKey)
+        self.appLaunchCount = userDefaults.integer(forKey: appLaunchCountKey)
+
+        // Increment launch count on each app start
+        self.appLaunchCount += 1
+        userDefaults.set(self.appLaunchCount, forKey: appLaunchCountKey)
 
         // Set initial state immediately based on current auth status
         let isAuthenticated = authService.currentUser != nil
@@ -31,7 +38,8 @@ class OnboardingManager: ObservableObject {
         // LOGIC:
         // - If signed IN -> Never show onboarding
         // - If signed OUT and COMPLETED -> Hide onboarding
-        // - If signed OUT and NOT completed -> Show onboarding
+        // - If signed OUT, NOT completed, and within first 2 launches -> Show onboarding
+        // - If signed OUT, NOT completed, but past 2 launches -> Hide onboarding (too late)
         if isAuthenticated {
             // Mark that user has signed in
             if !hasEverSignedIn {
@@ -47,8 +55,8 @@ class OnboardingManager: ObservableObject {
                 // Will load preferences after auth subscription is set up
             }
         } else {
-            // Signed out - check if they completed onboarding
-            self.shouldShowOnboarding = !hasCompletedOnboarding
+            // Signed out - only show onboarding if not completed AND within first 2 launches
+            self.shouldShowOnboarding = !hasCompletedOnboarding && appLaunchCount <= 2
         }
 
         // Setup the subscription to track auth state changes
@@ -59,7 +67,8 @@ class OnboardingManager: ObservableObject {
     init() {
         self.hasCompletedOnboarding = userDefaults.bool(forKey: onboardingCompletedKey)
         self.hasEverSignedIn = userDefaults.bool(forKey: hasEverSignedInKey)
-        self.shouldShowOnboarding = !hasCompletedOnboarding
+        self.appLaunchCount = userDefaults.integer(forKey: appLaunchCountKey)
+        self.shouldShowOnboarding = !hasCompletedOnboarding && appLaunchCount <= 2
 
     }
 
@@ -86,7 +95,8 @@ class OnboardingManager: ObservableObject {
         // LOGIC:
         // - If signed IN -> Never show onboarding (let them into app)
         // - If signed OUT and COMPLETED -> Hide onboarding (let them explore)
-        // - If signed OUT and NOT completed -> Show onboarding
+        // - If signed OUT, NOT completed, and within first 2 launches -> Show onboarding
+        // - If signed OUT, NOT completed, but past 2 launches -> Hide onboarding
 
         if isAuthenticated {
             // Mark that user has signed in
@@ -95,14 +105,17 @@ class OnboardingManager: ObservableObject {
                 userDefaults.set(true, forKey: hasEverSignedInKey)
             }
 
-            // User is signed in - never show onboarding on sign-in
-            self.shouldShowOnboarding = false
-            if hasCompletedOnboarding {
-                loadUserPreferences()
+            // User is signed in - never show onboarding on sign-in (prevents flash)
+            // Use a slight delay to ensure smooth transition
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.shouldShowOnboarding = false
+                if self.hasCompletedOnboarding {
+                    self.loadUserPreferences()
+                }
             }
         } else {
-            // User is signed out - check if they've completed onboarding
-            self.shouldShowOnboarding = !hasCompletedOnboarding
+            // User is signed out - only show onboarding if not completed AND within first 2 launches
+            self.shouldShowOnboarding = !hasCompletedOnboarding && appLaunchCount <= 2
         }
 
         // Force UI update if value changed
