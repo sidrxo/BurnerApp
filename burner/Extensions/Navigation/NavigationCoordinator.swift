@@ -327,9 +327,9 @@ class NavigationCoordinator: ObservableObject {
         present(.burnerSetup)
     }
 
-    // UPDATED: Push to the Explore path to avoid tab switch
+    // MODIFIED: Push onto the currently selected tab's path
     func purchaseTicket(for event: Event) {
-        navigate(to: .ticketPurchase(event), in: .explore)
+        navigate(to: .ticketPurchase(event), in: selectedTab)
     }
 
     func viewTicketDetail(_ ticket: Ticket, ticketWithEvent: TicketWithEventData) {

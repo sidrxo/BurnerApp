@@ -77,7 +77,6 @@ struct TicketDetailView: View {
                 burnerManager: appState.burnerManager,
                 onSkip: {
                     showBurnerSetup = false
-                    // Mark that burner setup was completed to trigger refresh
                     burnerSetupCompleted = true
                 }
             )
@@ -103,7 +102,6 @@ struct TicketDetailView: View {
         }
         .onChange(of: burnerSetupCompleted) { _, newValue in
             if newValue {
-                // Force view to refresh by regenerating QR code
                 Task {
                     qrCodeImage = await generateQRCode(from: qrCodeData, size: 300)
                 }
@@ -166,7 +164,7 @@ struct TicketDetailView: View {
             HStack {
                 Spacer()
                 CloseButton(action: {
-                    dismiss()
+                    coordinator.pop() // MODIFIED: Use coordinator to pop view from stack
                 }, isDark: true)
                 .padding(.top, 8)
                 .padding(.trailing, 22)

@@ -426,7 +426,7 @@ struct EventDetailView: View {
                                 if Auth.auth().currentUser == nil {
                                     showingSignInAlert = true
                                 } else {
-                                    // UPDATED: Calls purchaseTicket which now pushes onto the Explore stack
+                                    // FIXED: purchaseTicket now uses the currently active tab's stack
                                     coordinator.purchaseTicket(for: event)
                                 }
                             }

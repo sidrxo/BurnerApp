@@ -136,7 +136,7 @@ struct BookmarksView: View {
             LazyVStack(spacing: 12) {
                 ForEach(filteredBookmarks) { event in
                     Button {
-                        coordinator.navigate(to: .eventDetail(event.id ?? ""), in: .tickets)
+                        coordinator.navigate(to: .eventDetail(event.id ?? ""), in: .bookmarks)
                     } label: {
                         EventRow(
                             event: event,
