@@ -9,7 +9,7 @@ import Combine
 
 struct SignInSheetView: View {
     @Binding var showingSignIn: Bool
-    var onSkip: (() -> Void)? = nil
+    var isOnboarding: Bool = false
     @EnvironmentObject var appState: AppState
 
     @State private var isLoading = false
@@ -19,10 +19,8 @@ struct SignInSheetView: View {
     @State private var appleSignInDelegate: AppleSignInDelegate?
     @State private var presentationContextProvider: ApplePresentationContextProvider?
 
-    // Passwordless auth navigation
     @State private var showingPasswordlessAuth = false
 
-    // ✅ Account Linking States
     @State private var showingAccountExistsAlert = false
     @State private var showingLinkSuccessAlert = false
     @State private var pendingLinkCredential: AuthCredential?
@@ -41,7 +39,6 @@ struct SignInSheetView: View {
                     Spacer()
                         .frame(height: 20)
 
-                    // Bottom section with buttons and terms
                     VStack(spacing: 16) {
                         signInButtonsSection
                         footerSection
@@ -54,7 +51,6 @@ struct SignInSheetView: View {
                 .presentationDetents([.height(280)])
                 .presentationDragIndicator(.visible)
 
-                // Loading overlay
                 if isLoading {
                     Color.black.opacity(0.4)
                         .ignoresSafeArea(.all)
@@ -64,7 +60,6 @@ struct SignInSheetView: View {
                         .tint(.white)
                 }
 
-                // ✅ Regular error alert
                 if showingError && !showingAccountExistsAlert && !showingLinkSuccessAlert {
                     CustomAlertView(
                         title: "Sign In Error",
@@ -80,7 +75,6 @@ struct SignInSheetView: View {
                     .zIndex(1002)
                 }
 
-                // ✅ Account exists alert with two buttons
                 if showingAccountExistsAlert {
                     CustomAlertView(
                         title: alertTitle,
@@ -101,7 +95,6 @@ struct SignInSheetView: View {
                 }
 
 
-                // ✅ Link success alert
                 if showingLinkSuccessAlert {
                     CustomAlertView(
                         title: "Accounts Linked!",
@@ -124,7 +117,6 @@ struct SignInSheetView: View {
 
     private var signInButtonsSection: some View {
         VStack(spacing: 16) {
-            // Apple Sign In Button - Black background, white text
             Button {
                 handleAppleSignIn()
             } label: {
@@ -144,7 +136,6 @@ struct SignInSheetView: View {
             .disabled(isLoading)
             .buttonStyle(PlainButtonStyle())
 
-            // Google Sign In Button
             Button {
                 handleGoogleSignIn()
             } label: {
@@ -169,14 +160,13 @@ struct SignInSheetView: View {
             .disabled(isLoading)
             .buttonStyle(PlainButtonStyle())
 
-            // Email Sign In Button
             Button {
                 showingPasswordlessAuth = true
             } label: {
                 HStack(spacing: 12) {
                  Spacer()
                     Text("CONTINUE WITH EMAIL")
-                        .appBody() // Use appBody to match other button text size
+                        .appBody()
                     Spacer()
 
                 }
@@ -226,7 +216,6 @@ struct SignInSheetView: View {
         .padding(.top, 4)
     }
     
-    // MARK: - Google Sign In Handler (Updated with Linking)
     private func handleGoogleSignIn() {
         guard let clientID = FirebaseApp.app()?.options.clientID else {
             showErrorMessage("Firebase configuration error.")
@@ -247,7 +236,7 @@ struct SignInSheetView: View {
             DispatchQueue.main.async {
                 if let error = error {
                     let errorCode = (error as NSError).code
-                    if errorCode == -5 { // User cancelled
+                    if errorCode == -5 {
                         self.stopLoading()
                         return
                     }
@@ -266,7 +255,6 @@ struct SignInSheetView: View {
                     accessToken: result.user.accessToken.tokenString
                 )
                 
-                // ✅ Check for existing account before signing in
                 if let email = result.user.profile?.email {
                     self.checkAndHandleAccountLinking(
                         email: email,
@@ -275,7 +263,6 @@ struct SignInSheetView: View {
                         googleUser: result.user
                     )
                 } else {
-                    // No email, proceed normally
                     self.authenticateWithFirebase(credential: credential) { authResult in
                         if let user = authResult?.user {
                             self.createUserProfile(
@@ -292,7 +279,6 @@ struct SignInSheetView: View {
         }
     }
 
-    // MARK: - Apple Sign In Handler (Updated with Linking)
     private func handleAppleSignIn() {
         let nonce = randomNonceString()
         currentNonce = nonce
@@ -304,7 +290,6 @@ struct SignInSheetView: View {
         let delegate = AppleSignInDelegate(
             currentNonce: nonce,
             onSuccess: { credential, email in
-                // ✅ Check for existing account before signing in
                 if let email = email {
                     self.checkAndHandleAccountLinking(
                         email: email,
@@ -313,7 +298,6 @@ struct SignInSheetView: View {
                         googleUser: nil
                     )
                 } else {
-                    // No email (rare case), proceed normally
                     self.authenticateWithFirebase(credential: credential) { authResult in
                         if let user = authResult?.user {
                             self.handleAppleSignInSuccess(user: user)
@@ -343,18 +327,12 @@ struct SignInSheetView: View {
         authorizationController.performRequests()
     }
 
-    // MARK: - Account Linking Logic
-
-    /// Check if account exists with different provider and handle linking
-    /// Note: fetchSignInMethods is deprecated but we proceed with sign-in
-    /// and handle account conflicts during authentication
     private func checkAndHandleAccountLinking(
         email: String,
         newCredential: AuthCredential,
         newProvider: String,
         googleUser: GIDGoogleUser?
     ) {
-        // Proceed directly with sign-in - Firebase will handle account conflicts
         self.authenticateWithFirebase(credential: newCredential) { authResult in
             if let user = authResult?.user {
                 self.createUserProfile(
@@ -368,7 +346,6 @@ struct SignInSheetView: View {
         }
     }
 
-    /// Convert provider method string to friendly name
     private func friendlyProviderName(from method: String) -> String {
         if method.contains("google") { return "Google" }
         if method.contains("apple") { return "Apple" }
@@ -376,7 +353,6 @@ struct SignInSheetView: View {
         return "another provider"
     }
 
-    /// Show alert that account exists with different provider
     private func showAccountExistsAlert(
         email: String,
         existingProvider: String,
@@ -394,14 +370,12 @@ struct SignInSheetView: View {
         self.showingAccountExistsAlert = true
     }
 
-    /// Sign in with existing provider (called when user confirms)
     private func signInWithExistingProvider() {
         guard let provider = pendingExistingProvider else { return }
         
         self.showingAccountExistsAlert = false
         self.shouldLinkAfterSignIn = true
 
-        // Trigger appropriate sign-in based on provider
         if provider == "Google" {
             handleGoogleSignInForLinking()
         } else if provider == "Apple" {
@@ -409,7 +383,6 @@ struct SignInSheetView: View {
         }
     }
     
-    /// Handle Google sign-in specifically for account linking
     private func handleGoogleSignInForLinking() {
         guard let clientID = FirebaseApp.app()?.options.clientID else {
             showErrorMessage("Firebase configuration error.")
@@ -430,7 +403,7 @@ struct SignInSheetView: View {
             DispatchQueue.main.async {
                 if let error = error {
                     let errorCode = (error as NSError).code
-                    if errorCode == -5 { // User cancelled
+                    if errorCode == -5 {
                         self.stopLoading()
                         self.shouldLinkAfterSignIn = false
                         return
@@ -452,10 +425,8 @@ struct SignInSheetView: View {
                     accessToken: result.user.accessToken.tokenString
                 )
 
-                // Sign in with existing Google account
                 self.authenticateWithFirebase(credential: credential) { authResult in
                     if let user = authResult?.user {
-                        // Now link the pending credential
                         if self.shouldLinkAfterSignIn, let pendingCred = self.pendingLinkCredential {
                             self.linkCredentialToAccount(user: user, credential: pendingCred)
                         } else {
@@ -473,7 +444,6 @@ struct SignInSheetView: View {
         }
     }
     
-    /// Handle Apple sign-in specifically for account linking
     private func handleAppleSignInForLinking() {
         let nonce = randomNonceString()
         currentNonce = nonce
@@ -485,10 +455,8 @@ struct SignInSheetView: View {
         let delegate = AppleSignInDelegate(
             currentNonce: nonce,
             onSuccess: { credential, email in
-                // Sign in with existing Apple account
                 self.authenticateWithFirebase(credential: credential) { authResult in
                     if let user = authResult?.user {
-                        // Now link the pending credential
                         if self.shouldLinkAfterSignIn, let pendingCred = self.pendingLinkCredential {
                             self.linkCredentialToAccount(user: user, credential: pendingCred)
                         } else {
@@ -520,7 +488,6 @@ struct SignInSheetView: View {
         authorizationController.performRequests()
     }
     
-    /// Link new credential to existing account
     private func linkCredentialToAccount(user: User, credential: AuthCredential) {
         user.link(with: credential) { authResult, error in
             DispatchQueue.main.async {
@@ -530,7 +497,6 @@ struct SignInSheetView: View {
                 if let error = error {
                     let nsError = error as NSError
                     
-                    // Check if already linked
                     if nsError.code == AuthErrorCode.credentialAlreadyInUse.rawValue {
                         self.handleCredentialAlreadyInUse(credential: credential, existingUser: user)
                     } else if nsError.code == AuthErrorCode.emailAlreadyInUse.rawValue {
@@ -541,10 +507,8 @@ struct SignInSheetView: View {
                     return
                 }
 
-                // Update user profile with linked provider
                 self.updateUserProfileWithLinkedProvider(user: user)
                 
-                // Show success message
                 self.linkSuccessMessage = "Your \(self.pendingNewProvider ?? "new") account has been successfully linked! You can now sign in with either method."
                 self.showingLinkSuccessAlert = true
                 self.clearPendingLinkData()
@@ -552,9 +516,7 @@ struct SignInSheetView: View {
         }
     }
     
-    /// Handle case where credential is already in use (merge accounts)
     private func handleCredentialAlreadyInUse(credential: AuthCredential, existingUser: User) {
-        // Sign in with the credential to get the other user
         Auth.auth().signIn(with: credential) { authResult, error in
             DispatchQueue.main.async {
                 if let error = error {
@@ -567,7 +529,6 @@ struct SignInSheetView: View {
                     return
                 }
 
-                // Merge data from old account to new account
                 self.mergeAccountData(
                     fromUserId: existingUser.uid,
                     toUserId: newUser.uid,
@@ -577,7 +538,6 @@ struct SignInSheetView: View {
         }
     }
     
-    /// Merge account data from old user to new user
     private func mergeAccountData(fromUserId: String, toUserId: String, email: String) {
         let db = Firestore.firestore()
         let oldUserRef = db.collection("users").document(fromUserId)
@@ -597,7 +557,6 @@ struct SignInSheetView: View {
                 mergedData["lastLoginAt"] = FieldValue.serverTimestamp()
                 mergedData["linkedProviders"] = FieldValue.arrayUnion([self.pendingNewProvider?.lowercased() ?? "unknown"])
                 
-                // Copy old data to new user (preserving stripeCustomerId!)
                 newUserRef.setData(mergedData, merge: true) { error in
                     if error != nil {
                         self.stopLoading()
@@ -605,18 +564,15 @@ struct SignInSheetView: View {
                         return
                     }
 
-                    // Mark old document as merged
                     oldUserRef.updateData([
                         "mergedInto": toUserId,
                         "mergedAt": FieldValue.serverTimestamp(),
                         "status": "merged"
                     ]) { _ in }
                     
-                    // Migrate tickets
                     self.migrateUserTickets(from: fromUserId, to: toUserId) {
                         self.stopLoading()
                         
-                        // Show success message
                         self.linkSuccessMessage = "Your accounts have been successfully merged! All your tickets and data are now accessible."
                         self.showingLinkSuccessAlert = true
                         self.clearPendingLinkData()
@@ -626,7 +582,6 @@ struct SignInSheetView: View {
         }
     }
     
-    /// Migrate tickets from old user to new user
     private func migrateUserTickets(from oldUserId: String, to newUserId: String, completion: @escaping () -> Void) {
         let db = Firestore.firestore()
         
@@ -649,7 +604,6 @@ struct SignInSheetView: View {
             }
     }
     
-    /// Update user profile to include linked provider
     private func updateUserProfileWithLinkedProvider(user: User) {
         let db = Firestore.firestore()
         let userRef = db.collection("users").document(user.uid)
@@ -661,7 +615,6 @@ struct SignInSheetView: View {
         }
     }
     
-    /// Clear pending link data
     private func clearPendingLinkData() {
         pendingLinkCredential = nil
         pendingLinkEmail = nil
@@ -670,7 +623,6 @@ struct SignInSheetView: View {
         shouldLinkAfterSignIn = false
     }
 
-    // MARK: - Apple Sign In Success Handler
     private func handleAppleSignInSuccess(user: User) {
         createUserProfile(
             for: user,
@@ -693,7 +645,6 @@ struct SignInSheetView: View {
         }
     }
     
-    // MARK: - User Profile Management (Updated with merge: true)
     private func createUserProfile(
         for user: User,
         provider: String,
@@ -711,14 +662,12 @@ struct SignInSheetView: View {
             
             let documentExists = snapshot?.exists == true
             
-            // ✅ CRITICAL FIX: Always use merge to preserve existing fields like stripeCustomerId
             var userData: [String: Any] = [
                 "lastLoginAt": FieldValue.serverTimestamp(),
                 "provider": provider
             ]
             
             if !documentExists {
-                // New user - add initial fields
                 let userInfo = self.extractUserInfo(
                     user: user,
                     provider: provider,
@@ -734,7 +683,6 @@ struct SignInSheetView: View {
                 ]) { _, new in new }
             }
             
-            // ✅ ALWAYS use setData with merge:true to preserve fields like stripeCustomerId
             userRef.setData(userData, merge: true) { error in
                 completion()
             }
@@ -763,7 +711,6 @@ struct SignInSheetView: View {
         return (email, displayName)
     }
     
-    // MARK: - Apple Sign In Helpers
     private func randomNonceString(length: Int = 32) -> String {
         precondition(length > 0)
         let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
@@ -805,7 +752,6 @@ struct SignInSheetView: View {
         return hashString
     }
     
-    // MARK: - Helper Functions
     private func startLoading() {
         withAnimation {
             isLoading = true
@@ -833,7 +779,7 @@ struct SignInSheetView: View {
         }
     }
     
-
+    // START OF FIX: Strict Onboarding/Modal Sign-in Logic
     private func completeSignIn() {
         DispatchQueue.main.async {
             withAnimation {
@@ -842,54 +788,56 @@ struct SignInSheetView: View {
 
             triggerSuccessFeedback()
 
-            // ✅ Delay notification to allow UI to update before modal dismisses
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                // ✅ Only post notification if onSkip callback is provided (meaning we're in onboarding flow)
-                if self.onSkip != nil {
-                    NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
-                }
+            Task { @MainActor in
+                let syncService = PreferencesSyncService()
+                let localPrefs = LocalPreferences()
 
-                // ✅ Merge local preferences with Firebase preferences
-                Task { @MainActor in
-                    let syncService = PreferencesSyncService()
-                    let localPrefs = LocalPreferences()
-
-                    // Check if user has local preferences from guest onboarding
-                    let hasLocalPrefs = localPrefs.hasAnyPreferences
-
-                    // Check if user has existing preferences in Firebase
-                    if let firebasePrefs = await syncService.loadPreferencesFromFirebase() {
-                        if firebasePrefs.hasAnyPreferences {
-                            // User has existing preferences
-                            if hasLocalPrefs {
-                                // Merge local + Firebase preferences
-                                await syncService.mergePreferences(localPreferences: localPrefs)
-                            } else {
-                                // Just load Firebase preferences
-                                firebasePrefs.saveToUserDefaults()
-                            }
-                            // ✅ Only skip onboarding if we're in the onboarding flow
-                            if self.onSkip != nil {
-                                NotificationCenter.default.post(name: NSNotification.Name("SkipOnboardingToExplore"), object: nil)
-                            }
-                        } else if hasLocalPrefs {
-                            // User has local but no Firebase preferences, sync local to Firebase
-                            await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
+                let hasLocalPrefs = localPrefs.hasAnyPreferences
+                let firebasePrefs = await syncService.loadPreferencesFromFirebase()
+                
+                if let firebasePrefs = firebasePrefs {
+                    if firebasePrefs.hasAnyPreferences {
+                        if hasLocalPrefs {
+                            await syncService.mergePreferences(localPreferences: localPrefs)
+                        } else {
+                            firebasePrefs.saveToUserDefaults()
                         }
                     } else if hasLocalPrefs {
-                        // No Firebase preferences, but has local ones, sync them
                         await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
                     }
+                } else if hasLocalPrefs {
+                    await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
                 }
 
-                // ✅ Dismiss sign-in sheet with additional delay for smooth transition
+                // Logic 1: If coming from the Onboarding Welcome Slide
+                if self.isOnboarding {
+                    // Send notification to OnboardingFlowView (AuthWelcomeSlide) to progress to the next step.
+                    // DO NOT call completeOnboarding() here.
+                    NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
+                } else {
+                    // Logic 2: If coming from any other modal (e.g., TicketsView)
+                    // Immediately complete onboarding to ensure the main app view doesn't show the flow.
+                    if !self.appState.onboardingManager.hasCompletedOnboarding {
+                        self.appState.onboardingManager.completeOnboarding()
+                    }
+                    
+                    // Dismiss sign-in sheet only for non-onboarding flow after a slight delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self.showingSignIn = false
+                    }
+                }
+            }
+            
+            // For onboarding flow, the AuthWelcomeSlide will dismiss the sheet in its onReceive block
+            if !self.isOnboarding {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     self.showingSignIn = false
                 }
             }
         }
     }
-    
+    // END OF FIX
+
     
     private func triggerSuccessFeedback() {
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -905,10 +853,9 @@ struct SignInSheetView: View {
     }
 }
 
-// MARK: - Apple Sign In Delegate (Updated to pass email)
 class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate {
     let currentNonce: String
-    let onSuccess: (AuthCredential, String?) -> Void // ✅ Now passes email
+    let onSuccess: (AuthCredential, String?) -> Void
     let onError: (String) -> Void
     let startLoading: () -> Void
     let stopLoading: () -> Void
@@ -951,7 +898,6 @@ class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate {
             fullName: appleIDCredential.fullName
         )
         
-        // ✅ Pass email along with credential
         let email = appleIDCredential.email
         onSuccess(credential, email)
     }
@@ -966,7 +912,6 @@ class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate {
     }
 }
 
-// MARK: - Apple Presentation Context Provider
 class ApplePresentationContextProvider: NSObject, ASAuthorizationControllerPresentationContextProviding {
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
         guard let windowScene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
@@ -976,7 +921,6 @@ class ApplePresentationContextProvider: NSObject, ASAuthorizationControllerPrese
     }
 }
 
-// MARK: - Preview
 struct SignInSheetView_Previews: PreviewProvider {
     static var previews: some View {
         SignInSheetView(showingSignIn: .constant(true))

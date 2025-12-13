@@ -43,6 +43,8 @@ struct TicketPurchaseView: View {
         max(0, event.maxTickets - event.ticketsSold)
     }
     
+    // Replace the var body: some View section with this simplified version:
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -56,184 +58,12 @@ struct TicketPurchaseView: View {
                     Divider()
                         .background(Color.white.opacity(0.05))
                     
-                    Group {
-                        if currentStep == .paymentMethod {
-                            VStack(spacing: 20) {
-                                // Price summary
-                                priceSummary
-
-                                // Burner mode disclaimer if not set up
-                                if !appState.burnerManager.hasCompletedSetup {
-                                    burnerModeDisclaimer
-                                }
-
-                                Divider()
-                                    .background(Color.white.opacity(0.05))
-                                    .padding(.horizontal, 20)
-
-                                Spacer(minLength: 0)
-                                
-                                // Terms and conditions
-                                VStack(spacing: 8) {
-                                    HStack(spacing: 4) {
-                                        Text("By continuing, you agree to our")
-                                            .appCaption()
-                                            .foregroundColor(.white.opacity(0.7))
-                                        
-                                        NavigationLink(destination: TermsOfServiceView()) {
-                                            Text("Terms of Service")
-                                                .appCaption()
-                                                .foregroundColor(.white)
-                                                .underline()
-                                        }
-                                        
-                                        Text("&")
-                                            .appCaption()
-                                            .foregroundColor(.white.opacity(0.7))
-                                        
-                                        NavigationLink(destination: PrivacyPolicyView()) {
-                                            Text("Privacy Policy")
-                                                .appCaption()
-                                                .foregroundColor(.white)
-                                                .underline()
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 16)
-                                
-                                // Payment buttons
-                                VStack(spacing: 12) {
-                                    if ApplePayHandler.canMakePayments() {
-                                        Button(action: {
-                                            checkAuthAndProceed {
-                                                handleApplePayPayment()
-                                            }
-                                        }) {
-                                            HStack(spacing: 12) {
-                                                Image(systemName: "applelogo")
-                                                    .font(.appIcon)
-
-                                                Text("BUY WITH APPLE PAY")
-                                                    .appButton()
-                                            }
-                                            .foregroundColor(.black)
-                                            .frame(height: 50)
-                                            .frame(maxWidth: .infinity)
-                                            .background(Color.white)
-                                            .clipShape(Capsule())
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                        .accessibilityLabel("Buy with Apple Pay")
-                                        .disabled(hasInitiatedPurchase)
-                                    }
-
-                                    Button(action: {
-                                        withAnimation {
-                                            if !paymentService.paymentMethods.isEmpty {
-                                                currentStep = .savedCards
-                                            } else {
-                                                currentStep = .cardInput
-                                            }
-                                        }
-                                    }) {
-                                        HStack(spacing: 12) {
-                                            Image(systemName: "creditcard.fill")
-                                                .font(.appIcon)
-
-                                            Text("BUY WITH CARD")
-                                                .appButton()
-                                        }
-                                        .foregroundColor(.white)
-                                        .frame(height: 50)
-                                        .frame(maxWidth: .infinity)
-                                        .background(Color.black.opacity(0.8))
-                                        .clipShape(Capsule())
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                        )
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    .disabled(hasInitiatedPurchase)
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 20)
-                            }
-                            .padding(.vertical, 20)
-                            .frame(maxHeight: .infinity, alignment: .top)
-                        } else {
-                            VStack(alignment: .leading, spacing: 0) {
-                                // Price summary
-                                priceSummary
-
-                                Divider()
-                                    .background(Color.white.opacity(0.05))
-                                    .padding(.horizontal, 20)
-
-                                Spacer()
-                                
-                                // PAY BUTTON - Fixed at bottom with card input directly above
-                                if currentStep == .cardInput || currentStep == .savedCards {
-                                    VStack(spacing: 20) {
-                                        // Card input placed directly above the pay button
-                                        if currentStep == .cardInput {
-                                            cardInputSection
-                                        } else if currentStep == .savedCards {
-                                            savedCardsSection
-                                        }
-                                        
-                                        VStack(spacing: 12) {
-                                            if currentStep == .cardInput {
-                                                Button(action: {
-                                                    checkAuthAndProceed {
-                                                        handleCardPayment()
-                                                    }
-                                                }) {
-                                                    HStack(spacing: 12) {
-                                                        Image(systemName: "creditcard.fill").font(.appIcon)
-                                                        Text("PAY £\(String(format: "%.2f", event.price))")
-                                                            .appButton()
-                                                    }
-                                                    .foregroundColor(isCardValid ? .black : .gray)
-                                                    .frame(height: 50)
-                                                    .frame(maxWidth: .infinity)
-                                                    .background(isCardValid ? .white : Color.gray.opacity(0.5))
-                                                    .clipShape(Capsule())
-                                                }
-                                                .disabled(!isCardValid || hasInitiatedPurchase)
-                                            } else if currentStep == .savedCards {
-                                                Button(action: {
-                                                    checkAuthAndProceed {
-                                                        handleSavedCardPayment()
-                                                    }
-                                                }) {
-                                                    HStack(spacing: 12) {
-                                                        Image(systemName: "creditcard.fill").font(.appIcon)
-                                                        Text("PAY £\(String(format: "%.2f", event.price))")
-                                                            .appButton()
-                                                    }
-                                                    .foregroundColor(selectedSavedCard != nil ? .black : .gray)
-                                                    .frame(height: 50)
-                                                    .frame(maxWidth: .infinity)
-                                                    .background(selectedSavedCard != nil ? .white : Color.gray.opacity(0.5))
-                                                    .clipShape(Capsule())
-                                                }
-                                                .disabled(selectedSavedCard == nil || hasInitiatedPurchase)
-                                            }
-                                        }
-                                        .padding(.horizontal, 20)
-                                        .padding(.bottom, 20)
-                                    }
-                                }
-                            }
-                            .padding(.vertical, 20)
-                        }
-                    }
+                    // Content based on step
+                    mainContent
                 }
                 .opacity(showLoadingSuccess ? 0 : 1)
                 
-                // ✅ LOADING SUCCESS VIEW (shown during transition)
+                // Loading success view
                 if showLoadingSuccess {
                     LoadingSuccessView(
                         isLoading: $isLoadingPayment,
@@ -243,13 +73,12 @@ struct TicketPurchaseView: View {
                     )
                     .onChange(of: loadingSuccessCompleted) { _, newValue in
                         if newValue {
-                            // Transition to ticket detail
                             transitionToTicketDetail()
                         }
                     }
                 }
                 
-                // ✅ ERROR ALERT (only shown for errors)
+                // Error alert
                 if showingAlert && !isSuccess {
                     CustomAlertView(
                         title: "Error",
@@ -297,9 +126,7 @@ struct TicketPurchaseView: View {
         .sheet(isPresented: $showSignIn) {
             SignInSheetView(
                 showingSignIn: $showSignIn,
-                onSkip: {
-                    pendingPaymentAction = nil
-                }
+                isOnboarding: false
             )
         }
         .fullScreenCover(isPresented: $showBurnerSetup) {
@@ -307,7 +134,6 @@ struct TicketPurchaseView: View {
                 burnerManager: appState.burnerManager,
                 onSkip: {
                     showBurnerSetup = false
-                    // Show ticket detail directly after burner setup
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         navigateToTicketDetail()
                     }
@@ -323,7 +149,6 @@ struct TicketPurchaseView: View {
             }
         }
         .onChange(of: isLoadingPayment) { oldValue, newValue in
-            // When loading completes (success), wait for animation to finish
             if !newValue && showLoadingSuccess {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                     loadingSuccessCompleted = true
@@ -338,7 +163,194 @@ struct TicketPurchaseView: View {
             }
         }
     }
-    
+
+    // Add this new computed property to break up the complex body:
+    @ViewBuilder
+    private var mainContent: some View {
+        if currentStep == .paymentMethod {
+            paymentMethodView
+        } else {
+            cardPaymentView
+        }
+    }
+
+    private var paymentMethodView: some View {
+        VStack(spacing: 20) {
+            priceSummary
+
+            if !appState.burnerManager.hasCompletedSetup {
+                burnerModeDisclaimer
+            }
+
+            Divider()
+                .background(Color.white.opacity(0.05))
+                .padding(.horizontal, 20)
+
+            Spacer(minLength: 0)
+            
+            termsAndConditions
+            
+            paymentButtons
+        }
+        .padding(.vertical, 20)
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private var cardPaymentView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            priceSummary
+
+            Divider()
+                .background(Color.white.opacity(0.05))
+                .padding(.horizontal, 20)
+
+            Spacer()
+            
+            VStack(spacing: 20) {
+                if currentStep == .cardInput {
+                    cardInputSection
+                } else if currentStep == .savedCards {
+                    savedCardsSection
+                }
+                
+                payButton
+            }
+        }
+        .padding(.vertical, 20)
+    }
+
+    private var termsAndConditions: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 4) {
+                Text("By continuing, you agree to our")
+                    .appCaption()
+                    .foregroundColor(.white.opacity(0.7))
+                
+                NavigationLink(destination: TermsOfServiceView()) {
+                    Text("Terms of Service")
+                        .appCaption()
+                        .foregroundColor(.white)
+                        .underline()
+                }
+                
+                Text("&")
+                    .appCaption()
+                    .foregroundColor(.white.opacity(0.7))
+                
+                NavigationLink(destination: PrivacyPolicyView()) {
+                    Text("Privacy Policy")
+                        .appCaption()
+                        .foregroundColor(.white)
+                        .underline()
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 16)
+    }
+
+    private var paymentButtons: some View {
+        VStack(spacing: 12) {
+            if ApplePayHandler.canMakePayments() {
+                Button(action: {
+                    checkAuthAndProceed {
+                        handleApplePayPayment()
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "applelogo")
+                            .font(.appIcon)
+
+                        Text("BUY WITH APPLE PAY")
+                            .appButton()
+                    }
+                    .foregroundColor(.black)
+                    .frame(height: 50)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white)
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(hasInitiatedPurchase)
+            }
+
+            Button(action: {
+                withAnimation {
+                    if !paymentService.paymentMethods.isEmpty {
+                        currentStep = .savedCards
+                    } else {
+                        currentStep = .cardInput
+                    }
+                }
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: "creditcard.fill")
+                        .font(.appIcon)
+
+                    Text("BUY WITH CARD")
+                        .appButton()
+                }
+                .foregroundColor(.white)
+                .frame(height: 50)
+                .frame(maxWidth: .infinity)
+                .background(Color.black.opacity(0.8))
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(hasInitiatedPurchase)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+    }
+
+    @ViewBuilder
+    private var payButton: some View {
+        VStack(spacing: 12) {
+            if currentStep == .cardInput {
+                Button(action: {
+                    checkAuthAndProceed {
+                        handleCardPayment()
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "creditcard.fill").font(.appIcon)
+                        Text("PAY £\(String(format: "%.2f", event.price))")
+                            .appButton()
+                    }
+                    .foregroundColor(isCardValid ? .black : .gray)
+                    .frame(height: 50)
+                    .frame(maxWidth: .infinity)
+                    .background(isCardValid ? .white : Color.gray.opacity(0.5))
+                    .clipShape(Capsule())
+                }
+                .disabled(!isCardValid || hasInitiatedPurchase)
+            } else if currentStep == .savedCards {
+                Button(action: {
+                    checkAuthAndProceed {
+                        handleSavedCardPayment()
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "creditcard.fill").font(.appIcon)
+                        Text("PAY £\(String(format: "%.2f", event.price))")
+                            .appButton()
+                    }
+                    .foregroundColor(selectedSavedCard != nil ? .black : .gray)
+                    .frame(height: 50)
+                    .frame(maxWidth: .infinity)
+                    .background(selectedSavedCard != nil ? .white : Color.gray.opacity(0.5))
+                    .clipShape(Capsule())
+                }
+                .disabled(selectedSavedCard == nil || hasInitiatedPurchase)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+    }
     private func checkAuthAndProceed(action: @escaping () -> Void) {
         if Auth.auth().currentUser == nil {
             pendingPaymentAction = action

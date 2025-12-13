@@ -83,14 +83,18 @@ struct NavigationCoordinatorView<Content: View>: View {
         case .SetLocation:
             SetLocationModal()
         case .signIn:
-            SignInSheetView(showingSignIn: Binding(
-                get: { true },
-                set: { newValue in
-                    if !newValue {
-                        coordinator.dismissModal()
+            SignInSheetView(
+                showingSignIn: Binding(
+                    get: { true },
+                    set: { newValue in
+                        if !newValue {
+                            coordinator.dismissModal()
+                        }
                     }
-                }
-            ))
+                ),
+                isOnboarding: false
+            )
+            
 
         case .burnerSetup:
             BurnerModeSetupView(burnerManager: appState.burnerManager)

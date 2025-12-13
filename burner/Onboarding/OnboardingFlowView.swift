@@ -148,13 +148,13 @@ struct OnboardingFlowView: View {
             }
         }
         .environmentObject(localPreferences)
-        // MARK: - Set 'hasLaunchedBefore' immediately upon view appearance
         .onAppear {
             if isFirstLaunch {
                 UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SkipOnboardingToExplore"))) { _ in
+            guard onboardingManager.shouldShowOnboarding else { return }
             completeOnboarding()
         }
     }
@@ -196,7 +196,6 @@ struct AuthWelcomeSlide: View {
     @State private var showingSignIn = false
     @EnvironmentObject var appState: AppState
 
-    // MARK: - Publisher to trigger image pre-fetching when event data is ready
     @State private var cancellables = Set<AnyCancellable>()
 
 
@@ -210,10 +209,7 @@ struct AuthWelcomeSlide: View {
     }
     
     private func prefetchImages(urls: [URL]) {
-        // Use ImagePrefetcher to download images in the background
         ImagePrefetcher(urls: urls.prefix(12).map { $0 }, completionHandler:  {skippedResources,failedResources,completedResources in
-            // Pre-fetch is complete
-            // print("Kingfisher pre-fetch complete for welcome slide.")
         })
         .start()
     }
@@ -221,12 +217,11 @@ struct AuthWelcomeSlide: View {
     var body: some View {
         VStack(spacing: 0) {
             
-            // MARK: - Show the Carousel/Mosaic slide unconditionally (as requested previously)
             EventMosaicCarousel(eventImages: eventImageURLs)
                 .padding(.top, 24)
 
             VStack(spacing: 0) {
-                TightHeaderText("MEET ME IN THE", "MOMENT", alignment: .center)
+                TightHeaderText("YOUR NIGHT", "STARTS HERE", alignment: .center)
                     .frame(maxWidth: .infinity)
             }
             .frame(height: 120)
@@ -251,23 +246,20 @@ struct AuthWelcomeSlide: View {
                 .frame(minHeight: 40)
         }
         .sheet(isPresented: $showingSignIn) {
-            SignInSheetView(showingSignIn: $showingSignIn, onSkip: {
-                onLogin()
-            })
-        }
+            // Pass isOnboarding = true so SignInSheetView knows to only progress the slide
+            SignInSheetView(showingSignIn: $showingSignIn, isOnboarding: true)        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
+            // When user signs in from this slide, advance the flow and dismiss the sheet
             showingSignIn = false
             onLogin()
         }
-        // MARK: - Pre-fetch images as soon as this view appears and we have URLs
         .onAppear {
-            // Subscribe to the eventViewModel's changes to trigger prefetch once events are loaded
             appState.eventViewModel.$events
                 .sink { events in
                     let urls = self.eventImageURLs
                     if !urls.isEmpty {
                         self.prefetchImages(urls: urls)
-                        self.cancellables.removeAll() // Stop listening after successful pre-fetch
+                        self.cancellables.removeAll()
                     }
                 }
                 .store(in: &cancellables)
@@ -604,7 +596,6 @@ struct KFCarouselCard: View {
             .clipped()
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 3)
-            // MARK: - Apply fade-in effect to the card when it appears
             .transition(.opacity.animation(.easeIn(duration: 0.5)))
     }
 }
