@@ -22,7 +22,6 @@ struct EventDetailView: View {
     @State private var showingSignInAlert = false
     @State private var showingMapsSheet = false
     
-    // MARK: - Animation & Performance State
     @State private var didAppear = false
     @State private var mapReady = false
     @State private var interactionEnabled = false
@@ -35,7 +34,6 @@ struct EventDetailView: View {
         return max(350, min(calculatedHeight, 550))
     }
     
-    // CHANGE 2: Compute event from eventViewModel (live updates!)
     private var event: Event? {
         eventViewModel.events.first { $0.id == eventId }
     }
@@ -113,8 +111,6 @@ struct EventDetailView: View {
         return "\(datePart) at \(timePart)"
     }
 
-    // MARK: - Helper Methods
-
     private func checkUserTicketStatus() {
         eventViewModel.checkUserTicketStatus(for: eventId) { hasTicket in
             DispatchQueue.main.async {
@@ -146,7 +142,6 @@ struct EventDetailView: View {
             if let event = event {
                 eventDetailContent(event: event)
             } else {
-                // Show loading state if event not found in viewModel
                 loadingView
             }
         }
@@ -187,7 +182,6 @@ struct EventDetailView: View {
         .onChange(of: ticketsViewModel.tickets.count) { _, _ in
             checkUserTicketStatus()
         }
-        // Watch for changes to the specific event's ticketsSold property in the ViewModel
         .onChange(of: eventViewModel.events.first(where: { $0.id == eventId })?.ticketsSold) { _, _ in
             checkUserTicketStatus()
         }
@@ -206,7 +200,6 @@ struct EventDetailView: View {
         }
     }
     
-    // MARK: - Loading View
     private var loadingView: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -223,7 +216,6 @@ struct EventDetailView: View {
         }
     }
     
-    // MARK: - Event Detail Content
     @ViewBuilder
     private func eventDetailContent(event: Event) -> some View {
         GeometryReader { geometry in
@@ -312,7 +304,6 @@ struct EventDetailView: View {
                                 .padding(.horizontal, 20)
 
                                 VStack(spacing: 16) {
-                                    // IMPROVED: Using ExpandableText component
                                     if let description = event.description, !description.isEmpty {
                                         VStack(alignment: .leading, spacing: 8) {
                                             Text("About")
@@ -430,11 +421,12 @@ struct EventDetailView: View {
                             customColor: buttonStatus.color
                         ) {
                             if userHasTicket {
-                                // already have ticket
+                                
                             } else if availableTickets > 0 {
                                 if Auth.auth().currentUser == nil {
                                     showingSignInAlert = true
                                 } else {
+                                    // UPDATED: Calls purchaseTicket which now pushes onto the Explore stack
                                     coordinator.purchaseTicket(for: event)
                                 }
                             }
@@ -486,7 +478,6 @@ struct EventDetailView: View {
     }
 }
 
-// MARK: - Event Detail Row
 struct EventDetailRow: View {
     let icon: String
     let title: String
@@ -518,7 +509,6 @@ struct EventDetailRow: View {
     }
 }
 
-// MARK: - Event Map View
 struct EventMapView: View {
     let coordinate: CLLocationCoordinate2D
     let venueName: String

@@ -80,16 +80,17 @@ struct MainTabView: View {
         guard !coordinator.shouldHideTabBar else {
             return false
         }
-
+        
+        // Simplified check: tab bar is visible only when at the root of the current tab's path
         switch coordinator.selectedTab {
         case .explore:
-            return coordinator.explorePath.count == 0
+            return coordinator.explorePath.isEmpty
         case .search:
-            return coordinator.searchPath.count == 0
+            return coordinator.searchPath.isEmpty
         case .bookmarks:
-            return coordinator.bookmarksPath.count == 0
+            return coordinator.bookmarksPath.isEmpty
         case .tickets:
-            return coordinator.ticketsPath.count == 0
+            return coordinator.ticketsPath.isEmpty
         }
     }
 }

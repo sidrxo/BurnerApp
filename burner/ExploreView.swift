@@ -250,10 +250,7 @@ struct ExploreView: View {
 
             if eventViewModel.errorMessage != nil && eventViewModel.events.isEmpty {
                 VStack(spacing: 24) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .appFont(size: 50)
-                        .foregroundColor(.yellow)
-
+                    
                     Text("Failed to Load Events")
                         .appSectionHeader()
                         .foregroundColor(.white)
@@ -269,7 +266,7 @@ struct ExploreView: View {
                         eventViewModel.clearMessages()
                         eventViewModel.fetchEvents()
                     }) {
-                        Text("TRY AGAIN")
+                        Text("RELOAD")
                             .font(.appFont(size: 17))
                     }
                     .buttonStyle(SecondaryButton(backgroundColor: .white, foregroundColor: .black))

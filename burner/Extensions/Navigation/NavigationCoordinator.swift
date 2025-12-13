@@ -27,21 +27,17 @@ enum AppTab: Int, CaseIterable {
     }
 }
 
-// MARK: - Navigation Destinations
-
 enum NavigationDestination: Hashable {
     case eventDetail(String)
     case eventById(String)
     case filteredEvents(EventSectionDestination)
 
-    // Ticket Navigation
     case ticketDetail(TicketWithEventData)
     case ticketById(String)
-    case ticketPurchase(Event)  
+    case ticketPurchase(Event)
     case transferTicket(Ticket)
     case transferTicketsList
 
-    // Settings Navigation
     case settings
     case accountDetails
     case bookmarks
@@ -53,7 +49,7 @@ enum NavigationDestination: Hashable {
 
     func hash(into hasher: inout Hasher) {
         switch self {
-        case .eventDetail(let eventId):  // ✅ CHANGED: Now uses eventId
+        case .eventDetail(let eventId):
             hasher.combine("eventDetail")
             hasher.combine(eventId)
         case .eventById(let id):
@@ -97,11 +93,10 @@ enum NavigationDestination: Hashable {
 
     static func == (lhs: NavigationDestination, rhs: NavigationDestination) -> Bool {
         switch (lhs, rhs) {
-        case (.eventDetail(let lId), .eventDetail(let rId)):  // ✅ CHANGED: Compare IDs
+        case (.eventDetail(let lId), .eventDetail(let rId)):
             return lId == rId
         case (.eventById(let lId), .eventById(let rId)):
             return lId == rId
-        // ✅ NEW: Allow eventDetail and eventById to be equal if same ID
         case (.eventDetail(let id1), .eventById(let id2)),
              (.eventById(let id1), .eventDetail(let id2)):
             return id1 == id2
@@ -139,8 +134,6 @@ enum NavigationDestination: Hashable {
     }
 }
 
-// MARK: - Modal Presentations
-
 enum ModalPresentation: Identifiable {
     case signIn
     case burnerSetup
@@ -164,17 +157,13 @@ enum ModalPresentation: Identifiable {
 
     var isFullScreen: Bool {
         switch self {
-        case .burnerSetup, .passwordlessAuth, .ticketPurchase:
+        case .burnerSetup, .passwordlessAuth:
             return true
-        case .signIn, .SetLocation, .transferTicket:
-            return false
-        default:
+        case .signIn, .SetLocation, .transferTicket, .ticketPurchase, .shareSheet:
             return false
         }
     }
 }
-
-// MARK: - Alert Presentation
 
 struct AlertPresentation: Identifiable {
     let id = UUID()
@@ -200,31 +189,22 @@ struct AlertPresentation: Identifiable {
     }
 }
 
-// MARK: - Navigation Coordinator
-
 @MainActor
 class NavigationCoordinator: ObservableObject {
-    // MARK: - Tab Navigation
     @Published var selectedTab: AppTab = .explore
     @Published var shouldHideTabBar: Bool = false
 
-    // MARK: - Navigation Paths (one per tab)
     @Published var explorePath = NavigationPath()
     @Published var searchPath = NavigationPath()
     @Published var ticketsPath = NavigationPath()
     @Published var bookmarksPath = NavigationPath()
 
-    // MARK: - Modal Presentations
     @Published var activeModal: ModalPresentation?
     @Published var activeAlert: AlertPresentation?
 
-    // MARK: - Deep Linking
     @Published var pendingDeepLink: String?
 
-    // MARK: - Shared State
     private var cancellables = Set<AnyCancellable>()
-
-    // MARK: - Tab Navigation Methods
 
     func selectTab(_ tab: AppTab) {
         selectedTab = tab
@@ -237,8 +217,6 @@ class NavigationCoordinator: ObservableObject {
     func showTabBar() {
         shouldHideTabBar = false
     }
-
-    // MARK: - Navigation Methods
 
     func navigate(to destination: NavigationDestination, in tab: AppTab? = nil) {
         if let tab = tab {
@@ -287,8 +265,6 @@ class NavigationCoordinator: ObservableObject {
         }
     }
 
-    // MARK: - Modal Methods
-
     func present(_ modal: ModalPresentation) {
         activeModal = modal
     }
@@ -296,8 +272,6 @@ class NavigationCoordinator: ObservableObject {
     func dismissModal() {
         activeModal = nil
     }
-
-    // MARK: - Alert Methods
 
     func showAlert(_ alert: AlertPresentation) {
         activeAlert = alert
@@ -328,15 +302,12 @@ class NavigationCoordinator: ObservableObject {
         activeAlert = nil
     }
 
-    // MARK: - Deep Linking
-
     func handleDeepLink(eventId: String) {
         selectTab(.explore)
         if !explorePath.isEmpty {
             explorePath.removeLast(explorePath.count)
         }
         pendingDeepLink = eventId
-        // ✅ CHANGED: Use eventDetail instead of eventById (now they're the same)
         navigate(to: .eventDetail(eventId), in: .explore)
     }
 
@@ -348,8 +319,6 @@ class NavigationCoordinator: ObservableObject {
         navigate(to: .ticketById(ticketId), in: .tickets)
     }
 
-    // MARK: - Convenience Methods
-
     func showSignIn() {
         present(.signIn)
     }
@@ -358,8 +327,9 @@ class NavigationCoordinator: ObservableObject {
         present(.burnerSetup)
     }
 
+    // UPDATED: Push to the Explore path to avoid tab switch
     func purchaseTicket(for event: Event) {
-        present(.ticketPurchase(event))
+        navigate(to: .ticketPurchase(event), in: .explore)
     }
 
     func viewTicketDetail(_ ticket: Ticket, ticketWithEvent: TicketWithEventData) {
@@ -374,8 +344,6 @@ class NavigationCoordinator: ObservableObject {
         present(.shareSheet(items: items))
     }
 
-    // MARK: - Reset
-
     func resetAllNavigation() {
         explorePath = NavigationPath()
         searchPath = NavigationPath()
@@ -387,4 +355,3 @@ class NavigationCoordinator: ObservableObject {
         shouldHideTabBar = false
     }
 }
-

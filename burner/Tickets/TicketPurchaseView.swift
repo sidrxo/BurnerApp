@@ -1,4 +1,4 @@
-// TicketPurchaseView.swift - Updated with smooth transition
+// TicketPurchaseView.swift - Updated for native push transition
 
 import SwiftUI
 import Kingfisher
@@ -25,11 +25,11 @@ struct TicketPurchaseView: View {
     @State private var showBurnerSetup = false
     @State private var isLoadingPayment = true
     @State private var showLoadingSuccess = false
-    @State private var purchasedTicket: TicketWithEventData?
-    @State private var transitionToTicket = false
+    // @State private var purchasedTicket: TicketWithEventData? // ✅ REMOVED: Not needed for this flow
+    // @State private var transitionToTicket = false // ✅ REMOVED: Not needed for this flow
     @State private var loadingSuccessCompleted = false
 
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) var dismiss // ✅ CHANGED: Use @Environment(\.dismiss) for popping
     @EnvironmentObject var coordinator: NavigationCoordinator
     @EnvironmentObject var appState: AppState
     
@@ -46,81 +46,80 @@ struct TicketPurchaseView: View {
     // Replace the var body: some View section with this simplified version:
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.black.ignoresSafeArea()
+        // ✅ REMOVED: Outer NavigationStack is now in MainTabView
+        ZStack {
+            Color.black.ignoresSafeArea()
+            
+            // Main content
+            VStack(spacing: 0) {
+                // Header
+                eventHeader
                 
-                // Main content
-                VStack(spacing: 0) {
-                    // Header
-                    eventHeader
-                    
-                    Divider()
-                        .background(Color.white.opacity(0.05))
-                    
-                    // Content based on step
-                    mainContent
-                }
-                .opacity(showLoadingSuccess ? 0 : 1)
+                Divider()
+                    .background(Color.white.opacity(0.05))
                 
-                // Loading success view
-                if showLoadingSuccess {
-                    LoadingSuccessView(
-                        isLoading: $isLoadingPayment,
-                        size: 80,
-                        lineWidth: 8,
-                        color: .white
-                    )
-                    .onChange(of: loadingSuccessCompleted) { _, newValue in
-                        if newValue {
-                            transitionToTicketDetail()
-                        }
+                // Content based on step
+                mainContent
+            }
+            .opacity(showLoadingSuccess ? 0 : 1)
+            
+            // Loading success view
+            if showLoadingSuccess {
+                LoadingSuccessView(
+                    isLoading: $isLoadingPayment,
+                    size: 80,
+                    lineWidth: 8,
+                    color: .white
+                )
+                .onChange(of: loadingSuccessCompleted) { _, newValue in
+                    if newValue {
+                        transitionToTicketDetail() // ✅ Call transition function
                     }
-                }
-                
-                // Error alert
-                if showingAlert && !isSuccess {
-                    CustomAlertView(
-                        title: "Error",
-                        description: alertMessage,
-                        primaryAction: {
-                            showingAlert = false
-                        },
-                        primaryActionTitle: "OK",
-                        customContent: EmptyView()
-                    )
-                    .transition(.opacity)
-                    .zIndex(1004)
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .interactiveDismissDisabled(false)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        if currentStep != .paymentMethod {
-                            withAnimation {
-                                currentStep = .paymentMethod
-                                selectedSavedCard = nil
-                                cardParams = nil
-                                isCardValid = false
-                                hasInitiatedPurchase = false
-                            }
-                        } else {
-                            presentationMode.wrappedValue.dismiss()
+            
+            // Error alert
+            if showingAlert && !isSuccess {
+                CustomAlertView(
+                    title: "Error",
+                    description: alertMessage,
+                    primaryAction: {
+                        showingAlert = false
+                    },
+                    primaryActionTitle: "OK",
+                    customContent: EmptyView()
+                )
+                .transition(.opacity)
+                .zIndex(1004)
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .interactiveDismissDisabled(false)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    if currentStep != .paymentMethod {
+                        withAnimation {
+                            currentStep = .paymentMethod
+                            selectedSavedCard = nil
+                            cardParams = nil
+                            isCardValid = false
+                            hasInitiatedPurchase = false
                         }
-                    }) {
-                        Image(systemName: currentStep != .paymentMethod ? "chevron.left" : "xmark")
-                            .appBody()
-                            .foregroundColor(.white)
+                    } else {
+                        dismiss() // ✅ CHANGED: Use dismiss() for native pop
                     }
-                }
-                
-                ToolbarItem(placement: .principal) {
-                    Text("Purchase Ticket")
+                }) {
+                    Image(systemName: currentStep != .paymentMethod ? "chevron.left" : "xmark")
                         .appBody()
                         .foregroundColor(.white)
                 }
+            }
+            
+            ToolbarItem(placement: .principal) {
+                Text("Purchase Ticket")
+                    .appBody()
+                    .foregroundColor(.white)
             }
         }
         .sheet(isPresented: $showSignIn) {
@@ -129,17 +128,18 @@ struct TicketPurchaseView: View {
                 isOnboarding: false
             )
         }
-        .fullScreenCover(isPresented: $showBurnerSetup) {
-            BurnerModeSetupView(
-                burnerManager: appState.burnerManager,
-                onSkip: {
-                    showBurnerSetup = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        navigateToTicketDetail()
-                    }
-                }
-            )
-        }
+        // ✅ REMOVED: This logic is now handled in navigateToTicketDetail and is not needed here
+        // .fullScreenCover(isPresented: $showBurnerSetup) {
+        //     BurnerModeSetupView(
+        //         burnerManager: appState.burnerManager,
+        //         onSkip: {
+        //             showBurnerSetup = false
+        //             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        //                 navigateToTicketDetail()
+        //             }
+        //         }
+        //     )
+        // }
         .onChange(of: Auth.auth().currentUser) { oldValue, newValue in
             if newValue != nil, let action = pendingPaymentAction {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -700,33 +700,16 @@ struct TicketPurchaseView: View {
     // MARK: - Transition to Ticket Detail
     
     private func transitionToTicketDetail() {
-        // 1. Dismiss purchase modal
-        presentationMode.wrappedValue.dismiss()
+        // 1. Pop the purchase view from the navigation stack
+        dismiss()
         
-        // 2. Wait a moment for dismissal animation
+        // 2. Find the newly purchased ticket and push the detail view
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            // 3. Switch to Tickets tab
-            coordinator.selectTab(.tickets)
-            
-            // 4. Clear any existing navigation in tickets tab
-            if !coordinator.ticketsPath.isEmpty {
-                coordinator.ticketsPath.removeLast(coordinator.ticketsPath.count)
-            }
-            
-            // 5. Wait for tab switch animation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                // 6. Check if burner setup is needed
-                if !appState.burnerManager.hasCompletedSetup {
-                    showBurnerSetup = true
-                } else {
-                    // 7. Navigate directly to ticket
-                    navigateToTicketDetail()
-                }
-            }
+            self.findAndPushTicketDetail()
         }
     }
     
-    private func navigateToTicketDetail() {
+    private func findAndPushTicketDetail() {
         // Wait for Firestore to create the ticket
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             let matchingTickets = appState.ticketsViewModel.tickets.filter { ticket in
@@ -735,6 +718,8 @@ struct TicketPurchaseView: View {
             
             if let ticket = matchingTickets.first {
                 let ticketWithEvent = TicketWithEventData(ticket: ticket, event: event)
+                
+                // 3. Push the TicketDetailView onto the same ticketsPath stack (native right-to-left transition)
                 coordinator.navigate(to: .ticketDetail(ticketWithEvent), in: .tickets)
             } else {
                 // Try again after a short delay
@@ -746,6 +731,12 @@ struct TicketPurchaseView: View {
                     if let ticket = retryTickets.first {
                         let ticketWithEvent = TicketWithEventData(ticket: ticket, event: event)
                         coordinator.navigate(to: .ticketDetail(ticketWithEvent), in: .tickets)
+                    } else {
+                        // Fallback: Show a generic success message
+                        coordinator.showSuccess(
+                            title: "Purchase Successful",
+                            message: "Your ticket for \(event.name) is now available in the Tickets tab."
+                        )
                     }
                 }
             }

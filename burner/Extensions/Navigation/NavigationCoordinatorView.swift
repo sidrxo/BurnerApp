@@ -1,19 +1,12 @@
-//
-//  NavigationCoordinatorView.swift
-//  burner
-//
-//  Created by Claude on 2025-11-05.
-//
-
 import SwiftUI
 import Combine
-
-// MARK: - Navigation Coordinator View
 
 struct NavigationCoordinatorView<Content: View>: View {
     @EnvironmentObject var coordinator: NavigationCoordinator
     @EnvironmentObject var appState: AppState
     @ViewBuilder let content: Content
+    
+    @Namespace private var ticketsHeroNamespace
 
     var body: some View {
         content
@@ -22,6 +15,7 @@ struct NavigationCoordinatorView<Content: View>: View {
             }
             .fullScreenCover(item: fullScreenBinding) { modal in
                 modalView(for: modal)
+                    .environment(\.heroNamespace, ticketsHeroNamespace)
             }
             .overlay(alignment: .top) {
                 if let alert = coordinator.activeAlert {
@@ -40,8 +34,6 @@ struct NavigationCoordinatorView<Content: View>: View {
                 }
             }
     }
-
-    // MARK: - Bindings
 
     private var sheetBinding: Binding<ModalPresentation?> {
         Binding(
@@ -75,8 +67,6 @@ struct NavigationCoordinatorView<Content: View>: View {
         )
     }
 
-    // MARK: - Modal View Builder
-
     @ViewBuilder
     private func modalView(for modal: ModalPresentation) -> some View {
         switch modal {
@@ -95,15 +85,12 @@ struct NavigationCoordinatorView<Content: View>: View {
                 isOnboarding: false
             )
             
-
         case .burnerSetup:
             BurnerModeSetupView(burnerManager: appState.burnerManager)
 
-        case .ticketPurchase(let event):
-            TicketPurchaseView(
-                event: event,
-                viewModel: appState.eventViewModel
-            )
+        // REMOVED: No longer handled as a modal
+        case .ticketPurchase:
+            EmptyView()
             
         case .transferTicket(let ticketWithEvent):
             NavigationView {
@@ -126,8 +113,6 @@ struct NavigationCoordinatorView<Content: View>: View {
     }
 }
 
-// MARK: - Activity View Controller (Share Sheet)
-
 struct ActivityViewController: UIViewControllerRepresentable {
     let activityItems: [Any]
     let applicationActivities: [UIActivity]? = nil
@@ -142,8 +127,6 @@ struct ActivityViewController: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
-// MARK: - Navigation Destination View Builder
-
 struct NavigationDestinationBuilder: View {
     let destination: NavigationDestination
     @EnvironmentObject var coordinator: NavigationCoordinator
@@ -153,7 +136,6 @@ struct NavigationDestinationBuilder: View {
     var body: some View {
         Group {
             switch destination {
-            // Event Navigation - ✅ CHANGED: Both cases now use EventDetailDestination
             case .eventDetail(let eventId):
                 EventDetailDestination(eventId: eventId)
                 
@@ -163,13 +145,13 @@ struct NavigationDestinationBuilder: View {
             case .filteredEvents(let sectionDestination):
                 FilteredEventsView(title: sectionDestination.title, events: sectionDestination.events)
 
-            // Ticket Navigation
             case .ticketDetail(let ticketWithEvent):
                 TicketDetailView(ticketWithEvent: ticketWithEvent)
 
             case .ticketById(let ticketId):
                 TicketDetailByIdDestination(ticketId: ticketId)
 
+            // KEPT FOR NAVIGATION PUSH: Handles the purchase view when pushed to any path
             case .ticketPurchase(let event):
                 TicketPurchaseDestination(event: event)
 
@@ -179,7 +161,6 @@ struct NavigationDestinationBuilder: View {
             case .transferTicketsList:
                 TransferTicketsListView()
 
-            // Settings Navigation
             case .settings:
                 SettingsView()
 
@@ -211,8 +192,6 @@ struct NavigationDestinationBuilder: View {
     }
 }
 
-// MARK: - Ticket Purchase Destination Wrapper
-
 struct TicketPurchaseDestination: View {
     let event: Event
     @EnvironmentObject var eventViewModel: EventViewModel
@@ -224,8 +203,6 @@ struct TicketPurchaseDestination: View {
         )
     }
 }
-
-// MARK: - Ticket Detail Destination Wrapper
 
 struct TicketDetailDestination: View {
     let ticket: Ticket
@@ -247,8 +224,6 @@ struct TicketDetailDestination: View {
     }
 }
 
-// MARK: - Ticket Detail By ID Destination Wrapper
-
 struct TicketDetailByIdDestination: View {
     let ticketId: String
 
@@ -268,7 +243,6 @@ struct TicketDetailByIdDestination: View {
                     ))
                 }
             } else {
-                // Ticket not found
                 ZStack {
                     Color.black.ignoresSafeArea()
                     VStack(spacing: 12) {
@@ -289,8 +263,6 @@ struct TicketDetailByIdDestination: View {
     }
 }
 
-// MARK: - Transfer Ticket Destination Wrapper
-
 struct TransferTicketDestination: View {
     let ticket: Ticket
 
@@ -310,9 +282,6 @@ struct TransferTicketDestination: View {
     }
 }
 
-// MARK: - Helper Functions
-
-/// Creates a placeholder Event from a Ticket when the full event data is not available
 private func createPlaceholderEvent(from ticket: Ticket) -> Event {
     Event(
         id: ticket.eventId,
@@ -327,8 +296,6 @@ private func createPlaceholderEvent(from ticket: Ticket) -> Event {
         description: nil
     )
 }
-
-// MARK: - Toast Alert View
 
 struct ToastAlertView: View {
     let title: String
