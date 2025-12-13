@@ -212,7 +212,7 @@ struct AuthWelcomeSlide: View {
                 .padding(.top, 24)
 
             VStack(spacing: 0) {
-                TightHeaderText("YOUR NIGHT", "STARTS HERE", alignment: .center)
+                TightHeaderText("JOIN THE", "MOVEMENT", alignment: .center)
                     .frame(maxWidth: .infinity)
             }
             .frame(height: 120)

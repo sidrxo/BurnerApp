@@ -15,12 +15,10 @@ struct SettingsView: View {
     
     private let db = Firestore.firestore()
     
-    // Use shared burner manager from AppState
     private var burnerManager: BurnerModeManager {
         appState.burnerManager
     }
     
-    // Access role and scanner status from AppState
     private var userRole: String {
         appState.userRole
     }
@@ -29,9 +27,8 @@ struct SettingsView: View {
         appState.isScannerActive
     }
     
-    // Check if burner mode needs setup
     private var needsBurnerSetup: Bool {
-        !burnerManager.hasCompletedSetup || !burnerManager.isSetupValid
+        !burnerManager.hasCompletedSetup
     }
     
     var body: some View {
@@ -42,7 +39,6 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(spacing: 0) {
-                        // ACCOUNT Section
                         MenuSection(title: "ACCOUNT") {
                             Button(action: {
                                 coordinator.navigate(to: .accountDetails)
@@ -88,7 +84,6 @@ struct SettingsView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
 
-                            // Scanner access for authorized roles
                             if (userRole == "scanner" && isScannerActive) ||
                                 userRole == "siteAdmin" ||
                                 userRole == "venueAdmin" ||
@@ -106,18 +101,14 @@ struct SettingsView: View {
                             }
                         }
 
-                        // APP Section
                         MenuSection(title: "APP") {
-                            // Show Setup Guide Button only when needed
                             if needsBurnerSetup {
                                 Button(action: {
                                     coordinator.showBurnerSetup()
                                 }) {
                                     MenuItemContent(
                                         title: "Setup Burner Mode",
-                                        subtitle: burnerManager.isSetupValid
-                                        ? "Configure app blocking"
-                                        : "Screen Time permissions needed"
+                                        subtitle: "Complete setup to access tickets"
                                     )
                                     .contentShape(Rectangle())
                                 }
@@ -147,7 +138,6 @@ struct SettingsView: View {
                             .buttonStyle(PlainButtonStyle())
                         }
 
-                        // DEBUG Section - Only for siteadmin
                         if userRole == "siteAdmin" {
                             MenuSection(title: "DEBUG") {
                                 Button(action: {
@@ -183,7 +173,6 @@ struct SettingsView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedOut"))) { _ in
             currentUser = nil
-            // Dismiss settings view when user signs out
             presentationMode.wrappedValue.dismiss()
         }
         .familyActivityPicker(

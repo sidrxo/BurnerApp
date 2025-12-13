@@ -1,5 +1,3 @@
-// BurnerModeSetupView.swift - Fixed to prevent advancing without proper setup
-
 import SwiftUI
 import FamilyControls
 import ManagedSettings
@@ -8,24 +6,33 @@ struct BurnerModeSetupView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
     @State private var currentStep = 0
-
+    
     @State private var authorizationGranted = false
     @State private var showingAppPicker = false
+    @State private var isRequestingPermission = false
     @ObservedObject var burnerManager: BurnerModeManager
     var onSkip: (() -> Void)? = nil
     
+    @State private var hasSetupViewAppeared = false
+    
     private let totalSteps = 6
     
-    // ✅ FIXED: More strict step completion validation
     private var isCurrentStepCompleted: Bool {
         switch currentStep {
-        case 0: return true  // Welcome
-        case 1: return true  // What is it
-        case 2: return true  // How to exit
-        case 3: return authorizationGranted  // Screen Time - must be granted
-        case 4: return burnerManager.isSetupValid  // Categories - must have all 8 categories
-        case 5: return true  // Confirmation
-        default: return false
+        case 0:
+            return true
+        case 1:
+            return true
+        case 2:
+            return true
+        case 3:
+            return authorizationGranted
+        case 4:
+            return burnerManager.isSetupValid
+        case 5:
+            return true
+        default:
+            return false
         }
     }
     
@@ -45,13 +52,12 @@ struct BurnerModeSetupView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-           
+            
             VStack(spacing: 0) {
-                // Header Area
                 ZStack {
                     VStack(spacing: 0) {
                         Spacer().frame(height: 20)
-                       
+                        
                         if currentStep > 0 {
                             HStack {
                                 Spacer()
@@ -70,7 +76,7 @@ struct BurnerModeSetupView: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-                   
+                    
                     if showBackButton {
                         HStack {
                             Button(action: { handleBackButton() }) {
@@ -84,7 +90,7 @@ struct BurnerModeSetupView: View {
                         }
                         .padding(.leading, 20)
                     }
-                   
+                    
                     HStack {
                         Spacer()
                         Button(action: {
@@ -104,32 +110,30 @@ struct BurnerModeSetupView: View {
                     }
                 }
                 .frame(height: 60)
-              
-                // Sliding content area
+                
                 TabView(selection: $currentStep) {
                     WelcomeSlideContent()
                         .tag(0)
-                   
+                    
                     WhatIsItSlideContent()
                         .tag(1)
-                   
+                    
                     ExitMethodsSlideContent()
                         .tag(2)
-                   
+                    
                     PermissionSlideContent(
                         authorizationGranted: $authorizationGranted,
-                        onGrantPermission: requestAuthorization,
                         currentStep: $currentStep
                     )
                     .tag(3)
-                   
+                    
                     CategorySelectionSlideContent(
                         burnerManager: burnerManager,
                         showingAppPicker: $showingAppPicker,
                         currentStep: $currentStep
                     )
                     .tag(4)
-                   
+                    
                     ConfirmationSlideContent(
                         burnerManager: burnerManager
                     )
@@ -138,9 +142,9 @@ struct BurnerModeSetupView: View {
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .disabled(true)
                 .animation(.easeOut(duration: 0.3), value: currentStep)
-              
+                
                 Spacer()
-              
+                
                 VStack(spacing: 12) {
                     Button(action: {
                         handleNextButton()
@@ -159,6 +163,7 @@ struct BurnerModeSetupView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     .disabled(!canProceed())
+                    .opacity(canProceed() ? 1.0 : 0.6)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 40)
                 }
@@ -170,45 +175,64 @@ struct BurnerModeSetupView: View {
         )
         .interactiveDismissDisabled(true)
         .onAppear {
-            // Check authorization status on appear
-            authorizationGranted = (AuthorizationCenter.shared.authorizationStatus == .approved)
+            hasSetupViewAppeared = true
+            checkAuthorizationStatus()
+        }
+        .onDisappear {
+            hasSetupViewAppeared = false
         }
     }
     
     private func getNextButtonText() -> String {
         switch currentStep {
-        case 0: return "Get Started"
-        case 1, 2: return "Continue"
-        case 3: return authorizationGranted ? "Continue" : "Grant Access"
+        case 0:
+            return "Get Started"
+        case 1, 2:
+            return "Continue"
+        case 3:
+            if authorizationGranted {
+                return "Continue"
+            }
+            return isRequestingPermission ? "Processing..." : "Grant Access"
         case 4:
             if !burnerManager.isSetupValid {
                 return "Select Categories"
             } else {
                 return "Continue"
             }
-        case 5: return "Complete Setup"
-        default: return "Next"
+        case 5:
+            return "Complete Setup"
+        default:
+            return "Next"
         }
     }
     
-    // ✅ FIXED: Strict validation - can't proceed without completing current step
     private func canProceed() -> Bool {
         switch currentStep {
-        case 0, 1, 2: return true  // Info slides
-        case 3: return true  // Button handles both grant and continue
-        case 4: return true  // Button opens picker or advances if valid
-        case 5: return burnerManager.isSetupValid  // Final step requires valid setup
-        default: return false
+        case 0, 1, 2:
+            return true
+        case 3:
+            if authorizationGranted {
+                return true
+            }
+            return !isRequestingPermission
+        case 4:
+            if burnerManager.isSetupValid {
+                return true
+            }
+            return true
+        case 5:
+            return burnerManager.isSetupValid
+        default:
+            return false
         }
     }
-
+    
     private func handleNextButton() {
-        // ✅ Screen Time step - handle authorization
         if currentStep == 3 {
-            if !authorizationGranted {
+            if !authorizationGranted && !isRequestingPermission {
                 requestAuthorization()
-            } else {
-                // Already authorized, proceed
+            } else if authorizationGranted {
                 withAnimation {
                     currentStep += 1
                 }
@@ -216,13 +240,10 @@ struct BurnerModeSetupView: View {
             return
         }
         
-        // ✅ Category selection step - strict validation
         if currentStep == 4 {
             if !burnerManager.isSetupValid {
-                // Show picker if not valid
                 showingAppPicker = true
             } else {
-                // Valid setup, can advance
                 withAnimation {
                     currentStep += 1
                 }
@@ -230,29 +251,27 @@ struct BurnerModeSetupView: View {
             return
         }
         
-        // ✅ Final confirmation step - verify setup before completing
         if currentStep == 5 {
-            // Double-check setup is actually valid before finishing
             if burnerManager.isSetupValid {
                 finishSetup()
             }
             return
         }
         
-        // ✅ All other steps
         if currentStep < totalSteps - 1 {
             withAnimation {
                 currentStep += 1
             }
         }
     }
-
+    
     private func finishSetup() {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
-
+        
+        // Fixed: Call the correct method on the manager
         burnerManager.completeSetup()
-
+        
         if let onSkip = onSkip {
             onSkip()
         } else {
@@ -264,50 +283,72 @@ struct BurnerModeSetupView: View {
     }
     
     private func requestAuthorization() {
+        guard !isRequestingPermission else { return }
+        isRequestingPermission = true
+        
         Task {
             let preStatus = AuthorizationCenter.shared.authorizationStatus
-           
+            
             if preStatus == .approved {
                 await MainActor.run {
                     self.authorizationGranted = true
+                    self.isRequestingPermission = false
                 }
                 return
             }
-           
+            
             do {
                 try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
                 try await Task.sleep(nanoseconds: 500_000_000)
-              
+                
                 let postStatus = AuthorizationCenter.shared.authorizationStatus
                 await MainActor.run {
                     self.authorizationGranted = (postStatus == .approved)
+                    self.isRequestingPermission = false
                 }
             } catch {
                 let finalStatus = AuthorizationCenter.shared.authorizationStatus
                 await MainActor.run {
                     self.authorizationGranted = (finalStatus == .approved)
+                    self.isRequestingPermission = false
+                }
+            }
+        }
+    }
+    
+    private func checkAuthorizationStatus() {
+        authorizationGranted = (AuthorizationCenter.shared.authorizationStatus == .approved)
+        
+        if currentStep == 3 && authorizationGranted {
+            isRequestingPermission = false
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if currentStep == 3 && authorizationGranted {
+                    withAnimation {
+                        currentStep += 1
+                    }
                 }
             }
         }
     }
 }
 
-// MARK: - CategorySelectionSlideContent with validation feedback
-
 struct CategorySelectionSlideContent: View {
     @ObservedObject var burnerManager: BurnerModeManager
     @Binding var showingAppPicker: Bool
     @Binding var currentStep: Int
-
+    
+    @State private var hasAttemptedAutoAdvance = false
+    
     private var categoryCount: Int {
         burnerManager.selectedApps.categoryTokens.count
     }
-
+    
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
                 .frame(height: 60)
-
+            
             if burnerManager.isSetupValid {
                 VStack(alignment: .leading, spacing: 0) {
                     TightHeaderText("CATEGORIES", "SELECTED")
@@ -319,30 +360,32 @@ struct CategorySelectionSlideContent: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-
-            Text(burnerManager.isSetupValid
-                    ? "We'll take care of the rest."
-                    : "Select 'All Apps and Categories'.")
-                .appBody()
-                .foregroundColor(.white.opacity(0.7))
-                .lineSpacing(4)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 16)
-
+            
+            Text(
+                burnerManager.isSetupValid
+                ? "We'll take care of the rest."
+                : "Select 'All Apps and Categories'."
+            )
+            .appBody()
+            .foregroundColor(.white.opacity(0.7))
+            .lineSpacing(4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 16)
+            
             Spacer()
                 .frame(height: 32)
-
+            
             if burnerManager.isSetupValid {
                 HStack(spacing: 12) {
                     Image(systemName: "checkmark.circle.fill")
                         .appSectionHeader()
                         .foregroundColor(.white)
-
+                    
                     VStack(alignment: .leading, spacing: 4) {
                         Text("All categories selected")
                             .appFont(size: 17, weight: .semibold)
                             .foregroundColor(.white)
-
+                        
                         Text("Ready to continue")
                             .font(.appFont(size: 14))
                             .kerning(-0.3)
@@ -354,17 +397,16 @@ struct CategorySelectionSlideContent: View {
                 .background(Color.white.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             } else if categoryCount > 0 {
-                // ✅ Show progress if some categories selected but not enough
                 HStack(spacing: 12) {
                     Image(systemName: "exclamationmark.circle.fill")
                         .appSectionHeader()
                         .foregroundColor(.yellow)
-
+                    
                     VStack(alignment: .leading, spacing: 4) {
                         Text("\(categoryCount) of \(burnerManager.minimumCategoriesRequired) categories")
                             .appFont(size: 17, weight: .semibold)
                             .foregroundColor(.white)
-
+                        
                         Text("Select more categories to continue")
                             .font(.appFont(size: 14))
                             .kerning(-0.3)
@@ -376,14 +418,41 @@ struct CategorySelectionSlideContent: View {
                 .background(Color.yellow.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-
+            
             Spacer()
         }
         .padding(.horizontal, 24)
+        .onChange(of: burnerManager.isSetupValid) { oldValue, newValue in
+            if newValue && !hasAttemptedAutoAdvance {
+                attemptAutoAdvance()
+            }
+        }
+        .onAppear {
+            hasAttemptedAutoAdvance = false
+            
+            if burnerManager.isSetupValid {
+                attemptAutoAdvance()
+            }
+        }
+    }
+    
+    private func attemptAutoAdvance() {
+        guard burnerManager.isSetupValid && !hasAttemptedAutoAdvance else { return }
+        
+        hasAttemptedAutoAdvance = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            if burnerManager.isSetupValid {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    currentStep += 1
+                }
+            } else {
+                hasAttemptedAutoAdvance = false
+            }
+        }
     }
 }
 
-// Keep all other slide components the same...
 struct WelcomeSlideContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -517,12 +586,13 @@ struct ExitMethodCard: View {
 
 struct PermissionSlideContent: View {
     @Binding var authorizationGranted: Bool
-    let onGrantPermission: () -> Void
     @Binding var currentStep: Int
+    @State private var hasAttemptedAutoAdvance = false
     
     var body: some View {
         VStack(spacing: 0) {
             Spacer().frame(height: 60)
+            
             if authorizationGranted {
                 VStack(alignment: .leading, spacing: 0) {
                     TightHeaderText("YOU'RE", "APPROVED")
@@ -534,15 +604,20 @@ struct PermissionSlideContent: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            Text(authorizationGranted
-                    ? "Screen Time access enabled. BURNER can now block apps during events."
-                    : "Required to block apps during events. We never read or store your data.")
-                .appBody()
-                .foregroundColor(.white.opacity(0.7))
-                .lineSpacing(4)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 16)
+            
+            Text(
+                authorizationGranted
+                ? "Screen Time access enabled. BURNER can now block apps during events."
+                : "Required to block apps during events. We never read or store your data."
+            )
+            .appBody()
+            .foregroundColor(.white.opacity(0.7))
+            .lineSpacing(4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 16)
+            
             Spacer().frame(height: 32)
+            
             if authorizationGranted {
                 HStack(spacing: 12) {
                     Image(systemName: "checkmark.circle.fill")
@@ -557,16 +632,36 @@ struct PermissionSlideContent: View {
                 .background(Color.white.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            
             Spacer()
         }
         .padding(.horizontal, 24)
         .onChange(of: authorizationGranted) { oldValue, newValue in
-            if newValue == true {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                    withAnimation {
-                        currentStep += 1
-                    }
+            if newValue == true && !hasAttemptedAutoAdvance {
+                attemptAutoAdvance()
+            }
+        }
+        .onAppear {
+            hasAttemptedAutoAdvance = false
+            
+            if authorizationGranted {
+                attemptAutoAdvance()
+            }
+        }
+    }
+    
+    private func attemptAutoAdvance() {
+        guard authorizationGranted && !hasAttemptedAutoAdvance else { return }
+        
+        hasAttemptedAutoAdvance = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            if authorizationGranted {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    currentStep += 1
                 }
+            } else {
+                hasAttemptedAutoAdvance = false
             }
         }
     }

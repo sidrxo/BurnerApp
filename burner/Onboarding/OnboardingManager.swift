@@ -20,12 +20,14 @@ class OnboardingManager: ObservableObject {
 
         let isAuthenticated = authService.currentUser != nil
 
+        // MODIFIED LOGIC: If authenticated, never show onboarding.
         if isAuthenticated {
-            self.shouldShowOnboarding = !hasCompletedOnboarding
+            self.shouldShowOnboarding = false
             Task {
                 await self.loadUserPreferences()
             }
         } else {
+            // If signed out, show onboarding only if they haven't completed it before.
             self.shouldShowOnboarding = !hasCompletedOnboarding
         }
 
@@ -64,14 +66,15 @@ class OnboardingManager: ObservableObject {
         let isAuthenticated = authService?.currentUser != nil
         let previousValue = shouldShowOnboarding
 
+        // MODIFIED LOGIC: If authenticated, never show onboarding.
         if isAuthenticated {
+            self.shouldShowOnboarding = false
             Task {
                 await loadUserPreferences()
             }
         } else {
-            if !hasCompletedOnboarding {
-                self.shouldShowOnboarding = true
-            }
+            // If signed out, show onboarding only if they haven't completed it.
+            self.shouldShowOnboarding = !hasCompletedOnboarding
         }
 
         if previousValue != shouldShowOnboarding {

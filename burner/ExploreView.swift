@@ -24,6 +24,7 @@ struct ExploreView: View {
     @State private var popularEvents: [Event] = []
     @State private var genreEventCache: [String: [Event]] = [:]
     @State private var allEvents: [Event] = []
+    @State private var isComputingInitialData = true
 
     private let maxNearbyDistance: CLLocationDistance = AppConstants.maxNearbyDistanceMeters
 
@@ -103,6 +104,8 @@ struct ExploreView: View {
                     VStack(spacing: 0) {
                         if eventViewModel.isLoading && eventViewModel.events.isEmpty {
                             loadingView
+                        } else if isComputingInitialData {
+                            loadingView
                         } else {
                             contentView
                         }
@@ -131,20 +134,38 @@ struct ExploreView: View {
                     }
                 }
             }
-            .task {
-                await computeEventSections()
+            .onAppear {
+                if isComputingInitialData && !eventViewModel.events.isEmpty {
+                    Task {
+                        try? await Task.sleep(nanoseconds: 50_000_000)
+                        await computeEventSections()
+                        isComputingInitialData = false
+                    }
+                }
             }
-            .onChange(of: eventViewModel.events) { _, _ in
-                Task {
-                    await computeEventSections()
+            .onChange(of: eventViewModel.events) { _, newEvents in
+                guard !newEvents.isEmpty else { return }
+                
+                if isComputingInitialData {
+                    Task {
+                        try? await Task.sleep(nanoseconds: 50_000_000)
+                        await computeEventSections()
+                        isComputingInitialData = false
+                    }
+                } else {
+                    Task {
+                        await computeEventSections()
+                    }
                 }
             }
             .onChange(of: userLocationManager.savedLocation) { _, _ in
+                guard !isComputingInitialData else { return }
                 Task {
                     await computeNearbyEvents()
                 }
             }
             .onChange(of: displayGenres) { _, _ in
+                guard !isComputingInitialData else { return }
                 Task {
                     await computeGenreEvents()
                 }
@@ -158,7 +179,7 @@ struct ExploreView: View {
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
 
-                    Text("Unable to load events. Please check your connection and try again.")
+                    Text("Please check your connection and try again.")
                         .appBody()
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
@@ -169,7 +190,8 @@ struct ExploreView: View {
                         eventViewModel.fetchEvents()
                     }) {
                         Text("RELOAD")
-                            .font(.appFont(size: 17))
+                            .appMonospaced(size: 16)
+                            .frame(width: 160)
                     }
                     .buttonStyle(SecondaryButton(backgroundColor: .white, foregroundColor: .black))
                 }

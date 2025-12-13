@@ -67,6 +67,7 @@ struct TicketsView: View {
 
     @State private var selectedFilter: Int = 0 // 0 = upcoming, 1 = past
     @State private var showTicketsAnimation = false
+    @State private var showEmptyStateAnimation = false
     @State private var isLoadingTicketsAfterSignIn = false // Track post-sign-in ticket loading
 
     private let columns = [
@@ -135,6 +136,15 @@ struct TicketsView: View {
                 Color.black
             } else if ticketsViewModel.tickets.isEmpty {
                 emptyStateView
+                    .opacity(showEmptyStateAnimation ? 1 : 0)
+                    .onAppear {
+                        withAnimation(.easeOut(duration: 0.5)) {
+                            showEmptyStateAnimation = true
+                        }
+                    }
+                    .onDisappear {
+                        showEmptyStateAnimation = false
+                    }
             } else {
                 ticketsList
                     .opacity(showTicketsAnimation ? 1 : 0)
@@ -175,9 +185,9 @@ struct TicketsView: View {
                 isLoadingTicketsAfterSignIn = false
             }
         }
-        .onChange(of: ticketsViewModel.tickets.isEmpty) { oldValue, newValue in
-            // Reset loading flag once tickets are loaded (or confirmed empty)
-            if isLoadingTicketsAfterSignIn && !ticketsViewModel.isLoading {
+        .onChange(of: ticketsViewModel.isLoading) { oldValue, newValue in
+            // Reset loading flag once data fetch is complete (regardless of whether count changed)
+            if isLoadingTicketsAfterSignIn && !newValue {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     isLoadingTicketsAfterSignIn = false
                 }

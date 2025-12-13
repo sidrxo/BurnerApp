@@ -2,7 +2,8 @@ import SwiftUI
 import Kingfisher
 import ActivityKit
 import FirebaseFunctions
-
+import Combine
+import FamilyControls
 
 struct TicketDetailView: View {
     let ticketWithEvent: TicketWithEventData
@@ -14,11 +15,15 @@ struct TicketDetailView: View {
     @State private var liveActivityUpdateTimer: Timer?
     @State private var flipped = true
     @State private var qrCodeImage: UIImage? = nil
-    @State private var burnerSetupCompleted = false
 
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
     @Environment(\.dismiss) private var dismiss
+
+    private var shouldShowQRCode: Bool {
+        // 💡 FIXED: Access burnerSetupCompleted via burnerManager
+        appState.burnerManager.burnerSetupCompleted
+    }
 
     var body: some View {
         ZStack {
@@ -26,7 +31,6 @@ struct TicketDetailView: View {
                 .ignoresSafeArea(edges: [.bottom, .top])
 
             VStack(spacing: 24) {
-                
                 ZStack {
                     cardBackView
                         .opacity(flipped ? 1 : 0)
@@ -34,31 +38,26 @@ struct TicketDetailView: View {
                             flipped ? Angle(degrees: 0) : Angle(degrees: -180),
                             axis: (x: 0, y: 1, z: 0)
                         )
-                    
+
                     ScreenshotProtect {
-                                            simpleTicketView
-                                        }
+                        simpleTicketView
+                    }
                     .opacity(flipped ? 0 : 1)
-                        .rotation3DEffect(
-                            flipped ? Angle(degrees: 180) : Angle(degrees: 0),
-                            axis: (x: 0, y: 1, z: 0)
-                        )
-                    
+                    .rotation3DEffect(
+                        flipped ? Angle(degrees: 180) : Angle(degrees: 0),
+                        axis: (x: 0, y: 1, z: 0)
+                    )
                 }
                 .frame(height: 550)
                 .padding(.horizontal, 20)
-                
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            .overlay(
-                EmptyView()
-            )
-            
+            .overlay(EmptyView())
+
             if showTransferSuccess {
                 CustomAlertView(
                     title: "Transfer Successful",
-                    description: "Ticket has been transferred successfully!",
+                    description: "Ticket has been transferred successfully! ",
                     primaryAction: { showTransferSuccess = false },
                     primaryActionTitle: "OK",
                     customContent: EmptyView()
@@ -69,21 +68,20 @@ struct TicketDetailView: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
-        .background(
-            NavigationControllerConfigurator()
-        )
+        .background(NavigationControllerConfigurator())
         .fullScreenCover(isPresented: $showBurnerSetup) {
             BurnerModeSetupView(
                 burnerManager: appState.burnerManager,
                 onSkip: {
                     showBurnerSetup = false
-                    burnerSetupCompleted = true
                 }
             )
         }
         .onAppear {
-            Task {
-                qrCodeImage = await generateQRCode(from: qrCodeData, size: 300)
+            if shouldShowQRCode {
+                Task {
+                    qrCodeImage = await generateQRCode(from: qrCodeData, size: 300)
+                }
             }
 
             autoStartLiveActivityForEventDay()
@@ -100,16 +98,17 @@ struct TicketDetailView: View {
                 }
             }
         }
-        .onChange(of: burnerSetupCompleted) { _, newValue in
-            if newValue {
+        .onDisappear {
+            liveActivityUpdateTimer?.invalidate()
+            liveActivityUpdateTimer = nil
+        }
+        // 💡 FIXED: Access burnerSetupCompleted via burnerManager
+        .onChange(of: appState.burnerManager.burnerSetupCompleted) { oldValue, newValue in
+            if newValue && !oldValue {
                 Task {
                     qrCodeImage = await generateQRCode(from: qrCodeData, size: 300)
                 }
             }
-        }
-        .onDisappear {
-            liveActivityUpdateTimer?.invalidate()
-            liveActivityUpdateTimer = nil
         }
     }
 
@@ -122,21 +121,18 @@ struct TicketDetailView: View {
                         .placeholder {
                             Rectangle()
                                 .fill(Color.gray.opacity(0.3))
-                                .overlay(
-                                    ProgressView()
-                                        .tint(.white)
-                                )
+                                .overlay(ProgressView().tint(.white))
                         }
                         .aspectRatio(contentMode: .fill)
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .clipped()
-                    
+
                     LinearGradient(
                         gradient: Gradient(colors: [.clear, .black.opacity(0.7)]),
                         startPoint: .top,
                         endPoint: .bottom
                     )
-                    
+
                     VStack(alignment: .leading, spacing: 8) {
                         Text(ticketWithEvent.event.name.uppercased())
                             .appSectionHeader()
@@ -160,45 +156,40 @@ struct TicketDetailView: View {
 
     private var simpleTicketView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            
             HStack {
                 Spacer()
                 CloseButton(action: {
-                    coordinator.pop() // MODIFIED: Use coordinator to pop view from stack
+                    coordinator.pop()
                 }, isDark: true)
                 .padding(.top, 8)
                 .padding(.trailing, 22)
             }
-            
+
             Spacer().frame(height: 12)
-            
+
             VStack(alignment: .leading, spacing: 20) {
-                
                 VStack(alignment: .leading, spacing: 4) {
                     Text(ticketWithEvent.event.name.uppercased())
                         .appFont(size: 20, weight: .bold)
                         .kerning(-1.5)
                         .foregroundColor(.black)
 
-                
                     Text(ticketWithEvent.event.venue.uppercased())
                         .appCard()
                         .foregroundColor(.black)
 
-                    
                     Text("\(formatDateDay(ticketWithEvent.event.startTime ?? Date())) \(formatDateMonth(ticketWithEvent.event.startTime ?? Date())) \(formatDateYear(ticketWithEvent.event.startTime ?? Date()))")
                         .appCard()
                         .foregroundColor(.black)
-                    
+
                     Text(formatTime(ticketWithEvent.event.startTime ?? Date()))
                         .appCard()
                         .foregroundColor(.black)
-                    
 
                     Text((ticketWithEvent.ticket.status.uppercased()))
                         .appCard()
                         .foregroundColor(.black)
-                    
+
                     Text(ticketWithEvent.ticket.ticketNumber ?? "N/A")
                         .appCard()
                         .foregroundColor(.black)
@@ -208,10 +199,9 @@ struct TicketDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.white)
 
-            
             VStack(spacing: 10) {
                 ZStack {
-                    if appState.burnerManager.hasCompletedSetup {
+                    if shouldShowQRCode {
                         if let qrImage = qrCodeImage {
                             Image(uiImage: qrImage)
                                 .resizable()
@@ -226,7 +216,6 @@ struct TicketDetailView: View {
                             .background(.white)
                         }
                     } else {
-                        // Blurred QR code background
                         Group {
                             if let qrImage = qrCodeImage {
                                 Image(uiImage: qrImage)
@@ -242,8 +231,7 @@ struct TicketDetailView: View {
                         }
                         .blur(radius: 20)
                         .background(.white)
-                        
-                        // Centered button overlay
+
                         Button(action: {
                             showBurnerSetup = true
                         }) {
@@ -260,9 +248,8 @@ struct TicketDetailView: View {
                     }
                 }
                 .frame(width: 320, height: 320)
-                
-                // Transfer button below QR code
-                if appState.burnerManager.hasCompletedSetup && ticketWithEvent.ticket.status == "confirmed" {
+
+                if shouldShowQRCode && ticketWithEvent.ticket.status == "confirmed" {
                     Button(action: {
                         if ticketWithEvent.ticket.id != nil {
                             coordinator.navigate(to: .transferTicket(ticketWithEvent.ticket))
@@ -292,28 +279,27 @@ struct TicketDetailView: View {
         .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
     }
 
-
     private var qrCodeData: String {
         return ticketWithEvent.ticket.qrCode ?? "INVALID_TICKET"
     }
-    
+
     private func generateQRCode(from string: String, size: CGFloat) async -> UIImage? {
         return await Task.detached(priority: .userInitiated) {
             let data = string.data(using: .utf8)
             guard let filter = CIFilter(name: "CIQRCodeGenerator") else { return nil }
-            
+
             filter.setValue(data, forKey: "inputMessage")
             filter.setValue("H", forKey: "inputCorrectionLevel")
-            
+
             guard let ciImage = filter.outputImage else { return nil }
-            
+
             let scale = size / ciImage.extent.width
             let transform = CGAffineTransform(scaleX: scale, y: scale)
             let scaledImage = ciImage.transformed(by: transform)
-            
+
             let context = CIContext()
             guard let cgImage = context.createCGImage(scaledImage, from: scaledImage.extent) else { return nil }
-            
+
             return UIImage(cgImage: cgImage)
         }.value
     }
@@ -329,7 +315,7 @@ struct TicketDetailView: View {
         formatter.dateFormat = "MMM"
         return formatter.string(from: date).uppercased()
     }
-    
+
     private func formatDateYear(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy"
@@ -412,7 +398,7 @@ struct NavigationControllerConfigurator: UIViewControllerRepresentable {
         let viewController = UIViewController()
         return viewController
     }
-    
+
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
         DispatchQueue.main.async {
             if let navigationController = uiViewController.navigationController {
@@ -422,3 +408,4 @@ struct NavigationControllerConfigurator: UIViewControllerRepresentable {
         }
     }
 }
+

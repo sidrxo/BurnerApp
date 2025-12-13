@@ -12,10 +12,19 @@ struct NavigationCoordinatorView<Content: View>: View {
         content
             .sheet(item: sheetBinding) { modal in
                 modalView(for: modal)
+                    .onDisappear {
+                        // Handle sheet-specific completion if needed, but we focus on fullScreenCover
+                    }
             }
             .fullScreenCover(item: fullScreenBinding) { modal in
                 modalView(for: modal)
                     .environment(\.heroNamespace, ticketsHeroNamespace)
+                    // ✅ CRUCIAL FIX: Execute the action upon modal dismissal
+                    .onDisappear {
+                        if case .burnerSetup(let onCompletion) = modal {
+                            onCompletion()
+                        }
+                    }
             }
             .overlay(alignment: .top) {
                 if let alert = coordinator.activeAlert {
@@ -85,8 +94,14 @@ struct NavigationCoordinatorView<Content: View>: View {
                 isOnboarding: false
             )
             
-        case .burnerSetup:
-            BurnerModeSetupView(burnerManager: appState.burnerManager)
+        case .burnerSetup: // The modal contains the closure now, but the ViewBuilder only needs to render the view
+            BurnerModeSetupView(
+                burnerManager: appState.burnerManager,
+                onSkip: {
+                    // This is the dismissal action used internally by the setup view
+                    coordinator.dismissModal()
+                }
+            )
 
         // REMOVED: No longer handled as a modal
         case .ticketPurchase:

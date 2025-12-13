@@ -136,7 +136,8 @@ enum NavigationDestination: Hashable {
 
 enum ModalPresentation: Identifiable {
     case signIn
-    case burnerSetup
+    // ✅ FIXED: Add completion closure to handle post-dismiss logic
+    case burnerSetup(() -> Void)
     case ticketPurchase(Event)
     case transferTicket(TicketWithEventData)
     case shareSheet(items: [Any])
@@ -146,6 +147,7 @@ enum ModalPresentation: Identifiable {
     var id: String {
         switch self {
         case .signIn: return "signIn"
+        // ✅ FIXED: Update id to ignore closure, keeping the identifier static
         case .burnerSetup: return "burnerSetup"
         case .ticketPurchase(let event): return "ticketPurchase-\(event.id ?? "")"
         case .transferTicket(let ticketWithEvent): return "transferTicket-\(ticketWithEvent.ticket.id ?? "")"
@@ -323,8 +325,9 @@ class NavigationCoordinator: ObservableObject {
         present(.signIn)
     }
 
-    func showBurnerSetup() {
-        present(.burnerSetup)
+    // ✅ FIXED: Updated to accept a completion handler
+    func showBurnerSetup(onCompletion: @escaping () -> Void = {}) {
+        present(.burnerSetup(onCompletion))
     }
 
     // MODIFIED: Push onto the currently selected tab's path

@@ -4,6 +4,7 @@ import Combine
 import ActivityKit
 import Kingfisher
 
+// MARK: - AppState Class
 @MainActor
 class AppState: ObservableObject {
     @Published var eventViewModel: EventViewModel
@@ -23,7 +24,8 @@ class AppState: ObservableObject {
     @Published var userRole: String = ""
     @Published var isScannerActive: Bool = false
     @Published var showingBurnerLockScreen = false
-    
+    @Published var burnerSetupCompleted: Bool = false
+
     private var cancellables = Set<AnyCancellable>()
     private var burnerModeObserver: NSObjectProtocol?
     private var resetObserver: NSObjectProtocol?
@@ -37,7 +39,7 @@ class AppState: ObservableObject {
     private let userRepository: UserRepository
 
     let burnerManager: BurnerModeManager
-    
+
     lazy var burnerModeMonitor: BurnerModeMonitor = {
         BurnerModeMonitor(appState: self, burnerManager: self.burnerManager)
     }()
@@ -58,27 +60,31 @@ class AppState: ObservableObject {
 
         cancellables.removeAll()
     }
-    
+
+    // MARK: - Initialization
     init() {
+        // Initialization of Repositories (assuming they are defined elsewhere)
         self.eventRepository = EventRepository()
         self.ticketRepository = TicketRepository()
         self.bookmarkRepository = BookmarkRepository()
         self.userRepository = UserRepository()
-        
+
+        // Initialization of Managers and Handlers
         self.userLocationManager = UserLocationManager()
         self.burnerManager = BurnerModeManager()
         self.onboardingManager = OnboardingManager()
-        
+
+        // Initialization of Services/Handlers that depend on Repositories
         self.eventViewModel = EventViewModel(
             eventRepository: eventRepository,
             ticketRepository: ticketRepository
         )
-        
+
         self.bookmarkManager = BookmarkManager(
             bookmarkRepository: bookmarkRepository,
             eventRepository: eventRepository
         )
-        
+
         self.ticketsViewModel = TicketsViewModel(
             ticketRepository: ticketRepository
         )
@@ -91,25 +97,33 @@ class AppState: ObservableObject {
 
         self.passwordlessAuthHandler = PasswordlessAuthHandler()
         self.navigationCoordinator = NavigationCoordinator()
-        
+
+        // Re-initialization of OnboardingManager (if required, otherwise remove the first init)
         self.onboardingManager = OnboardingManager(authService: self.authService)
-        
+
+        // Ensure the lazy var is initialized
         _ = burnerModeMonitor
 
+        // Setup and Loading
         setupObservers()
         setupBurnerModeObserver()
         setupImagePrefetching()
-        
+        loadBurnerSetupState()
+
         loadInitialData()
-        
     }
-    
+
+    // MARK: - Private Loading & Setup Methods
+    private func loadBurnerSetupState() {
+        burnerSetupCompleted = UserDefaults.standard.bool(forKey: "burnerSetupCompleted")
+    }
+
     private func setupObservers() {
         authService.$currentUser
             .dropFirst()
             .sink { [weak self] user in
                 guard let self = self else { return }
-                
+
                 if user == nil {
                     if !self.userDidSignOut {
                         self.isSignInSheetPresented = true
@@ -121,14 +135,14 @@ class AppState: ObservableObject {
                 }
             }
             .store(in: &cancellables)
-        
+
         eventViewModel.$errorMessage
             .compactMap { $0 }
             .sink { [weak self] error in
                 self?.showError(error)
             }
             .store(in: &cancellables)
-        
+
         ticketsViewModel.$errorMessage
             .compactMap { $0 }
             .sink { [weak self] error in
@@ -153,9 +167,9 @@ class AppState: ObservableObject {
                     guard !event.imageUrl.isEmpty else { return nil }
                     return URL(string: event.imageUrl)
                 }
-                
+
                 guard !urls.isEmpty else { return }
-                
+
                 let prefetcher = ImagePrefetcher(
                     urls: Array(urls.prefix(12)),
                     options: [
@@ -178,7 +192,7 @@ class AppState: ObservableObject {
                 self.showingBurnerLockScreen = true
             }
         }
-        
+
         Task { @MainActor in
             let isEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
             if isEnabled {
@@ -186,7 +200,8 @@ class AppState: ObservableObject {
             }
         }
     }
-    
+
+    // MARK: - User Status Handlers
     private func handleUserSignedIn() {
         if !isSimulatingEmptyFirestore {
             Task {
@@ -214,7 +229,7 @@ class AppState: ObservableObject {
             }
         }
     }
-    
+
     private func handleUserSignedOut() {
         ticketsViewModel.clearTickets()
         bookmarkManager.clearBookmarks()
@@ -225,22 +240,23 @@ class AppState: ObservableObject {
         userRole = ""
         isScannerActive = false
     }
-    
+
+    // MARK: - Public Methods
     func handleManualSignOut() {
         userDidSignOut = true
         isSignInSheetPresented = false
     }
-    
+
     func showError(_ message: String) {
         errorMessage = message
         showingError = true
     }
-    
+
     func clearError() {
         errorMessage = nil
         showingError = false
     }
-    
+
     func loadInitialData() {
         if isSimulatingEmptyFirestore {
             eventViewModel.simulateEmptyData()
@@ -250,13 +266,14 @@ class AppState: ObservableObject {
             Task {
                 await eventViewModel.refreshEvents()
             }
-            
+
             if authService.currentUser != nil {
                 ticketsViewModel.fetchUserTickets()
             }
         }
     }
 
+    // MARK: - Simulation / Debug Methods
     func enableEmptyFirestoreSimulation() {
         guard !isSimulatingEmptyFirestore else { return }
         isSimulatingEmptyFirestore = true
@@ -292,28 +309,28 @@ class AppState: ObservableObject {
             ) { _ in }
         }
     }
-    
+
     func simulateEventBeforeStart() {
         let calendar = Calendar.current
         let now = Date()
         let startTime = calendar.date(byAdding: .hour, value: 2, to: now)!
         let endTime = calendar.date(byAdding: .hour, value: 6, to: now)!
-        
+
         createDebugEvent(startTime: startTime, endTime: endTime)
     }
-    
+
     func simulateEventDuringEvent() {
         let calendar = Calendar.current
         let now = Date()
         let startTime = calendar.date(byAdding: .hour, value: -1, to: now)!
         let endTime = calendar.date(byAdding: .hour, value: 3, to: now)!
-        
+
         createDebugEvent(startTime: startTime, endTime: endTime)
     }
-    
+
     private func createDebugEvent(startTime: Date, endTime: Date) {
         let now = Date()
-        
+
         let testTicket = Ticket(
             id: "debug_ticket_\(UUID().uuidString)",
             eventId: "debug_event_\(UUID().uuidString)",
@@ -337,9 +354,9 @@ class AppState: ObservableObject {
             transferredAt: nil,
             updatedAt: now
         )
-        
+
         ticketsViewModel.addDebugTicket(testTicket)
-        
+
         if #available(iOS 16.1, *) {
             let attributes = TicketActivityAttributes(
                 eventName: testTicket.eventName,
@@ -348,7 +365,7 @@ class AppState: ObservableObject {
                 endTime: endTime,
                 ticketId: testTicket.id ?? "test-ticket-id"
             )
-            
+
             let now = Date()
             let hasStarted = now >= testTicket.startTime
             let hasEnded = now >= endTime
@@ -358,7 +375,7 @@ class AppState: ObservableObject {
                 hasEventStarted: hasStarted,
                 hasEventEnded: hasEnded
             )
-            
+
             do {
                 if #available(iOS 16.2, *) {
                     _ = try Activity<TicketActivityAttributes>.request(
@@ -376,12 +393,17 @@ class AppState: ObservableObject {
             } catch { }
         }
     }
-    
+
     func clearDebugEventToday() {
         ticketsViewModel.removeDebugTickets()
-        
+
         if #available(iOS 16.1, *) {
             TicketLiveActivityManager.endLiveActivity()
         }
+    }
+
+    func setBurnerSetupCompleted(_ completed: Bool) {
+        burnerSetupCompleted = completed
+        UserDefaults.standard.set(completed, forKey: "burnerSetupCompleted")
     }
 }

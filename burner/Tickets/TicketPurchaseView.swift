@@ -385,7 +385,7 @@ struct TicketPurchaseView: View {
                 .appCard()
                 .foregroundColor(.white)
             Spacer()
-            Text("Â£\(String(format: "%.2f", event.price))")
+            Text("£\(String(format: "%.2f", event.price))")
                 .appCard()
                 .foregroundColor(.white)
         }
@@ -401,7 +401,7 @@ struct TicketPurchaseView: View {
                 .appFont(size: 20)
                 .foregroundColor(.white.opacity(0.7))
 
-            Text("You'll need to complete Burner Mode setup after purchase to access your ticket.")
+            Text("You'll need to setup BURNER Mode after purchase to access your ticket.")
                 .appBody()
                 .foregroundColor(.white.opacity(0.7))
                 .fixedSize(horizontal: false, vertical: true)
