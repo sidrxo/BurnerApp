@@ -17,6 +17,13 @@ struct ExploreView: View {
     @StateObject private var localPreferences = LocalPreferences()
     
     @State private var isRefreshing = false
+    
+    @State private var featuredEvents: [Event] = []
+    @State private var thisWeekEvents: [Event] = []
+    @State private var nearbyEvents: [(event: Event, distance: CLLocationDistance)] = []
+    @State private var popularEvents: [Event] = []
+    @State private var genreEventCache: [String: [Event]] = [:]
+    @State private var allEvents: [Event] = []
 
     private let maxNearbyDistance: CLLocationDistance = AppConstants.maxNearbyDistanceMeters
 
@@ -28,94 +35,8 @@ struct ExploreView: View {
         return selectedGenres + remainingGenres
     }
 
-    var featuredEvents: [Event] {
-        let now = Date()
-        let featured = eventViewModel.events.filter { event in
-            guard event.isFeatured else { return false }
-            if let startTime = event.startTime {
-                return startTime > now
-            }
-            return true
-        }
-        // Sort by priority (lower number = higher priority), then by start time
-        return featured.sorted { event1, event2 in
-            let priority1 = event1.featuredPriority ?? 999
-            let priority2 = event2.featuredPriority ?? 999
-
-            if priority1 != priority2 {
-                return priority1 < priority2
-            }
-
-            // If same priority, sort by start time
-            let time1 = event1.startTime ?? Date.distantFuture
-            let time2 = event2.startTime ?? Date.distantFuture
-            return time1 < time2
-        }
-    }
-    
-    var thisWeekEvents: [Event] {
-        let calendar = Calendar.current
-        let now = Date()
-        
-        guard let startOfToday = calendar.startOfDay(for: now) as Date?,
-              let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfToday) else {
-            return []
-        }
-        
-        return eventViewModel.events
-            .filter { event in
-                guard let startTime = event.startTime else { return false }
-                return !event.isFeatured &&
-                        startTime >= now &&
-                        startTime < endOfWeek
-            }
-            .sorted { event1, event2 in
-                (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
-            }
-    }
-    
     var thisWeekEventsPreview: [Event] {
         Array(thisWeekEvents.prefix(5))
-    }
-    
-    var nearbyEvents: [(event: Event, distance: CLLocationDistance)] {
-        guard let savedLocation = userLocationManager.savedLocation else {
-            return []
-        }
-        let userLocation = userLocationManager.currentCLLocation ?? CLLocation(
-            latitude: savedLocation.latitude,
-            longitude: savedLocation.longitude
-        )
-
-        let now = Date()
-
-        let eventsWithCoordinates = eventViewModel.events
-            .filter { event in
-                guard let startTime = event.startTime,
-                      let _ = event.coordinates else {
-                    return false
-                }
-                return !event.isFeatured && startTime > now
-            }
-
-        let eventsWithDistance = eventsWithCoordinates.compactMap { event -> (Event, CLLocationDistance)? in
-            guard let coordinates = event.coordinates else { return nil }
-            let eventLocation = CLLocation(
-                latitude: coordinates.latitude,
-                longitude: coordinates.longitude
-            )
-            let distance = userLocation.distance(from: eventLocation)
-
-            guard distance <= maxNearbyDistance else {
-                return nil
-            }
-
-            return (event, distance)
-        }
-
-        return eventsWithDistance
-            .sorted { $0.1 < $1.1 }
-            .map { (event: $0.0, distance: $0.1) }
     }
 
     var nearbyEventsPreview: [(event: Event, distance: CLLocationDistance)] {
@@ -131,64 +52,27 @@ struct ExploreView: View {
             return String(format: "%.0fmi", round(miles))
         }
     }
-    
-    var popularEvents: [Event] {
-        let thisWeekEventIds = Set(thisWeekEvents.compactMap { $0.id })
-        
-        return eventViewModel.events
-            .filter { event in
-                guard let startTime = event.startTime else { return false }
-                return !event.isFeatured &&
-                        startTime > Date() &&
-                        !thisWeekEventIds.contains(event.id ?? "")
-            }
-            .sorted { event1, event2 in
-                let sellThrough1 = Double(event1.ticketsSold) / Double(max(event1.maxTickets, 1))
-                let sellThrough2 = Double(event2.ticketsSold) / Double(max(event2.maxTickets, 1))
-                return sellThrough1 > sellThrough2
-            }
-    }
-    
+
     var popularEventsPreview: [Event] {
         Array(popularEvents.prefix(5))
     }
-    
+
     func allEventsForGenre(_ genre: String) -> [Event] {
-        eventViewModel.events
-            .filter { event in
-                guard let startTime = event.startTime else { return false }
-                return !event.isFeatured &&
-                        startTime > Date() &&
-                        (event.tags?.contains { $0.localizedCaseInsensitiveCompare(genre) == .orderedSame } ?? false)
-            }
-            .sorted { event1, event2 in
-                (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
-            }
+        genreEventCache[genre] ?? []
     }
-    
+
     func eventsForGenrePreview(_ genre: String) -> [Event] {
         Array(allEventsForGenre(genre).prefix(5))
     }
-    
-    var allEvents: [Event] {
-        eventViewModel.events
-            .filter { event in
-                guard let startTime = event.startTime else { return false }
-                return startTime > Date()
-            }
-            .sorted { event1, event2 in
-                (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
-            }
-    }
-    
+
     var allEventsPreview: [Event] {
         Array(allEvents.prefix(6))
     }
-    
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
                 HStack {
                     Text("Explore")
@@ -229,7 +113,7 @@ struct ExploreView: View {
                 .refreshable {
                     isRefreshing = true
                     await eventViewModel.refreshEvents()
-                    
+
                     try? await Task.sleep(nanoseconds: 200_000_000)
                     isRefreshing = false
                 }
@@ -247,10 +131,28 @@ struct ExploreView: View {
                     }
                 }
             }
+            .task {
+                await computeEventSections()
+            }
+            .onChange(of: eventViewModel.events) { _, _ in
+                Task {
+                    await computeEventSections()
+                }
+            }
+            .onChange(of: userLocationManager.savedLocation) { _, _ in
+                Task {
+                    await computeNearbyEvents()
+                }
+            }
+            .onChange(of: displayGenres) { _, _ in
+                Task {
+                    await computeGenreEvents()
+                }
+            }
 
             if eventViewModel.errorMessage != nil && eventViewModel.events.isEmpty {
                 VStack(spacing: 24) {
-                    
+
                     Text("Failed to Load Events")
                         .appSectionHeader()
                         .foregroundColor(.white)
@@ -296,7 +198,189 @@ struct ExploreView: View {
             }
         }
     }
-    
+
+    private func computeEventSections() async {
+        let events = eventViewModel.events
+
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask {
+                let computed = await computeFeaturedEvents(events: events)
+                await MainActor.run { featuredEvents = computed }
+            }
+
+            group.addTask {
+                let computed = await computeThisWeekEvents(events: events)
+                await MainActor.run { thisWeekEvents = computed }
+            }
+
+            group.addTask {
+                await computeNearbyEvents()
+            }
+
+            group.addTask {
+                let computed = await computePopularEvents(events: events)
+                await MainActor.run { popularEvents = computed }
+            }
+
+            group.addTask {
+                await computeGenreEvents()
+            }
+
+            group.addTask {
+                let computed = await computeAllEvents(events: events)
+                await MainActor.run { allEvents = computed }
+            }
+        }
+    }
+
+    private func computeFeaturedEvents(events: [Event]) async -> [Event] {
+        let now = Date()
+        let featured = events.filter { event in
+            guard event.isFeatured else { return false }
+            if let startTime = event.startTime {
+                return startTime > now
+            }
+            return true
+        }
+
+        return featured.sorted { event1, event2 in
+            let priority1 = event1.featuredPriority ?? 999
+            let priority2 = event2.featuredPriority ?? 999
+
+            if priority1 != priority2 {
+                return priority1 < priority2
+            }
+
+            let time1 = event1.startTime ?? Date.distantFuture
+            let time2 = event2.startTime ?? Date.distantFuture
+            return time1 < time2
+        }
+    }
+
+    private func computeThisWeekEvents(events: [Event]) async -> [Event] {
+        let calendar = Calendar.current
+        let now = Date()
+
+        guard let startOfToday = calendar.startOfDay(for: now) as Date?,
+              let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfToday) else {
+            return []
+        }
+
+        return events
+            .filter { event in
+                guard let startTime = event.startTime else { return false }
+                return !event.isFeatured &&
+                        startTime >= now &&
+                        startTime < endOfWeek
+            }
+            .sorted { event1, event2 in
+                (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
+            }
+    }
+
+    private func computeNearbyEvents() async {
+        guard let savedLocation = await MainActor.run(body: { userLocationManager.savedLocation }) else {
+            await MainActor.run { nearbyEvents = [] }
+            return
+        }
+
+        let currentCLLocation = await MainActor.run { userLocationManager.currentCLLocation }
+        let userLocation = currentCLLocation ?? CLLocation(
+            latitude: savedLocation.latitude,
+            longitude: savedLocation.longitude
+        )
+
+        let events = await MainActor.run { eventViewModel.events }
+        let now = Date()
+
+        let eventsWithCoordinates = events
+            .filter { event in
+                guard let startTime = event.startTime,
+                      let _ = event.coordinates else {
+                    return false
+                }
+                return !event.isFeatured && startTime > now
+            }
+
+        let eventsWithDistance = eventsWithCoordinates.compactMap { event -> (Event, CLLocationDistance)? in
+            guard let coordinates = event.coordinates else { return nil }
+            let eventLocation = CLLocation(
+                latitude: coordinates.latitude,
+                longitude: coordinates.longitude
+            )
+            let distance = userLocation.distance(from: eventLocation)
+
+            guard distance <= maxNearbyDistance else {
+                return nil
+            }
+
+            return (event, distance)
+        }
+
+        let sorted = eventsWithDistance
+            .sorted { $0.1 < $1.1 }
+            .map { (event: $0.0, distance: $0.1) }
+
+        await MainActor.run {
+            nearbyEvents = sorted
+        }
+    }
+
+    private func computePopularEvents(events: [Event]) async -> [Event] {
+        let thisWeek = await computeThisWeekEvents(events: events)
+        let thisWeekEventIds = Set(thisWeek.compactMap { $0.id })
+
+        return events
+            .filter { event in
+                guard let startTime = event.startTime else { return false }
+                return !event.isFeatured &&
+                        startTime > Date() &&
+                        !thisWeekEventIds.contains(event.id ?? "")
+            }
+            .sorted { event1, event2 in
+                let sellThrough1 = Double(event1.ticketsSold) / Double(max(event1.maxTickets, 1))
+                let sellThrough2 = Double(event2.ticketsSold) / Double(max(event2.maxTickets, 1))
+                return sellThrough1 > sellThrough2
+            }
+    }
+
+    private func computeGenreEvents() async {
+        let genres = await MainActor.run { displayGenres }
+        let events = await MainActor.run { eventViewModel.events }
+
+        var cache: [String: [Event]] = [:]
+
+        for genre in genres {
+            let filtered = events
+                .filter { event in
+                    guard let startTime = event.startTime else { return false }
+                    return !event.isFeatured &&
+                            startTime > Date() &&
+                            (event.tags?.contains { $0.localizedCaseInsensitiveCompare(genre) == .orderedSame } ?? false)
+                }
+                .sorted { event1, event2 in
+                    (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
+                }
+
+            cache[genre] = filtered
+        }
+
+        await MainActor.run {
+            genreEventCache = cache
+        }
+    }
+
+    private func computeAllEvents(events: [Event]) async -> [Event] {
+        return events
+            .filter { event in
+                guard let startTime = event.startTime else { return false }
+                return startTime > Date()
+            }
+            .sorted { event1, event2 in
+                (event1.startTime ?? Date.distantPast) < (event2.startTime ?? Date.distantPast)
+            }
+    }
+
     private var loadingView: some View {
         VStack(spacing: 16) {
             CustomLoadingIndicator(size: 50)
@@ -304,7 +388,7 @@ struct ExploreView: View {
         .frame(maxWidth: .infinity)
         .frame(height: 300)
     }
-    
+
     private var contentView: some View {
         VStack(spacing: 0) {
             buildContentSections()
@@ -503,12 +587,12 @@ struct ExploreView: View {
 struct EventSectionDestination: Hashable {
     let title: String
     let events: [Event]
-    
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(title)
         hasher.combine(events.compactMap { $0.id })
     }
-    
+
     static func == (lhs: EventSectionDestination, rhs: EventSectionDestination) -> Bool {
         lhs.title == rhs.title &&
         lhs.events.compactMap { $0.id } == rhs.events.compactMap { $0.id }
@@ -517,11 +601,11 @@ struct EventSectionDestination: Hashable {
 
 struct SeededRandomNumberGenerator: RandomNumberGenerator {
     private var state: UInt64
-    
+
     init(seed: UInt64) {
         state = seed
     }
-    
+
     mutating func next() -> UInt64 {
         state = state &* 6364136223846793005 &+ 1442695040888963407
         return state

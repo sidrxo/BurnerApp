@@ -196,9 +196,6 @@ struct AuthWelcomeSlide: View {
     @State private var showingSignIn = false
     @EnvironmentObject var appState: AppState
 
-    @State private var cancellables = Set<AnyCancellable>()
-
-
     private var eventImageURLs: [URL] {
         appState.eventViewModel.events.compactMap {
             guard !$0.imageUrl.isEmpty, let url = URL(string: $0.imageUrl) else {
@@ -206,12 +203,6 @@ struct AuthWelcomeSlide: View {
             }
             return url
         }
-    }
-    
-    private func prefetchImages(urls: [URL]) {
-        ImagePrefetcher(urls: urls.prefix(12).map { $0 }, completionHandler:  {skippedResources,failedResources,completedResources in
-        })
-        .start()
     }
 
     var body: some View {
@@ -236,7 +227,9 @@ struct AuthWelcomeSlide: View {
 
                 BurnerButton("EXPLORE", style: .secondary, maxWidth: 160) {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    NotificationCenter.default.post(name: NSNotification.Name("SkipOnboardingToExplore"), object: nil)
+                    DispatchQueue.main.async {
+                        NotificationCenter.default.post(name: NSNotification.Name("SkipOnboardingToExplore"), object: nil)
+                    }
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -246,21 +239,11 @@ struct AuthWelcomeSlide: View {
                 .frame(minHeight: 40)
         }
         .sheet(isPresented: $showingSignIn) {
-            SignInSheetView(showingSignIn: $showingSignIn, isOnboarding: true)        }
+            SignInSheetView(showingSignIn: $showingSignIn, isOnboarding: true)
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
             showingSignIn = false
             onLogin()
-        }
-        .onAppear {
-            appState.eventViewModel.$events
-                .sink { events in
-                    let urls = self.eventImageURLs
-                    if !urls.isEmpty {
-                        self.prefetchImages(urls: urls)
-                        self.cancellables.removeAll()
-                    }
-                }
-                .store(in: &cancellables)
         }
     }
 }
@@ -577,6 +560,7 @@ struct CompleteSlide: View {
 
 struct KFCarouselCard: View {
     let url: URL?
+    @State private var isLoaded = false
 
     static let size = CGSize(width: 134, height: 134)
 
@@ -587,14 +571,20 @@ struct KFCarouselCard: View {
                     .fill(Color.white.opacity(0.06))
                     .frame(width: Self.size.width, height: Self.size.height)
             }
-            .retry(maxCount: 1, interval: .seconds(1))
+            .onSuccess { _ in
+                withAnimation(.easeIn(duration: 0.4)) {
+                    isLoaded = true
+                }
+            }
+            .fade(duration: 0.4)
+            .retry(maxCount: 2, interval: .seconds(0.5))
             .resizable()
             .scaledToFill()
             .frame(width: Self.size.width, height: Self.size.height)
             .clipped()
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 3)
-            .transition(.opacity.animation(.easeIn(duration: 0.5)))
+            .opacity(isLoaded ? 1 : 0)
     }
 }
 

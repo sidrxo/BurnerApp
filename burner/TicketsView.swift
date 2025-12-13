@@ -47,7 +47,7 @@ struct TicketGridItem: View {
                         .foregroundColor(.gray)
                 }
             }
-            .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading) // ✅ Fixed minimum height for the entire info section
+            .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
             .padding(.top, 8)
             .padding(.horizontal, 4)
         }
@@ -61,13 +61,13 @@ struct TicketGridItem: View {
 }
 
 struct TicketsView: View {
-    // ✅ Use shared ViewModels from environment
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var coordinator: NavigationCoordinator
 
     @State private var selectedFilter: Int = 0 // 0 = upcoming, 1 = past
-    @State private var showTicketsAnimation = false // ✅ Animation state
+    @State private var showTicketsAnimation = false
+    @State private var isLoadingTicketsAfterSignIn = false // Track post-sign-in ticket loading
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -130,14 +130,15 @@ struct TicketsView: View {
                 }
             }
 
-            if ticketsViewModel.isLoading && ticketsViewModel.tickets.isEmpty {
-                loadingView
+            if isLoadingTicketsAfterSignIn {
+                // Show nothing (blank screen) while loading tickets after sign-in
+                Color.black
             } else if ticketsViewModel.tickets.isEmpty {
                 emptyStateView
             } else {
                 ticketsList
-                    .opacity(showTicketsAnimation ? 1 : 0) // ✅ Fade in
-                    .offset(y: showTicketsAnimation ? 0 : 30) // ✅ Slide up
+                    .opacity(showTicketsAnimation ? 1 : 0)
+                    .offset(y: showTicketsAnimation ? 0 : 30)
             }
         }
         .background(Color.black)
@@ -160,13 +161,26 @@ struct TicketsView: View {
             }
         }
         .onChange(of: Auth.auth().currentUser?.uid) { oldValue, newValue in
-            if newValue != nil {
+            if newValue != nil && oldValue == nil {
+                // User just signed in - show loading state
                 showTicketsAnimation = false
+                isLoadingTicketsAfterSignIn = true
+                
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                     ticketsViewModel.fetchUserTickets()
                 }
-            } else {
+            } else if newValue == nil && oldValue != nil {
+                // User signed out - reset state
                 showTicketsAnimation = false
+                isLoadingTicketsAfterSignIn = false
+            }
+        }
+        .onChange(of: ticketsViewModel.tickets.isEmpty) { oldValue, newValue in
+            // Reset loading flag once tickets are loaded (or confirmed empty)
+            if isLoadingTicketsAfterSignIn && !ticketsViewModel.isLoading {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    isLoadingTicketsAfterSignIn = false
+                }
             }
         }
     }
@@ -214,12 +228,11 @@ struct TicketsView: View {
     private var signedOutEmptyState: some View {
         GeometryReader { geometry in
             VStack(spacing: 20) {
-                // ✅ Fixed-height frame for image
                 Image("user")
                     .resizable()
                     .scaledToFit()
-                    .frame(height: 140) // fixed height
-                    .frame(maxWidth: .infinity) // center horizontally
+                    .frame(height: 140)
+                    .frame(maxWidth: .infinity)
                     .padding(.bottom, 30)
                 
                 VStack(spacing: 8) {
@@ -247,12 +260,11 @@ struct TicketsView: View {
     private var noTicketsEmptyState: some View {
         GeometryReader { geometry in
             VStack(spacing: 20) {
-                // ✅ Fixed-height frame for image
                 Image("ticket")
                     .resizable()
                     .scaledToFit()
-                    .frame(height: 140) // fixed height
-                    .frame(maxWidth: .infinity) // center horizontally
+                    .frame(height: 140)
+                    .frame(maxWidth: .infinity)
                     .padding(.bottom, 30)
                 
                 VStack(spacing: 8) {
@@ -322,10 +334,10 @@ struct TicketsView: View {
                 // Sliding indicator
                 GeometryReader { geometry in
                     let tabWidth = geometry.size.width / 2
-                    let indicatorWidth: CGFloat = selectedFilter == 0 ? 55 : 60 // Width for "NEXT UP" and "HISTORY"
+                    let indicatorWidth: CGFloat = selectedFilter == 0 ? 55 : 60
                     let xOffset = selectedFilter == 0
-                        ? (tabWidth - indicatorWidth) / 2  // Center under NEXT UP
-                        : tabWidth + (tabWidth - indicatorWidth) / 2  // Center under HISTORY
+                        ? (tabWidth - indicatorWidth) / 2
+                        : tabWidth + (tabWidth - indicatorWidth) / 2
                     
                     Rectangle()
                         .fill(.white)
@@ -359,8 +371,8 @@ struct TicketsView: View {
     
     private var ticketsList: some View {
         GeometryReader { geometry in
-            let gridHeight = calculateGridHeight(availableWidth: geometry.size.width - 40) // 40 for horizontal padding
-            let needsScroll = gridHeight > geometry.size.height - 100 // 100 for bottom padding
+            let gridHeight = calculateGridHeight(availableWidth: geometry.size.width - 40)
+            let needsScroll = gridHeight > geometry.size.height - 100
             
             if needsScroll {
                 ScrollView {
@@ -393,8 +405,8 @@ struct TicketsView: View {
     }
     
     private func calculateGridHeight(availableWidth: CGFloat) -> CGFloat {
-        let itemWidth = (availableWidth - 24) / 3 // 24 = spacing between 3 columns (12 * 2)
-        let itemHeight = itemWidth + 60 + 8 + 4 // image height (1:1) + text section min height + top padding + spacing
+        let itemWidth = (availableWidth - 24) / 3
+        let itemHeight = itemWidth + 60 + 8 + 4
         let rows = ceil(Double(filteredTickets.count) / 3.0)
         let totalHeight = (itemHeight * CGFloat(rows)) + (12 * CGFloat(max(0, rows - 1))) + 100
         return totalHeight

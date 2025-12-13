@@ -2,6 +2,7 @@ import SwiftUI
 import FirebaseAuth
 import Combine
 import ActivityKit
+import Kingfisher
 
 @MainActor
 class AppState: ObservableObject {
@@ -28,6 +29,7 @@ class AppState: ObservableObject {
     private var resetObserver: NSObjectProtocol?
     private var emptyStateEnabledObserver: NSObjectProtocol?
     private var emptyStateDisabledObserver: NSObjectProtocol?
+    private var imagePrefetchCancellable: AnyCancellable?
 
     private let eventRepository: EventRepository
     private let ticketRepository: TicketRepository
@@ -96,6 +98,7 @@ class AppState: ObservableObject {
 
         setupObservers()
         setupBurnerModeObserver()
+        setupImagePrefetching()
         
         loadInitialData()
         
@@ -139,6 +142,29 @@ class AppState: ObservableObject {
                 self.burnerManager.checkAndScheduleEventDayReminder(tickets: tickets)
             }
             .store(in: &cancellables)
+    }
+
+    private func setupImagePrefetching() {
+        imagePrefetchCancellable = eventViewModel.$events
+            .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
+            .sink { [weak self] events in
+                guard let self = self else { return }
+                let urls = events.compactMap { event -> URL? in
+                    guard !event.imageUrl.isEmpty else { return nil }
+                    return URL(string: event.imageUrl)
+                }
+                
+                guard !urls.isEmpty else { return }
+                
+                let prefetcher = ImagePrefetcher(
+                    urls: Array(urls.prefix(12)),
+                    options: [
+                        .downloadPriority(1.0),
+                        .backgroundDecode
+                    ]
+                )
+                prefetcher.start()
+            }
     }
 
     private func setupBurnerModeObserver() {

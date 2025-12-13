@@ -818,9 +818,7 @@ struct SignInSheetView: View {
             }
             
             if !self.isOnboarding {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    self.showingSignIn = false
-                }
+                self.showingSignIn = false
             }
         }
     }
