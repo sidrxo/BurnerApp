@@ -97,9 +97,8 @@ class AppState: ObservableObject {
         setupObservers()
         setupBurnerModeObserver()
         
-        Task {
-            await loadInitialData()
-        }
+        loadInitialData()
+        
     }
     
     private func setupObservers() {

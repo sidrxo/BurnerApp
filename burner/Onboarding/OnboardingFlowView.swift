@@ -246,10 +246,8 @@ struct AuthWelcomeSlide: View {
                 .frame(minHeight: 40)
         }
         .sheet(isPresented: $showingSignIn) {
-            // Pass isOnboarding = true so SignInSheetView knows to only progress the slide
             SignInSheetView(showingSignIn: $showingSignIn, isOnboarding: true)        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
-            // When user signs in from this slide, advance the flow and dismiss the sheet
             showingSignIn = false
             onLogin()
         }

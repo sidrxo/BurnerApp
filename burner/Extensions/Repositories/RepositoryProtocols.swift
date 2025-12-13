@@ -8,7 +8,10 @@ import CoreLocation
 protocol EventRepositoryProtocol {
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void)
     func stopObserving()
-    func fetchEventsFromServer(since date: Date) async throws -> [Event] // <-- NEW
+    func fetchEventsFromServer(since date: Date) async throws -> [Event]
+    
+    // ✅ FIX: Added the missing function signature for AsyncStream
+    func eventStream(since date: Date) -> AsyncThrowingStream<[Event], Error>
 }
 
 // MARK: - Ticket Repository Protocol
@@ -99,9 +102,11 @@ class DependencyContainer {
 
     // MARK: - Factory Methods
     func makeEventViewModel() -> EventViewModel {
+        // NOTE: The forced casts (`as!`) here are typical in a DI container
+        // that mixes protocol usage for testing and concrete usage for initialization.
         return EventViewModel(
-            eventRepository: eventRepository as! EventRepository,
-            ticketRepository: ticketRepository as! TicketRepository
+            eventRepository: eventRepository,
+            ticketRepository: ticketRepository
         )
     }
 
@@ -114,7 +119,7 @@ class DependencyContainer {
 
     func makeTicketsViewModel() -> TicketsViewModel {
         return TicketsViewModel(
-            ticketRepository: ticketRepository as! TicketRepository
+            ticketRepository: ticketRepository
         )
     }
 }
@@ -143,6 +148,19 @@ class MockEventRepository: EventRepositoryProtocol {
             throw NSError(domain: "MockError", code: -1, userInfo: nil)
         }
         return mockEvents
+    }
+    
+    // ✅ FIX: Mock implementation for the new AsyncStream function
+    func eventStream(since date: Date) -> AsyncThrowingStream<[Event], Error> {
+        return AsyncThrowingStream { continuation in
+            if shouldFail {
+                continuation.finish(throwing: NSError(domain: "MockError", code: -1, userInfo: nil))
+            } else {
+                // Yield mock events immediately and end the stream for simplicity
+                continuation.yield(mockEvents)
+                continuation.finish()
+            }
+        }
     }
 }
 

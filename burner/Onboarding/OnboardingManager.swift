@@ -21,13 +21,12 @@ class OnboardingManager: ObservableObject {
         let isAuthenticated = authService.currentUser != nil
 
         if isAuthenticated {
-            if hasCompletedOnboarding {
-                Task {
-                    await self.loadUserPreferences()
-                }
+            self.shouldShowOnboarding = !hasCompletedOnboarding
+            Task {
+                await self.loadUserPreferences()
             }
         } else {
-            self.shouldShowOnboarding = true
+            self.shouldShowOnboarding = !hasCompletedOnboarding
         }
 
         self.setupAuthSubscription()
@@ -66,15 +65,13 @@ class OnboardingManager: ObservableObject {
         let previousValue = shouldShowOnboarding
 
         if isAuthenticated {
-            self.shouldShowOnboarding = false
-            
-            if hasCompletedOnboarding {
-                Task {
-                    await loadUserPreferences()
-                }
+            Task {
+                await loadUserPreferences()
             }
         } else {
-            self.shouldShowOnboarding = true
+            if !hasCompletedOnboarding {
+                self.shouldShowOnboarding = true
+            }
         }
 
         if previousValue != shouldShowOnboarding {

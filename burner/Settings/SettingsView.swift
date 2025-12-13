@@ -59,8 +59,8 @@ struct SettingsView: View {
                                 coordinator.navigate(to: .bookmarks)
                             }) {
                                 MenuItemContent(
-                                    title: "Bookmarks",
-                                    subtitle: "Saved events"
+                                    title: "Saves",
+                                    subtitle: "Tap back in."
                                 )
                                 .contentShape(Rectangle())
                             }

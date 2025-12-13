@@ -779,7 +779,6 @@ struct SignInSheetView: View {
         }
     }
     
-    // START OF FIX: Strict Onboarding/Modal Sign-in Logic
     private func completeSignIn() {
         DispatchQueue.main.async {
             withAnimation {
@@ -809,26 +808,15 @@ struct SignInSheetView: View {
                     await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
                 }
 
-                // Logic 1: If coming from the Onboarding Welcome Slide
                 if self.isOnboarding {
-                    // Send notification to OnboardingFlowView (AuthWelcomeSlide) to progress to the next step.
-                    // DO NOT call completeOnboarding() here.
                     NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
                 } else {
-                    // Logic 2: If coming from any other modal (e.g., TicketsView)
-                    // Immediately complete onboarding to ensure the main app view doesn't show the flow.
                     if !self.appState.onboardingManager.hasCompletedOnboarding {
                         self.appState.onboardingManager.completeOnboarding()
-                    }
-                    
-                    // Dismiss sign-in sheet only for non-onboarding flow after a slight delay
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        self.showingSignIn = false
                     }
                 }
             }
             
-            // For onboarding flow, the AuthWelcomeSlide will dismiss the sheet in its onReceive block
             if !self.isOnboarding {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     self.showingSignIn = false
@@ -836,8 +824,6 @@ struct SignInSheetView: View {
             }
         }
     }
-    // END OF FIX
-
     
     private func triggerSuccessFeedback() {
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)

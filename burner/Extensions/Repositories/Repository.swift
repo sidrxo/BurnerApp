@@ -39,7 +39,49 @@ protocol Repository {
 @MainActor
 class EventRepository: BaseRepository {
 
-    // MARK: - Fetch Events with Real-time Updates
+    // MARK: - Fetch Events with Real-time Updates (ASYNC STREAM - NEW/FIXED)
+    // This is the correct way to wrap a multi-callback listener into Swift Concurrency.
+    func eventStream(since date: Date) -> AsyncThrowingStream<[Event], Error> {
+        return AsyncThrowingStream { continuation in
+            let listener = db.collection("events")
+                .whereField("startTime", isGreaterThanOrEqualTo: Timestamp(date: date))
+                .addSnapshotListener { snapshot, error in
+                    if let error = error {
+                        // Terminate stream on error
+                        continuation.finish(throwing: error)
+                        return
+                    }
+
+                    guard let documents = snapshot?.documents else {
+                        // Yield an empty result, stream remains open
+                        continuation.yield([])
+                        return
+                    }
+
+                    let events = documents.compactMap { doc -> Event? in
+                        var event = try? doc.data(as: Event.self)
+                        event?.id = doc.documentID
+                        return event
+                    }
+
+                    // Yield the new data and keep the stream open for future updates
+                    continuation.yield(events)
+                }
+
+            // On cancellation of the consuming Task, remove the listener
+            continuation.onTermination = { @Sendable [listener] _ in
+                listener.remove()
+            }
+
+            // We still store the listener in BaseRepository for manual cleanup if needed
+            setListener(listener)
+        }
+    }
+
+    // MARK: - Fetch Events with Real-time Updates (OLD - To be removed if possible)
+    // NOTE: This completion-based function is the one that was likely being wrapped incorrectly
+    // in the ViewModel/Dependency and causing the crash. It is retained here to keep protocol
+    // compliance but should be phased out in favor of `eventStream`.
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void) {
         let calendar = Calendar.current
         let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
@@ -69,7 +111,7 @@ class EventRepository: BaseRepository {
         setListener(listener)
     }
     
-    // MARK: - Fetch Events from Server (for Refresh) <-- NEW FUNCTION
+    // MARK: - Fetch Events from Server (for Refresh)
     func fetchEventsFromServer(since date: Date) async throws -> [Event] {
         let snapshot = try await db.collection("events")
             .whereField("startTime", isGreaterThanOrEqualTo: Timestamp(date: date))
