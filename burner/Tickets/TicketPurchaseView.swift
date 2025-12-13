@@ -110,9 +110,6 @@ struct TicketPurchaseView: View {
                         dismiss() // ✅ CHANGED: Use dismiss() for native pop
                     }
                 }) {
-                    Image(systemName: currentStep != .paymentMethod ? "chevron.left" : "xmark")
-                        .appBody()
-                        .foregroundColor(.white)
                 }
             }
             
