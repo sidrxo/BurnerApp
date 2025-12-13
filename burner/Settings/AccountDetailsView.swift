@@ -231,6 +231,8 @@ struct AccountDetailsView: View {
 
             // ✅ FIXED: Notify AppState before signing out
             appState.handleManualSignOut()
+            UserDefaults.standard.set(false, forKey: "hasLaunchedBefore")
+            UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
 
             try Auth.auth().signOut()
 
@@ -265,6 +267,9 @@ struct AccountDetailsView: View {
                 if #available(iOS 16.1, *) {
                     TicketLiveActivityManager.endLiveActivity()
                 }
+
+                UserDefaults.standard.set(false, forKey: "hasLaunchedBefore")
+                UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
 
                 // Success - notify AppState and sign out
                 appState.handleManualSignOut()

@@ -88,8 +88,11 @@ struct BurnerApp: App {
     @State private var showingVideoSplash = true
     @Environment(\.scenePhase) private var scenePhase
     
-    // Check if this is the very first launch.
+    // Check if this is the very first launch. (Kept for compatibility with other logic, but no longer used for video choice)
     private let isInitialAppLaunch = !UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
+    
+    // *** NEW: Permanent flag to check if the launch video has ever been shown ***
+    private let hasShownLaunchVideo = UserDefaults.standard.bool(forKey: "hasShownLaunchVideo")
     
     init() {
         configureGlobalAppearance()
@@ -142,9 +145,16 @@ struct BurnerApp: App {
                 
                 if showingVideoSplash {
                     // MARK: - Updated logic for video selection
-                    let videoToPlay = isInitialAppLaunch ? "launch" : "splash"
+                    // Uses the new permanent flag for video choice.
+                    let videoToPlay = hasShownLaunchVideo ? "splash" : "launch"
+                    
                     VideoSplashView(videoName: videoToPlay, loop: false) {
                         showingVideoSplash = false
+                        
+                        // *** NEW: Set the permanent flag to true after playing launch video ***
+                        if !hasShownLaunchVideo {
+                            UserDefaults.standard.set(true, forKey: "hasShownLaunchVideo")
+                        }
                     }
                     .zIndex(2000)
                 }
@@ -155,7 +165,8 @@ struct BurnerApp: App {
             configureGlobalAppearance()
             
             // MARK: - Updated logic to only dismiss splash on background if it's NOT the initial launch (to ensure 'launch' video plays fully)
-            if !isInitialAppLaunch && showingVideoSplash && (newPhase == .background || newPhase == .inactive) {
+            // Uses the new permanent flag for the dismissal check.
+            if hasShownLaunchVideo && showingVideoSplash && (newPhase == .background || newPhase == .inactive) {
                 showingVideoSplash = false
             }
             

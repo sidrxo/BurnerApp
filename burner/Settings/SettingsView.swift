@@ -60,7 +60,7 @@ struct SettingsView: View {
                             }) {
                                 MenuItemContent(
                                     title: "Saves",
-                                    subtitle: "Tap back in."
+                                    subtitle: "Your saves appear here"
                                 )
                                 .contentShape(Rectangle())
                             }
