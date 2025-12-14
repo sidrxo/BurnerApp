@@ -135,25 +135,6 @@ struct TicketDetailView: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .clipped()
-
-                    LinearGradient(
-                        gradient: Gradient(colors: [.clear, .black.opacity(0.7)]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(ticketWithEvent.event.name.uppercased())
-                            .appSectionHeader()
-                            .kerning(-1)
-                            .foregroundColor(.white)
-
-                        Text(ticketWithEvent.event.venue.uppercased())
-                            .appSecondary()
-                            .foregroundColor(.white.opacity(0.9))
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(24)
                 }
             }
         }

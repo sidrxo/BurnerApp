@@ -1,11 +1,3 @@
-//
-//  PasswordlessAuthView.swift
-//  burner
-//
-//  Created by Sid Rao on 03/11/2025.
-//
-
-
 import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
@@ -31,34 +23,45 @@ struct PasswordlessAuthView: View {
                     .ignoresSafeArea(.all)
                 
                 VStack(spacing: 0) {
-                    // Content - Vertically centered
+                    // Content - Vertically centered using GeometryReader and ScrollView
                     GeometryReader { geometry in
                         ScrollView {
-                            VStack(spacing: 32) {
+                            VStack(spacing: 40) {
                                 Spacer()
                                     .frame(minHeight: 0)
 
                                 // Header
                                 VStack(spacing: 12) {
                                     
-                                    Text(emailSent ? "Check your email" : "Enter your email")
-                                        .appSectionHeader()
-                                        .foregroundColor(.white)
-
-                                    Text(emailSent ? "We sent a sign-in link to \(email)" : "We'll send you a link to sign in")
-                                        .appBody()
-                                        .foregroundColor(.white.opacity(0.7))
-                                        .multilineTextAlignment(.center)
-                                        .padding(.horizontal, 24)
+                                    if emailSent {
+                                        TightHeaderText("CHECK YOUR", "EMAIL", alignment: .center)
+                                            .frame(maxWidth: .infinity)
+                                        
+                                        Text("We sent a sign-in link to \(email)")
+                                            .appBody()
+                                            .foregroundColor(.white.opacity(0.7))
+                                            .multilineTextAlignment(.center)
+                                            .padding(.horizontal, 24)
+                                    } else {
+                                        TightHeaderText("WHAT'S YOUR", "EMAIL?", alignment: .center)
+                                            .frame(maxWidth: .infinity)
+                                        
+                                        Text("We'll send a magic link to sign you in or create an account.")
+                                            .appBody()
+                                            .foregroundColor(.white.opacity(0.7))
+                                            .multilineTextAlignment(.center)
+                                            .padding(.horizontal, 24)
+                                    }
                                 }
+                                .frame(height: 160) // Ensure stable height for visual consistency
                                 .padding(.top, 20)
                             
                             if !emailSent {
                                 // Email input form
                                 VStack(spacing: 20) {
                                     VStack(alignment: .leading, spacing: 8) {
-                                    
-                                        TextField("", text: $email)
+                                        // The original had a placeholder, which is useful in a TextField
+                                        TextField("Email Address", text: $email)
                                             .appBody()
                                             .foregroundColor(.white)
                                             .autocorrectionDisabled()
@@ -67,9 +70,9 @@ struct PasswordlessAuthView: View {
                                             .padding(.horizontal, 16)
                                             .padding(.vertical, 14)
                                             .background(Color.white.opacity(0.1))
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            .clipShape(RoundedRectangle(cornerRadius: 12)) // Changed to 12 for consistency
                                             .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
+                                                RoundedRectangle(cornerRadius: 12)
                                                     .stroke(Color.white.opacity(0.2), lineWidth: 1)
                                             )
                                     }
@@ -77,10 +80,10 @@ struct PasswordlessAuthView: View {
                                 .padding(.horizontal, 24)
                             } else {
                                 // Email sent confirmation
-                                VStack(spacing: 24) {
+                                VStack(spacing: 28) {
                                     VStack(spacing: 16) {
                                         // Instructions
-                                        VStack(alignment: .leading, spacing: 12) {
+                                        VStack(alignment: .leading, spacing: 14) {
                                             instructionRow(number: "1", text: "Check your email inbox")
                                             instructionRow(number: "2", text: "Click the sign-in link")
                                             instructionRow(number: "3", text: "You'll be signed in automatically")
@@ -91,22 +94,18 @@ struct PasswordlessAuthView: View {
                                     }
                                     
                                     // Resend section
-                                    VStack(spacing: 12) {
+                                    VStack(spacing: 16) {
                                         Text("Didn't receive the email?")
                                             .appCaption()
                                             .foregroundColor(.white.opacity(0.7))
                                         
                                         if canResend {
-                                            Button {
+                                            BurnerButton("RESEND LINK", style: .secondary, maxWidth: 160) {
                                                 handleSendLink()
-                                            } label: {
-                                                Text("Resend Link")
-                                                    .appBody()
-                                                    .foregroundColor(.blue)
                                             }
                                         } else {
                                             Text("Resend in \(resendCountdown)s")
-                                                .appCaption()
+                                                .appBody() // Changed to appBody for prominence
                                                 .foregroundColor(.white.opacity(0.5))
                                         }
                                     }
@@ -121,6 +120,7 @@ struct PasswordlessAuthView: View {
                                         Text("Use a different email")
                                             .appCaption()
                                             .foregroundColor(.white.opacity(0.5))
+                                            .underline()
                                     }
                                 }
                                 .padding(.horizontal, 24)
@@ -129,26 +129,18 @@ struct PasswordlessAuthView: View {
                                 Spacer()
                                     .frame(minHeight: 0)
                             }
-                            .frame(minHeight: geometry.size.height)
+                            .frame(minHeight: geometry.size.height - 80) // Adjusted height
                         }
                     }
 
-                    // Bottom button
+                    // Bottom button (BurnerButton)
                     if !emailSent {
                         VStack(spacing: 0) {
-                                               
-                            Button {
+                            BurnerButton("SEND LINK", style: .primary, maxWidth: .infinity) {
                                 handleSendLink()
-                            } label: {
-                                Text("SEND LINK")
-                                    .appBody()
-                                    .foregroundColor(.black)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                                    .background(.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
                             .disabled(!isButtonEnabled || isLoading)
+                            .opacity(isButtonEnabled && !isLoading ? 1.0 : 0.6)
                             .padding(.horizontal, 24)
                             .padding(.vertical, 16)
                         }
@@ -158,7 +150,7 @@ struct PasswordlessAuthView: View {
                 
                 // Loading overlay
                 if isLoading {
-                    Color.black.opacity(0.4)
+                    Color.black.opacity(0.7) // Increased opacity for better contrast
                         .ignoresSafeArea(.all)
                     
                     ProgressView()
@@ -190,7 +182,7 @@ struct PasswordlessAuthView: View {
                         Image(systemName: "xmark")
                             .appBody()
                             .foregroundColor(.white.opacity(0.7))
-                            .frame(width: 32, height: 32)
+                            .frame(width: 38, height: 38) // Increased size for better tap target
                             .background(Color.white.opacity(0.1))
                             .clipShape(Circle())
                     }
@@ -201,9 +193,7 @@ struct PasswordlessAuthView: View {
             stopCountdown()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
-            // Dismiss this view when user successfully signs in
             dismiss()
-            // Also dismiss the parent sign-in sheet
             showingSignIn = false
         }
     }
@@ -211,17 +201,19 @@ struct PasswordlessAuthView: View {
     // MARK: - Instruction Row
     
     private func instructionRow(number: String, text: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) { // Changed to .top alignment
             Text(number)
                 .appSecondary()
-                .foregroundColor(.white)
-                .frame(width: 24, height: 24)
-                .background(Color.white.opacity(0.15))
+                .foregroundColor(.black) // Black text on white/dimmed background
+                .frame(width: 28, height: 28) // Increased size for consistency
+                .background(Color.white) // Solid white background for number pill
                 .clipShape(Circle())
+                .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1)
             
             Text(text)
                 .appBody()
                 .foregroundColor(.white)
+                .lineSpacing(3) // Added line spacing for readability
             
             Spacer()
         }
@@ -233,7 +225,7 @@ struct PasswordlessAuthView: View {
         return isValidEmail(email)
     }
     
-    // MARK: - Send Sign-In Link
+    // MARK: - Send Sign-In Link (Remains the same functional logic)
     
     private func handleSendLink() {
         guard isValidEmail(email) else {
@@ -243,16 +235,12 @@ struct PasswordlessAuthView: View {
         
         startLoading()
         
-        // Store email for verification after link is clicked
-          UserDefaults.standard.set(email, forKey: "pendingEmailForSignIn")
+        UserDefaults.standard.set(email, forKey: "pendingEmailForSignIn")
         
-        // Configure action code settings
         let actionCodeSettings = ActionCodeSettings()
-        actionCodeSettings.url = URL(string: "https://manageburner.online/signin") // Replace with your dynamic link
+        actionCodeSettings.url = URL(string: "https://manageburner.online/signin")
         actionCodeSettings.handleCodeInApp = true
         actionCodeSettings.setIOSBundleID(Bundle.main.bundleIdentifier ?? "")
-        // If you want to support Android too:
-        // actionCodeSettings.setAndroidPackageName("com.yourapp.android", installIfNotAvailable: true, minimumVersion: "1")
         
         Auth.auth().sendSignInLink(toEmail: email, actionCodeSettings: actionCodeSettings) { error in
             DispatchQueue.main.async {
@@ -263,22 +251,19 @@ struct PasswordlessAuthView: View {
                     return
                 }
                 
-                // Success - show confirmation
                 withAnimation {
                     self.emailSent = true
                 }
                 
-                // Start countdown timer
                 self.startCountdown()
                 
-                // Provide haptic feedback
                 let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                 impactFeedback.impactOccurred()
             }
         }
     }
     
-    // MARK: - Countdown Timer
+    // MARK: - Countdown Timer (Remains the same functional logic)
     
     private func startCountdown() {
         canResend = false
@@ -301,7 +286,7 @@ struct PasswordlessAuthView: View {
         resendCountdown = 60
     }
     
-    // MARK: - Helper Functions
+    // MARK: - Helper Functions (Remains the same functional logic)
     
     private func isValidEmail(_ email: String) -> Bool {
         let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
@@ -334,14 +319,5 @@ struct PasswordlessAuthView: View {
             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
             impactFeedback.impactOccurred()
         }
-    }
-}
-
-// MARK: - Preview
-struct PasswordlessAuthView_Previews: PreviewProvider {
-    static var previews: some View {
-        PasswordlessAuthView(showingSignIn: .constant(true))
-            .previewDevice("iPhone 14 Pro")
-            .previewDisplayName("Passwordless Auth View")
     }
 }

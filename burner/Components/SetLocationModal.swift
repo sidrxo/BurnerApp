@@ -288,7 +288,7 @@ struct ManualCityEntryView: View {
                                     selectCity(city)
                                 }) {
                                     HStack(spacing: 12) {
-                                        Text(selectedCityName == city.name ? city.name.uppercased() : city.name)
+                                        Text(city.name)
                                             .appBody()
                                             .foregroundColor(.white)
 
@@ -334,7 +334,6 @@ struct ManualCityEntryView: View {
     }
     
     private func selectCity(_ city: CityLocation) {
-        // Show the selected city name
         selectedCityName = city.name
         isProcessing = true
 
@@ -345,9 +344,9 @@ struct ManualCityEntryView: View {
             timestamp: Date()
         )
 
-        // Show city for a second, then auto advance
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            locationManager.saveLocationDirectly(userLocation)
+        locationManager.saveLocationDirectly(userLocation)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             isProcessing = false
             onDismiss()
         }

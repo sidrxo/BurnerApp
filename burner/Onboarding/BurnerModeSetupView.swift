@@ -269,7 +269,6 @@ struct BurnerModeSetupView: View {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
         
-        // Fixed: Call the correct method on the manager
         burnerManager.completeSetup()
         
         if let onSkip = onSkip {
@@ -318,18 +317,6 @@ struct BurnerModeSetupView: View {
     
     private func checkAuthorizationStatus() {
         authorizationGranted = (AuthorizationCenter.shared.authorizationStatus == .approved)
-        
-        if currentStep == 3 && authorizationGranted {
-            isRequestingPermission = false
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                if currentStep == 3 && authorizationGranted {
-                    withAnimation {
-                        currentStep += 1
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -438,11 +425,12 @@ struct CategorySelectionSlideContent: View {
     
     private func attemptAutoAdvance() {
         guard burnerManager.isSetupValid && !hasAttemptedAutoAdvance else { return }
+        guard currentStep == 4 else { return }
         
         hasAttemptedAutoAdvance = true
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            if burnerManager.isSetupValid {
+            if burnerManager.isSetupValid && currentStep == 4 {
                 withAnimation(.easeOut(duration: 0.3)) {
                     currentStep += 1
                 }
@@ -652,11 +640,12 @@ struct PermissionSlideContent: View {
     
     private func attemptAutoAdvance() {
         guard authorizationGranted && !hasAttemptedAutoAdvance else { return }
+        guard currentStep == 3 else { return }
         
         hasAttemptedAutoAdvance = true
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            if authorizationGranted {
+            if authorizationGranted && currentStep == 3 {
                 withAnimation(.easeOut(duration: 0.3)) {
                     currentStep += 1
                 }
@@ -679,6 +668,7 @@ struct ConfirmationSlideContent: View {
                 .foregroundColor(.white.opacity(0.7))
                 .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .center)
+                .multilineTextAlignment(.center)
                 .padding(.top, 16)
             Spacer()
         }
