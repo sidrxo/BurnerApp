@@ -14,7 +14,7 @@ struct SupportView: View {
             HeaderSection(title: "Support", includeTopPadding: false, includeHorizontalPadding: false)
                 .padding(.top, 20)
             MenuSection(title: "HELP") {
-                Button(action: { openURL("mailto:support@burner.app") }) {
+                Button(action: { openURL("mailto:sid@manageburner.online") }) {
                     MenuItemContent(title: "Contact Support", subtitle: "Get help with your account")
                 }
                 NavigationLink(destination: FAQView()) {
