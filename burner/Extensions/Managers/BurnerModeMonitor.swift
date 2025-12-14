@@ -1,6 +1,5 @@
 import Foundation
-import FirebaseAuth
-import FirebaseFirestore
+import Supabase
 import Combine
 import FamilyControls
 
@@ -9,8 +8,8 @@ class BurnerModeMonitor: ObservableObject {
     @Published var shouldEnableBurnerMode = false
     
     private let appState: AppState
-    private let db = Firestore.firestore()
-    private var ticketListener: ListenerRegistration?
+    private let client = SupabaseManager.shared.client
+    private var subscriptionTask: Task<Void, Never>?
     private let burnerManager: BurnerModeManager
     
     init(appState: AppState, burnerManager: BurnerModeManager) {
@@ -20,61 +19,87 @@ class BurnerModeMonitor: ObservableObject {
     }
     
     deinit {
-        // Can't call @MainActor methods in deinit, so remove listener directly
-        ticketListener?.remove()
-        ticketListener = nil
+        subscriptionTask?.cancel()
+        subscriptionTask = nil
     }
     
     // MARK: - Start Monitoring
     func startMonitoring() {
-        guard let userId = Auth.auth().currentUser?.uid else {
-            return
-        }
-
-        // Stop any existing listener first
-        stopMonitoring()
-
-        // Listen to user's tickets in real-time
-        ticketListener = db.collection("tickets")
-            .whereField("userId", isEqualTo: userId)
-            .whereField("status", isEqualTo: "used")
-            .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self else { return }
-
-                if error != nil {
-                    return
-                }
-
-                guard let documents = snapshot?.documents else { return }
-
-                Task { @MainActor in
-                    await self.checkForTodayScannedTickets(documents: documents)
-                }
+        Task {
+            guard let userId = await getCurrentUserId() else {
+                return
             }
+
+            // Stop any existing monitoring first
+            stopMonitoring()
+
+            // Set up real-time subscription to tickets
+            subscriptionTask = Task {
+                let channel = await client.channel("tickets:\(userId)")
+                
+                await channel.onPostgresChange(
+                    AnyAction.self,
+                    schema: "public",
+                    table: "tickets",
+                    filter: "userId=eq.\(userId)"
+                ) { [weak self] _ in
+                    guard let self = self else { return }
+                    
+                    Task { @MainActor in
+                        await self.checkForTodayScannedTickets(userId: userId)
+                    }
+                }
+                
+                await channel.subscribe()
+                
+                // Keep the task alive
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                }
+                
+                await channel.unsubscribe()
+            }
+            
+            // Also do an initial check
+            await checkForTodayScannedTickets(userId: userId)
+        }
     }
     
     // MARK: - Check for Today's Scanned Tickets
-    private func checkForTodayScannedTickets(documents: [QueryDocumentSnapshot]) async {
+    private func checkForTodayScannedTickets(userId: String) async {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) ?? today
 
-        for document in documents {
-            let data = document.data()
+        do {
+            let tickets: [Ticket] = try await client
+                .from("tickets")
+                .select()
+                .eq("userId", value: userId)
+                .eq("status", value: "used")
+                .execute()
+                .value
 
-            guard let startTime = (data["startTime"] as? Timestamp)?.dateValue(),
-                  let usedAt = (data["usedAt"] as? Timestamp)?.dateValue() else {
-                continue
+            for ticket in tickets {
+                guard !Task.isCancelled else { return }
+                
+                guard let usedAt = ticket.usedAt else {
+                    continue
+                }
+
+                let eventDay = calendar.startOfDay(for: ticket.startTime)
+                let scannedDay = calendar.startOfDay(for: usedAt)
+
+                // Check if both event and scan happened today
+                guard eventDay == today && scannedDay == today else {
+                    continue
+                }
+
+                await enableBurnerMode()
+                return
             }
-
-            let eventDay = calendar.startOfDay(for: startTime)
-            let scannedDay = calendar.startOfDay(for: usedAt)
-
-            guard eventDay == today && scannedDay == today else {
-                continue
-            }
-
-            await enableBurnerMode()
-            return
+        } catch {
+            // Handle errors silently
         }
     }
     
@@ -104,34 +129,26 @@ class BurnerModeMonitor: ObservableObject {
     
     // MARK: - Stop Monitoring
     func stopMonitoring() {
-        ticketListener?.remove()
-        ticketListener = nil
+        subscriptionTask?.cancel()
+        subscriptionTask = nil
     }
 
     // MARK: - Manual Check
     func checkNow() async {
-        guard let userId = Auth.auth().currentUser?.uid else {
+        guard let userId = await getCurrentUserId() else {
             return
         }
 
-        do {
-            let snapshot = try await db.collection("tickets")
-                .whereField("userId", isEqualTo: userId)
-                .whereField("status", isEqualTo: "used")
-                .getDocuments()
-
-            await checkForTodayScannedTickets(documents: snapshot.documents)
-        } catch {
-        }
+        await checkForTodayScannedTickets(userId: userId)
     }
 
     // MARK: - Get Monitor Status
-    func getMonitorStatus() -> String {
-        guard Auth.auth().currentUser != nil else {
+    func getMonitorStatus() async -> String {
+        guard await getCurrentUserId() != nil else {
             return "❌ No user logged in"
         }
 
-        let isListening = ticketListener != nil
+        let isListening = subscriptionTask != nil
         let isSetupValid = burnerManager.isSetupValid
         let isEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
 
@@ -143,5 +160,14 @@ class BurnerModeMonitor: ObservableObject {
         status += "- Apps: \(burnerManager.selectedApps.applicationTokens.count)"
 
         return status
+    }
+    
+    // MARK: - Helper
+    private func getCurrentUserId() async -> String? {
+        // Get user ID from Supabase session
+        guard let session = try? await client.auth.session else {
+            return nil
+        }
+        return session.user.id.uuidString
     }
 }

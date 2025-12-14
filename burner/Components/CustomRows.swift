@@ -1,6 +1,5 @@
 import SwiftUI
 import Kingfisher
-import FirebaseAuth
 
 // MARK: - Alert Preference Key
 struct BookmarkAlertPreferenceKey: PreferenceKey {
@@ -287,8 +286,7 @@ struct BookmarkButton: View {
     var body: some View {
         Button(action: {
             // Check if user is authenticated
-            if Auth.auth().currentUser == nil {
-                // Show alert if not authenticated
+            if appState.authService.currentUser == nil {                // Show alert if not authenticated
                 withAnimation {
                     showingSignInAlert = true
                 }

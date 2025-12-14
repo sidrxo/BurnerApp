@@ -1,8 +1,8 @@
-// TicketPurchaseView.swift - Updated for native push transition
+// TicketPurchaseView.swift - Updated for Supabase
 
 import SwiftUI
 import Kingfisher
-import FirebaseAuth
+import Supabase
 import PassKit
 @_spi(STP) import StripePaymentSheet
 import AVKit
@@ -10,7 +10,6 @@ import AVKit
 struct TicketPurchaseView: View {
     let event: Event
     @ObservedObject var viewModel: EventViewModel
-    @StateObject private var paymentService = StripePaymentService()
     
     @State private var showingAlert = false
     @State private var alertMessage = ""
@@ -30,6 +29,10 @@ struct TicketPurchaseView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var coordinator: NavigationCoordinator
     @EnvironmentObject var appState: AppState
+    
+    private var paymentService: StripePaymentService {
+        appState.stripePaymentService
+    }
     
     enum PurchaseStep {
         case paymentMethod
@@ -102,7 +105,8 @@ struct TicketPurchaseView: View {
                         dismiss()
                     }
                 }) {
-      
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.white)
                 }
             }
             
@@ -118,9 +122,9 @@ struct TicketPurchaseView: View {
                 isOnboarding: false
             )
         }
-        .onChange(of: Auth.auth().currentUser) { oldValue, newValue in
+        .onChange(of: appState.authService.currentUser) { oldValue, newValue in
             if newValue != nil, let action = pendingPaymentAction {
-                print("ðŸŸ¢ [TicketView] Auth state changed: user signed in. Executing pending action.")
+                print("🟢 [TicketView] Auth state changed: user signed in. Executing pending action.")
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     action()
                     pendingPaymentAction = nil
@@ -128,12 +132,12 @@ struct TicketPurchaseView: View {
             }
         }
         .onAppear {
-            print("ðŸŸ¡ [TicketView] View appeared. Starting fetch and prepare tasks.")
+            print("🟡 [TicketView] View appeared. Starting fetch and prepare tasks.")
             Task {
                 async let methodsResult: Void? = try? paymentService.fetchPaymentMethods()
                 async let prepResult: Void = preparePaymentIntent()
                 _ = await (methodsResult, prepResult)
-                print("ðŸŸ¢ [TicketView] Fetch/Prepare tasks completed.")
+                print("🟢 [TicketView] Fetch/Prepare tasks completed.")
             }
         }
     }
@@ -226,7 +230,7 @@ struct TicketPurchaseView: View {
         VStack(spacing: 12) {
             if ApplePayHandler.canMakePayments() {
                 Button(action: {
-                    print("ðŸŸ¡ [TicketView] Apple Pay button tapped.")
+                    print("🟡 [TicketView] Apple Pay button tapped.")
                     checkAuthAndProceed {
                         handleApplePayPayment()
                     }
@@ -249,7 +253,7 @@ struct TicketPurchaseView: View {
             }
 
             Button(action: {
-                print("ðŸŸ¡ [TicketView] Buy with Card button tapped. Current step: \(currentStep)")
+                print("🟡 [TicketView] Buy with Card button tapped. Current step: \(currentStep)")
                 withAnimation {
                     if !paymentService.paymentMethods.isEmpty {
                         currentStep = .savedCards
@@ -287,14 +291,14 @@ struct TicketPurchaseView: View {
         VStack(spacing: 12) {
             if currentStep == .cardInput {
                 Button(action: {
-                    print("ðŸŸ¡ [TicketView] Pay with New Card button tapped.")
+                    print("🟡 [TicketView] Pay with New Card button tapped.")
                     checkAuthAndProceed {
                         handleCardPayment()
                     }
                 }) {
                     HStack(spacing: 12) {
                         Image(systemName: "creditcard.fill").font(.appIcon)
-                        Text("PAY Â£\(String(format: "%.2f", event.price))")
+                        Text("PAY £\(String(format: "%.2f", event.price))")
                             .appButton()
                     }
                     .foregroundColor(isCardValid ? .black : .gray)
@@ -306,14 +310,14 @@ struct TicketPurchaseView: View {
                 .disabled(!isCardValid || hasInitiatedPurchase)
             } else if currentStep == .savedCards {
                 Button(action: {
-                    print("ðŸŸ¡ [TicketView] Pay with Saved Card button tapped.")
+                    print("🟡 [TicketView] Pay with Saved Card button tapped.")
                     checkAuthAndProceed {
                         handleSavedCardPayment()
                     }
                 }) {
                     HStack(spacing: 12) {
                         Image(systemName: "creditcard.fill").font(.appIcon)
-                        Text("PAY Â£\(String(format: "%.2f", event.price))")
+                        Text("PAY £\(String(format: "%.2f", event.price))")
                             .appButton()
                     }
                     .foregroundColor(selectedSavedCard != nil ? .black : .gray)
@@ -328,20 +332,21 @@ struct TicketPurchaseView: View {
         .padding(.horizontal, 20)
         .padding(.bottom, 20)
     }
+    
     private func checkAuthAndProceed(action: @escaping () -> Void) {
-        if Auth.auth().currentUser == nil {
-            print("ðŸŸ¡ [TicketView] User not authenticated. Storing pending action and showing sign-in.")
+        if appState.authService.currentUser == nil {
+            print("🟡 [TicketView] User not authenticated. Storing pending action and showing sign-in.")
             pendingPaymentAction = action
             showSignIn = true
         } else {
-            print("ðŸŸ¢ [TicketView] User authenticated. Proceeding with action.")
+            print("🟢 [TicketView] User authenticated. Proceeding with action.")
             action()
         }
     }
 
     private func preparePaymentIntent() async {
         guard let eventId = event.id else { return }
-        guard Auth.auth().currentUser != nil else { return }
+        guard appState.authService.currentUser != nil else { return }
         guard ApplePayHandler.canMakePayments() else { return }
         paymentService.preparePayment(eventId: eventId)
     }
@@ -435,7 +440,7 @@ struct TicketPurchaseView: View {
                 Button(action: {
                     withAnimation {
                         currentStep = .cardInput
-                        print("ðŸŸ¡ [TicketView] Switched to Card Input step.")
+                        print("🟡 [TicketView] Switched to Card Input step.")
                     }
                 }) {
                     Text("Add New")
@@ -495,7 +500,7 @@ struct TicketPurchaseView: View {
                                     }
                                 }
                                 
-                                Text("â€¢â€¢â€¢â€¢ \(method.last4)")
+                                Text("•••• \(method.last4)")
                                     .appBody()
                                     .foregroundColor(.white)
                                 
@@ -536,9 +541,9 @@ struct TicketPurchaseView: View {
     }
     
     private func handleApplePayPayment() {
-        print("ðŸŸ¡ [TicketView] Initiating Apple Pay transaction.")
+        print("🟡 [TicketView] Initiating Apple Pay transaction.")
         guard !hasInitiatedPurchase else {
-            print("âš ï¸  Purchase already in progress, ignoring duplicate tap")
+            print("⚠️ Purchase already in progress, ignoring duplicate tap")
             return
         }
 
@@ -547,7 +552,7 @@ struct TicketPurchaseView: View {
             return
         }
 
-        guard Auth.auth().currentUser != nil else {
+        guard appState.authService.currentUser != nil else {
             showError("Please log in to purchase a ticket")
             return
         }
@@ -561,25 +566,25 @@ struct TicketPurchaseView: View {
         
         isLoadingPayment = true
         showLoadingSuccess = true
-        print("ðŸŸ¢ [TicketView] Apple Pay UI triggered. Waiting for payment service result.")
+        print("🟢 [TicketView] Apple Pay UI triggered. Waiting for payment service result.")
 
         paymentService.processApplePayPayment(
             eventName: event.name,
             amount: event.price,
             eventId: eventId
         ) { result in
-            print("ðŸŸ¡ [TicketView] Apple Pay result received. Success: \(result.success)")
+            print("🟡 [TicketView] Apple Pay result received. Success: \(result.success)")
             DispatchQueue.main.async {
                 self.hasInitiatedPurchase = false
                 
                 if result.success {
-                    print("ðŸŸ¢ [TicketView] Apple Pay SUCCESS. Fetching events and stopping loading. Ticket ID: \(result.ticketId ?? "N/A")")
+                    print("🟢 [TicketView] Apple Pay SUCCESS. Fetching events and stopping loading. Ticket ID: \(result.ticketId ?? "N/A")")
                     self.viewModel.fetchEvents()
                     self.pendingTicketId = result.ticketId
                     self.isLoadingPayment = false
                     
                 } else {
-                    print("â Œ [TicketView] Apple Pay FAILURE. Message: \(result.message)")
+                    print("❌ [TicketView] Apple Pay FAILURE. Message: \(result.message)")
                     self.showLoadingSuccess = false
                     if !result.message.isEmpty {
                         self.showError(result.message)
@@ -590,9 +595,9 @@ struct TicketPurchaseView: View {
     }
     
     private func handleCardPayment() {
-        print("ðŸŸ¡ [TicketView] Initiating Card Payment transaction.")
+        print("🟡 [TicketView] Initiating Card Payment transaction.")
         guard !hasInitiatedPurchase else {
-            print("âš ï¸  Purchase already in progress, ignoring duplicate tap")
+            print("⚠️ Purchase already in progress, ignoring duplicate tap")
             return
         }
 
@@ -600,7 +605,7 @@ struct TicketPurchaseView: View {
               let cardParams = cardParams,
               isCardValid else { return }
 
-        guard Auth.auth().currentUser != nil else {
+        guard appState.authService.currentUser != nil else {
             showError("Please log in to purchase a ticket")
             return
         }
@@ -609,7 +614,7 @@ struct TicketPurchaseView: View {
         
         isLoadingPayment = true
         showLoadingSuccess = true
-        print("ðŸŸ¢ [TicketView] Card Payment UI triggered. Waiting for payment service result.")
+        print("🟢 [TicketView] Card Payment UI triggered. Waiting for payment service result.")
 
         paymentService.processCardPayment(
             cardParams: cardParams,
@@ -617,18 +622,18 @@ struct TicketPurchaseView: View {
             amount: event.price,
             eventId: eventId
         ) { result in
-            print("ðŸŸ¡ [TicketView] Card Payment result received. Success: \(result.success)")
+            print("🟡 [TicketView] Card Payment result received. Success: \(result.success)")
             DispatchQueue.main.async {
                 self.hasInitiatedPurchase = false
                 
                 if result.success {
-                    print("ðŸŸ¢ [TicketView] Card Payment SUCCESS. Fetching events and stopping loading. Ticket ID: \(result.ticketId ?? "N/A")")
+                    print("🟢 [TicketView] Card Payment SUCCESS. Fetching events and stopping loading. Ticket ID: \(result.ticketId ?? "N/A")")
                     self.viewModel.fetchEvents()
                     self.pendingTicketId = result.ticketId
                     self.isLoadingPayment = false
                     
                 } else {
-                    print("â Œ [TicketView] Card Payment FAILURE. Message: \(result.message)")
+                    print("❌ [TicketView] Card Payment FAILURE. Message: \(result.message)")
                     self.showLoadingSuccess = false
                     self.showError(result.message)
                 }
@@ -637,16 +642,16 @@ struct TicketPurchaseView: View {
     }
     
     private func handleSavedCardPayment() {
-        print("ðŸŸ¡ [TicketView] Initiating Saved Card Payment transaction.")
+        print("🟡 [TicketView] Initiating Saved Card Payment transaction.")
         guard !hasInitiatedPurchase else {
-            print("âš ï¸  Purchase already in progress, ignoring duplicate tap")
+            print("⚠️ Purchase already in progress, ignoring duplicate tap")
             return
         }
 
         guard let eventId = event.id,
               let savedCard = selectedSavedCard else { return }
 
-        guard Auth.auth().currentUser != nil else {
+        guard appState.authService.currentUser != nil else {
             showError("Please log in to purchase a ticket")
             return
         }
@@ -655,7 +660,7 @@ struct TicketPurchaseView: View {
         
         isLoadingPayment = true
         showLoadingSuccess = true
-        print("ðŸŸ¢ [TicketView] Saved Card Payment UI triggered. Waiting for payment service result.")
+        print("🟢 [TicketView] Saved Card Payment UI triggered. Waiting for payment service result.")
 
         paymentService.processSavedCardPayment(
             paymentMethodId: savedCard.id,
@@ -663,18 +668,18 @@ struct TicketPurchaseView: View {
             amount: event.price,
             eventId: eventId
         ) { result in
-            print("ðŸŸ¡ [TicketView] Saved Card Payment result received. Success: \(result.success)")
+            print("🟡 [TicketView] Saved Card Payment result received. Success: \(result.success)")
             DispatchQueue.main.async {
                 self.hasInitiatedPurchase = false
                 
                 if result.success {
-                    print("ðŸŸ¢ [TicketView] Saved Card Payment SUCCESS. Fetching events and stopping loading. Ticket ID: \(result.ticketId ?? "N/A")")
+                    print("🟢 [TicketView] Saved Card Payment SUCCESS. Fetching events and stopping loading. Ticket ID: \(result.ticketId ?? "N/A")")
                     self.viewModel.fetchEvents()
                     self.pendingTicketId = result.ticketId
                     self.isLoadingPayment = false
                     
                 } else {
-                    print("â Œ [TicketView] Saved Card Payment FAILURE. Message: \(result.message)")
+                    print("❌ [TicketView] Saved Card Payment FAILURE. Message: \(result.message)")
                     self.showLoadingSuccess = false
                     self.showError(result.message)
                 }
@@ -691,7 +696,7 @@ struct TicketPurchaseView: View {
     // MARK: - Transition to Ticket Detail
     
     private func transitionToTicketDetail() {
-        print("ðŸŸ¡ [TicketView] Starting UI transition (dismiss).")
+        print("🟡 [TicketView] Starting UI transition (dismiss).")
         self.pushTicketDetail(ticketId: pendingTicketId, event: self.event)
     }
     
@@ -701,13 +706,12 @@ struct TicketPurchaseView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             
             guard let definitiveTicketId = ticketId else {
-                print("â Œ [TicketView] Critical error: Payment succeeded but ticketId was null.")
+                print("❌ [TicketView] Critical error: Payment succeeded but ticketId was null.")
                 coordinator.showSuccess(
                     title: "Purchase Successful",
                     message: "Your ticket for \(event.name) is now available in the Tickets tab, but an error occurred during navigation."
                 )
                 
-                // IMPORTANT: Use the current tab for popping
                 coordinator.pop(in: tab)
                 return
             }
@@ -726,25 +730,21 @@ struct TicketPurchaseView: View {
         
         if let ticket = matchingTickets.first {
             let ticketWithEvent = TicketWithEventData(ticket: ticket, event: event)
-            print("ðŸŸ¢ [TicketView] Found definitive ticket (\(ticketId)) after \(retryCount) retries. Pushing TicketDetailView.")
+            print("🟢 [TicketView] Found definitive ticket (\(ticketId)) after \(retryCount) retries. Pushing TicketDetailView.")
             
-            // 1. Pop the TicketPurchaseView off the stack using the correct tab.
             coordinator.pop(in: tab)
-            
-            // 2. Then, immediately push the new TicketDetailView onto the correct tab.
             coordinator.navigate(to: .ticketDetail(ticketWithEvent), in: tab)
         } else if retryCount < maxRetries {
-            print("ðŸŸ¡ [TicketView] Waiting for ticket ID \(ticketId) to sync (\(retryCount + 1)/\(maxRetries))...")
+            print("🟡 [TicketView] Waiting for ticket ID \(ticketId) to sync (\(retryCount + 1)/\(maxRetries))...")
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 self.waitForTicketSync(ticketId: ticketId, event: event, tab: tab, retryCount: retryCount + 1)
             }
         } else {
-            print("â Œ [TicketView] Ticket ID \(ticketId) not found after \(maxRetries) retries (1.0s total). Showing fallback.")
+            print("❌ [TicketView] Ticket ID \(ticketId) not found after \(maxRetries) retries (1.0s total). Showing fallback.")
             coordinator.showSuccess(
                 title: "Purchase Successful",
                 message: "Your ticket for \(event.name) is now available in the Tickets tab."
             )
-            // Pop the current Purchase View if synchronization fails using the correct tab
             coordinator.pop(in: tab)
         }
     }

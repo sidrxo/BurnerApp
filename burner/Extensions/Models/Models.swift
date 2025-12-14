@@ -1,12 +1,14 @@
-// Models.swift
 import Foundation
-@preconcurrency import FirebaseFirestore
-import FirebaseAuth
-import FirebaseFunctions
+
+// MARK: - Shared Types
+struct Coordinate: Codable, Sendable {
+    let latitude: Double
+    let longitude: Double
+}
 
 // MARK: - Event Model
 struct Event: Identifiable, Codable, Sendable {
-    @DocumentID var id: String?
+    var id: String?
     var name: String
     var venue: String // Keep for display
     var venueId: String? // Reference to venues collection
@@ -23,19 +25,21 @@ struct Event: Identifiable, Codable, Sendable {
     var featuredPriority: Int? // Lower number = higher priority (0 = top)
     var description: String?
 
-
     var status: String?
     var tags: [String]?
 
-    var coordinates: GeoPoint?
+    var coordinates: Coordinate?
 
     var createdAt: Date?
     var updatedAt: Date?
+    
+    // Helper to handle PostgREST/JSON decoding where dates might be strings
+    // (Supabase Swift SDK usually handles ISO8601 automatically if configured)
 }
 
-// MARK: - Ticket Model (Updated for single tickets)
+// MARK: - Ticket Model
 struct Ticket: Identifiable, Codable, Sendable {
-    @DocumentID var id: String?
+    var id: String?
     
     // Identity
     var eventId: String
@@ -69,7 +73,6 @@ struct Ticket: Identifiable, Codable, Sendable {
     var deletedAt: Date?
 
     var updatedAt: Date?
-
 }
 
 // MARK: - Supporting Types

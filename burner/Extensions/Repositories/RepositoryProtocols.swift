@@ -5,18 +5,22 @@ protocol EventRepositoryProtocol {
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void)
     func fetchEventsFromServer(since date: Date) async throws -> [Event]
     func eventStream(since date: Date) -> AsyncThrowingStream<[Event], Error>
+    func fetchEvent(by id: String) async throws -> Event?
+    func stopObserving()
 }
 
 protocol TicketRepositoryProtocol {
     func observeUserTickets(userId: String, completion: @escaping (Result<[Ticket], Error>) -> Void)
     func fetchUserTicketStatus(userId: String, eventIds: [String]) async throws -> [String: Bool]
     func userHasTicket(userId: String, eventId: String) async throws -> Bool
+    func stopObserving()
 }
 
 protocol BookmarkRepositoryProtocol {
     func observeBookmarks(userId: String, completion: @escaping (Result<[BookmarkData], Error>) -> Void)
     func addBookmark(userId: String, bookmark: BookmarkData) async throws
     func removeBookmark(userId: String, eventId: String) async throws
+    func stopObserving()
 }
 
 protocol UserRepositoryProtocol {
@@ -24,12 +28,8 @@ protocol UserRepositoryProtocol {
     func updateUserProfile(userId: String, data: [String: Any]) async throws
     func createUserProfile(userId: String, profile: UserProfile) async throws
     func userExists(userId: String) async throws -> Bool
+    // User repository usually doesn't need stopObserving unless you listen to profile changes
 }
-
-extension EventRepository: EventRepositoryProtocol {}
-extension TicketRepository: TicketRepositoryProtocol {}
-extension BookmarkRepository: BookmarkRepositoryProtocol {}
-extension UserRepository: UserRepositoryProtocol {}
 
 @MainActor
 class DependencyContainer {
@@ -95,72 +95,57 @@ class DependencyContainer {
     }
 }
 
+// MARK: - Mocks (Updated to conform to new protocol requirements)
+
 class MockEventRepository: EventRepositoryProtocol {
     var mockEvents: [Event] = []
     var shouldFail = false
-    var observeCalled = false
 
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void) {
-        observeCalled = true
-        if shouldFail {
-            completion(.failure(NSError(domain: "MockError", code: -1, userInfo: nil)))
-        } else {
-            completion(.success(mockEvents))
-        }
+        if shouldFail { completion(.failure(NSError(domain: "Mock", code: -1))) }
+        else { completion(.success(mockEvents)) }
     }
 
     func fetchEventsFromServer(since date: Date) async throws -> [Event] {
-        if shouldFail {
-            throw NSError(domain: "MockError", code: -1, userInfo: nil)
-        }
+        if shouldFail { throw NSError(domain: "Mock", code: -1) }
         return mockEvents
     }
 
     func eventStream(since date: Date) -> AsyncThrowingStream<[Event], Error> {
-        return AsyncThrowingStream { continuation in
-            if shouldFail {
-                continuation.finish(throwing: NSError(domain: "MockError", code: -1, userInfo: nil))
-            } else {
-                continuation.yield(mockEvents)
-                continuation.finish()
-            }
+        AsyncThrowingStream { continuation in
+            continuation.yield(mockEvents)
+            continuation.finish()
         }
     }
+    
+    func fetchEvent(by id: String) async throws -> Event? {
+        return mockEvents.first { $0.id == id }
+    }
+    
+    func stopObserving() {}
 }
 
 class MockTicketRepository: TicketRepositoryProtocol {
     var mockTickets: [Ticket] = []
-    var mockTicketStatus: [String: Bool] = [:]
-
+    
     func observeUserTickets(userId: String, completion: @escaping (Result<[Ticket], Error>) -> Void) {
         completion(.success(mockTickets))
     }
 
     func fetchUserTicketStatus(userId: String, eventIds: [String]) async throws -> [String: Bool] {
-        return mockTicketStatus
+        return [:]
     }
 
     func userHasTicket(userId: String, eventId: String) async throws -> Bool {
-        return mockTicketStatus[eventId] ?? false
+        return false
     }
+    
+    func stopObserving() {}
 }
 
 class MockBookmarkRepository: BookmarkRepositoryProtocol {
-    var mockBookmarks: [BookmarkData] = []
-    var addCalled = false
-    var removeCalled = false
-
-    func observeBookmarks(userId: String, completion: @escaping (Result<[BookmarkData], Error>) -> Void) {
-        completion(.success(mockBookmarks))
-    }
-
-    func addBookmark(userId: String, bookmark: BookmarkData) async throws {
-        addCalled = true
-        mockBookmarks.append(bookmark)
-    }
-
-    func removeBookmark(userId: String, eventId: String) async throws {
-        removeCalled = true
-        mockBookmarks.removeAll { $0.eventId == eventId }
-    }
+    func observeBookmarks(userId: String, completion: @escaping (Result<[BookmarkData], Error>) -> Void) {}
+    func addBookmark(userId: String, bookmark: BookmarkData) async throws {}
+    func removeBookmark(userId: String, eventId: String) async throws {}
+    func stopObserving() {}
 }

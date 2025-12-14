@@ -1,19 +1,15 @@
 import SwiftUI
-import FirebaseAuth
-import FirebaseFirestore
+import Supabase
 import FamilyControls
 import ManagedSettings
 import Combine
 
-
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
-    @State private var currentUser: FirebaseAuth.User?
+    @State private var currentUserEmail: String?
     @State private var showingAppPicker = false
     @Environment(\.presentationMode) var presentationMode
-    
-    private let db = Firestore.firestore()
     
     private var burnerManager: BurnerModeManager {
         appState.burnerManager
@@ -45,7 +41,7 @@ struct SettingsView: View {
                             }) {
                                 MenuItemContent(
                                     title: "Account Details",
-                                    subtitle: currentUser?.email ?? "View Account"
+                                    subtitle: currentUserEmail ?? "View Account"
                                 )
                                 .contentShape(Rectangle())
                             }
@@ -166,13 +162,17 @@ struct SettingsView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .onAppear {
-            currentUser = Auth.auth().currentUser
+            Task {
+                await loadCurrentUser()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
-            currentUser = Auth.auth().currentUser
+            Task {
+                await loadCurrentUser()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedOut"))) { _ in
-            currentUser = nil
+            currentUserEmail = nil
             presentationMode.wrappedValue.dismiss()
         }
         .familyActivityPicker(
@@ -182,5 +182,18 @@ struct SettingsView: View {
                 set: { burnerManager.selectedApps = $0 }
             )
         )
+    }
+    
+    private func loadCurrentUser() async {
+        do {
+            let session = try await SupabaseManager.shared.client.auth.session
+            await MainActor.run {
+                currentUserEmail = session.user.email
+            }
+        } catch {
+            await MainActor.run {
+                currentUserEmail = nil
+            }
+        }
     }
 }

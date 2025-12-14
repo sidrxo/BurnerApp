@@ -1,6 +1,6 @@
 import SwiftUI
-import FirebaseAuth
 import Combine
+import Supabase
 
 struct ReauthenticationView: View {
     let onSuccess: () -> Void
@@ -10,6 +10,8 @@ struct ReauthenticationView: View {
     @State private var isReauthenticating = false
     @State private var errorMessage: String?
     @Environment(\.presentationMode) var presentationMode
+    
+    private let supabase = SupabaseManager.shared.client
 
     var body: some View {
         NavigationStack {
@@ -77,24 +79,37 @@ struct ReauthenticationView: View {
     }
 
     private func reauthenticate() {
-        guard let user = Auth.auth().currentUser,
-              let email = user.email else {
-            errorMessage = "Unable to get user email"
-            return
-        }
+        Task {
+            guard let session = try? await supabase.auth.session,
+                  let email = session.user.email else {
+                await MainActor.run {
+                    errorMessage = "Unable to get user email"
+                }
+                return
+            }
 
-        isReauthenticating = true
-        errorMessage = nil
+            await MainActor.run {
+                isReauthenticating = true
+                errorMessage = nil
+            }
 
-        let credential = EmailAuthProvider.credential(withEmail: email, password: password)
-
-        user.reauthenticate(with: credential) { _, error in
-            isReauthenticating = false
-
-            if let error = error {
-                errorMessage = error.localizedDescription
-            } else {
-                onSuccess()
+            do {
+                // Re-authenticate by signing in again with email and password
+                // This verifies the user's credentials
+                _ = try await supabase.auth.signIn(
+                    email: email,
+                    password: password
+                )
+                
+                await MainActor.run {
+                    isReauthenticating = false
+                    onSuccess()
+                }
+            } catch {
+                await MainActor.run {
+                    isReauthenticating = false
+                    errorMessage = error.localizedDescription
+                }
             }
         }
     }

@@ -1,5 +1,5 @@
 import SwiftUI
-import FirebaseAuth
+import Supabase
 import Combine
 import ActivityKit
 import Kingfisher
@@ -42,6 +42,10 @@ class AppState: ObservableObject {
 
     lazy var burnerModeMonitor: BurnerModeMonitor = {
         BurnerModeMonitor(appState: self, burnerManager: self.burnerManager)
+    }()
+    
+    lazy var stripePaymentService: StripePaymentService = {
+        StripePaymentService(appState: self)
     }()
 
     deinit {
@@ -329,7 +333,7 @@ class AppState: ObservableObject {
         let testTicket = Ticket(
             id: "debug_ticket_\(UUID().uuidString)",
             eventId: "debug_event_\(UUID().uuidString)",
-            userId: authService.currentUser?.uid ?? "debug_user",
+            userId: authService.currentUser?.id.uuidString ?? "debug_user",
             ticketNumber: "DEBUG-\(Int.random(in: 1000...9999))",
             eventName: "Garage Classics",
             venue: "Ministry of Sound",

@@ -1,10 +1,10 @@
 import Foundation
-import FirebaseFirestore
 import Combine
+import Supabase
 
 // MARK: - Tag Model
 struct Tag: Identifiable, Codable, Sendable {
-    @DocumentID var id: String?
+    var id: String?
     var name: String
     var nameLowercase: String?
     var description: String?
@@ -34,8 +34,7 @@ class TagViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var error: String?
 
-    private var db = Firestore.firestore()
-    private var listener: ListenerRegistration?
+    private let client = SupabaseManager.shared.client
 
     // Display-ready tags (active only, sorted by order)
     var displayTags: [String] {
@@ -49,48 +48,27 @@ class TagViewModel: ObservableObject {
         fetchTags()
     }
 
-    deinit {
-        listener?.remove()
-    }
-
-    // Fetch tags from Firestore with real-time updates
+    // Fetch tags from Supabase
     func fetchTags() {
         isLoading = true
         error = nil
 
-        // Remove existing listener if any
-        listener?.remove()
+        Task {
+            do {
+                let fetchedTags: [Tag] = try await client
+                    .from("tags")
+                    .select()
+                    .order("order", ascending: true)
+                    .order("name", ascending: true)
+                    .execute()
+                    .value
 
-        // Set up real-time listener
-        listener = db.collection("tags")
-            .order(by: "order")
-            .order(by: "name")
-            .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self else { return }
-
-                Task { @MainActor in
-                    self.isLoading = false
-
-                    if let error = error {
-                        self.error = error.localizedDescription
-                        // Fall back to default tags if error
-                        return
-                    }
-
-                    guard let documents = snapshot?.documents else {
-                        return
-                    }
-
-                    let fetchedTags = documents.compactMap { document -> Tag? in
-                        try? document.data(as: Tag.self)
-                    }
-
-                    if fetchedTags.isEmpty {
-                    } else {
-                        self.tags = fetchedTags
-                    }
-                }
+                self.tags = fetchedTags
+                self.isLoading = false
+            } catch {
+                self.error = error.localizedDescription
+                self.isLoading = false
             }
+        }
     }
-
 }

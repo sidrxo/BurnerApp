@@ -1,6 +1,5 @@
 
 import Foundation
-import FirebaseAuth
 import FirebaseFunctions
 @_spi(STP) import StripePaymentSheet
 import StripeCore
@@ -25,6 +24,9 @@ class StripePaymentService: NSObject, ObservableObject {
     private var preparationTask: Task<Void, Never>?
 
     private let functions = Functions.functions(region: "europe-west2")
+    
+    // ADD THIS: Store reference to AppState
+    private let appState: AppState
 
     struct PaymentMethodInfo: Identifiable {
         let id: String
@@ -41,7 +43,9 @@ class StripePaymentService: NSObject, ObservableObject {
         let ticketId: String?
     }
 
-    override init() {
+    // UPDATE THIS: Add appState parameter to init
+    init(appState: AppState) {
+        self.appState = appState
         super.init()
         StripeAPI.defaultPublishableKey = "pk_test_51SKOqrFxXnVDuRLXw30ABLXPF9QyorMesOCHN9sMbRAIokEIL8gptsxxX4APRJSO0b8SRGvyAUBNzBZqCCgOSvVI00fxiHOZNe"
     }
@@ -98,7 +102,7 @@ class StripePaymentService: NSObject, ObservableObject {
         _ name: String,
         data: [String: Any]? = nil
     ) async throws -> [String: Any] {
-        guard Auth.auth().currentUser != nil else {
+        guard appState.authService.currentUser != nil else {
             throw PaymentError.notAuthenticated
         }
         

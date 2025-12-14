@@ -1,9 +1,9 @@
 import SwiftUI
 import CodeScanner
 import FirebaseFirestore
-import FirebaseAuth
 import FirebaseFunctions
 import AVFoundation
+import Supabase
 
 struct ScannerView: View {
     @EnvironmentObject var appState: AppState
@@ -414,7 +414,7 @@ struct ScannerView: View {
     }
     
     private func checkScannerAccessFromClaims() {
-        guard let user = Auth.auth().currentUser else {
+        guard appState.authService.currentUser != nil else {
             DispatchQueue.main.async {
                 self.isCheckingScanner = false
                 self.isScannerActive = false
@@ -422,35 +422,45 @@ struct ScannerView: View {
             return
         }
         
-        user.getIDTokenResult { result, error in
-            DispatchQueue.main.async {
-                self.isCheckingScanner = false
+        Task {
+            do {
+                let session = try await SupabaseManager.shared.client.auth.session
+                let userMetadata = session.user.userMetadata
                 
-                if error != nil {
-                    self.isScannerActive = false
-                    return
+                await MainActor.run {
+                    self.isCheckingScanner = false
+                    
+                    if let role = userMetadata["role"] as? String {
+                        self.userRole = role
+                        self.isScannerActive = (role == "scanner" || role == "admin" || role == "siteadmin" || role == "venueAdmin")
+                    } else {
+                        self.isScannerActive = false
+                    }
                 }
-                
-                if let claims = result?.claims,
-                   let role = claims["role"] as? String {
-                    self.userRole = role
-                    self.isScannerActive = (role == "scanner" || role == "admin" || role == "siteadmin" || role == "venueAdmin")
-                } else {
+            } catch {
+                await MainActor.run {
+                    self.isCheckingScanner = false
                     self.isScannerActive = false
                 }
             }
         }
     }
-    
+
     private func fetchUserRoleFromClaims() {
-        guard let user = Auth.auth().currentUser else { return }
+        guard appState.authService.currentUser != nil else { return }
         
-        user.getIDTokenResult { result, error in
-            if let claims = result?.claims,
-               let role = claims["role"] as? String {
-                DispatchQueue.main.async {
-                    self.userRole = role
+        Task {
+            do {
+                let session = try await SupabaseManager.shared.client.auth.session
+                let userMetadata = session.user.userMetadata
+                
+                if let role = userMetadata["role"] as? String {
+                    await MainActor.run {
+                        self.userRole = role
+                    }
                 }
+            } catch {
+                // Silently fail - user metadata couldn't be retrieved
             }
         }
     }

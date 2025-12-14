@@ -1,8 +1,6 @@
 import SwiftUI
 import Kingfisher
-import FirebaseAuth
-import FirebaseFunctions
-import Firebase
+import Supabase
 import PassKit
 import MapKit
 import CoreLocation
@@ -135,6 +133,14 @@ struct EventDetailView: View {
         } else {
             return startTimeString
         }
+    }
+
+    private var isUserSignedIn: Bool {
+        Task {
+            return (try? await SupabaseManager.shared.client.auth.session) != nil
+        }
+        // For synchronous check, we'll use a simpler approach
+        return appState.authService.currentUser != nil
     }
 
     var body: some View {
@@ -274,7 +280,7 @@ struct EventDetailView: View {
 
                                     HStack(spacing: 10) {
                                         Button(action: {
-                                            if Auth.auth().currentUser == nil {
+                                            if !isUserSignedIn {
                                                 showingSignInAlert = true
                                             } else {
                                                 Task {
@@ -423,10 +429,9 @@ struct EventDetailView: View {
                             if userHasTicket {
                                 
                             } else if availableTickets > 0 {
-                                if Auth.auth().currentUser == nil {
+                                if !isUserSignedIn {
                                     showingSignInAlert = true
                                 } else {
-                                    // FIXED: purchaseTicket now uses the currently active tab's stack
                                     coordinator.purchaseTicket(for: event)
                                 }
                             }

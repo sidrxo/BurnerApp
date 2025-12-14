@@ -1,246 +1,158 @@
 import Foundation
-import FirebaseFirestore
-import FirebaseAuth
+import Supabase
 import Combine
 
-// MARK: - Base Repository Class
-/// Base class for all repositories providing shared listener management
 @MainActor
 class BaseRepository: ObservableObject {
-    let db = Firestore.firestore()
-    private var listener: ListenerRegistration?
+    let client = SupabaseManager.shared.client
+    
+    // Track the active subscription task so it can be cancelled
+    var subscriptionTask: Task<Void, Never>?
 
-    deinit {
-        // Directly remove listener without calling @MainActor method
-        listener?.remove()
-    }
-
-    /// Store a Firestore listener
-    func setListener(_ listener: ListenerRegistration) {
-        self.listener?.remove()
-        self.listener = listener
-    }
-
-    /// Stop observing and remove the listener
     func stopObserving() {
-        listener?.remove()
-        listener = nil
+        subscriptionTask?.cancel()
+        subscriptionTask = nil
     }
 }
 
-// MARK: - Repository Protocol
-protocol Repository {
-    associatedtype T
-    func fetch() async throws -> [T]
-    func fetchById(_ id: String) async throws -> T?
-}
-
-// MARK: - Event Repository
 @MainActor
-class EventRepository: BaseRepository {
+class EventRepository: BaseRepository, EventRepositoryProtocol {
 
-    // MARK: - Fetch Events with Real-time Updates (ASYNC STREAM - NEW/FIXED)
-    // This is the correct way to wrap a multi-callback listener into Swift Concurrency.
     func eventStream(since date: Date) -> AsyncThrowingStream<[Event], Error> {
         return AsyncThrowingStream { continuation in
-            let listener = db.collection("events")
-                .whereField("startTime", isGreaterThanOrEqualTo: Timestamp(date: date))
-                .addSnapshotListener { snapshot, error in
-                    if let error = error {
-                        // Terminate stream on error
-                        continuation.finish(throwing: error)
-                        return
-                    }
-
-                    guard let documents = snapshot?.documents else {
-                        // Yield an empty result, stream remains open
-                        continuation.yield([])
-                        return
-                    }
-
-                    let events = documents.compactMap { doc -> Event? in
-                        var event = try? doc.data(as: Event.self)
-                        event?.id = doc.documentID
-                        return event
-                    }
-
-                    // Yield the new data and keep the stream open for future updates
+            let task = Task {
+                do {
+                    let events = try await fetchEventsFromServer(since: date)
                     continuation.yield(events)
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
                 }
-
-            // On cancellation of the consuming Task, remove the listener
-            continuation.onTermination = { @Sendable [listener] _ in
-                listener.remove()
             }
-
-            // We still store the listener in BaseRepository for manual cleanup if needed
-            setListener(listener)
+            
+            // Allow stream cancellation to cancel the task
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
+            }
         }
     }
 
-    // MARK: - Fetch Events with Real-time Updates (OLD - To be removed if possible)
-    // NOTE: This completion-based function is the one that was likely being wrapped incorrectly
-    // in the ViewModel/Dependency and causing the crash. It is retained here to keep protocol
-    // compliance but should be phased out in favor of `eventStream`.
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void) {
-        let calendar = Calendar.current
-        let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-
-        let listener = db.collection("events")
-            .whereField("startTime", isGreaterThanOrEqualTo: Timestamp(date: sevenDaysAgo))
-            .addSnapshotListener { snapshot, error in
-                if let error = error {
-                    completion(.failure(error))
-                    return
-                }
-
-                guard let documents = snapshot?.documents else {
-                    completion(.success([]))
-                    return
-                }
-
-                let events = documents.compactMap { doc -> Event? in
-                    var event = try? doc.data(as: Event.self)
-                    event?.id = doc.documentID
-                    return event
-                }
-
+        stopObserving()
+        
+        subscriptionTask = Task {
+            do {
+                let events = try await fetchEventsFromServer(since: Date())
+                guard !Task.isCancelled else { return }
                 completion(.success(events))
+            } catch {
+                guard !Task.isCancelled else { return }
+                completion(.failure(error))
             }
-
-        setListener(listener)
+        }
     }
     
-    // MARK: - Fetch Events from Server (for Refresh)
     func fetchEventsFromServer(since date: Date) async throws -> [Event] {
-        let snapshot = try await db.collection("events")
-            .whereField("startTime", isGreaterThanOrEqualTo: Timestamp(date: date))
-            .getDocuments(source: .server) // <-- FORCES SERVER READ
+        let dateString = ISO8601DateFormatter().string(from: date)
         
-        return snapshot.documents.compactMap { doc -> Event? in
-            var event = try? doc.data(as: Event.self)
-            event?.id = doc.documentID
-            return event
-        }
+        let events: [Event] = try await client
+            .from("events")
+            .select()
+            .gte("startTime", value: dateString)
+            .execute()
+            .value
+        
+        return events
     }
 
-
-    // MARK: - Fetch Single Event
     func fetchEvent(by id: String) async throws -> Event? {
-        let document = try await db.collection("events").document(id).getDocument()
-        var event = try? document.data(as: Event.self)
-        event?.id = document.documentID
+        let event: Event = try await client
+            .from("events")
+            .select()
+            .eq("id", value: id)
+            .single()
+            .execute()
+            .value
         return event
     }
 
-    // MARK: - Fetch Multiple Events (Batch with whereIn)
     func fetchEvents(by ids: [String]) async throws -> [Event] {
         guard !ids.isEmpty else { return [] }
-
-        guard ids.count <= 10 else {
-            throw NSError(domain: "EventRepository", code: 400, userInfo: [
-                NSLocalizedDescriptionKey: "Cannot fetch more than 10 events at once with whereIn"
-            ])
-        }
-
-        let snapshot = try await db.collection("events")
-            .whereField(FieldPath.documentID(), in: ids)
-            .getDocuments()
-
-        return snapshot.documents.compactMap { doc -> Event? in
-            var event = try? doc.data(as: Event.self)
-            event?.id = doc.documentID
-            return event
-        }
+        
+        let events: [Event] = try await client
+            .from("events")
+            .select()
+            .in("id", value: ids)
+            .execute()
+            .value
+        return events
     }
 }
 
-// MARK: - Ticket Repository
 @MainActor
-class TicketRepository: BaseRepository {
+class TicketRepository: BaseRepository, TicketRepositoryProtocol {
 
-    // MARK: - Observe User Tickets
     func observeUserTickets(userId: String, completion: @escaping (Result<[Ticket], Error>) -> Void) {
-        let listener = db.collection("tickets")
-            .whereField("userId", isEqualTo: userId)
-            .order(by: "purchaseDate", descending: true)
-            .addSnapshotListener { snapshot, error in
-                if let error = error {
-                    completion(.failure(error))
-                    return
-                }
-
-                guard let documents = snapshot?.documents else {
-                    completion(.success([]))
-                    return
-                }
-
-                let tickets = documents.compactMap { doc -> Ticket? in
-                    var ticket = try? doc.data(as: Ticket.self)
-                    ticket?.id = doc.documentID
-                    if ticket?.status == "deleted" {
-                        return nil
-                    }
-                    return ticket
-                }
-
-                completion(.success(tickets))
+        stopObserving()
+        
+        subscriptionTask = Task {
+            do {
+                let tickets: [Ticket] = try await client
+                    .from("tickets")
+                    .select()
+                    .eq("userId", value: userId)
+                    .order("purchaseDate", ascending: false)
+                    .execute()
+                    .value
+                
+                guard !Task.isCancelled else { return }
+                let activeTickets = tickets.filter { $0.status != "deleted" }
+                completion(.success(activeTickets))
+            } catch {
+                guard !Task.isCancelled else { return }
+                completion(.failure(error))
             }
-
-        setListener(listener)
+        }
     }
 
-    // MARK: - Check if User Has Ticket
     func userHasTicket(userId: String, eventId: String) async throws -> Bool {
-        let snapshot = try await db.collection("tickets")
-            .whereField("userId", isEqualTo: userId)
-            .whereField("eventId", isEqualTo: eventId)
-            .whereField("status", isEqualTo: "confirmed")
-            .getDocuments()
-
-        return !snapshot.documents.isEmpty
+        let count = try await client
+            .from("tickets")
+            .select("*", head: true, count: .exact)
+            .eq("userId", value: userId)
+            .eq("eventId", value: eventId)
+            .eq("status", value: "confirmed")
+            .execute()
+            .count
+            
+        return (count ?? 0) > 0
     }
 
-    // MARK: - Fetch User Ticket Status for Multiple Events (Optimized with whereIn Batching)
     func fetchUserTicketStatus(userId: String, eventIds: [String]) async throws -> [String: Bool] {
         guard !eventIds.isEmpty else { return [:] }
 
         var status: [String: Bool] = [:]
+        for eventId in eventIds { status[eventId] = false }
 
-        for eventId in eventIds {
-            status[eventId] = false
-        }
-
-        let batchSize = 10
-        let batches = stride(from: 0, to: eventIds.count, by: batchSize).map {
-            Array(eventIds[$0..<min($0 + batchSize, eventIds.count)])
-        }
-
-        for batch in batches {
-            let snapshot = try await db.collection("tickets")
-                .whereField("userId", isEqualTo: userId)
-                .whereField("eventId", in: batch)
-                .whereField("status", isEqualTo: "confirmed")
-                .getDocuments()
-
-            let eventIdsWithTickets = Set(snapshot.documents.compactMap { doc -> String? in
-                doc.data()["eventId"] as? String
-            })
-
-            for eventId in batch {
-                if eventIdsWithTickets.contains(eventId) {
-                    status[eventId] = true
-                }
-            }
+        let tickets: [Ticket] = try await client
+            .from("tickets")
+            .select()
+            .eq("userId", value: userId)
+            .in("eventId", value: eventIds)
+            .eq("status", value: "confirmed")
+            .execute()
+            .value
+            
+        for ticket in tickets {
+            status[ticket.eventId] = true
         }
 
         return status
     }
 }
 
-// MARK: - BookmarkData Model
 struct BookmarkData: Identifiable, Codable, Sendable {
-    @DocumentID var id: String?
+    var id: String?
     let eventId: String
     let eventName: String
     let eventVenue: String
@@ -250,86 +162,118 @@ struct BookmarkData: Identifiable, Codable, Sendable {
     let bookmarkedAt: Date
 }
 
-// MARK: - Bookmark Repository
 @MainActor
-class BookmarkRepository: BaseRepository {
+class BookmarkRepository: BaseRepository, BookmarkRepositoryProtocol {
 
-    // MARK: - Observe Bookmarks
     func observeBookmarks(userId: String, completion: @escaping (Result<[BookmarkData], Error>) -> Void) {
-        let listener = db.collection("users")
-            .document(userId)
-            .collection("bookmarks")
-            .addSnapshotListener { snapshot, error in
-                if let error = error {
-                    completion(.failure(error))
-                    return
-                }
-
-                guard let documents = snapshot?.documents else {
-                    completion(.success([]))
-                    return
-                }
-
-                let bookmarks = documents.compactMap { doc in
-                    try? doc.data(as: BookmarkData.self)
-                }
-
+        stopObserving()
+        
+        subscriptionTask = Task {
+            do {
+                let bookmarks: [BookmarkData] = try await client
+                    .from("bookmarks")
+                    .select()
+                    .eq("user_id", value: userId)
+                    .execute()
+                    .value
+                
+                guard !Task.isCancelled else { return }
                 completion(.success(bookmarks))
+            } catch {
+                guard !Task.isCancelled else { return }
+                completion(.failure(error))
             }
-
-        setListener(listener)
+        }
     }
 
-    // MARK: - Add Bookmark
     func addBookmark(userId: String, bookmark: BookmarkData) async throws {
-        let eventId = bookmark.eventId
+        struct BookmarkInsert: Encodable {
+            let user_id: String
+            let eventId: String
+            let eventName: String
+            let eventVenue: String
+            let startTime: Date
+            let eventPrice: Double
+            let eventImageUrl: String
+            let bookmarkedAt: Date
+        }
+        
+        let insertData = BookmarkInsert(
+            user_id: userId,
+            eventId: bookmark.eventId,
+            eventName: bookmark.eventName,
+            eventVenue: bookmark.eventVenue,
+            startTime: bookmark.startTime,
+            eventPrice: bookmark.eventPrice,
+            eventImageUrl: bookmark.eventImageUrl,
+            bookmarkedAt: bookmark.bookmarkedAt
+        )
 
-        try db.collection("users")
-            .document(userId)
-            .collection("bookmarks")
-            .document(eventId)
-            .setData(from: bookmark)
+        try await client
+            .from("bookmarks")
+            .insert(insertData)
+            .execute()
     }
 
-    // MARK: - Remove Bookmark
     func removeBookmark(userId: String, eventId: String) async throws {
-        try await db.collection("users")
-            .document(userId)
-            .collection("bookmarks")
-            .document(eventId)
+        try await client
+            .from("bookmarks")
             .delete()
+            .eq("user_id", value: userId)
+            .eq("eventId", value: eventId)
+            .execute()
     }
 }
 
-// MARK: - User Repository
 @MainActor
-class UserRepository: BaseRepository {
+class UserRepository: BaseRepository, UserRepositoryProtocol {
 
-    // MARK: - Fetch User Profile
     func fetchUserProfile(userId: String) async throws -> UserProfile? {
-        let document = try await db.collection("users").document(userId).getDocument()
-        return try? document.data(as: UserProfile.self)
+        do {
+            let profile: UserProfile = try await client
+                .from("profiles")
+                .select()
+                .eq("id", value: userId)
+                .single()
+                .execute()
+                .value
+            return profile
+        } catch {
+            return nil
+        }
     }
 
-    // MARK: - Update User Profile
     func updateUserProfile(userId: String, data: [String: Any]) async throws {
-        try await db.collection("users").document(userId).updateData(data)
+        let jsonData = try JSONSerialization.data(withJSONObject: data)
+        let json = try JSONDecoder().decode(AnyJSON.self, from: jsonData)
+        
+        try await client
+            .from("profiles")
+            .update(json)
+            .eq("id", value: userId)
+            .execute()
     }
 
-    // MARK: - Create User Profile
     func createUserProfile(userId: String, profile: UserProfile) async throws {
-        try db.collection("users").document(userId).setData(from: profile)
+        try await client
+            .from("profiles")
+            .upsert(profile)
+            .execute()
     }
 
-    // MARK: - Check if User Exists
     func userExists(userId: String) async throws -> Bool {
-        let document = try await db.collection("users").document(userId).getDocument()
-        return document.exists
+        let count = try await client
+            .from("profiles")
+            .select("*", head: true, count: .exact)
+            .eq("id", value: userId)
+            .execute()
+            .count
+        return (count ?? 0) > 0
     }
 }
 
-// MARK: - User Profile Model
 struct UserProfile: Codable, Sendable {
+    var id: String?
     var email: String
     var displayName: String
     var role: String
@@ -343,7 +287,6 @@ struct UserProfile: Codable, Sendable {
     var preferences: UserPreferences?
 }
 
-// MARK: - Preferences struct
 struct UserPreferences: Codable, Sendable {
     var notifications: Bool
     var emailMarketing: Bool

@@ -185,7 +185,6 @@ struct DebugMenuView: View {
         .alert("Reset App?", isPresented: $showResetConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Reset", role: .destructive) {
-                resetAppToFirstInstall()
             }
         } message: {
             Text("This will clear all app data, sign you out, and reset the app to its first install state. This action cannot be undone.")
@@ -273,63 +272,6 @@ struct DebugMenuView: View {
         }
     }
 
-    private func resetAppToFirstInstall() {
-        Task {
-            // Clear Firestore preferences before signing out
-            if let userId = appState.authService.currentUser?.uid {
-                await clearFirestorePreferences(userId: userId)
-            }
-
-            // Sign out the user if signed in
-            if appState.authService.currentUser != nil {
-                try? appState.authService.signOut()
-            }
-
-            // Clear UserDefaults
-            if let bundleID = Bundle.main.bundleIdentifier {
-                  UserDefaults.standard.removePersistentDomain(forName: bundleID)
-            }
-
-            // ✅ FIX: Call reset on the AppState's shared OnboardingManager instance
-            await MainActor.run {
-                appState.onboardingManager.resetOnboarding() // This clears the userDefaults flags for onboarding/sign-in
-            }
-
-            // Clear local preferences
-            await MainActor.run {
-                let localPrefs = LocalPreferences()
-                localPrefs.reset()
-            }
-
-            // Disable burner mode if enabled
-            if appState.showingBurnerLockScreen {
-                burnerManager.disable()
-                await MainActor.run {
-                    appState.showingBurnerLockScreen = false
-                }
-            }
-
-            // Clear burner selections
-            burnerManager.clearAllSelections()
-
-            // Reset user location
-            await MainActor.run {
-                appState.userLocationManager.resetLocation()
-            }
-
-            // Reset navigation
-            await MainActor.run {
-                appState.navigationCoordinator.resetAllNavigation()
-                appState.navigationCoordinator.selectTab(.explore)
-            }
-
-            // Clear debug event if active
-            if eventState != .noEvent {
-                appState.clearDebugEventToday()
-                eventState = .noEvent
-            }
-        }
-    }
 
     // Helper function to clear Firestore preferences
     private func clearFirestorePreferences(userId: String) async {

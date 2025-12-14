@@ -206,16 +206,13 @@ struct SignInSheetView: View {
     
     private func handleGoogleSignIn() {
         startLoading()
-        
-        guard let rootVC = getRootViewController() else {
-            showErrorMessage("Could not access the app window.")
-            return
-        }
 
         Task {
             do {
-                let session = try await SupabaseManager.shared.client.auth
-                    .signInWithOAuth(provider: .google, redirectTo: URL(string: "burner://auth")!)
+                try await SupabaseManager.shared.client.auth.signInWithOAuth(
+                    provider: .google,
+                    redirectTo: URL(string: "burner://auth")
+                )
                 
                 await MainActor.run {
                     stopLoading()
@@ -267,7 +264,12 @@ struct SignInSheetView: View {
     private func completeAppleSignIn(idToken: String) {
         Task {
             do {
-                let session = try await appState.authService.signInWithApple(idToken: idToken)
+                guard let nonce = currentNonce else {
+                    throw NSError(domain: "SignIn", code: -1, userInfo: [NSLocalizedDescriptionKey: "No nonce available"])
+                }
+                
+                try await appState.authService.signInWithApple(idToken: idToken, nonce: nonce, fullName: nil)
+                
                 await MainActor.run {
                     stopLoading()
                     completeSignIn()

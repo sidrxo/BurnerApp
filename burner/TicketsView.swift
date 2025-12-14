@@ -1,8 +1,8 @@
 import SwiftUI
 import Kingfisher
-import FirebaseAuth
 import FirebaseFirestore
 import Combine
+import Supabase
 
 struct TicketGridItem: View {
     let ticketWithEvent: TicketWithEventData
@@ -166,7 +166,7 @@ struct TicketsView: View {
                 }
             }
         }
-        .onChange(of: Auth.auth().currentUser?.uid) { oldValue, newValue in
+        .onChange(of: appState.authService.currentUser?.id) { oldValue, newValue in
             if newValue != nil && oldValue == nil {
                 showTicketsAnimation = false
                 isLoadingTicketsAfterSignIn = true
@@ -197,7 +197,7 @@ struct TicketsView: View {
 
             Spacer()
             Button(action: {
-                if Auth.auth().currentUser == nil {
+                if appState.authService.currentUser == nil {
                        coordinator.showSignIn()
                    } else {
                        coordinator.ticketsPath.append(NavigationDestination.settings)
@@ -219,7 +219,7 @@ struct TicketsView: View {
     
     private var emptyStateView: some View {
         Group {
-            if Auth.auth().currentUser == nil {
+            if appState.authService.currentUser == nil {
                 signedOutEmptyState
             } else {
                 noTicketsEmptyState

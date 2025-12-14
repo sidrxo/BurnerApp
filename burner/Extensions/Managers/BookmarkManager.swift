@@ -1,6 +1,6 @@
 import Swift
 import Combine
-import FirebaseAuth
+import Supabase
 import UIKit
 
 
@@ -38,7 +38,8 @@ class BookmarkManager: ObservableObject {
 
         bookmarkRepository.stopObserving()
 
-        guard let userId = Auth.auth().currentUser?.uid else { return }
+        // Replaced Auth.auth().currentUser?.uid with Supabase current session
+        guard let userId = SupabaseManager.shared.client.auth.currentSession?.user.id.uuidString else { return }
 
         bookmarkRepository.observeBookmarks(userId: userId) { [weak self] result in
             guard let self = self else { return }
@@ -77,7 +78,7 @@ class BookmarkManager: ObservableObject {
         // Fetch events in batches using whereIn (max 10 per query)
         var events: [Event] = []
 
-        // Split event IDs into batches of 10 (Firestore whereIn limit)
+        // Split event IDs into batches of 10
         let batchSize = 10
         let batches = stride(from: 0, to: eventIds.count, by: batchSize).map {
             Array(eventIds[$0..<min($0 + batchSize, eventIds.count)])
@@ -125,7 +126,8 @@ class BookmarkManager: ObservableObject {
     func toggleBookmark(for event: Event) async {
         guard !isSimulatingEmptyData else { return }
 
-        guard let userId = Auth.auth().currentUser?.uid,
+        // Replaced Auth.auth().currentUser?.uid with Supabase current session
+        guard let userId = SupabaseManager.shared.client.auth.currentSession?.user.id.uuidString,
               let eventId = event.id else {
             return
         }
@@ -148,6 +150,7 @@ class BookmarkManager: ObservableObject {
                 try await bookmarkRepository.removeBookmark(userId: userId, eventId: eventId)
             } else {
                 let bookmark = BookmarkData(
+                    id: UUID().uuidString,
                     eventId: eventId,
                     eventName: event.name,
                     eventVenue: event.venue,
@@ -176,9 +179,8 @@ class BookmarkManager: ObservableObject {
                 self.bookmarkError = BookmarkError(
                     eventId: eventId,
                     eventName: event.name,
-                    message: AppConstants.ErrorMessages.bookmarkFailed
+                    message: "Failed to update bookmark"
                 )
-                
             }
         }
     }
@@ -219,5 +221,4 @@ class BookmarkManager: ObservableObject {
         isSimulatingEmptyData = false
         setupBookmarkListener()
     }
-    
 }
