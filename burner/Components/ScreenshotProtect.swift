@@ -5,7 +5,6 @@
 //  Created by Sid Rao on 07/12/2025.
 //
 
-
 import SwiftUI
 import UIKit
 
@@ -38,6 +37,9 @@ struct ScreenshotProtect<Content: View>: UIViewRepresentable {
             hostingController.view.backgroundColor = .clear
             hostingController.view.translatesAutoresizingMaskIntoConstraints = false
             
+            // 💡 FIX: Capture the controller in the coordinator so we can update it later
+            context.coordinator.hostingController = hostingController
+            
             // Add the hosting view to the secure layer
             secureContainer.addSubview(hostingController.view)
             
@@ -54,6 +56,20 @@ struct ScreenshotProtect<Content: View>: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: UITextField, context: Context) {
-        // If your state changes, the UIHostingController inside will handle the updates automatically.
+        // 💡 FIX: Update the existing hosting controller's root view with the new content
+        if let hostingController = context.coordinator.hostingController {
+            hostingController.rootView = content
+            // Force a layout pass to ensure the size adjusts if needed
+            hostingController.view.setNeedsLayout()
+        }
+    }
+    
+    // 💡 FIX: Add Coordinator to hold the reference
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+    
+    class Coordinator {
+        var hostingController: UIHostingController<Content>?
     }
 }

@@ -3,8 +3,8 @@ import FirebaseAuth
 import Combine
 import ActivityKit
 import Kingfisher
+import FamilyControls
 
-// MARK: - AppState Class
 @MainActor
 class AppState: ObservableObject {
     @Published var eventViewModel: EventViewModel
@@ -61,20 +61,16 @@ class AppState: ObservableObject {
         cancellables.removeAll()
     }
 
-    // MARK: - Initialization
     init() {
-        // Initialization of Repositories (assuming they are defined elsewhere)
         self.eventRepository = EventRepository()
         self.ticketRepository = TicketRepository()
         self.bookmarkRepository = BookmarkRepository()
         self.userRepository = UserRepository()
 
-        // Initialization of Managers and Handlers
         self.userLocationManager = UserLocationManager()
         self.burnerManager = BurnerModeManager()
         self.onboardingManager = OnboardingManager()
 
-        // Initialization of Services/Handlers that depend on Repositories
         self.eventViewModel = EventViewModel(
             eventRepository: eventRepository,
             ticketRepository: ticketRepository
@@ -98,13 +94,16 @@ class AppState: ObservableObject {
         self.passwordlessAuthHandler = PasswordlessAuthHandler()
         self.navigationCoordinator = NavigationCoordinator()
 
-        // Re-initialization of OnboardingManager (if required, otherwise remove the first init)
         self.onboardingManager = OnboardingManager(authService: self.authService)
 
-        // Ensure the lazy var is initialized
+        self.burnerManager.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
         _ = burnerModeMonitor
 
-        // Setup and Loading
         setupObservers()
         setupBurnerModeObserver()
         setupImagePrefetching()
@@ -113,7 +112,6 @@ class AppState: ObservableObject {
         loadInitialData()
     }
 
-    // MARK: - Private Loading & Setup Methods
     private func loadBurnerSetupState() {
         burnerSetupCompleted = UserDefaults.standard.bool(forKey: "burnerSetupCompleted")
     }
@@ -201,7 +199,6 @@ class AppState: ObservableObject {
         }
     }
 
-    // MARK: - User Status Handlers
     private func handleUserSignedIn() {
         if !isSimulatingEmptyFirestore {
             Task {
@@ -241,7 +238,6 @@ class AppState: ObservableObject {
         isScannerActive = false
     }
 
-    // MARK: - Public Methods
     func handleManualSignOut() {
         userDidSignOut = true
         isSignInSheetPresented = false
@@ -273,7 +269,6 @@ class AppState: ObservableObject {
         }
     }
 
-    // MARK: - Simulation / Debug Methods
     func enableEmptyFirestoreSimulation() {
         guard !isSimulatingEmptyFirestore else { return }
         isSimulatingEmptyFirestore = true
@@ -405,5 +400,17 @@ class AppState: ObservableObject {
     func setBurnerSetupCompleted(_ completed: Bool) {
         burnerSetupCompleted = completed
         UserDefaults.standard.set(completed, forKey: "burnerSetupCompleted")
+    }
+    
+    func syncBurnerModeAuthorization() {
+        guard burnerManager.isAuthorized == false, burnerManager.isLocked else {
+            return
+        }
+
+        print("⚠️ Burner Mode Authorization revoked. Clearing internal state.")
+        Task { @MainActor in
+            burnerManager.disable()
+            self.showingBurnerLockScreen = false
+        }
     }
 }

@@ -15,7 +15,6 @@ class BurnerModeManager: ObservableObject {
     }
     @Published var setupError: String?
     @Published var isLocked: Bool = false
-    // 💡 ADDED: Published property to track setup state
     @Published var burnerSetupCompleted: Bool = false
 
     private let store = ManagedSettingsStore()
@@ -23,7 +22,7 @@ class BurnerModeManager: ObservableObject {
 
     private lazy var appGroupDefaults: UserDefaults? = {
         guard let defaults = UserDefaults(suiteName: "group.com.gas.Burner") else {
-            print("⚠️ Unable to initialize app group defaults")
+            print("âš ï¸ Unable to initialize app group defaults")
             return nil
         }
         return defaults
@@ -36,7 +35,6 @@ class BurnerModeManager: ObservableObject {
         AuthorizationCenter.shared.authorizationStatus == .approved
     }
     
-    // 💡 ADDED: Computed property to check if setup is externally completed
     var hasCompletedSetup: Bool {
         burnerSetupCompleted
     }
@@ -47,11 +45,9 @@ class BurnerModeManager: ObservableObject {
 
     init() {
         loadSelectedApps()
-        // 💡 ADDED: Load setup state on initialization
         loadBurnerSetupState()
     }
     
-    // 💡 ADDED: Function to load setup state from UserDefaults
     private func loadBurnerSetupState() {
         burnerSetupCompleted = UserDefaults.standard.bool(forKey: "burnerSetupCompleted")
     }
@@ -63,11 +59,11 @@ class BurnerModeManager: ObservableObject {
 
     func getSetupValidationMessage() -> String {
         if !isAuthorized {
-            return "⚠️ Screen Time permission required"
+            return "âš ï¸ Screen Time permission required"
         }
 
         if isSetupValid {
-            return "✓ Ready for Block-All Mode"
+            return "âœ“ Ready for Block-All Mode"
         } else {
             return setupError ?? "Setup incomplete"
         }
@@ -104,13 +100,11 @@ class BurnerModeManager: ObservableObject {
         }
     }
     
-    // 💡 ADDED: Function to mark setup as complete
     func completeSetup() {
         burnerSetupCompleted = true
         UserDefaults.standard.set(true, forKey: "burnerSetupCompleted")
     }
     
-    // 💡 Function moved from AppState
     func setBurnerSetupCompleted(_ completed: Bool) {
         burnerSetupCompleted = completed
         UserDefaults.standard.set(completed, forKey: "burnerSetupCompleted")
@@ -210,9 +204,9 @@ class BurnerModeManager: ObservableObject {
 
         do {
             try center.startMonitoring(activityName, during: schedule)
-            print("✓ Device Activity monitoring started until \(endTime)")
+            print("âœ“ Device Activity monitoring started until \(endTime)")
         } catch {
-            print("⚠️ Error starting Device Activity monitoring: \(error.localizedDescription)")
+            print("âš ï¸ Error starting Device Activity monitoring: \(error.localizedDescription)")
             throw error
         }
     }
@@ -220,7 +214,7 @@ class BurnerModeManager: ObservableObject {
     private func scheduleEventEndNotification(endTime: Date) {
         let content = UNMutableNotificationContent()
         content.title = "Event Ended"
-        content.body = "Your event has ended and Burner Mode has been automatically disabled. Welcome back! 🎉"
+        content.body = "Your event has ended and Burner Mode has been automatically disabled. Welcome back! ðŸŽ‰"
         content.sound = .default
         content.badge = 1
 
@@ -235,9 +229,9 @@ class BurnerModeManager: ObservableObject {
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("⚠️ Error scheduling event end notification: \(error.localizedDescription)")
+                print("âš ï¸ Error scheduling event end notification: \(error.localizedDescription)")
             } else {
-                print("✓ Event end notification scheduled for \(endTime)")
+                print("âœ“ Event end notification scheduled for \(endTime)")
             }
         }
     }
@@ -290,9 +284,9 @@ class BurnerModeManager: ObservableObject {
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("⚠️ Error scheduling burner setup reminder: \(error.localizedDescription)")
+                print("âš ï¸ Error scheduling burner setup reminder: \(error.localizedDescription)")
             } else {
-                print("✓ Burner setup reminder scheduled")
+                print("âœ“ Burner setup reminder scheduled")
             }
         }
     }
@@ -300,7 +294,7 @@ class BurnerModeManager: ObservableObject {
     func scheduleTestNotification(delay: TimeInterval = 10) {
         let content = UNMutableNotificationContent()
         content.title = "Event Ended"
-        content.body = "Your event has ended and Burner Mode has been automatically disabled. Welcome back! 🎉"
+        content.body = "Your event has ended and Burner Mode has been automatically disabled. Welcome back! ðŸŽ‰"
         content.sound = .default
         content.badge = 1
 
@@ -314,16 +308,16 @@ class BurnerModeManager: ObservableObject {
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("⚠️ Error scheduling test notification: \(error.localizedDescription)")
+                print("âš ï¸ Error scheduling test notification: \(error.localizedDescription)")
             } else {
-                print("✓ Test notification scheduled for \(Int(delay)) seconds from now")
+                print("âœ“ Test notification scheduled for \(Int(delay)) seconds from now")
             }
         }
     }
 
     func scheduleTestBurnerSetupReminder() {
         scheduleBurnerSetupReminder(eventCount: 1)
-        print("✓ Test burner setup reminder sent")
+        print("âœ“ Test burner setup reminder sent")
     }
 
     private func cancelEventEndNotification() {
@@ -332,11 +326,7 @@ class BurnerModeManager: ObservableObject {
     }
 
     func disable() {
-        guard isAuthorized else {
-            return
-        }
-        
-        // 💡 UPDATED: Set completion status to false when disabled
+        // Clear burner setup and lock state immediately
         setBurnerSetupCompleted(false)
 
         cancelEventEndNotification()

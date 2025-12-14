@@ -21,8 +21,7 @@ struct TicketDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     private var shouldShowQRCode: Bool {
-        // 💡 FIXED: Access burnerSetupCompleted via burnerManager
-        appState.burnerManager.burnerSetupCompleted
+        appState.burnerManager.burnerSetupCompleted && appState.burnerManager.isAuthorized
     }
 
     var body: some View {
@@ -78,6 +77,8 @@ struct TicketDetailView: View {
             )
         }
         .onAppear {
+            appState.syncBurnerModeAuthorization()
+
             if shouldShowQRCode {
                 Task {
                     qrCodeImage = await generateQRCode(from: qrCodeData, size: 300)
@@ -102,12 +103,20 @@ struct TicketDetailView: View {
             liveActivityUpdateTimer?.invalidate()
             liveActivityUpdateTimer = nil
         }
-        // 💡 FIXED: Access burnerSetupCompleted via burnerManager
         .onChange(of: appState.burnerManager.burnerSetupCompleted) { oldValue, newValue in
-            if newValue && !oldValue {
+            if newValue && !oldValue && appState.burnerManager.isAuthorized {
                 Task {
                     qrCodeImage = await generateQRCode(from: qrCodeData, size: 300)
                 }
+            }
+        }
+        .onChange(of: appState.burnerManager.isAuthorized) { oldValue, newValue in
+            if newValue && !oldValue && appState.burnerManager.burnerSetupCompleted {
+                Task {
+                    qrCodeImage = await generateQRCode(from: qrCodeData, size: 300)
+                }
+            } else if !newValue {
+                qrCodeImage = nil
             }
         }
     }
@@ -408,4 +417,3 @@ struct NavigationControllerConfigurator: UIViewControllerRepresentable {
         }
     }
 }
-

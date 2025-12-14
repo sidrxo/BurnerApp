@@ -480,13 +480,13 @@ struct NotificationsSlide: View {
                 .padding(.bottom, 40)
 
             VStack(spacing: 14) {
-                BurnerButton("I'M IN", style: .primary, maxWidth: 200) {
+                BurnerButton("I'M IN", style: .primary, maxWidth: 130) {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     requestNotifications()
                 }
                 .buttonStyle(PlainButtonStyle())
 
-                BurnerButton("NAH", style: .secondary, maxWidth: 160) {
+                BurnerButton("NO", style: .secondary, maxWidth: 100) {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     localPreferences.hasEnabledNotifications = false
                     onContinue()

@@ -88,10 +88,8 @@ struct BurnerApp: App {
     @State private var showingVideoSplash = true
     @Environment(\.scenePhase) private var scenePhase
     
-    // Check if this is the very first launch. (Kept for compatibility with other logic, but no longer used for video choice)
     private let isInitialAppLaunch = !UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
     
-    // *** NEW: Permanent flag to check if the launch video has ever been shown ***
     private let hasShownLaunchVideo = UserDefaults.standard.bool(forKey: "hasShownLaunchVideo")
     
     init() {
@@ -144,14 +142,11 @@ struct BurnerApp: App {
                 }
                 
                 if showingVideoSplash {
-                    // MARK: - Updated logic for video selection
-                    // Uses the new permanent flag for video choice.
                     let videoToPlay = hasShownLaunchVideo ? "splash" : "launch"
                     
                     VideoSplashView(videoName: videoToPlay, loop: false) {
                         showingVideoSplash = false
                         
-                        // *** NEW: Set the permanent flag to true after playing launch video ***
                         if !hasShownLaunchVideo {
                             UserDefaults.standard.set(true, forKey: "hasShownLaunchVideo")
                         }
@@ -161,16 +156,16 @@ struct BurnerApp: App {
             }
             .animation(.easeInOut(duration: 0.3), value: appState.showingBurnerLockScreen)
         }
-        .onChange(of: scenePhase) { oldPhase, newPhase in
+        .onChange(of: scenePhase) { _, newPhase in
             configureGlobalAppearance()
             
-            // MARK: - Updated logic to only dismiss splash on background if it's NOT the initial launch (to ensure 'launch' video plays fully)
-            // Uses the new permanent flag for the dismissal check.
             if hasShownLaunchVideo && showingVideoSplash && (newPhase == .background || newPhase == .inactive) {
                 showingVideoSplash = false
             }
             
             if newPhase == .active {
+                appState.syncBurnerModeAuthorization()
+                
                 UNUserNotificationCenter.current().setBadgeCount(0) { error in
                     if let error = error {
                         print("⚠️ Error clearing badge count: \(error.localizedDescription)")

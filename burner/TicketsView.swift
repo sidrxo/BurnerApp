@@ -4,13 +4,11 @@ import FirebaseAuth
 import FirebaseFirestore
 import Combine
 
-// MARK: - Ticket Grid Item
 struct TicketGridItem: View {
     let ticketWithEvent: TicketWithEventData
 
     var body: some View {
         VStack(spacing: 0) {
-            // Image section
             GeometryReader { geometry in
                 ZStack {
                     if let url = URL(string: ticketWithEvent.event.imageUrl), !ticketWithEvent.event.imageUrl.isEmpty {
@@ -31,7 +29,6 @@ struct TicketGridItem: View {
             }
             .aspectRatio(1, contentMode: .fit)
             
-            // Event info below image
             VStack(alignment: .leading, spacing: 4) {
                 Text(ticketWithEvent.event.name)
                     .appBody()
@@ -64,11 +61,12 @@ struct TicketsView: View {
     @EnvironmentObject var ticketsViewModel: TicketsViewModel
     @EnvironmentObject var eventViewModel: EventViewModel
     @EnvironmentObject var coordinator: NavigationCoordinator
+    @EnvironmentObject var appState: AppState
 
-    @State private var selectedFilter: Int = 0 // 0 = upcoming, 1 = past
+    @State private var selectedFilter: Int = 0
     @State private var showTicketsAnimation = false
     @State private var showEmptyStateAnimation = false
-    @State private var isLoadingTicketsAfterSignIn = false // Track post-sign-in ticket loading
+    @State private var isLoadingTicketsAfterSignIn = false
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -82,7 +80,6 @@ struct TicketsView: View {
             if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
                 result.append(TicketWithEventData(ticket: ticket, event: event))
             } else {
-                // Create a placeholder event if event data is missing
                 let placeholderEvent = Event(
                     name: ticket.eventName,
                     venue: ticket.venue,
@@ -106,9 +103,9 @@ struct TicketsView: View {
         var result = ticketsWithEvents
         
         switch selectedFilter {
-        case 0: // upcoming
+        case 0:
             result = result.filter { !$0.event.isPast }
-        case 1: // past
+        case 1:
             result = result.filter { $0.event.isPast }
         default:
             result = result.filter { !$0.event.isPast }
@@ -121,10 +118,8 @@ struct TicketsView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Custom header with settings gear
             ticketsHeader
 
-            // Show tab bar only if there are past tickets
             if !ticketsViewModel.tickets.isEmpty || ticketsViewModel.isLoading {
                 if hasPastTickets {
                     tabBarSection
@@ -132,7 +127,6 @@ struct TicketsView: View {
             }
 
             if isLoadingTicketsAfterSignIn {
-                // Show nothing (blank screen) while loading tickets after sign-in
                 Color.black
             } else if ticketsViewModel.tickets.isEmpty {
                 emptyStateView
@@ -154,6 +148,8 @@ struct TicketsView: View {
         .background(Color.black)
         .navigationBarHidden(true)
         .onAppear {
+            appState.syncBurnerModeAuthorization()
+
             if !ticketsViewModel.tickets.isEmpty {
                 withAnimation(.easeOut(duration: 0.5)) {
                     showTicketsAnimation = true
@@ -172,7 +168,6 @@ struct TicketsView: View {
         }
         .onChange(of: Auth.auth().currentUser?.uid) { oldValue, newValue in
             if newValue != nil && oldValue == nil {
-                // User just signed in - show loading state
                 showTicketsAnimation = false
                 isLoadingTicketsAfterSignIn = true
                 
@@ -180,13 +175,11 @@ struct TicketsView: View {
                     ticketsViewModel.fetchUserTickets()
                 }
             } else if newValue == nil && oldValue != nil {
-                // User signed out - reset state
                 showTicketsAnimation = false
                 isLoadingTicketsAfterSignIn = false
             }
         }
         .onChange(of: ticketsViewModel.isLoading) { oldValue, newValue in
-            // Reset loading flag once data fetch is complete (regardless of whether count changed)
             if isLoadingTicketsAfterSignIn && !newValue {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     isLoadingTicketsAfterSignIn = false
@@ -195,7 +188,6 @@ struct TicketsView: View {
         }
     }
 
-    // MARK: - Tickets Header with Settings Gear
     private var ticketsHeader: some View {
         HStack {
             Text("Tickets")
@@ -299,11 +291,9 @@ struct TicketsView: View {
         .background(Color.black)
     }
     
-    // MARK: - Tab Bar Section
     private var tabBarSection: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                // Upcoming Tab
                 Button {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         selectedFilter = 0
@@ -318,7 +308,6 @@ struct TicketsView: View {
                         .padding(.vertical, 12)
                 }
                 
-                // Past Tab
                 Button {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         selectedFilter = 1
@@ -334,14 +323,11 @@ struct TicketsView: View {
                 }
             }
             
-            // Border and indicator
             ZStack(alignment: .leading) {
-                // Border line
                 Rectangle()
                     .fill(Color(red: 38/255, green: 38/255, blue: 38/255))
                     .frame(height: 1)
                 
-                // Sliding indicator
                 GeometryReader { geometry in
                     let tabWidth = geometry.size.width / 2
                     let indicatorWidth: CGFloat = selectedFilter == 0 ? 55 : 60

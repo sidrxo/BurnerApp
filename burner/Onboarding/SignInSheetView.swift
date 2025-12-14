@@ -788,35 +788,14 @@ struct SignInSheetView: View {
             triggerSuccessFeedback()
 
             Task { @MainActor in
-                let syncService = PreferencesSyncService()
-                let localPrefs = LocalPreferences()
-
-                let hasLocalPrefs = localPrefs.hasAnyPreferences
-                let firebasePrefs = await syncService.loadPreferencesFromFirebase()
-                
-                if let firebasePrefs = firebasePrefs {
-                    if firebasePrefs.hasAnyPreferences {
-                        if hasLocalPrefs {
-                            await syncService.mergePreferences(localPreferences: localPrefs)
-                        } else {
-                            firebasePrefs.saveToUserDefaults()
-                        }
-                    } else if hasLocalPrefs {
-                        await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
-                    }
-                } else if hasLocalPrefs {
-                    await syncService.syncLocalPreferencesToFirebase(localPreferences: localPrefs)
-                }
-
+                // Only post notification if we are in onboarding flow
                 if self.isOnboarding {
                     NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
-                } else {
-                    if !self.appState.onboardingManager.hasCompletedOnboarding {
-                        self.appState.onboardingManager.completeOnboarding()
-                    }
                 }
             }
             
+            // If NOT onboarding, dismiss sheet.
+            // If IS onboarding, the parent view handles transition via notification.
             if !self.isOnboarding {
                 self.showingSignIn = false
             }

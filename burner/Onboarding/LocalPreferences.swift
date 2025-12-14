@@ -105,30 +105,6 @@ class LocalPreferences: ObservableObject {
 
     }
 
-    // MARK: - Export Dictionary (for Firebase sync)
-    func exportDictionary() -> [String: Any] {
-        var dict: [String: Any] = [:]
-
-        // Genres
-        if !selectedGenres.isEmpty {
-            dict["genres"] = selectedGenres
-        }
-
-        // Location
-        if let name = locationName, let lat = locationLat, let lon = locationLon {
-            dict["location"] = [
-                "name": name,
-                "lat": lat,
-                "lon": lon
-            ]
-        }
-
-        // Notifications
-        dict["notificationsEnabled"] = hasEnabledNotifications
-
-        return dict
-    }
-
     // MARK: - Reset
     func reset() {
         selectedGenres = []
@@ -145,7 +121,5 @@ class LocalPreferences: ObservableObject {
         defaults.removeObject(forKey: locationLonKey)
         defaults.removeObject(forKey: hasEnabledNotificationsKey)
         defaults.synchronize()
-
-        
     }
 }
