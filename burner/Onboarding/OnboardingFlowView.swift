@@ -574,7 +574,7 @@ struct NotificationsSlide: View {
                 }
                 .buttonStyle(PlainButtonStyle())
 
-                BurnerButton("NO", style: .secondary, maxWidth: 100) {
+                BurnerButton("NAH", style: .secondary, maxWidth: 100) {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     localPreferences.hasEnabledNotifications = false
                     onContinue()

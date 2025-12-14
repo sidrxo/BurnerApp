@@ -160,7 +160,7 @@ class AppState: ObservableObject {
         imagePrefetchCancellable = eventViewModel.$events
             .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
             .sink { [weak self] events in
-                guard let self = self else { return }
+                guard self != nil else { return }
                 let urls = events.compactMap { event -> URL? in
                     guard !event.imageUrl.isEmpty else { return nil }
                     return URL(string: event.imageUrl)

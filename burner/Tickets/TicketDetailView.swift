@@ -10,7 +10,6 @@ struct TicketDetailView: View {
 
     @State private var hasStartedLiveActivity = false
     @State private var isLiveActivityActive = false
-    @State private var showTransferSuccess = false
     @State private var showBurnerSetup = false
     @State private var liveActivityUpdateTimer: Timer?
     @State private var flipped = true
@@ -52,18 +51,6 @@ struct TicketDetailView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(EmptyView())
-
-            if showTransferSuccess {
-                CustomAlertView(
-                    title: "Transfer Successful",
-                    description: "Ticket has been transferred successfully! ",
-                    primaryAction: { showTransferSuccess = false },
-                    primaryActionTitle: "OK",
-                    customContent: EmptyView()
-                )
-                .transition(.opacity)
-                .zIndex(1001)
-            }
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
@@ -185,7 +172,7 @@ struct TicketDetailView: View {
                         .foregroundColor(.black)
                 }
             }
-            .padding(.horizontal, 30)
+            .padding(.horizontal, 24)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.white)
 
@@ -196,12 +183,12 @@ struct TicketDetailView: View {
                             Image(uiImage: qrImage)
                                 .resizable()
                                 .interpolation(.none)
-                                .frame(width: 320, height: 320)
+                                .frame(width: 330, height: 330)
                                 .background(.white)
                         } else {
                             QRCodeView(
                                 data: qrCodeData,
-                                size: 320
+                                size: 330
                             )
                             .background(.white)
                         }
@@ -211,11 +198,11 @@ struct TicketDetailView: View {
                                 Image(uiImage: qrImage)
                                     .resizable()
                                     .interpolation(.none)
-                                    .frame(width: 320, height: 320)
+                                    .frame(width: 330, height: 330)
                             } else {
                                 QRCodeView(
                                     data: qrCodeData,
-                                    size: 320
+                                    size: 330
                                 )
                             }
                         }
@@ -226,7 +213,7 @@ struct TicketDetailView: View {
                             showBurnerSetup = true
                         }) {
                             Text("COMPLETE SETUP")
-                                .appFont(size: 15, weight: .bold)
+                                .appMonospaced(size: 16)
                                 .foregroundColor(.black)
                                 .padding(.horizontal, 32)
                                 .padding(.vertical, 12)
@@ -237,27 +224,7 @@ struct TicketDetailView: View {
                         .buttonStyle(PlainButtonStyle())
                     }
                 }
-                .frame(width: 320, height: 320)
-
-                if shouldShowQRCode && ticketWithEvent.ticket.status == "confirmed" {
-                    Button(action: {
-                        if ticketWithEvent.ticket.id != nil {
-                            coordinator.navigate(to: .transferTicket(ticketWithEvent.ticket))
-                        }
-                    }) {
-                        HStack(spacing: 6) {
-                            Text("TRANSFER TICKET")
-                                .appSecondary(weight: .bold)
-                                .foregroundColor(.black)
-
-                            Image(systemName: "arrow.up.forward")
-                                .appSecondary(weight: .bold)
-                                .foregroundColor(.black)
-                        }
-                    }
-                    .padding(.top, 2)
-                    .buttonStyle(PlainButtonStyle())
-                }
+                .frame(width: 330, height: 330)
             }
             .padding(.top, 30)
             .frame(maxWidth: .infinity)

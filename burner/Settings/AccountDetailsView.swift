@@ -1,10 +1,9 @@
-
 import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
 
 struct AccountDetailsView: View {
-    // ✅ NEW: Access AppState
+    // âœ… NEW: Access AppState
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
 
@@ -229,14 +228,14 @@ struct AccountDetailsView: View {
                 TicketLiveActivityManager.endLiveActivity()
             }
 
-            // ✅ FIXED: Notify AppState before signing out
+            // âœ… FIXED: Notify AppState before signing out
             appState.handleManualSignOut()
             UserDefaults.standard.set(false, forKey: "hasLaunchedBefore")
             UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
 
             try Auth.auth().signOut()
 
-            // ✅ Post notification for SettingsView to update
+            // âœ… Post notification for SettingsView to update
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
 
             // Dismiss the view

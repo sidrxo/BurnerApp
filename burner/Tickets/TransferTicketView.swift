@@ -170,30 +170,55 @@ struct TransferTicketView: View {
     }
 
     private func transferTicket() {
-        guard !recipientEmail.isEmpty else { return }
+        guard !recipientEmail.isEmpty else {
+            print("❌ Transfer failed: Recipient email is empty")
+            return
+        }
+        
+        guard let ticketId = ticketWithEvent.ticket.id, !ticketId.isEmpty else {
+            print("❌ Transfer failed: Ticket ID is nil or empty")
+            errorMessage = "Invalid ticket ID. Please try again."
+            showErrorAlert = true
+            return
+        }
+        
+        guard let eventId = ticketWithEvent.event.id, !eventId.isEmpty else {
+            print("❌ Transfer failed: Event ID is nil or empty")
+            errorMessage = "Invalid event ID. Please try again."
+            showErrorAlert = true
+            return
+        }
+
+        print("🎫 Starting transfer:")
+        print("   Ticket ID: \(ticketId)")
+        print("   Event ID: \(eventId)")
+        print("   Recipient: \(recipientEmail)")
 
         isTransferring = true
 
-        let functions = Functions.functions()
+        let functions = Functions.functions(region: "europe-west2")
         let transferFunction = functions.httpsCallable("transferTicket")
 
-        // The backend function:
-        // 1. Validates that the recipient doesn't already have a ticket for this event
-        // 2. Validates ticket ownership and status
-        // 3. Updates the ticket ownership
-
         transferFunction.call([
-            "ticketId": ticketWithEvent.ticket.id ?? "",
+            "ticketId": ticketId,
             "recipientEmail": recipientEmail,
-            "eventId": ticketWithEvent.event.id ?? ""
+            "eventId": eventId
         ]) { result, error in
             DispatchQueue.main.async {
                 isTransferring = false
 
                 if let error = error as NSError? {
+                    print("❌ Transfer error:")
+                    print("   Code: \(error.code)")
+                    print("   Domain: \(error.domain)")
+                    print("   Description: \(error.localizedDescription)")
+                    print("   User Info: \(error.userInfo)")
+                    
                     // Handle error - show in custom alert
                     if let message = error.userInfo["message"] as? String {
                         errorMessage = message
+                    } else if let details = error.userInfo[NSLocalizedDescriptionKey] as? String {
+                        errorMessage = details
                     } else {
                         errorMessage = "Transfer failed. Please try again."
                     }
@@ -202,6 +227,10 @@ struct TransferTicketView: View {
                 }
 
                 // Success
+                print("✅ Transfer successful")
+                if let resultData = result?.data as? [String: Any] {
+                    print("   Result: \(resultData)")
+                }
                 showTransferSuccess = true
                 recipientEmail = ""
             }

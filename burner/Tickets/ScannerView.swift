@@ -265,7 +265,6 @@ struct ScannerView: View {
                     Image(systemName: "calendar.badge.exclamationmark")
                         .appHero()
                         .foregroundColor(.gray)
-                        .padding(.top, 60)
 
                     VStack(spacing: 8) {
                         Text("No Events Today")
