@@ -1,12 +1,13 @@
+
 import SwiftUI
 import Kingfisher
 import ActivityKit
-import FirebaseFunctions
 import Combine
 import FamilyControls
 
 struct TicketDetailView: View {
     let ticketWithEvent: TicketWithEventData
+    var shouldAnimateFlip: Bool = false  // NEW: Control flip animation
 
     @State private var hasStartedLiveActivity = false
     @State private var isLiveActivityActive = false
@@ -14,6 +15,7 @@ struct TicketDetailView: View {
     @State private var liveActivityUpdateTimer: Timer?
     @State private var flipped = true
     @State private var qrCodeImage: UIImage? = nil
+    @State private var viewOpacity: Double = 0  // NEW: Control fade-in
 
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
@@ -52,6 +54,7 @@ struct TicketDetailView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(EmptyView())
         }
+        .opacity(viewOpacity)  // NEW: Apply fade-in opacity
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .background(NavigationControllerConfigurator())
@@ -80,10 +83,21 @@ struct TicketDetailView: View {
                 updateLiveActivityIfNeeded()
             }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                    flipped = false
+            // NEW: Fade in the view
+            withAnimation(.easeIn(duration: 0.3)) {
+                viewOpacity = 1
+            }
+
+            // NEW: Only flip if explicitly requested (after purchase)
+            if shouldAnimateFlip {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                        flipped = false
+                    }
                 }
+            } else {
+                // Show front side immediately without animation
+                flipped = false
             }
         }
         .onDisappear {
@@ -213,7 +227,7 @@ struct TicketDetailView: View {
                             showBurnerSetup = true
                         }) {
                             Text("COMPLETE SETUP")
-                                .appMonospaced(size: 16)
+                                .appMonospaced(size: 16, weight: .bold)
                                 .foregroundColor(.black)
                                 .padding(.horizontal, 32)
                                 .padding(.vertical, 12)

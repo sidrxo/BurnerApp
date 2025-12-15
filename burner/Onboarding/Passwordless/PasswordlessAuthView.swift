@@ -1,6 +1,5 @@
 import SwiftUI
-import FirebaseAuth
-import FirebaseFirestore
+import Supabase
 
 struct PasswordlessAuthView: View {
     @Environment(\.dismiss) var dismiss
@@ -14,6 +13,8 @@ struct PasswordlessAuthView: View {
     @State private var canResend = false
     @State private var resendCountdown = 60
     @State private var countdownTimer: Timer?
+    
+    private let supabase = SupabaseManager.shared.client
     
     var body: some View {
         NavigationStack {
@@ -60,7 +61,6 @@ struct PasswordlessAuthView: View {
                                 // Email input form
                                 VStack(spacing: 20) {
                                     VStack(alignment: .leading, spacing: 8) {
-                                        // The original had a placeholder, which is useful in a TextField
                                         TextField("Email Address", text: $email)
                                             .appBody()
                                             .foregroundColor(.white)
@@ -70,7 +70,7 @@ struct PasswordlessAuthView: View {
                                             .padding(.horizontal, 16)
                                             .padding(.vertical, 14)
                                             .background(Color.white.opacity(0.1))
-                                            .clipShape(RoundedRectangle(cornerRadius: 12)) // Changed to 12 for consistency
+                                            .clipShape(RoundedRectangle(cornerRadius: 12))
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 12)
                                                     .stroke(Color.white.opacity(0.2), lineWidth: 1)
@@ -105,7 +105,7 @@ struct PasswordlessAuthView: View {
                                             }
                                         } else {
                                             Text("Resend in \(resendCountdown)s")
-                                                .appBody() // Changed to appBody for prominence
+                                                .appBody()
                                                 .foregroundColor(.white.opacity(0.5))
                                         }
                                     }
@@ -129,7 +129,7 @@ struct PasswordlessAuthView: View {
                                 Spacer()
                                     .frame(minHeight: 0)
                             }
-                            .frame(minHeight: geometry.size.height - 80) // Adjusted height
+                            .frame(minHeight: geometry.size.height - 80)
                         }
                     }
 
@@ -150,7 +150,7 @@ struct PasswordlessAuthView: View {
                 
                 // Loading overlay
                 if isLoading {
-                    Color.black.opacity(0.7) // Increased opacity for better contrast
+                    Color.black.opacity(0.7)
                         .ignoresSafeArea(.all)
                     
                     ProgressView()
@@ -182,7 +182,7 @@ struct PasswordlessAuthView: View {
                         Image(systemName: "xmark")
                             .appBody()
                             .foregroundColor(.white.opacity(0.7))
-                            .frame(width: 38, height: 38) // Increased size for better tap target
+                            .frame(width: 38, height: 38)
                             .background(Color.white.opacity(0.1))
                             .clipShape(Circle())
                     }
@@ -201,19 +201,19 @@ struct PasswordlessAuthView: View {
     // MARK: - Instruction Row
     
     private func instructionRow(number: String, text: String) -> some View {
-        HStack(alignment: .top, spacing: 12) { // Changed to .top alignment
+        HStack(alignment: .top, spacing: 12) {
             Text(number)
                 .appSecondary()
-                .foregroundColor(.black) // Black text on white/dimmed background
-                .frame(width: 28, height: 28) // Increased size for consistency
-                .background(Color.white) // Solid white background for number pill
+                .foregroundColor(.black)
+                .frame(width: 28, height: 28)
+                .background(Color.white)
                 .clipShape(Circle())
                 .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1)
             
             Text(text)
                 .appBody()
                 .foregroundColor(.white)
-                .lineSpacing(3) // Added line spacing for readability
+                .lineSpacing(3)
             
             Spacer()
         }
@@ -225,7 +225,7 @@ struct PasswordlessAuthView: View {
         return isValidEmail(email)
     }
     
-    // MARK: - Send Sign-In Link (Remains the same functional logic)
+    // MARK: - Send Sign-In Link
     
     private func handleSendLink() {
         guard isValidEmail(email) else {
@@ -235,35 +235,38 @@ struct PasswordlessAuthView: View {
         
         startLoading()
         
+        // Store email for later verification
         UserDefaults.standard.set(email, forKey: "pendingEmailForSignIn")
         
-        let actionCodeSettings = ActionCodeSettings()
-        actionCodeSettings.url = URL(string: "https://manageburner.online/signin")
-        actionCodeSettings.handleCodeInApp = true
-        actionCodeSettings.setIOSBundleID(Bundle.main.bundleIdentifier ?? "")
-        
-        Auth.auth().sendSignInLink(toEmail: email, actionCodeSettings: actionCodeSettings) { error in
-            DispatchQueue.main.async {
-                self.stopLoading()
+        Task {
+            do {
+                // Supabase magic link with redirect URL
+                try await supabase.auth.signInWithOTP(
+                    email: email,
+                    redirectTo: URL(string: "https://manageburner.online/signin")
+                )
                 
-                if let error = error {
+                await MainActor.run {
+                    self.stopLoading()
+                    
+                    withAnimation {
+                        self.emailSent = true
+                    }
+                    
+                    self.startCountdown()
+                    
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                    impactFeedback.impactOccurred()
+                }
+            } catch {
+                await MainActor.run {
                     self.showErrorMessage("Failed to send link: \(error.localizedDescription)")
-                    return
                 }
-                
-                withAnimation {
-                    self.emailSent = true
-                }
-                
-                self.startCountdown()
-                
-                let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                impactFeedback.impactOccurred()
             }
         }
     }
     
-    // MARK: - Countdown Timer (Remains the same functional logic)
+    // MARK: - Countdown Timer
     
     private func startCountdown() {
         canResend = false
@@ -286,7 +289,7 @@ struct PasswordlessAuthView: View {
         resendCountdown = 60
     }
     
-    // MARK: - Helper Functions (Remains the same functional logic)
+    // MARK: - Helper Functions
     
     private func isValidEmail(_ email: String) -> Bool {
         let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"

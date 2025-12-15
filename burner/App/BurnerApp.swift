@@ -1,7 +1,5 @@
 import SwiftUI
-import FirebaseCore
-import FirebaseAuth
-import FirebaseFirestore
+import Supabase
 import GoogleSignIn
 import Kingfisher
 import ActivityKit
@@ -12,14 +10,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        FirebaseApp.configure()
-
-        let firestoreSettings = Firestore.firestore().settings
-        firestoreSettings.cacheSettings = PersistentCacheSettings(
-            sizeBytes: FirestoreCacheSizeUnlimited as NSNumber
-        )
-        Firestore.firestore().settings = firestoreSettings
-
+        
         let cache = ImageCache.default
         cache.memoryStorage.config.totalCostLimit = 100 * 1024 * 1024
         cache.diskStorage.config.sizeLimit = 300 * 1024 * 1024
@@ -39,6 +30,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         if GIDSignIn.sharedInstance.handle(url) {
             return true
         }
+        
+        Task {
+            do {
+                try await SupabaseManager.shared.client.auth.session(from: url)
+            } catch {
+                print("Failed to handle auth URL: \(error)")
+            }
+        }
+        
         return false
     }
 }
@@ -188,6 +188,14 @@ struct BurnerApp: App {
             return
         }
         
+        Task {
+            do {
+                try await SupabaseManager.shared.client.auth.session(from: url)
+            } catch {
+                print("Failed to handle Supabase auth URL: \(error)")
+            }
+        }
+        
         guard url.scheme?.lowercased() == "burner" else {
             return
         }
@@ -227,7 +235,7 @@ struct BurnerApp: App {
                       let authScheme = authURL.scheme?.lowercased(),
                       (authScheme == "https" || authScheme == "http"),
                       let host = authURL.host,
-                      (host.hasSuffix("firebaseapp.com") || host.hasSuffix("burnerapp.com")) else {
+                      (host.hasSuffix("firebaseapp.com") || host.hasSuffix("burnerapp.com") || host.hasSuffix("supabase.co")) else {
                     return nil
                 }
                 return .auth(linkParam)

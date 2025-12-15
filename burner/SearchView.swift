@@ -1,7 +1,6 @@
 import SwiftUI
 import Kingfisher
 import Combine
-import FirebaseFirestore
 import CoreLocation
 
 // MARK: - Optimized SearchView (Single Source of Truth)
@@ -175,7 +174,7 @@ struct SearchView: View {
     private var locationPermissionAlertView: some View {
         CustomAlertView(
             title: "Find Events Near You",
-            description: "We'll show you events within 30 miles of your location. Your location is only used for finding nearby events and is never shared.",
+            description: "Your location is only used for finding nearby events and never leaves your device.",
             cancelAction: {
                 showingLocationPermissionAlert = false
                 pendingNearbySortRequest = false

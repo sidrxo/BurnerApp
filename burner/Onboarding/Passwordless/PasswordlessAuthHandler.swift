@@ -1,14 +1,5 @@
-//
-//  PasswordlessAuthHandler.swift
-//  burner
-//
-//  Created by Sid Rao on 03/11/2025.
-//
-
-
 import SwiftUI
-import FirebaseAuth
-import FirebaseFirestore
+import Supabase
 import Combine
 
 /// Handler for processing passwordless authentication deep links
@@ -16,87 +7,96 @@ class PasswordlessAuthHandler: ObservableObject {
     @Published var isProcessing = false
     @Published var error: String?
     
+    private let supabase = SupabaseManager.shared.client
+    private let userRepository = UserRepository()
+    
     func handleSignInLink(url: URL) -> Bool {
-        // Check if this is a sign-in link
-        guard Auth.auth().isSignIn(withEmailLink: url.absoluteString) else {
+        // Check if this URL contains the access_token parameter (Supabase magic link)
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+              let queryItems = components.queryItems,
+              queryItems.contains(where: { $0.name == "access_token" || $0.name == "token_type" }) else {
             return false
         }
         
         // Retrieve the email from storage
-        guard let email =   UserDefaults.standard.string(forKey: "pendingEmailForSignIn") else {
+        guard let email = UserDefaults.standard.string(forKey: "pendingEmailForSignIn") else {
             self.error = "Email not found. Please try signing in again."
             return false
         }
         
         isProcessing = true
         
-        // Sign in with the link
-        Auth.auth().signIn(withEmail: email, link: url.absoluteString) { [weak self] authResult, error in
-            guard let self = self else { return }
-            
-            DispatchQueue.main.async {
-                self.isProcessing = false
+        Task {
+            do {
+                // Verify the OTP from the URL
+                // Extract the token from URL
+                let token = queryItems.first(where: { $0.name == "access_token" })?.value ?? ""
+                let tokenType = queryItems.first(where: { $0.name == "token_type" })?.value ?? "magiclink"
                 
-                if let error = error {
-                    self.error = "Sign in failed: \(error.localizedDescription)"
-                    return
-                }
+                // Verify the OTP token
+                let session = try await supabase.auth.verifyOTP(
+                    email: email,
+                    token: token,
+                    type: .magiclink
+                )
                 
-                guard let user = authResult?.user else {
-                    self.error = "Failed to get user information"
-                    return
+                await MainActor.run {
+                    self.isProcessing = false
                 }
                 
                 // Clear the stored email
                 UserDefaults.standard.removeObject(forKey: "pendingEmailForSignIn")
                 
                 // Create or update user profile
-                self.createUserProfile(for: user)
+                await createUserProfile(for: session.user)
                 
                 // Post notification for successful sign in
-                NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
+                await MainActor.run {
+                    NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
+                }
+                
+            } catch {
+                await MainActor.run {
+                    self.isProcessing = false
+                    self.error = "Sign in failed: \(error.localizedDescription)"
+                }
             }
         }
         
         return true
     }
     
-    /// Create or update user profile in Firestore
-    private func createUserProfile(for user: User) {
-        let db = Firestore.firestore()
-        let userRef = db.collection("users").document(user.uid)
-        
-        userRef.getDocument { snapshot, error in
-            if error != nil {
-                return
-            }
+    /// Create or update user profile in Supabase
+    private func createUserProfile(for user: User) async {
+        do {
+            // Check if user profile already exists
+            let exists = try await userRepository.userExists(userId: user.id.uuidString)
             
-            let isNewUser = snapshot?.exists != true
-            
-            var userData: [String: Any] = [
-                "lastLoginAt": FieldValue.serverTimestamp(),
-                "provider": "emailLink"
-            ]
-            
-            if isNewUser {
+            if !exists {
                 // New user - create full profile
                 let displayName = user.email?.components(separatedBy: "@").first ?? "User"
                 
-                userData.merge([
-                    "email": user.email ?? "",
-                    "displayName": displayName,
-                    "role": "user",
-                    "createdAt": FieldValue.serverTimestamp(),
-                    "venuePermissions": []
-                ]) { _, new in new }
-
-                userRef.setData(userData) { error in
-                }
+                let profile = UserProfile(
+                    id: user.id.uuidString,
+                    email: user.email ?? "",
+                    displayName: displayName,
+                    role: "user",
+                    provider: "emailLink",
+                    venuePermissions: [],
+                    createdAt: Date(),
+                    lastLoginAt: Date()
+                )
+                
+                try await userRepository.createUserProfile(userId: user.id.uuidString, profile: profile)
             } else {
                 // Existing user - just update last login
-                userRef.updateData(userData) { error in
-                }
+                try await userRepository.updateUserProfile(
+                    userId: user.id.uuidString,
+                    data: ["lastLoginAt": Date()]
+                )
             }
+        } catch {
+            print("Failed to create/update user profile: \(error.localizedDescription)")
         }
     }
 }

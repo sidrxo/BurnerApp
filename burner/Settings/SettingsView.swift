@@ -1,19 +1,15 @@
 import SwiftUI
-import FirebaseAuth
-import FirebaseFirestore
+import Supabase
 import FamilyControls
 import ManagedSettings
 import Combine
 
-
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
-    @State private var currentUser: FirebaseAuth.User?
+    @State private var currentUserEmail: String?
     @State private var showingAppPicker = false
     @Environment(\.presentationMode) var presentationMode
-    
-    private let db = Firestore.firestore()
     
     private var burnerManager: BurnerModeManager {
         appState.burnerManager
@@ -45,7 +41,7 @@ struct SettingsView: View {
                             }) {
                                 MenuItemContent(
                                     title: "Account Details",
-                                    subtitle: currentUser?.email ?? "View Account"
+                                    subtitle: currentUserEmail ?? "View Account"
                                 )
                                 .contentShape(Rectangle())
                             }
@@ -84,10 +80,8 @@ struct SettingsView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
 
-                            if (userRole == "scanner" && isScannerActive) ||
-                                userRole == "siteAdmin" ||
-                                userRole == "venueAdmin" ||
-                                userRole == "subAdmin" {
+                            // --- Scanner Visibility FIX ---
+                            if userRole == "siteAdmin" {
                                 Button(action: {
                                     coordinator.navigate(to: .scanner)
                                 }) {
@@ -99,12 +93,14 @@ struct SettingsView: View {
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
+                            // --- End Scanner Visibility FIX ---
                         }
 
                         MenuSection(title: "APP") {
                             if needsBurnerSetup {
                                 Button(action: {
-                                    coordinator.showBurnerSetup()
+                                    // The `showBurnerSetup` now requires a completion handler
+                                    coordinator.showBurnerSetup(onCompletion: {})
                                 }) {
                                     MenuItemContent(
                                         title: "Setup Burner Mode",
@@ -138,6 +134,7 @@ struct SettingsView: View {
                             .buttonStyle(PlainButtonStyle())
                         }
 
+                        // --- Debug Menu Visibility FIX ---
                         if userRole == "siteAdmin" {
                             MenuSection(title: "DEBUG") {
                                 Button(action: {
@@ -152,7 +149,7 @@ struct SettingsView: View {
                                 .buttonStyle(PlainButtonStyle())
                             }
                         }
-
+                        // --- End Debug Menu Visibility FIX ---
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 100)
@@ -166,13 +163,17 @@ struct SettingsView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .onAppear {
-            currentUser = Auth.auth().currentUser
+            Task {
+                await loadCurrentUser()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
-            currentUser = Auth.auth().currentUser
+            Task {
+                await loadCurrentUser()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedOut"))) { _ in
-            currentUser = nil
+            currentUserEmail = nil
             presentationMode.wrappedValue.dismiss()
         }
         .familyActivityPicker(
@@ -182,5 +183,18 @@ struct SettingsView: View {
                 set: { burnerManager.selectedApps = $0 }
             )
         )
+    }
+    
+    private func loadCurrentUser() async {
+        do {
+            let session = try await SupabaseManager.shared.client.auth.session
+            await MainActor.run {
+                currentUserEmail = session.user.email
+            }
+        } catch {
+            await MainActor.run {
+                currentUserEmail = nil
+            }
+        }
     }
 }

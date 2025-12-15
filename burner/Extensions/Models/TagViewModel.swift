@@ -1,10 +1,10 @@
 import Foundation
-import FirebaseFirestore
 import Combine
+import Supabase
 
 // MARK: - Tag Model
 struct Tag: Identifiable, Codable, Sendable {
-    @DocumentID var id: String?
+    var id: String?
     var name: String
     var nameLowercase: String?
     var description: String?
@@ -25,6 +25,50 @@ struct Tag: Identifiable, Codable, Sendable {
         case createdAt
         case updatedAt
     }
+    
+    // Custom decoder to handle Firebase timestamp format
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decodeIfPresent(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        nameLowercase = try container.decodeIfPresent(String.self, forKey: .nameLowercase)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        color = try container.decodeIfPresent(String.self, forKey: .color)
+        
+        // Handle order as either Int or String
+        if let orderInt = try? container.decode(Int.self, forKey: .order) {
+            order = orderInt
+        } else if let orderString = try? container.decode(String.self, forKey: .order),
+                  let orderInt = Int(orderString) {
+            order = orderInt
+        } else {
+            order = 0
+        }
+        
+        active = try container.decode(Bool.self, forKey: .active)
+        
+        // Handle Firebase timestamp format or regular Date
+        createdAt = decodeFirebaseDate(from: container, forKey: .createdAt)
+        updatedAt = decodeFirebaseDate(from: container, forKey: .updatedAt)
+    }
+    
+    private func decodeFirebaseDate(from container: KeyedDecodingContainer<CodingKeys>, forKey key: CodingKeys) -> Date? {
+        // Try regular Date first
+        if let date = try? container.decode(Date.self, forKey: key) {
+            return date
+        }
+        
+        // Try Firebase timestamp string format
+        if let timestampString = try? container.decode(String.self, forKey: key),
+           let data = timestampString.data(using: .utf8),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let seconds = json["_seconds"] as? TimeInterval {
+            return Date(timeIntervalSince1970: seconds)
+        }
+        
+        return nil
+    }
 }
 
 // MARK: - Tag View Model
@@ -34,8 +78,7 @@ class TagViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var error: String?
 
-    private var db = Firestore.firestore()
-    private var listener: ListenerRegistration?
+    private let client = SupabaseManager.shared.client
 
     // Display-ready tags (active only, sorted by order)
     var displayTags: [String] {
@@ -49,48 +92,28 @@ class TagViewModel: ObservableObject {
         fetchTags()
     }
 
-    deinit {
-        listener?.remove()
-    }
-
-    // Fetch tags from Firestore with real-time updates
+    // Fetch tags from Supabase
     func fetchTags() {
         isLoading = true
         error = nil
 
-        // Remove existing listener if any
-        listener?.remove()
+        Task {
+            do {
+                let fetchedTags: [Tag] = try await client
+                    .from("tags")
+                    .select()
+                    .order("order", ascending: true)
+                    .order("name", ascending: true)
+                    .execute()
+                    .value
 
-        // Set up real-time listener
-        listener = db.collection("tags")
-            .order(by: "order")
-            .order(by: "name")
-            .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self else { return }
-
-                Task { @MainActor in
-                    self.isLoading = false
-
-                    if let error = error {
-                        self.error = error.localizedDescription
-                        // Fall back to default tags if error
-                        return
-                    }
-
-                    guard let documents = snapshot?.documents else {
-                        return
-                    }
-
-                    let fetchedTags = documents.compactMap { document -> Tag? in
-                        try? document.data(as: Tag.self)
-                    }
-
-                    if fetchedTags.isEmpty {
-                    } else {
-                        self.tags = fetchedTags
-                    }
-                }
+                self.tags = fetchedTags
+                self.isLoading = false
+            } catch {
+                print("❌ Error fetching tags: \(error)")
+                self.error = error.localizedDescription
+                self.isLoading = false
             }
+        }
     }
-
 }

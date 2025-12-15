@@ -19,7 +19,7 @@ struct TransferTicketsListView: View {
                     name: ticket.eventName,
                     venue: ticket.venue,
                     startTime: ticket.startTime,
-                    price: ticket.totalPrice,
+                    price: ticket.totalPrice ?? 0.0,
                     maxTickets: 100,
                     ticketsSold: 0,
                     imageUrl: "",
@@ -52,6 +52,10 @@ struct TransferTicketsListView: View {
         }
         .background(Color.black)
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+                    // Ensure the real-time observation starts when this view is visible.
+                    ticketsViewModel.fetchUserTickets()
+                }
     }
 
     private var loadingView: some View {

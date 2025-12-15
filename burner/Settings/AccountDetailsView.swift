@@ -1,36 +1,51 @@
 import SwiftUI
-import FirebaseAuth
-import FirebaseFirestore
+import Supabase
 
 struct AccountDetailsView: View {
-    // âœ… NEW: Access AppState
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
 
-    @State private var displayName = ""
-    @State private var email = ""
-    @State private var userRole = ""
     @State private var showingSignOut = false
     @State private var showingDeleteAccount = false
     @State private var showingDeleteAccountFinal = false
     @State private var isSigningOut = false
-    @State private var showingReauthenticationSheet = false
+    @State private var showingReauthenticationSheet = false // Reauthentication logic was removed, but state remains
     @State private var deleteErrorMessage: String?
     @State private var showingDeleteError = false
     @Environment(\.presentationMode) var presentationMode
+
+    // Computed properties for cleaner access to data
+    private var currentUser: User? {
+        appState.authService.currentUser
+    }
+    
+    // Get display name directly from the AppState, which is sourced from the UserProfile (database)
+    private var currentDisplayName: String {
+        appState.userDisplayName
+    }
+    
+    private var currentEmail: String {
+        currentUser?.email ?? ""
+    }
+    
+    // Role is also sourced from AppState
+    private var currentRole: String {
+        appState.userRole.isEmpty ? "user" : appState.userRole
+    }
 
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
                 HeaderSection(title: "Account Details", includeTopPadding: false, includeHorizontalPadding: false)
                 MenuSection(title: "PROFILE") {
-                    // Name first, then Email
+                    // Name
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Name")
                                 .appBody()
                                 .foregroundColor(.white)
-                            Text(displayName.isEmpty ? "(No Name Set)" : displayName)
+                            // Use the centrally managed display name
+                            Text(currentDisplayName.isEmpty ? "(No Name Set)" : currentDisplayName)
                                 .appSecondary()
                                 .foregroundColor(.gray)
                         }
@@ -39,12 +54,14 @@ struct AccountDetailsView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
 
+                    // Email
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Email")
                                 .appBody()
                                 .foregroundColor(.white)
-                            Text(email.isEmpty ? "(No Email Set)" : email)
+                            // Use the email from the Auth object
+                            Text(currentEmail.isEmpty ? "(No Email Set)" : currentEmail)
                                 .appSecondary()
                                 .foregroundColor(.gray)
                         }
@@ -53,12 +70,14 @@ struct AccountDetailsView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
 
+                    // Role
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Role")
                                 .appBody()
-                                .foregroundColor(.white)
-                            Text(userRole.isEmpty ? "user" : userRole)
+                            .foregroundColor(.white)
+                            // Use the centrally managed role
+                            Text(currentRole)
                                 .appSecondary()
                                 .foregroundColor(.gray)
                         }
@@ -145,7 +164,7 @@ struct AccountDetailsView: View {
                     cancelActionTitle: "Cancel",
                     primaryAction: {
                         showingDeleteAccountFinal = false
-                        deleteAccount()
+                        deleteAccount() // Calls the secure deletion function
                     },
                     primaryActionTitle: "Delete",
                     primaryActionColor: .red,
@@ -169,57 +188,9 @@ struct AccountDetailsView: View {
                 .zIndex(1003)
             }
         }
-        .sheet(isPresented: $showingReauthenticationSheet) {
-            ReauthenticationView(
-                onSuccess: {
-                    showingReauthenticationSheet = false
-                    // Try deletion again after re-authentication
-                    deleteAccountAfterReauth()
-                },
-                onCancel: {
-                    showingReauthenticationSheet = false
-                }
-            )
-        }
-        .onAppear {
-            fetchUserInfoFromFirestore()
-        }
+        // Removed unnecessary .sheet for ReauthenticationView, as that logic was simplified
     }
     
-    private func fetchUserInfoFromFirestore() {
-        guard let user = Auth.auth().currentUser else { return }
-        let db = Firestore.firestore()
-        db.collection("users").document(user.uid).getDocument { snapshot, error in
-            if let data = snapshot?.data() {
-                self.displayName = data["displayName"] as? String ?? ""
-                self.email = data["email"] as? String ?? ""
-                // Don't read role from Firestore - only use custom claims
-            }
-        }
-
-        // Fetch role from custom claims (the authoritative source)
-        Task {
-            do {
-                let result = try await user.getIDTokenResult(forcingRefresh: false)
-                if let role = result.claims["role"] as? String {
-                    await MainActor.run {
-                        self.userRole = role
-                    }
-                } else {
-                    // No custom claim set, default to "user"
-                    await MainActor.run {
-                        self.userRole = "user"
-                    }
-                }
-            } catch {
-                // On error, default to "user"
-                await MainActor.run {
-                    self.userRole = "user"
-                }
-            }
-        }
-    }
-
     private func signOut() {
         isSigningOut = true
         do {
@@ -228,17 +199,15 @@ struct AccountDetailsView: View {
                 TicketLiveActivityManager.endLiveActivity()
             }
 
-            // âœ… FIXED: Notify AppState before signing out
             appState.handleManualSignOut()
             UserDefaults.standard.set(false, forKey: "hasLaunchedBefore")
             UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
 
-            try Auth.auth().signOut()
+            try appState.authService.signOut()
 
-            // âœ… Post notification for SettingsView to update
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
 
-            // Dismiss the view
+            // Dismiss the view (works immediately due to synchronous nature of signOut())
             presentationMode.wrappedValue.dismiss()
         } catch {
             // Sign out failed, keep user in view
@@ -247,63 +216,68 @@ struct AccountDetailsView: View {
     }
     
     private func deleteAccount() {
-        guard let user = Auth.auth().currentUser else { return }
+        guard let userId = appState.authService.currentUser?.id.uuidString else { return }
 
-        user.delete { error in
-            if let error = error {
-                let nsError = error as NSError
-                // Check if re-authentication is required
-                if nsError.code == AuthErrorCode.requiresRecentLogin.rawValue {
-                    // Show re-authentication sheet
-                    showingReauthenticationSheet = true
-                } else {
-                    // Show other errors
-                    deleteErrorMessage = error.localizedDescription
+        Task {
+            do {
+                // Step 1: Call the Supabase Edge Function (Server-side deletion of user and data)
+                try await SupabaseManager.shared.client.functions
+                    .invoke(
+                        "delete-user",
+                        options: FunctionInvokeOptions(
+                            headers: [
+                                "Authorization": "Bearer \(try await SupabaseManager.shared.client.auth.session.accessToken)"
+                            ],
+                            body: ["userId": userId]
+                        )
+                    )
+                
+                // Server success -> Perform local cleanup and UI updates.
+                
+                await MainActor.run {
+                    
+                    // FIX: Clear Navigation Stacks of the hosting tab (Tickets) and the destination tab (Explore)
+                    coordinator.popToRoot(in: .tickets)
+                    coordinator.popToRoot(in: .explore)
+                    
+                    // Dismiss the AccountDetailsView
+                    presentationMode.wrappedValue.dismiss()
+                    
+                    // Switch to the desired tab
+                    coordinator.selectTab(.explore)
+                    
+                    // Perform local app state cleanup
+                    if #available(iOS 16.1, *) {
+                        TicketLiveActivityManager.endLiveActivity()
+                    }
+                    UserDefaults.standard.set(false, forKey: "hasLaunchedBefore")
+                    UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+                    appState.handleManualSignOut()
+                    NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
+                }
+
+                // Step 2: Finally, destroy the local session (this must happen after server confirmation)
+                try appState.authService.signOut()
+
+            } catch {
+                await MainActor.run {
+                    deleteErrorMessage = "Deletion failed. Error: \(error.localizedDescription)"
                     showingDeleteError = true
+                    
+                    // Keep safety sign-out in the error block
+                    try? appState.authService.signOut()
                 }
-            } else {
-                // End all live activities before deleting account
-                if #available(iOS 16.1, *) {
-                    TicketLiveActivityManager.endLiveActivity()
-                }
-
-                UserDefaults.standard.set(false, forKey: "hasLaunchedBefore")
-                UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
-
-                // Success - notify AppState and sign out
-                appState.handleManualSignOut()
-                NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
-                presentationMode.wrappedValue.dismiss()
-
-                // Navigate to explore tab
-                coordinator.selectTab(.explore)
-                coordinator.popToRoot(in: .explore)
             }
         }
     }
 
     private func deleteAccountAfterReauth() {
-        guard let user = Auth.auth().currentUser else { return }
-
-        user.delete { error in
-            if let error = error {
-                deleteErrorMessage = error.localizedDescription
-                showingDeleteError = true
-            } else {
-                // End all live activities before deleting account
-                if #available(iOS 16.1, *) {
-                    TicketLiveActivityManager.endLiveActivity()
-                }
-
-                // Success - notify AppState and sign out
-                appState.handleManualSignOut()
-                NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
-                presentationMode.wrappedValue.dismiss()
-
-                // Navigate to explore tab
-                coordinator.selectTab(.explore)
-                coordinator.popToRoot(in: .explore)
-            }
-        }
+        // Since reauthentication was not implemented, this just proceeds with deletion.
+        deleteAccount()
+    }
+    
+    // Helper struct for decoding the function response (only used for type checking now)
+    private struct FunctionResponse: Codable {
+        let message: String
     }
 }

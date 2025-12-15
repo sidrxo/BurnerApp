@@ -55,7 +55,7 @@ struct AppError: Identifiable {
 }
 
 // MARK: - Error Severity
-enum ErrorSeverity {
+enum ErrorSeverity {    
     case info
     case warning
     case error

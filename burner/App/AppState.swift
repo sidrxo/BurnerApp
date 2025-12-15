@@ -1,5 +1,5 @@
 import SwiftUI
-import FirebaseAuth
+import Supabase
 import Combine
 import ActivityKit
 import Kingfisher
@@ -22,6 +22,7 @@ class AppState: ObservableObject {
     @Published var userDidSignOut = false
     @Published var isSimulatingEmptyFirestore = false
     @Published var userRole: String = ""
+    @Published var userDisplayName: String = "" // Central source for display name
     @Published var isScannerActive: Bool = false
     @Published var showingBurnerLockScreen = false
     @Published var burnerSetupCompleted: Bool = false
@@ -42,6 +43,10 @@ class AppState: ObservableObject {
 
     lazy var burnerModeMonitor: BurnerModeMonitor = {
         BurnerModeMonitor(appState: self, burnerManager: self.burnerManager)
+    }()
+    
+    lazy var stripePaymentService: StripePaymentService = {
+        StripePaymentService(appState: self)
     }()
 
     deinit {
@@ -71,18 +76,22 @@ class AppState: ObservableObject {
         self.burnerManager = BurnerModeManager()
         self.onboardingManager = OnboardingManager()
 
+        // Create EventViewModel first (without TicketsViewModel reference)
         self.eventViewModel = EventViewModel(
             eventRepository: eventRepository,
             ticketRepository: ticketRepository
         )
 
+        // Create TicketsViewModel
+        self.ticketsViewModel = TicketsViewModel(
+            ticketRepository: ticketRepository
+        )
+
+        // Now connect them (this sets up the Combine listener)
+
         self.bookmarkManager = BookmarkManager(
             bookmarkRepository: bookmarkRepository,
             eventRepository: eventRepository
-        )
-
-        self.ticketsViewModel = TicketsViewModel(
-            ticketRepository: ticketRepository
         )
 
         self.tagViewModel = TagViewModel()
@@ -110,6 +119,8 @@ class AppState: ObservableObject {
         loadBurnerSetupState()
 
         loadInitialData()
+        self.eventViewModel.setTicketsViewModel(ticketsViewModel)
+
     }
 
     private func loadBurnerSetupState() {
@@ -218,11 +229,33 @@ class AppState: ObservableObject {
 
         Task {
             do {
-                userRole = try await authService.getUserRole() ?? ""
-                isScannerActive = try await authService.isScannerActive()
+                let profile = try await authService.getUserProfile()
+                let isScanner = try await authService.isScannerActive()
+                
+                var finalRole: String = ""
+                
+                if let role = profile?.role {
+                    // 1. Get role from the fetched profile (preferred)
+                    finalRole = role
+                } else if let fallbackRole = try? await authService.getUserRole() {
+                    // 2. Fall back to checking Auth metadata (getUserRole is async/throws)
+                    finalRole = fallbackRole
+                }
+                
+                await MainActor.run {
+                    // 1. Use profile's displayName for the primary source
+                    self.userDisplayName = profile?.displayName ?? ""
+                    
+                    // 2. Assign the determined role, safely defaulting to empty string
+                    self.userRole = finalRole
+                    self.isScannerActive = isScanner
+                }
             } catch {
-                userRole = ""
-                isScannerActive = false
+                await MainActor.run {
+                    self.userRole = ""
+                    self.userDisplayName = ""
+                    self.isScannerActive = false
+                }
             }
         }
     }
@@ -235,6 +268,7 @@ class AppState: ObservableObject {
         burnerModeMonitor.stopMonitoring()
         showingBurnerLockScreen = false
         userRole = ""
+        userDisplayName = "" // Clear display name on sign out
         isScannerActive = false
     }
 
@@ -329,7 +363,7 @@ class AppState: ObservableObject {
         let testTicket = Ticket(
             id: "debug_ticket_\(UUID().uuidString)",
             eventId: "debug_event_\(UUID().uuidString)",
-            userId: authService.currentUser?.uid ?? "debug_user",
+            userId: authService.currentUser?.id.uuidString ?? "debug_user",
             ticketNumber: "DEBUG-\(Int.random(in: 1000...9999))",
             eventName: "Garage Classics",
             venue: "Ministry of Sound",

@@ -1,6 +1,5 @@
 import SwiftUI
 import Kingfisher
-import FirebaseAuth
 
 struct FeaturedHeroCard: View {
     let event: Event
@@ -100,8 +99,7 @@ struct FeaturedHeroCard: View {
                             Spacer()
 
                             Button(action: {
-                                if Auth.auth().currentUser == nil {
-                                    showingSignInAlert = true
+                                if appState.authService.currentUser == nil {                                    showingSignInAlert = true
                                 } else {
                                     Task {
                                         await bookmarkManager.toggleBookmark(for: event)

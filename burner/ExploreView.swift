@@ -1,7 +1,7 @@
 import SwiftUI
 import Kingfisher
 import CoreLocation
-import FirebaseFirestore
+import Supabase
 
 struct ExploreView: View {
     @EnvironmentObject var eventViewModel: EventViewModel
@@ -16,7 +16,7 @@ struct ExploreView: View {
     @State private var showingSignInAlert = false
     @StateObject private var localPreferences = LocalPreferences()
     
-    @State private var isRefreshing = false
+    // REMOVED: @State private var isRefreshing = false // Not needed with the fix
     
     @State private var featuredEvents: [Event] = []
     @State private var thisWeekEvents: [Event] = []
@@ -114,11 +114,12 @@ struct ExploreView: View {
                     .padding(.bottom, 80)
                 }
                 .refreshable {
-                    isRefreshing = true
+                    // FIX: Combine refresh and compute to ensure the animation waits for both.
                     await eventViewModel.refreshEvents()
-
-                    try? await Task.sleep(nanoseconds: 200_000_000)
-                    isRefreshing = false
+                    await computeEventSections()
+                    
+                    // Small optional delay to ensure UI updates are rendered before dismissal
+                    try? await Task.sleep(nanoseconds: 50_000_000)
                 }
             }
             .navigationBarHidden(true)
@@ -128,7 +129,8 @@ struct ExploreView: View {
                 }
             }
             .onChange(of: eventViewModel.errorMessage) { _, newError in
-                if newError != nil && !eventViewModel.events.isEmpty && !isRefreshing {
+                // Removed redundant !isRefreshing check
+                if newError != nil && !eventViewModel.events.isEmpty {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         eventViewModel.clearMessages()
                     }
@@ -153,6 +155,8 @@ struct ExploreView: View {
                         isComputingInitialData = false
                     }
                 } else {
+                    // This is the code path for non-refresh related data changes (e.g., streaming)
+                    // It is necessary if the event list can change outside of a full user-triggered refresh.
                     Task {
                         await computeEventSections()
                     }

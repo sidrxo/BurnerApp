@@ -46,14 +46,19 @@ struct BookmarksView: View {
             if !bookmarkManager.bookmarkedEvents.isEmpty {
 
             }
-
-            if bookmarkManager.isLoading {
-                loadingView
-            } else if bookmarkManager.bookmarkedEvents.isEmpty {
-                emptyStateView
-            } else {
-                bookmarksList
+            
+            // --- Content Switcher with Animation ---
+            Group {
+                if bookmarkManager.isLoading {
+                    loadingView
+                } else if bookmarkManager.bookmarkedEvents.isEmpty {
+                    emptyStateView
+                } else {
+                    bookmarksList
+                }
             }
+            .animation(.easeInOut(duration: 0.3), value: bookmarkManager.isLoading)
+            // ---------------------------------------
         }
         .background(Color.black)
         .navigationBarTitleDisplayMode(.inline)
@@ -136,6 +141,8 @@ struct BookmarksView: View {
             LazyVStack(spacing: 12) {
                 ForEach(filteredBookmarks) { event in
                     Button {
+                        // Use a simple animation wrapper for navigation if needed,
+                        // but the list deletion animation is the primary focus.
                         coordinator.navigate(to: .eventDetail(event.id ?? ""), in: .bookmarks)
                     } label: {
                         EventRow(
@@ -146,11 +153,21 @@ struct BookmarksView: View {
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
+                    // IMPORTANT: Apply the transition/animation to the row itself.
+                    // When the item is removed from the array, this transition is used.
+                    // We use .move(edge: .leading) to slide it out/up and .opacity to fade it.
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                    
+                    // Essential for tracking which row is being removed
+                    .id(event.id)
                 }
             }
             .padding(.bottom, 100)
         }
         .background(Color.black)
+        // Apply the animation to the entire ScrollView content when the list changes.
+        // This makes the remaining items smoothly move up into the removed item's space.
+        .animation(.easeInOut(duration: 0.3), value: bookmarkManager.bookmarkedEvents.count)
     }
 }
 

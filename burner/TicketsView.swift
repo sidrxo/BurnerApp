@@ -1,8 +1,7 @@
 import SwiftUI
 import Kingfisher
-import FirebaseAuth
-import FirebaseFirestore
 import Combine
+import Supabase
 
 struct TicketGridItem: View {
     let ticketWithEvent: TicketWithEventData
@@ -36,8 +35,6 @@ struct TicketGridItem: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.9)
                 
-                
-                
                 if let startTime = ticketWithEvent.event.startTime {
                     Text(formatDate(startTime))
                         .appCaption()
@@ -66,7 +63,7 @@ struct TicketsView: View {
     @State private var selectedFilter: Int = 0
     @State private var showTicketsAnimation = false
     @State private var showEmptyStateAnimation = false
-    @State private var isLoadingTicketsAfterSignIn = false
+    @State private var isLoadingTicketsAfterSignIn = false // State variable retained for manual loading control
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -80,11 +77,12 @@ struct TicketsView: View {
             if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
                 result.append(TicketWithEventData(ticket: ticket, event: event))
             } else {
+                // Creates a placeholder event using denormalized data from the ticket
                 let placeholderEvent = Event(
                     name: ticket.eventName,
                     venue: ticket.venue,
                     startTime: ticket.startTime,
-                    price: ticket.totalPrice,
+                    price: ticket.totalPrice ?? 0.0,
                     maxTickets: 100,
                     ticketsSold: 0,
                     imageUrl: "",
@@ -149,40 +147,54 @@ struct TicketsView: View {
         .navigationBarHidden(true)
         .onAppear {
             appState.syncBurnerModeAuthorization()
+            
+            // 1. Fetch tickets if the user is logged in
+            if appState.authService.currentUser != nil {
+                ticketsViewModel.fetchUserTickets()
+            }
 
+            // 2. Handle initial animation if data is already loaded
             if !ticketsViewModel.tickets.isEmpty {
                 withAnimation(.easeOut(duration: 0.5)) {
                     showTicketsAnimation = true
                 }
             }
         }
-        .onChange(of: ticketsViewModel.tickets.count) { oldCount, newCount in
-            if newCount > 0 {
-                showTicketsAnimation = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    withAnimation(.easeOut(duration: 0.5).delay(0.1)) {
-                        showTicketsAnimation = true
-                    }
-                }
-            }
+        .onDisappear {
+            // Stop real-time connection when the view is not visible
+            ticketsViewModel.cleanup()
         }
-        .onChange(of: Auth.auth().currentUser?.uid) { oldValue, newValue in
-            if newValue != nil && oldValue == nil {
+        
+        // --- FIX: Simplify Sign-in/Sign-out Logic ---
+        .onChange(of: appState.authService.currentUser) { _, newUser in
+            if newUser != nil {
+                // User just signed in: Start loading animation and fetch
                 showTicketsAnimation = false
                 isLoadingTicketsAfterSignIn = true
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    ticketsViewModel.fetchUserTickets()
-                }
-            } else if newValue == nil && oldValue != nil {
+                ticketsViewModel.fetchUserTickets()
+            } else {
+                // User signed out: Stop observation and clear view
                 showTicketsAnimation = false
                 isLoadingTicketsAfterSignIn = false
+                ticketsViewModel.cleanup()
             }
         }
-        .onChange(of: ticketsViewModel.isLoading) { oldValue, newValue in
+        .onChange(of: ticketsViewModel.isLoading) { _, newValue in
+            // Stop sign-in loading flag when the VM is no longer loading
             if isLoadingTicketsAfterSignIn && !newValue {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     isLoadingTicketsAfterSignIn = false
+                }
+            }
+        }
+        .onChange(of: ticketsViewModel.tickets.count) { oldCount, newCount in
+            // Re-trigger animation on data change (especially for real-time updates)
+            if (oldCount == 0 && newCount > 0) || (oldCount > 0 && newCount == 0) {
+                showTicketsAnimation = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.easeOut(duration: 0.5)) {
+                        showTicketsAnimation = true
+                    }
                 }
             }
         }
@@ -197,18 +209,16 @@ struct TicketsView: View {
 
             Spacer()
             Button(action: {
-                if Auth.auth().currentUser == nil {
-                       coordinator.showSignIn()
-                   } else {
-                       coordinator.ticketsPath.append(NavigationDestination.settings)
-                   }
+                if appState.authService.currentUser == nil {
+                    coordinator.showSignIn()
+                } else {
+                    coordinator.ticketsPath.append(NavigationDestination.settings)
+                }
             }) {
                 ZStack {
-
                     Image("settings")
                         .appCard()
                         .frame(width: 38, height: 38)
-
                 }
             }
         }
@@ -219,7 +229,7 @@ struct TicketsView: View {
     
     private var emptyStateView: some View {
         Group {
-            if Auth.auth().currentUser == nil {
+            if appState.authService.currentUser == nil {
                 signedOutEmptyState
             } else {
                 noTicketsEmptyState

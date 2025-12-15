@@ -1,16 +1,14 @@
-//
-//  PaymentSettingsView.swift
-//  burner
-//
-//  Created by Sid Rao on 19/09/2025.
-//
 
 import SwiftUI
-import FirebaseAuth
 @_spi(STP) import StripePaymentSheet
 
 struct PaymentSettingsView: View {
-    @StateObject private var paymentService = StripePaymentService()
+    @EnvironmentObject var appState: AppState
+    
+    private var paymentService: StripePaymentService {
+        appState.stripePaymentService
+    }
+    
     @State private var showAddCard = false
     @State private var cardParams: STPPaymentMethodCardParams?
     @State private var isCardValid = false
@@ -185,7 +183,7 @@ struct PaymentSettingsView: View {
 
     // MARK: - Fetch methods with logging/timer
     private func loadPaymentMethods(reason: String = "onAppear") {
-        guard Auth.auth().currentUser != nil else {
+        guard appState.authService.currentUser != nil else {
             startFetchLog(reason)
             logFetch("SKIP: No authenticated user")
             return
@@ -238,8 +236,6 @@ struct PaymentSettingsView: View {
                     alertMessage = "Payment method added successfully"
                     showAlert = true
                 }
-                // Optional: refresh with logging
-                // loadPaymentMethods(reason: "post-save refresh")
             } catch {
                 await MainActor.run {
                     isLoading = false
@@ -256,11 +252,9 @@ struct PaymentSettingsView: View {
         Task {
             do {
                 try await paymentService.deletePaymentMethod(paymentMethodId: paymentMethodId)
-                // End loading state so our load guard passes
                 await MainActor.run {
                     isLoading = false
                 }
-                // Refresh the payment methods list after deletion with logging
                 loadPaymentMethods(reason: "post-delete refresh")
             } catch {
                 await MainActor.run {
@@ -284,8 +278,6 @@ struct PaymentSettingsView: View {
                     alertMessage = "Default payment method updated"
                     showAlert = true
                 }
-                // Optional: refresh with logging
-                // loadPaymentMethods(reason: "post-setDefault refresh")
             } catch {
                 await MainActor.run {
                     isLoading = false

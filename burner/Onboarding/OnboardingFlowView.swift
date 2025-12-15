@@ -747,9 +747,7 @@ struct EventMosaicCarousel: View {
             Rectangle()
                 .fill(Color.white.opacity(0.03))
                 .frame(height: 180)
-                .overlay {
-                    ProgressView().tint(.white)
-                }
+               
         } else {
             // Split the 9 unique images into 3 rows of 3 images each
             let row1Images = Array(uniqueImages.prefix(rowOneMax))

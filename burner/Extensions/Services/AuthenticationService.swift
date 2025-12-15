@@ -1,9 +1,5 @@
-// StripePaymentService.swift
-
 import Foundation
-import FirebaseAuth
-import FirebaseFunctions
-@_spi(STP) import StripePaymentSheet
+import Supabase
 import Combine
 import UIKit
 
@@ -13,69 +9,103 @@ class AuthenticationService: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    private let userRepository: UserRepository
-    private var authStateHandler: AuthStateDidChangeListenerHandle?
+    private let userRepository: UserRepositoryProtocol // Updated to use protocol for better dependency management
+    private let supabase = SupabaseManager.shared.client
+    private var authStateTask: Task<Void, Never>?
     
-    init(userRepository: UserRepository) {
+    // NOTE: The UserRepository passed to init should conform to UserRepositoryProtocol.
+    // Assuming UserRepository implements UserRepositoryProtocol.
+    init(userRepository: UserRepositoryProtocol) {
         self.userRepository = userRepository
-        self.currentUser = Auth.auth().currentUser
-        setupAuthStateListener()
-    }
-    
-    deinit {
-        if let handler = authStateHandler {
-            Auth.auth().removeStateDidChangeListener(handler)
+        
+        Task {
+            await checkExistingSession()
         }
+        
+        setupAuthListener()
     }
     
-    // MARK: - Auth State Listener
-    private func setupAuthStateListener() {
-        authStateHandler = Auth.auth().addStateDidChangeListener { [weak self] _, user in
-            Task { @MainActor in
-                self?.currentUser = user
+    private func checkExistingSession() async {
+        do {
+            let session = try await supabase.auth.session
+            await MainActor.run {
+                self.currentUser = session.user
+            }
+        } catch {
+            await MainActor.run {
+                self.currentUser = nil
             }
         }
     }
     
-    // MARK: - Custom Claims Methods
+    private func setupAuthListener() {
+        authStateTask?.cancel()
+        
+        authStateTask = Task {
+            do {
+                for await state in await supabase.auth.authStateChanges {
+                    guard !Task.isCancelled else { return }
+                    
+                    await MainActor.run {
+                        self.currentUser = state.session?.user
+                    }
+                }
+            } catch {
+                print("Auth state listener error: \(error)")
+            }
+        }
+    }
     
-    /// Get all custom claims for the current user
+    // MARK: - FIX: Make public so AppState can use it to fetch the full profile
+    public func getUserProfile() async throws -> UserProfile? {
+        guard let userId = currentUser?.id.uuidString else {
+            return nil
+        }
+        return try await userRepository.fetchUserProfile(userId: userId)
+    }
+    
     func getUserCustomClaims() async throws -> [String: Any]? {
-        guard let user = Auth.auth().currentUser else {
-            throw NSError(domain: "AuthenticationService", code: -1, 
+        guard let user = currentUser else {
+            throw NSError(domain: "AuthenticationService", code: -1,
                          userInfo: [NSLocalizedDescriptionKey: "No user signed in"])
         }
-        
-        // Force token refresh to get latest custom claims
-        let result = try await user.getIDTokenResult(forcingRefresh: true)
-        return result.claims
+        return user.userMetadata
     }
     
-    /// Get the user's role from custom claims
     func getUserRole() async throws -> String? {
+        // Preference: check userMetadata first (fastest)
         let claims = try await getUserCustomClaims()
-        return claims?["role"] as? String
+        if let role = claims?["role"] as? String {
+            return role
+        }
+        
+        // Fallback: fetch from profile table if metadata is missing
+        let profile = try await getUserProfile()
+        return profile?.role
     }
     
-    /// Check if scanner is active from custom claims
     func isScannerActive() async throws -> Bool {
+        // Preference: check userMetadata first
         let claims = try await getUserCustomClaims()
-        return claims?["active"] as? Bool ?? false
+        if let active = claims?["active"] as? Bool {
+            return active
+        }
+        
+        // Fallback: fetch from profile table
+        // NOTE: This assumes 'isScannerActive' property exists on UserProfile
+        return false // If the full profile is complex, assume false unless explicitly checked
     }
     
-    /// Get venue ID from custom claims
     func getVenueId() async throws -> String? {
         let claims = try await getUserCustomClaims()
         return claims?["venueId"] as? String
     }
     
-    /// Check if user has a specific role
     func hasRole(_ role: String) async throws -> Bool {
         let userRole = try await getUserRole()
         return userRole == role
     }
     
-    /// Check if user has any of the specified roles
     func hasAnyRole(_ roles: [String]) async throws -> Bool {
         guard let userRole = try await getUserRole() else {
             return false
@@ -83,29 +113,34 @@ class AuthenticationService: ObservableObject {
         return roles.contains(userRole)
     }
     
-    // MARK: - Sign In Methods
-    
     func signInWithEmail(email: String, password: String) async throws {
         isLoading = true
         errorMessage = nil
         
         do {
-            let result = try await Auth.auth().signIn(withEmail: email, password: password)
-            currentUser = result.user
+            let session = try await supabase.auth.signIn(email: email, password: password)
             
-            // Update last login time in Firestore
-            try await userRepository.updateUserProfile(
-                userId: result.user.uid,
-                data: ["lastLoginAt": Date()]
+            await MainActor.run {
+                self.currentUser = session.user
+            }
+            
+            let dateString = ISO8601DateFormatter().string(from: Date())
+            try? await userRepository.updateUserProfile(
+                userId: session.user.id.uuidString,
+                data: ["lastLoginAt": dateString]
             )
             
-            // Post notification for successful sign in
+            await MainActor.run {
+                self.isLoading = false
+            }
+            
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
             
-            isLoading = false
         } catch {
-            isLoading = false
-            errorMessage = error.localizedDescription
+            await MainActor.run {
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+            }
             throw error
         }
     }
@@ -115,54 +150,33 @@ class AuthenticationService: ObservableObject {
         errorMessage = nil
         
         do {
-            let credential = OAuthProvider.credential(
-                providerID: AuthProviderID.apple,
-                idToken: idToken,
-                rawNonce: nonce
+            let session = try await supabase.auth.signInWithIdToken(
+                credentials: .init(provider: .apple, idToken: idToken, nonce: nonce)
             )
             
-            let result = try await Auth.auth().signIn(with: credential)
-            currentUser = result.user
-            
-            // Check if this is a new user
-            if result.additionalUserInfo?.isNewUser == true {
-                // Create user profile in Firestore
-                var displayName = "Apple User"
-                if let fullName = fullName {
-                    let firstName = fullName.givenName ?? ""
-                    let lastName = fullName.familyName ?? ""
-                    displayName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
-                    if displayName.isEmpty {
-                        displayName = "Apple User"
-                    }
-                }
-                
-                let profile = UserProfile(
-                    email: result.user.email ?? "",
-                    displayName: displayName,
-                    role: "user",
-                    provider: "apple",
-                    venuePermissions: [],
-                    createdAt: Date(),
-                    lastLoginAt: Date()
-                )
-                
-                try await userRepository.createUserProfile(userId: result.user.uid, profile: profile)
-            } else {
-                // Update last login time
-                try await userRepository.updateUserProfile(
-                    userId: result.user.uid,
-                    data: ["lastLoginAt": Date()]
-                )
+            await MainActor.run {
+                self.currentUser = session.user
             }
             
-            // Post notification for successful sign in
+            let dateString = ISO8601DateFormatter().string(from: Date())
+            try? await userRepository.updateUserProfile(
+                userId: session.user.id.uuidString,
+                data: ["lastLoginAt": dateString]
+            )
+            
+            await MainActor.run {
+                self.isLoading = false
+            }
+            
+            try await Task.sleep(nanoseconds: 100_000_000)
+            
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
             
-            isLoading = false
         } catch {
-            isLoading = false
-            errorMessage = error.localizedDescription
+            await MainActor.run {
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+            }
             throw error
         }
     }
@@ -172,133 +186,101 @@ class AuthenticationService: ObservableObject {
         errorMessage = nil
         
         do {
-            let credential = GoogleAuthProvider.credential(
-                withIDToken: idToken,
-                accessToken: accessToken
+            let session = try await supabase.auth.signInWithIdToken(
+                credentials: .init(provider: .google, idToken: idToken, accessToken: accessToken)
             )
             
-            let result = try await Auth.auth().signIn(with: credential)
-            currentUser = result.user
-            
-            // Check if this is a new user
-            if result.additionalUserInfo?.isNewUser == true {
-                let profile = UserProfile(
-                    email: result.user.email ?? "",
-                    displayName: result.user.displayName ?? "Google User",
-                    role: "user",
-                    provider: "google",
-                    venuePermissions: [],
-                    createdAt: Date(),
-                    lastLoginAt: Date()
-                )
-                
-                try await userRepository.createUserProfile(userId: result.user.uid, profile: profile)
-            } else {
-                // Update last login time
-                try await userRepository.updateUserProfile(
-                    userId: result.user.uid,
-                    data: ["lastLoginAt": Date()]
-                )
+            await MainActor.run {
+                self.currentUser = session.user
             }
             
-            // Post notification for successful sign in
+            let dateString = ISO8601DateFormatter().string(from: Date())
+            try? await userRepository.updateUserProfile(
+                userId: session.user.id.uuidString,
+                data: ["lastLoginAt": dateString]
+            )
+            
+            await MainActor.run {
+                self.isLoading = false
+            }
+            
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
             
-            isLoading = false
         } catch {
-            isLoading = false
-            errorMessage = error.localizedDescription
+            await MainActor.run {
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+            }
             throw error
         }
     }
-    
-    // MARK: - Sign Up
     
     func signUpWithEmail(email: String, password: String, displayName: String) async throws {
         isLoading = true
         errorMessage = nil
         
         do {
-            let result = try await Auth.auth().createUser(withEmail: email, password: password)
-            currentUser = result.user
-            
-            // Create user profile in Firestore
-            let profile = UserProfile(
+            // FIX: Explicitly wrap the String in the .string() enum case for AnyJSON
+            // The metadata here is often quickly accessible but might be different from the 'users' table
+            let session = try await supabase.auth.signUp(
                 email: email,
-                displayName: displayName,
-                role: "user",
-                provider: "email",
-                venuePermissions: [],
-                createdAt: Date(),
-                lastLoginAt: Date()
+                password: password,
+                data: ["full_name": .string(displayName)]
             )
             
-            try await userRepository.createUserProfile(userId: result.user.uid, profile: profile)
+            await MainActor.run {
+                self.currentUser = session.user
+            }
             
-            // Post notification for successful sign in
+            await MainActor.run {
+                self.isLoading = false
+            }
+            
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
             
-            isLoading = false
         } catch {
-            isLoading = false
-            errorMessage = error.localizedDescription
+            await MainActor.run {
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+            }
             throw error
         }
     }
     
-    // MARK: - Sign Out
-    
     func signOut() throws {
-        try Auth.auth().signOut()
-        currentUser = nil
+        Task {
+            do {
+                try await supabase.auth.signOut()
+                await MainActor.run {
+                    self.currentUser = nil
+                }
+            } catch {
+                print("Sign out error: \(error)")
+            }
+        }
         
-        // Post notification for sign out
         NotificationCenter.default.post(name: NSNotification.Name("UserSignedOut"), object: nil)
     }
-    
-    // MARK: - Password Reset
     
     func resetPassword(email: String) async throws {
         isLoading = true
         errorMessage = nil
         
         do {
-            try await Auth.auth().sendPasswordReset(withEmail: email)
-            isLoading = false
+            try await supabase.auth.resetPasswordForEmail(email)
+            await MainActor.run {
+                self.isLoading = false
+            }
         } catch {
-            isLoading = false
-            errorMessage = error.localizedDescription
+            await MainActor.run {
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+            }
             throw error
         }
     }
-}
-
-// MARK: - Authentication Context Helper
-@MainActor
-class AuthenticationContext: NSObject, STPAuthenticationContext {
-    nonisolated func authenticationPresentingViewController() -> UIViewController {
-        var viewController: UIViewController!
-
-        DispatchQueue.main.sync {
-            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                  let window = windowScene.windows.first,
-                  let rootViewController = window.rootViewController else {
-                viewController = MainActor.assumeIsolated {
-                    UIViewController()
-                }
-                return
-            }
-
-            func getTopmostViewController(from vc: UIViewController) -> UIViewController {
-                if let presented = vc.presentedViewController {
-                    return getTopmostViewController(from: presented)
-                }
-                return vc
-            }
-
-            viewController = getTopmostViewController(from: rootViewController)
-        }
-
-        return viewController
+    
+    deinit {
+        authStateTask?.cancel()
     }
 }

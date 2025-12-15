@@ -32,7 +32,7 @@ enum NavigationDestination: Hashable {
     case eventById(String)
     case filteredEvents(EventSectionDestination)
 
-    case ticketDetail(TicketWithEventData)
+    case ticketDetail(TicketWithEventData, shouldAnimate: Bool = false)
     case ticketById(String)
     case ticketPurchase(Event)
     case transferTicket(Ticket)
@@ -58,7 +58,7 @@ enum NavigationDestination: Hashable {
         case .filteredEvents(let destination):
             hasher.combine("filteredEvents")
             hasher.combine(destination.title)
-        case .ticketDetail(let ticketWithEvent):
+        case .ticketDetail(let ticketWithEvent, _):
             hasher.combine("ticketDetail")
             hasher.combine(ticketWithEvent.ticket.id)
         case .ticketById(let id):
@@ -102,7 +102,7 @@ enum NavigationDestination: Hashable {
             return id1 == id2
         case (.filteredEvents(let lDest), .filteredEvents(let rDest)):
             return lDest == rDest
-        case (.ticketDetail(let lTicketWithEvent), .ticketDetail(let rTicketWithEvent)):
+        case (.ticketDetail(let lTicketWithEvent, _), .ticketDetail(let rTicketWithEvent, _)):
             return lTicketWithEvent.ticket.id == rTicketWithEvent.ticket.id
         case (.ticketById(let lId), .ticketById(let rId)):
             return lId == rId
@@ -136,7 +136,6 @@ enum NavigationDestination: Hashable {
 
 enum ModalPresentation: Identifiable {
     case signIn
-    // ✅ FIXED: Add completion closure to handle post-dismiss logic
     case burnerSetup(() -> Void)
     case ticketPurchase(Event)
     case transferTicket(TicketWithEventData)
@@ -147,7 +146,6 @@ enum ModalPresentation: Identifiable {
     var id: String {
         switch self {
         case .signIn: return "signIn"
-        // ✅ FIXED: Update id to ignore closure, keeping the identifier static
         case .burnerSetup: return "burnerSetup"
         case .ticketPurchase(let event): return "ticketPurchase-\(event.id ?? "")"
         case .transferTicket(let ticketWithEvent): return "transferTicket-\(ticketWithEvent.ticket.id ?? "")"
@@ -325,18 +323,16 @@ class NavigationCoordinator: ObservableObject {
         present(.signIn)
     }
 
-    // ✅ FIXED: Updated to accept a completion handler
     func showBurnerSetup(onCompletion: @escaping () -> Void = {}) {
         present(.burnerSetup(onCompletion))
     }
 
-    // MODIFIED: Push onto the currently selected tab's path
     func purchaseTicket(for event: Event) {
         navigate(to: .ticketPurchase(event), in: selectedTab)
     }
 
     func viewTicketDetail(_ ticket: Ticket, ticketWithEvent: TicketWithEventData) {
-        navigate(to: .ticketDetail(ticketWithEvent))
+        navigate(to: .ticketDetail(ticketWithEvent, shouldAnimate: false))
     }
 
     func shareEvent(_ event: Event) {
