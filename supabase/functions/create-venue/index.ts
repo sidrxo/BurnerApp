@@ -1,4 +1,5 @@
-import { serve } from "std/http/server.ts"
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
+
 import { corsHeaders } from "../_shared/cors.ts"
 import { createAdminClient } from "../_shared/supabase.ts"
 import { verifyAdminPermission } from "../_shared/permissions.ts"

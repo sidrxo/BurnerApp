@@ -16,10 +16,8 @@ struct ScannerView: View {
     @State private var showingAlreadyUsed = false
     @State private var alreadyUsedDetails: AlreadyUsedTicket?
     @State private var isProcessing = false
-    // REMOVED: @State private var userRole: String = "" // Now using appState.userRole
     @State private var manualTicketNumber: String = ""
     @State private var showManualEntry = false
-    // REMOVED: @State private var isScannerActive = false
     @State private var isCheckingScanner = true // Keep this to prevent UI flash
     @State private var selectedEvent: Event?
     @State private var todaysEvents: [Event] = []
@@ -163,7 +161,7 @@ struct ScannerView: View {
                         Button("SUBMIT") {
                             if !manualTicketNumber.isEmpty {
                                 showManualEntry = false
-                                validateAndScanTicket(ticketId: manualTicketNumber)
+                                validateAndScanTicket(ticketNumber: manualTicketNumber)
                             }
                         }
                         .appBody()
@@ -185,8 +183,7 @@ struct ScannerView: View {
             }
         }
         .onAppear {
-            // REMOVED: fetchUserRoleFromClaims()
-            checkScannerAccessFromClaims() // Remains, but only flags loading finished
+            checkScannerAccessFromClaims()
             fetchTodaysEvents()
             loadPersistedEventSelection()
         }
@@ -427,10 +424,6 @@ struct ScannerView: View {
             }
         }
     }
-
-    private func fetchUserRoleFromClaims() {
-        // REMOVED: This function is now redundant as AppState should manage the role
-    }
     
     private func handleScan(result: Result<ScanResult, ScanError>) {
         self.isScanning = false
@@ -445,28 +438,8 @@ struct ScannerView: View {
         }
     }
     
-    private func extractTicketId(from qrData: String) -> String? {
-        if let url = URL(string: qrData),
-            (url.host == "partypass.com" || url.host == "www.partypass.com"),
-            url.pathComponents.contains("ticket") {
-            
-            if let ticketId = url.pathComponents.last, ticketId.count > 10 {
-                return ticketId
-            }
-        }
-        
-        if let data = qrData.data(using: .utf8),
-            let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-            let type = json["type"] as? String, type == "EVENT_TICKET",
-            let ticketId = json["ticketId"] as? String {
-            
-            return ticketId
-        }
-        
-        return nil
-    }
     
-    private func validateAndScanTicket(qrCodeData: String? = nil, ticketId: String? = nil) {
+    private func validateAndScanTicket(qrCodeData: String? = nil, ticketNumber: String? = nil) {
         guard !isProcessing else { return }
         
         guard let selectedEvent = selectedEvent, let eventId = selectedEvent.id else {
@@ -476,25 +449,30 @@ struct ScannerView: View {
             return
         }
 
-        var finalTicketId: String = ""
-        var isTicketNumber: Bool = false
-
-        if let id = ticketId {
-            finalTicketId = id
-            if id.starts(with: "TKT") && id.count > 10 {
-                isTicketNumber = true
-            }
-        } else if let qrData = qrCodeData, let extracted = extractTicketId(from: qrData) {
-            finalTicketId = extracted
+        // Build request data - minimal required parameters
+        var data: [String: String] = [:]
+        var identifierType: String = ""
+        
+        if let qrData = qrCodeData, let ticketId = extractTicketId(from: qrData) {
+            // QR scan - send UUID only
+            data["ticket_id"] = ticketId
+            identifierType = "UUID"
+            print("🔍 QR Scan - UUID: \(ticketId)")
+        } else if let ticketNum = ticketNumber, !ticketNum.isEmpty {
+            // Manual entry - send ticket number + event ID for context
+            data["ticket_number"] = ticketNum
+            data["event_id"] = eventId
+            identifierType = "Ticket Number"
+            print("🔍 Manual Entry - Ticket: \(ticketNum), Event: \(eventId)")
         } else {
-            errorMessage = "Invalid QR Code or Ticket ID"
+            errorMessage = "Invalid QR Code or Ticket Number"
             showingError = true
             self.isScanning = false
             return
         }
 
-        guard !finalTicketId.isEmpty else {
-            errorMessage = "Invalid ticket ID"
+        guard !data.isEmpty else {
+            errorMessage = "No valid ticket identifier found"
             showingError = true
             self.isScanning = false
             return
@@ -503,44 +481,29 @@ struct ScannerView: View {
         isProcessing = true
         self.isScanning = false
 
-        // FIX: Define dictionary strictly as [String: String] to satisfy Encodable
-        var data: [String: String] = [
-            "eventId": eventId
-        ]
-        
-        if let qrData = qrCodeData {
-            data["qrCodeData"] = qrData
-        }
-        
-        if isTicketNumber {
-            data["ticketNumber"] = finalTicketId
-        } else {
-            data["ticketId"] = finalTicketId
-        }
-
         Task {
             do {
-                // FIX: Use unlabeled first argument for name, and 'options:' for the body
-                // Return Data explicitly to allow manual JSON parsing
+                print("📤 Sending scan request:", data)
+                
                 let responseData: Data = try await client.functions.invoke(
                     "scan-ticket",
-                    options: FunctionInvokeOptions(
-                        body: data
-                    )
+                    options: FunctionInvokeOptions(body: data)
                 )
                 
-                // Manually parse the JSON response from Data
-                guard let data = try? JSONSerialization.jsonObject(with: responseData, options: []) as? [String: Any] else {
-                    throw NSError(domain: "SupabaseFunction", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid function response format"])
+                // Parse response
+                guard let jsonData = try? JSONSerialization.jsonObject(with: responseData, options: []) as? [String: Any] else {
+                    throw NSError(domain: "Scanner", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response format"])
                 }
+
+                print("📥 Scan response:", jsonData)
 
                 await MainActor.run {
                     self.isProcessing = false
                     self.manualTicketNumber = ""
                     
-                    let success = data["success"] as? Bool ?? false
-                    let message = data["message"] as? String ?? ""
-                    let ticketStatus = data["ticketStatus"] as? String ?? ""
+                    let success = jsonData["success"] as? Bool ?? false
+                    let message = jsonData["message"] as? String ?? "No message"
+                    let ticketStatus = jsonData["ticketStatus"] as? String ?? ""
 
                     if success {
                         self.successMessage = message
@@ -548,32 +511,8 @@ struct ScannerView: View {
                         let generator = UINotificationFeedbackGenerator()
                         generator.notificationOccurred(.success)
                     } else if ticketStatus == "used" {
-                        if let ticketData = data["ticket"] as? [String: Any],
-                           let scannedAt = data["usedAt"] as? String,
-                           let scannedByName = data["scannedByName"] as? String {
-
-                            let eventName = ticketData["eventName"] as? String ?? "Unknown Event"
-                            let userName = ticketData["userName"] as? String ?? "Unknown"
-                            let ticketNumber = ticketData["ticketNumber"] as? String ?? "N/A"
-                            let scannedByEmail = data["scannedByEmail"] as? String
-
-                            let formattedTime = self.formatScanTime(scannedAt)
-
-                            self.alreadyUsedDetails = AlreadyUsedTicket(
-                                ticketNumber: ticketNumber,
-                                eventName: eventName,
-                                userName: userName,
-                                scannedAt: formattedTime,
-                                scannedBy: scannedByName,
-                                scannedByEmail: scannedByEmail
-                            )
-                            self.showingAlreadyUsed = true
-                            let generator = UINotificationFeedbackGenerator()
-                            generator.notificationOccurred(.error)
-                        } else {
-                            self.errorMessage = "Ticket used, but details missing."
-                            self.showingError = true
-                        }
+                        // Parse already used details
+                        self.handleAlreadyUsedTicket(jsonData: jsonData)
                     } else {
                         self.errorMessage = message
                         self.showingError = true
@@ -583,24 +522,92 @@ struct ScannerView: View {
                 }
             } catch {
                 await MainActor.run {
-                    self.isProcessing = false
-                    self.manualTicketNumber = ""
-                    self.isScanning = false
-                    
-                    let errorMsg = error.localizedDescription
-                    if errorMsg.contains("Ticket not found") {
-                        self.errorMessage = "Ticket not found. Please check the ticket ID and try again."
-                    } else if errorMsg.contains("Permission denied") {
-                        self.errorMessage = "You don't have permission to scan tickets at this venue."
-                    } else {
-                        self.errorMessage = "Validation failed: \(errorMsg)"
-                    }
-                    self.showingError = true
-                    let generator = UINotificationFeedbackGenerator()
-                    generator.notificationOccurred(.error)
+                    self.handleScanError(error: error)
                 }
             }
         }
+    }
+
+    // Helper function for already used tickets
+    private func handleAlreadyUsedTicket(jsonData: [String: Any]) {
+        if let scannedBy = jsonData["scannedBy"] as? String,
+           let scannedAt = jsonData["scannedAt"] as? String {
+            
+            let scannedByEmail = jsonData["scannedByEmail"] as? String
+            let userName = jsonData["userName"] as? String ?? "Guest"
+            let ticketNum = jsonData["ticketNumber"] as? String ?? "Unknown"
+            let eventName = selectedEvent?.name ?? "Unknown Event"
+            
+            let formattedTime = self.formatScanTime(scannedAt)
+            
+            self.alreadyUsedDetails = AlreadyUsedTicket(
+                ticketNumber: ticketNum,
+                eventName: eventName,
+                userName: userName,
+                scannedAt: formattedTime,
+                scannedBy: scannedBy,
+                scannedByEmail: scannedByEmail
+            )
+            self.showingAlreadyUsed = true
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.error)
+        } else {
+            self.errorMessage = "Ticket already used"
+            self.showingError = true
+        }
+    }
+
+    // Helper function for error handling
+    private func handleScanError(error: Error) {
+        self.isProcessing = false
+        self.manualTicketNumber = ""
+        self.isScanning = false
+        
+        let errorMsg = error.localizedDescription
+        print("❌ Scan error:", errorMsg)
+        
+        // User-friendly error messages
+        if errorMsg.contains("Ticket not found") {
+            self.errorMessage = "Ticket not found. Please check the ticket and try again."
+        } else if errorMsg.contains("Permission denied") {
+            self.errorMessage = "You don't have permission to scan tickets at this venue."
+        } else if errorMsg.contains("Invalid parameters") {
+            self.errorMessage = "Invalid ticket format. Please try again."
+        } else if errorMsg.contains("Event is sold out") {
+            self.errorMessage = "This event is sold out."
+        } else if errorMsg.contains("Unauthenticated") {
+            self.errorMessage = "Please sign in to scan tickets."
+        } else {
+            self.errorMessage = "Scan failed: \(errorMsg)"
+        }
+        
+        self.showingError = true
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.error)
+    }
+
+    // Also update extractTicketId to return only UUID
+    private func extractTicketId(from qrData: String) -> String? {
+      
+        if let data = qrData.data(using: .utf8),
+           let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+           let type = json["type"] as? String, type == "EVENT_TICKET" {
+            
+            // Return ticket_id (UUID) from QR code
+            if let ticketId = json["ticket_id"] as? String {
+                return ticketId
+            } else if let ticketId = json["ticketId"] as? String {
+                return ticketId // Fallback for old QR codes
+            }
+        }
+        
+        // Check if it's already a UUID (contains hyphens and proper length)
+        if qrData.contains("-") && qrData.count == 36 {
+            // Looks like a UUID
+            return qrData
+        }
+        
+        return nil
     }
     
     private func fetchTodaysEvents() {

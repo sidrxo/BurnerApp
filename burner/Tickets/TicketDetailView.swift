@@ -39,9 +39,8 @@ struct TicketDetailView: View {
                             axis: (x: 0, y: 1, z: 0)
                         )
 
-                    ScreenshotProtect {
                         simpleTicketView
-                    }
+                    
                     .opacity(flipped ? 0 : 1)
                     .rotation3DEffect(
                         flipped ? Angle(degrees: 180) : Angle(degrees: 0),

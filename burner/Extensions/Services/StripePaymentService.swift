@@ -33,7 +33,6 @@ class StripePaymentService: NSObject, ObservableObject {
         let expYear: Int
         let isDefault: Bool
         
-        // Stripe API returns snake_case, so we map it here
         enum CodingKeys: String, CodingKey {
             case id, brand, last4
             case expMonth = "exp_month"
@@ -54,42 +53,52 @@ class StripePaymentService: NSObject, ObservableObject {
         }
     }
     
-    // FIX: Mapped to snake_case 'payment_intent_id' to resolve "Missing paymentIntentId" error
     struct ConfirmPurchaseRequest: Encodable {
         let paymentIntentId: String
-            }
-    
-    // MATCHES TS: create-payment-intent expects camelCase 'eventId'
-    struct CreateIntentRequest: Encodable {
-        let eventId: String
-        // No CodingKeys needed; defaults to camelCase 'eventId'
+        
+        enum CodingKeys: String, CodingKey {
+            case paymentIntentId = "payment_intent_id"
+        }
     }
     
+    struct CreateIntentRequest: Encodable {
+        let eventId: String
+    }
+    
+    // UPDATED: Added ticketNumber field
     struct PaymentResult {
         let success: Bool
         let message: String
         let ticketId: String?
+        let ticketNumber: String?
+        
+        init(success: Bool, message: String, ticketId: String? = nil, ticketNumber: String? = nil) {
+            self.success = success
+            self.message = message
+            self.ticketId = ticketId
+            self.ticketNumber = ticketNumber
+        }
     }
     
     // MARK: - Response Structs
     
-    // MATCHES TS: create-payment-intent returns camelCase keys
     struct CreateIntentResponse: Decodable {
         let clientSecret: String
         let paymentIntentId: String
         let amount: Double
-        
-        // No CodingKeys needed; defaults to camelCase
     }
     
+    // UPDATED: Added ticketNumber field
     struct ConfirmPurchaseResponse: Decodable {
         let success: Bool
-        let ticketId: String?  // This will map to 'ticket_id' from Edge Function
+        let ticketId: String?
+        let ticketNumber: String?
         let message: String?
         
         enum CodingKeys: String, CodingKey {
             case success, message
-            case ticketId = "ticket_id" // Likely snake_case from DB
+            case ticketId = "ticketId"
+            case ticketNumber = "ticketNumber"
         }
     }
     
@@ -152,14 +161,6 @@ class StripePaymentService: NSObject, ObservableObject {
         }
     }
     
-    func clearPreparedIntent() {
-        preparationTask?.cancel()
-        preparedClientSecret = nil
-        preparedIntentId = nil
-        preparedEventId = nil
-        isPreparing = false
-    }
-
     private func withPaymentIntent(
         eventId: String,
         usePreparedIfAvailable: Bool = false
@@ -174,9 +175,6 @@ class StripePaymentService: NSObject, ObservableObject {
                 self.preparedIntentId = nil
                 self.preparedEventId = nil
             }
-            // Re-fetch to ensure we have the latest amount/status if needed,
-            // or return the cached values if you trust them.
-            // For safety with the amount check, we re-create or re-fetch.
             return try await createPaymentIntent(eventId: eventId)
 
         } else {
@@ -200,7 +198,8 @@ class StripePaymentService: NSObject, ObservableObject {
             completion(PaymentResult(
                 success: false,
                 message: paymentError.errorDescription ?? error.localizedDescription,
-                ticketId: nil
+                ticketId: nil,
+                ticketNumber: nil
             ))
             return
         }
@@ -210,7 +209,8 @@ class StripePaymentService: NSObject, ObservableObject {
             completion(PaymentResult(
                 success: false,
                 message: "Payment was not completed",
-                ticketId: nil
+                ticketId: nil,
+                ticketNumber: nil
             ))
             return
         }
@@ -231,7 +231,8 @@ class StripePaymentService: NSObject, ObservableObject {
             completion(PaymentResult(
                 success: false,
                 message: PaymentError.processingError.errorDescription ?? "Payment processing error",
-                ticketId: nil
+                ticketId: nil,
+                ticketNumber: nil
             ))
         }
     }
@@ -280,7 +281,12 @@ class StripePaymentService: NSObject, ObservableObject {
                     self.isPaymentSheetReady = false
                     self.errorMessage = msg
                 }
-                completion(PaymentResult(success: false, message: "Setup failed: \(msg)", ticketId: nil))
+                completion(PaymentResult(
+                    success: false,
+                    message: "Setup failed: \(msg)",
+                    ticketId: nil,
+                    ticketNumber: nil
+                ))
             }
         }
     }
@@ -293,12 +299,27 @@ class StripePaymentService: NSObject, ObservableObject {
                     let ticketResult = try await confirmPurchase(paymentIntentId: paymentIntentId)
                     completion(ticketResult)
                 case .canceled:
-                    completion(PaymentResult(success: false, message: "Payment was cancelled", ticketId: nil))
+                    completion(PaymentResult(
+                        success: false,
+                        message: "Payment was cancelled",
+                        ticketId: nil,
+                        ticketNumber: nil
+                    ))
                 case .failed(let error):
-                    completion(PaymentResult(success: false, message: error.localizedDescription, ticketId: nil))
+                    completion(PaymentResult(
+                        success: false,
+                        message: error.localizedDescription,
+                        ticketId: nil,
+                        ticketNumber: nil
+                    ))
                 }
             } catch {
-                completion(PaymentResult(success: false, message: error.localizedDescription, ticketId: nil))
+                completion(PaymentResult(
+                    success: false,
+                    message: error.localizedDescription,
+                    ticketId: nil,
+                    ticketNumber: nil
+                ))
             }
             await MainActor.run {
                 self.isPaymentSheetReady = false
@@ -313,13 +334,13 @@ class StripePaymentService: NSObject, ObservableObject {
         
         let requestBody = CreateIntentRequest(eventId: eventId)
         
-        // This function returns camelCase keys as seen in the TS file
         let response: CreateIntentResponse = try await supabase.functions
             .invoke("create-payment-intent", options: FunctionInvokeOptions(body: requestBody))
         
         return (response.clientSecret, response.paymentIntentId, response.amount)
     }
 
+    // UPDATED: Returns PaymentResult with ticketNumber
     private func confirmPurchase(paymentIntentId: String, retryCount: Int = 0) async throws -> PaymentResult {
         guard appState.authService.currentUser != nil else { throw PaymentError.notAuthenticated }
 
@@ -329,17 +350,23 @@ class StripePaymentService: NSObject, ObservableObject {
         do {
             let requestBody = ConfirmPurchaseRequest(paymentIntentId: paymentIntentId)
             
-            // DEBUG: Print what we're sending
             print("📤 [DEBUG] Sending confirm-purchase request with paymentIntentId:", paymentIntentId)
             
-            // This function likely returns snake_case ticket_id
             let response: ConfirmPurchaseResponse = try await supabase.functions
                 .invoke("confirm-purchase", options: FunctionInvokeOptions(body: requestBody))
+            
+            // DEBUG: Print what we received
+            print("📥 [DEBUG] confirmPurchase response received:")
+            print("📥 [DEBUG] - success:", response.success)
+            print("📥 [DEBUG] - ticketId:", response.ticketId ?? "nil")
+            print("📥 [DEBUG] - ticketNumber:", response.ticketNumber ?? "nil")
+            print("📥 [DEBUG] - message:", response.message ?? "nil")
             
             return PaymentResult(
                 success: response.success,
                 message: response.message ?? "Purchase completed",
-                ticketId: response.ticketId
+                ticketId: response.ticketId,
+                ticketNumber: response.ticketNumber
             )
 
         } catch {
@@ -400,7 +427,8 @@ class StripePaymentService: NSObject, ObservableObject {
                                             completion(PaymentResult(
                                                 success: false,
                                                 message: error.localizedDescription,
-                                                ticketId: nil
+                                                ticketId: nil,
+                                                ticketNumber: nil
                                             ))
                                             return
                                         }
@@ -410,7 +438,8 @@ class StripePaymentService: NSObject, ObservableObject {
                                             completion(PaymentResult(
                                                 success: false,
                                                 message: "Failed to create payment method",
-                                                ticketId: nil
+                                                ticketId: nil,
+                                                ticketNumber: nil
                                             ))
                                             return
                                         }
@@ -439,7 +468,8 @@ class StripePaymentService: NSObject, ObservableObject {
                                 completion(PaymentResult(
                                     success: false,
                                     message: "Apple Pay failed: \(error.localizedDescription)",
-                                    ticketId: nil
+                                    ticketId: nil,
+                                    ticketNumber: nil
                                 ))
                             }
                         },
@@ -449,7 +479,8 @@ class StripePaymentService: NSObject, ObservableObject {
                                 completion(PaymentResult(
                                     success: false,
                                     message: "",
-                                    ticketId: nil
+                                    ticketId: nil,
+                                    ticketNumber: nil
                                 ))
                             }
                         }
@@ -462,7 +493,12 @@ class StripePaymentService: NSObject, ObservableObject {
                     self.isProcessing = false
                     self.errorMessage = errorMessage
                 }
-                completion(PaymentResult(success: false, message: errorMessage, ticketId: nil))
+                completion(PaymentResult(
+                    success: false,
+                    message: errorMessage,
+                    ticketId: nil,
+                    ticketNumber: nil
+                ))
             }
         }
     }
@@ -491,13 +527,23 @@ class StripePaymentService: NSObject, ObservableObject {
 
                 if let pmError = pmError {
                     await MainActor.run { self.isProcessing = false }
-                    completion(PaymentResult(success: false, message: pmError.localizedDescription, ticketId: nil))
+                    completion(PaymentResult(
+                        success: false,
+                        message: pmError.localizedDescription,
+                        ticketId: nil,
+                        ticketNumber: nil
+                    ))
                     return
                 }
 
                 guard let paymentMethod = paymentMethod else {
                     await MainActor.run { self.isProcessing = false }
-                    completion(PaymentResult(success: false, message: "Failed to create payment method", ticketId: nil))
+                    completion(PaymentResult(
+                        success: false,
+                        message: "Failed to create payment method",
+                        ticketId: nil,
+                        ticketNumber: nil
+                    ))
                     return
                 }
 
@@ -524,7 +570,12 @@ class StripePaymentService: NSObject, ObservableObject {
                     self.isProcessing = false
                     self.errorMessage = errorMessage
                 }
-                completion(PaymentResult(success: false, message: errorMessage, ticketId: nil))
+                completion(PaymentResult(
+                    success: false,
+                    message: errorMessage,
+                    ticketId: nil,
+                    ticketNumber: nil
+                ))
             }
         }
     }
@@ -567,7 +618,6 @@ class StripePaymentService: NSObject, ObservableObject {
         }
 
     func deletePaymentMethod(paymentMethodId: String) async throws {
-        // Safe body with explicit keys to avoid auto-formatting issues
         let safeBody = ["payment_method_id": paymentMethodId]
 
         let _: GenericResponse = try await supabase.functions.invoke("delete-payment-method", options: FunctionInvokeOptions(body: safeBody))
@@ -623,7 +673,12 @@ class StripePaymentService: NSObject, ObservableObject {
                     self.isProcessing = false
                     self.errorMessage = errorMessage
                 }
-                completion(PaymentResult(success: false, message: errorMessage, ticketId: nil))
+                completion(PaymentResult(
+                    success: false,
+                    message: errorMessage,
+                    ticketId: nil,
+                    ticketNumber: nil
+                ))
             }
         }
     }
