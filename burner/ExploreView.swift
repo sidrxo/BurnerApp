@@ -409,10 +409,14 @@ struct ExploreView: View {
 
     private var loadingView: some View {
         VStack(spacing: 16) {
-            CustomLoadingIndicator(size: 50)
+            // NEW: Optional message when offline
+            if eventViewModel.errorMessage != nil {
+                Text("Attempting to connect...")
+                    .appBody()
+                    .foregroundColor(.gray)
+            }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 300)
+        .frame(maxWidth: .infinity, maxHeight: .infinity) // Fill available space
     }
 
     private var contentView: some View {

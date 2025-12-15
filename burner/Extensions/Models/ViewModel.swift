@@ -234,7 +234,6 @@ class EventViewModel: ObservableObject {
         cancellables.removeAll()
     }
 }
-
 @MainActor
 class TicketsViewModel: ObservableObject {
     @Published var tickets: [Ticket] = []
@@ -280,6 +279,17 @@ class TicketsViewModel: ObservableObject {
                             self.errorMessage = nil
 
                         case .failure(let error):
+                            // MARK: - FIX STARTS HERE
+                            // Check for various cancellation types to avoid showing alerts for them
+                            let nsError = error as NSError
+                            if error is CancellationError ||
+                               nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled ||
+                               nsError.localizedDescription.lowercased() == "cancelled" {
+                                print("Ticket fetch cancelled silently.")
+                                return
+                            }
+                            // MARK: - FIX ENDS HERE
+
                             Task {
                                 if let _ = try? await SupabaseManager.shared.client.auth.session.user {
                                     self.errorMessage = "Failed to load tickets: \(error.localizedDescription)"
@@ -292,6 +302,8 @@ class TicketsViewModel: ObservableObject {
         }
     }
 
+    // ... (Keep the rest of your methods: clearTickets, simulateEmptyData, etc. exactly the same) ...
+    
     func clearTickets() {
         tickets = []
         errorMessage = nil

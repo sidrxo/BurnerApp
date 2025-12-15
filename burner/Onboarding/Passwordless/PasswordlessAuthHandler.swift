@@ -8,7 +8,7 @@ class PasswordlessAuthHandler: ObservableObject {
     @Published var error: String?
     
     private let supabase = SupabaseManager.shared.client
-    private let userRepository = UserRepository()
+    private let userRepository = UserRepository() // Assumes UserRepositoryProtocol conformance
     
     func handleSignInLink(url: URL) -> Bool {
         // Check if this URL contains the access_token parameter (Supabase magic link)
@@ -76,6 +76,7 @@ class PasswordlessAuthHandler: ObservableObject {
                 // New user - create full profile
                 let displayName = user.email?.components(separatedBy: "@").first ?? "User"
                 
+                // FIX: Now using the explicit memberwise initializer
                 let profile = UserProfile(
                     id: user.id.uuidString,
                     email: user.email ?? "",
@@ -84,7 +85,11 @@ class PasswordlessAuthHandler: ObservableObject {
                     provider: "emailLink",
                     venuePermissions: [],
                     createdAt: Date(),
-                    lastLoginAt: Date()
+                    lastLoginAt: Date(),
+                    phoneNumber: nil,
+                    stripeCustomerId: nil,
+                    profileImageUrl: nil,
+                    preferences: nil
                 )
                 
                 try await userRepository.createUserProfile(userId: user.id.uuidString, profile: profile)

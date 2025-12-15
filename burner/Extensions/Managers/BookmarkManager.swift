@@ -37,43 +37,55 @@ class BookmarkManager: ObservableObject {
     }
     
     // MARK: - Setup Listener
-    private func setupBookmarkListener() async {
-        guard !isSimulatingEmptyData else { return }
+    // MARK: - Setup Listener
+        private func setupBookmarkListener() async {
+            guard !isSimulatingEmptyData else { return }
 
-        bookmarkRepository.stopObserving()
+            // This call cancels any existing task, which triggers the 'cancelled' error
+            // in the previous observer if one was active.
+            bookmarkRepository.stopObserving()
 
-        // FIXED: Better error handling
-        do {
-            let session = try await SupabaseManager.shared.client.auth.session
-            let userId = session.user.id.uuidString
-            
-            bookmarkRepository.observeBookmarks(userId: userId) { [weak self] result in
-                guard let self = self else { return }
+            do {
+                let session = try await SupabaseManager.shared.client.auth.session
+                let userId = session.user.id.uuidString
+                
+                bookmarkRepository.observeBookmarks(userId: userId) { [weak self] result in
+                    guard let self = self else { return }
 
-                Task { @MainActor in
-                    guard !self.isSimulatingEmptyData else { return }
+                    Task { @MainActor in
+                        guard !self.isSimulatingEmptyData else { return }
 
-                    switch result {
-                    case .success(let bookmarks):
-                        // Update bookmark status dictionary
-                        var newStatus: [String: Bool] = [:]
-                        for bookmark in bookmarks {
-                            newStatus[bookmark.eventId] = true
+                        switch result {
+                        case .success(let bookmarks):
+                            // Update bookmark status dictionary
+                            var newStatus: [String: Bool] = [:]
+                            for bookmark in bookmarks {
+                                newStatus[bookmark.eventId] = true
+                            }
+                            self.bookmarkStatus = newStatus
+
+                            // Fetch full event details
+                            await self.fetchBookmarkedEvents(bookmarks: bookmarks)
+
+                        case .failure(let error):
+                            // MARK: - FIX STARTS HERE
+                            // Silently ignore cancellation errors
+                            let nsError = error as NSError
+                            if error is CancellationError ||
+                               nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled ||
+                               nsError.localizedDescription.lowercased() == "cancelled" {
+                                return
+                            }
+                            // MARK: - FIX ENDS HERE
+                            
+                            print("❌ Error observing bookmarks: \(error.localizedDescription)")
                         }
-                        self.bookmarkStatus = newStatus
-
-                        // Fetch full event details
-                        await self.fetchBookmarkedEvents(bookmarks: bookmarks)
-
-                    case .failure(let error):
-                        print("❌ Error observing bookmarks: \(error.localizedDescription)")
                     }
                 }
+            } catch {
+                print("❌ Failed to get user session for bookmarks: \(error.localizedDescription)")
             }
-        } catch {
-            print("❌ Failed to get user session for bookmarks: \(error.localizedDescription)")
         }
-    }
     
     // MARK: - Fetch Bookmarked Events (Optimized with Batch Fetching)
     private func fetchBookmarkedEvents(bookmarks: [BookmarkData]) async {
