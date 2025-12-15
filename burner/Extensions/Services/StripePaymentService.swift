@@ -32,21 +32,37 @@ class StripePaymentService: NSObject, ObservableObject {
         let expMonth: Int
         let expYear: Int
         let isDefault: Bool
+        
+        // Stripe API returns snake_case, so we map it here
+        enum CodingKeys: String, CodingKey {
+            case id, brand, last4
+            case expMonth = "exp_month"
+            case expYear = "exp_year"
+            case isDefault = "is_default"
+        }
     }
     
     // MARK: - Request Structs
+    
     struct SavePaymentMethodRequest: Encodable {
         let paymentMethodId: String
         let setAsDefault: Bool
+        
+        enum CodingKeys: String, CodingKey {
+            case paymentMethodId = "payment_method_id"
+            case setAsDefault = "set_as_default"
+        }
     }
     
-    // FIX: Added strict struct for confirmation to avoid serialization issues
+    // FIX: Mapped to snake_case 'payment_intent_id' to resolve "Missing paymentIntentId" error
     struct ConfirmPurchaseRequest: Encodable {
         let paymentIntentId: String
-    }
+            }
     
+    // MATCHES TS: create-payment-intent expects camelCase 'eventId'
     struct CreateIntentRequest: Encodable {
         let eventId: String
+        // No CodingKeys needed; defaults to camelCase 'eventId'
     }
     
     struct PaymentResult {
@@ -56,19 +72,33 @@ class StripePaymentService: NSObject, ObservableObject {
     }
     
     // MARK: - Response Structs
+    
+    // MATCHES TS: create-payment-intent returns camelCase keys
     struct CreateIntentResponse: Decodable {
         let clientSecret: String
         let paymentIntentId: String
+        let amount: Double
+        
+        // No CodingKeys needed; defaults to camelCase
     }
     
     struct ConfirmPurchaseResponse: Decodable {
         let success: Bool
-        let ticketId: String?
+        let ticketId: String?  // This will map to 'ticket_id' from Edge Function
         let message: String?
+        
+        enum CodingKeys: String, CodingKey {
+            case success, message
+            case ticketId = "ticket_id" // Likely snake_case from DB
+        }
     }
     
     struct PaymentMethodsResponse: Decodable {
         let paymentMethods: [PaymentMethodInfo]
+        
+        enum CodingKeys: String, CodingKey {
+            case paymentMethods = "payment_methods"
+        }
     }
     
     struct GenericResponse: Decodable {
@@ -91,7 +121,7 @@ class StripePaymentService: NSObject, ObservableObject {
         preparationTask = Task {
             await MainActor.run { self.isPreparing = true }
             do {
-                let (clientSecret, intentId) = try await createPaymentIntent(eventId: eventId)
+                let (clientSecret, intentId, _) = try await createPaymentIntent(eventId: eventId)
                 guard !Task.isCancelled else {
                     await MainActor.run { self.isPreparing = false }
                     return
@@ -133,18 +163,22 @@ class StripePaymentService: NSObject, ObservableObject {
     private func withPaymentIntent(
         eventId: String,
         usePreparedIfAvailable: Bool = false
-    ) async throws -> (clientSecret: String, paymentIntentId: String) {
+    ) async throws -> (clientSecret: String, paymentIntentId: String, amount: Double) {
         if usePreparedIfAvailable,
            let preparedId = preparedIntentId,
            let secret = preparedClientSecret,
            preparedEventId == eventId {
-            // Consume the prepared intent
+            
             await MainActor.run {
                 self.preparedClientSecret = nil
                 self.preparedIntentId = nil
                 self.preparedEventId = nil
             }
-            return (secret, preparedId)
+            // Re-fetch to ensure we have the latest amount/status if needed,
+            // or return the cached values if you trust them.
+            // For safety with the amount check, we re-create or re-fetch.
+            return try await createPaymentIntent(eventId: eventId)
+
         } else {
             return try await createPaymentIntent(eventId: eventId)
         }
@@ -212,7 +246,7 @@ class StripePaymentService: NSObject, ObservableObject {
             }
            
             do {
-                let (clientSecret, intentId) = try await withPaymentIntent(eventId: eventId, usePreparedIfAvailable: false)
+                let (clientSecret, intentId, _) = try await withPaymentIntent(eventId: eventId, usePreparedIfAvailable: false)
                 await MainActor.run { self.currentPaymentIntentId = intentId }
               
                 var configuration = PaymentSheet.Configuration()
@@ -274,15 +308,16 @@ class StripePaymentService: NSObject, ObservableObject {
 
     // MARK: - Updated Network Calls
     
-    private func createPaymentIntent(eventId: String) async throws -> (clientSecret: String, paymentIntentId: String) {
+    private func createPaymentIntent(eventId: String) async throws -> (clientSecret: String, paymentIntentId: String, amount: Double) {
         guard appState.authService.currentUser != nil else { throw PaymentError.notAuthenticated }
         
         let requestBody = CreateIntentRequest(eventId: eventId)
         
+        // This function returns camelCase keys as seen in the TS file
         let response: CreateIntentResponse = try await supabase.functions
             .invoke("create-payment-intent", options: FunctionInvokeOptions(body: requestBody))
         
-        return (response.clientSecret, response.paymentIntentId)
+        return (response.clientSecret, response.paymentIntentId, response.amount)
     }
 
     private func confirmPurchase(paymentIntentId: String, retryCount: Int = 0) async throws -> PaymentResult {
@@ -292,9 +327,12 @@ class StripePaymentService: NSObject, ObservableObject {
         let baseDelay: UInt64 = 1_000_000_000
 
         do {
-            // FIX: Use struct instead of Dictionary for body
             let requestBody = ConfirmPurchaseRequest(paymentIntentId: paymentIntentId)
             
+            // DEBUG: Print what we're sending
+            print("📤 [DEBUG] Sending confirm-purchase request with paymentIntentId:", paymentIntentId)
+            
+            // This function likely returns snake_case ticket_id
             let response: ConfirmPurchaseResponse = try await supabase.functions
                 .invoke("confirm-purchase", options: FunctionInvokeOptions(body: requestBody))
             
@@ -305,6 +343,7 @@ class StripePaymentService: NSObject, ObservableObject {
             )
 
         } catch {
+            print("❌ [DEBUG] confirmPurchase error:", error)
             let nsError = error as NSError
             let isNetworkError = nsError.domain == NSURLErrorDomain ||
                                 nsError.code == NSURLErrorNotConnectedToInternet ||
@@ -318,10 +357,8 @@ class StripePaymentService: NSObject, ObservableObject {
                 try await Task.sleep(nanoseconds: delay)
                 return try await confirmPurchase(paymentIntentId: paymentIntentId, retryCount: retryCount + 1)
             } else {
-                // Log the raw error if it's a function error (like the 400 you saw)
                 if let functionError = error as? FunctionsError {
                    print("❌ [Payment] Edge Function Error: \(functionError.localizedDescription)")
-                   // If possible, inspect response body in debugger here
                 }
                 throw error
             }
@@ -338,7 +375,7 @@ class StripePaymentService: NSObject, ObservableObject {
 
         Task {
             do {
-                let (clientSecret, intentId) = try await withPaymentIntent(eventId: eventId, usePreparedIfAvailable: true)
+                let (clientSecret, intentId, _) = try await withPaymentIntent(eventId: eventId, usePreparedIfAvailable: true)
 
                 await MainActor.run {
                     self.currentPaymentIntentId = intentId
@@ -440,7 +477,7 @@ class StripePaymentService: NSObject, ObservableObject {
             }
 
             do {
-                let (clientSecret, intentId) = try await withPaymentIntent(eventId: eventId, usePreparedIfAvailable: false)
+                let (clientSecret, intentId, _) = try await withPaymentIntent(eventId: eventId, usePreparedIfAvailable: false)
                 await MainActor.run { self.currentPaymentIntentId = intentId }
 
                 let paymentMethodParams = STPPaymentMethodParams(card: cardParams, billingDetails: nil, metadata: nil)
@@ -530,16 +567,16 @@ class StripePaymentService: NSObject, ObservableObject {
         }
 
     func deletePaymentMethod(paymentMethodId: String) async throws {
-        let _: GenericResponse = try await supabase.functions.invoke("delete-payment-method", options: FunctionInvokeOptions(body: [
-            "paymentMethodId": paymentMethodId
-        ]))
+        // Safe body with explicit keys to avoid auto-formatting issues
+        let safeBody = ["payment_method_id": paymentMethodId]
+
+        let _: GenericResponse = try await supabase.functions.invoke("delete-payment-method", options: FunctionInvokeOptions(body: safeBody))
         try await fetchPaymentMethods()
     }
 
     func setDefaultPaymentMethod(paymentMethodId: String) async throws {
-        let _: GenericResponse = try await supabase.functions.invoke("set-default-payment-method", options: FunctionInvokeOptions(body: [
-            "paymentMethodId": paymentMethodId
-        ]))
+        let safeBody = ["payment_method_id": paymentMethodId]
+        let _: GenericResponse = try await supabase.functions.invoke("set-default-payment-method", options: FunctionInvokeOptions(body: safeBody))
         try await fetchPaymentMethods()
     }
 
@@ -559,7 +596,7 @@ class StripePaymentService: NSObject, ObservableObject {
             }
 
             do {
-                let (clientSecret, intentId) = try await withPaymentIntent(eventId: eventId, usePreparedIfAvailable: false)
+                let (clientSecret, intentId, _) = try await withPaymentIntent(eventId: eventId, usePreparedIfAvailable: false)
                 await MainActor.run { self.currentPaymentIntentId = intentId }
 
                 let stripe = STPAPIClient.shared

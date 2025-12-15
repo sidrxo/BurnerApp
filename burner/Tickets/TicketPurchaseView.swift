@@ -709,7 +709,8 @@ struct TicketPurchaseView: View {
         let delay: TimeInterval = 0.2
 
         let matchingTickets = appState.ticketsViewModel.tickets.filter { ticket in
-            ticket.id == ticketId && ticket.eventId == event.id && ticket.status == "confirmed"
+            // CHANGED: ticket.ticketId instead of ticket.id
+            ticket.ticketId == ticketId && ticket.eventId == event.id && ticket.status == "confirmed"
         }
         
         if let ticket = matchingTickets.first {
@@ -717,7 +718,6 @@ struct TicketPurchaseView: View {
             print("🟢 [TicketView] Found definitive ticket (\(ticketId)) after \(retryCount) retries. Pushing TicketDetailView.")
             
             coordinator.pop(in: tab)
-            // Pass shouldAnimate: true for the flip animation after purchase
             coordinator.navigate(to: .ticketDetail(ticketWithEvent, shouldAnimate: true), in: tab)
         } else if retryCount < maxRetries {
             print("🟡 [TicketView] Waiting for ticket ID \(ticketId) to sync (\(retryCount + 1)/\(maxRetries))...")
