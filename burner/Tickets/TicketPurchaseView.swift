@@ -91,25 +91,6 @@ struct TicketPurchaseView: View {
         .navigationBarTitleDisplayMode(.inline)
         .interactiveDismissDisabled(false)
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: {
-                    if currentStep != .paymentMethod {
-                        withAnimation {
-                            currentStep = .paymentMethod
-                            selectedSavedCard = nil
-                            cardParams = nil
-                            isCardValid = false
-                            hasInitiatedPurchase = false
-                        }
-                    } else {
-                        dismiss()
-                    }
-                }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.white)
-                }
-            }
-            
             ToolbarItem(placement: .principal) {
                 Text("Purchase Ticket")
                     .appBody()
@@ -580,6 +561,7 @@ struct TicketPurchaseView: View {
                 if result.success {
                     print("🟢 [TicketView] Apple Pay SUCCESS. Fetching events and stopping loading. Ticket ID: \(result.ticketId ?? "N/A")")
                     self.viewModel.fetchEvents()
+                    self.appState.ticketsViewModel.fetchUserTickets()
                     self.pendingTicketId = result.ticketId
                     self.isLoadingPayment = false
                     
@@ -629,6 +611,7 @@ struct TicketPurchaseView: View {
                 if result.success {
                     print("🟢 [TicketView] Card Payment SUCCESS. Fetching events and stopping loading. Ticket ID: \(result.ticketId ?? "N/A")")
                     self.viewModel.fetchEvents()
+                    self.appState.ticketsViewModel.fetchUserTickets()
                     self.pendingTicketId = result.ticketId
                     self.isLoadingPayment = false
                     
@@ -675,6 +658,7 @@ struct TicketPurchaseView: View {
                 if result.success {
                     print("🟢 [TicketView] Saved Card Payment SUCCESS. Fetching events and stopping loading. Ticket ID: \(result.ticketId ?? "N/A")")
                     self.viewModel.fetchEvents()
+                    self.appState.ticketsViewModel.fetchUserTickets()
                     self.pendingTicketId = result.ticketId
                     self.isLoadingPayment = false
                     
@@ -733,7 +717,8 @@ struct TicketPurchaseView: View {
             print("🟢 [TicketView] Found definitive ticket (\(ticketId)) after \(retryCount) retries. Pushing TicketDetailView.")
             
             coordinator.pop(in: tab)
-            coordinator.navigate(to: .ticketDetail(ticketWithEvent), in: tab)
+            // Pass shouldAnimate: true for the flip animation after purchase
+            coordinator.navigate(to: .ticketDetail(ticketWithEvent, shouldAnimate: true), in: tab)
         } else if retryCount < maxRetries {
             print("🟡 [TicketView] Waiting for ticket ID \(ticketId) to sync (\(retryCount + 1)/\(maxRetries))...")
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {

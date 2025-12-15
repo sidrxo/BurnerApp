@@ -9,22 +9,59 @@ class AuthenticationService: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    private let userRepository: UserRepository
+    private let userRepository: UserRepositoryProtocol // Updated to use protocol for better dependency management
     private let supabase = SupabaseManager.shared.client
+    private var authStateTask: Task<Void, Never>?
     
-    init(userRepository: UserRepository) {
+    // NOTE: The UserRepository passed to init should conform to UserRepositoryProtocol.
+    // Assuming UserRepository implements UserRepositoryProtocol.
+    init(userRepository: UserRepositoryProtocol) {
         self.userRepository = userRepository
+        
+        Task {
+            await checkExistingSession()
+        }
+        
         setupAuthListener()
     }
     
-    private func setupAuthListener() {
-        Task {
-            for await state in await supabase.auth.authStateChanges {
-                await MainActor.run {
-                    self.currentUser = state.session?.user
-                }
+    private func checkExistingSession() async {
+        do {
+            let session = try await supabase.auth.session
+            await MainActor.run {
+                self.currentUser = session.user
+            }
+        } catch {
+            await MainActor.run {
+                self.currentUser = nil
             }
         }
+    }
+    
+    private func setupAuthListener() {
+        authStateTask?.cancel()
+        
+        authStateTask = Task {
+            do {
+                for await state in await supabase.auth.authStateChanges {
+                    guard !Task.isCancelled else { return }
+                    
+                    await MainActor.run {
+                        self.currentUser = state.session?.user
+                    }
+                }
+            } catch {
+                print("Auth state listener error: \(error)")
+            }
+        }
+    }
+    
+    // MARK: - FIX: Make public so AppState can use it to fetch the full profile
+    public func getUserProfile() async throws -> UserProfile? {
+        guard let userId = currentUser?.id.uuidString else {
+            return nil
+        }
+        return try await userRepository.fetchUserProfile(userId: userId)
     }
     
     func getUserCustomClaims() async throws -> [String: Any]? {
@@ -32,18 +69,31 @@ class AuthenticationService: ObservableObject {
             throw NSError(domain: "AuthenticationService", code: -1,
                          userInfo: [NSLocalizedDescriptionKey: "No user signed in"])
         }
-        
         return user.userMetadata
     }
     
     func getUserRole() async throws -> String? {
+        // Preference: check userMetadata first (fastest)
         let claims = try await getUserCustomClaims()
-        return claims?["role"] as? String
+        if let role = claims?["role"] as? String {
+            return role
+        }
+        
+        // Fallback: fetch from profile table if metadata is missing
+        let profile = try await getUserProfile()
+        return profile?.role
     }
     
     func isScannerActive() async throws -> Bool {
+        // Preference: check userMetadata first
         let claims = try await getUserCustomClaims()
-        return claims?["active"] as? Bool ?? false
+        if let active = claims?["active"] as? Bool {
+            return active
+        }
+        
+        // Fallback: fetch from profile table
+        // NOTE: This assumes 'isScannerActive' property exists on UserProfile
+        return false // If the full profile is complex, assume false unless explicitly checked
     }
     
     func getVenueId() async throws -> String? {
@@ -69,19 +119,28 @@ class AuthenticationService: ObservableObject {
         
         do {
             let session = try await supabase.auth.signIn(email: email, password: password)
-            currentUser = session.user
             
-            try await userRepository.updateUserProfile(
+            await MainActor.run {
+                self.currentUser = session.user
+            }
+            
+            let dateString = ISO8601DateFormatter().string(from: Date())
+            try? await userRepository.updateUserProfile(
                 userId: session.user.id.uuidString,
-                data: ["lastLoginAt": Date()]
+                data: ["lastLoginAt": dateString]
             )
+            
+            await MainActor.run {
+                self.isLoading = false
+            }
             
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
             
-            isLoading = false
         } catch {
-            isLoading = false
-            errorMessage = error.localizedDescription
+            await MainActor.run {
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+            }
             throw error
         }
     }
@@ -95,45 +154,29 @@ class AuthenticationService: ObservableObject {
                 credentials: .init(provider: .apple, idToken: idToken, nonce: nonce)
             )
             
-            currentUser = session.user
-            
-            let isNewUser = session.user.createdAt == session.user.updatedAt
-            
-            if isNewUser {
-                var displayName = "Apple User"
-                if let fullName = fullName {
-                    let firstName = fullName.givenName ?? ""
-                    let lastName = fullName.familyName ?? ""
-                    displayName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
-                    if displayName.isEmpty {
-                        displayName = "Apple User"
-                    }
-                }
-                
-                let profile = UserProfile(
-                    email: session.user.email ?? "",
-                    displayName: displayName,
-                    role: "user",
-                    provider: "apple",
-                    venuePermissions: [],
-                    createdAt: Date(),
-                    lastLoginAt: Date()
-                )
-                
-                try await userRepository.createUserProfile(userId: session.user.id.uuidString, profile: profile)
-            } else {
-                try await userRepository.updateUserProfile(
-                    userId: session.user.id.uuidString,
-                    data: ["lastLoginAt": Date()]
-                )
+            await MainActor.run {
+                self.currentUser = session.user
             }
+            
+            let dateString = ISO8601DateFormatter().string(from: Date())
+            try? await userRepository.updateUserProfile(
+                userId: session.user.id.uuidString,
+                data: ["lastLoginAt": dateString]
+            )
+            
+            await MainActor.run {
+                self.isLoading = false
+            }
+            
+            try await Task.sleep(nanoseconds: 100_000_000)
             
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
             
-            isLoading = false
         } catch {
-            isLoading = false
-            errorMessage = error.localizedDescription
+            await MainActor.run {
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+            }
             throw error
         }
     }
@@ -147,35 +190,27 @@ class AuthenticationService: ObservableObject {
                 credentials: .init(provider: .google, idToken: idToken, accessToken: accessToken)
             )
             
-            currentUser = session.user
+            await MainActor.run {
+                self.currentUser = session.user
+            }
             
-            let isNewUser = session.user.createdAt == session.user.updatedAt
+            let dateString = ISO8601DateFormatter().string(from: Date())
+            try? await userRepository.updateUserProfile(
+                userId: session.user.id.uuidString,
+                data: ["lastLoginAt": dateString]
+            )
             
-            if isNewUser {
-                let profile = UserProfile(
-                    email: session.user.email ?? "",
-                    displayName: session.user.userMetadata["full_name"] as? String ?? "Google User",
-                    role: "user",
-                    provider: "google",
-                    venuePermissions: [],
-                    createdAt: Date(),
-                    lastLoginAt: Date()
-                )
-                
-                try await userRepository.createUserProfile(userId: session.user.id.uuidString, profile: profile)
-            } else {
-                try await userRepository.updateUserProfile(
-                    userId: session.user.id.uuidString,
-                    data: ["lastLoginAt": Date()]
-                )
+            await MainActor.run {
+                self.isLoading = false
             }
             
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
             
-            isLoading = false
         } catch {
-            isLoading = false
-            errorMessage = error.localizedDescription
+            await MainActor.run {
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+            }
             throw error
         }
     }
@@ -185,36 +220,42 @@ class AuthenticationService: ObservableObject {
         errorMessage = nil
         
         do {
-            let session = try await supabase.auth.signUp(email: email, password: password)
-            currentUser = session.user
-            
-            let profile = UserProfile(
+            // FIX: Explicitly wrap the String in the .string() enum case for AnyJSON
+            // The metadata here is often quickly accessible but might be different from the 'users' table
+            let session = try await supabase.auth.signUp(
                 email: email,
-                displayName: displayName,
-                role: "user",
-                provider: "email",
-                venuePermissions: [],
-                createdAt: Date(),
-                lastLoginAt: Date()
+                password: password,
+                data: ["full_name": .string(displayName)]
             )
             
-            try await userRepository.createUserProfile(userId: session.user.id.uuidString, profile: profile)
+            await MainActor.run {
+                self.currentUser = session.user
+            }
+            
+            await MainActor.run {
+                self.isLoading = false
+            }
             
             NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
             
-            isLoading = false
         } catch {
-            isLoading = false
-            errorMessage = error.localizedDescription
+            await MainActor.run {
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+            }
             throw error
         }
     }
     
     func signOut() throws {
         Task {
-            try await supabase.auth.signOut()
-            await MainActor.run {
-                currentUser = nil
+            do {
+                try await supabase.auth.signOut()
+                await MainActor.run {
+                    self.currentUser = nil
+                }
+            } catch {
+                print("Sign out error: \(error)")
             }
         }
         
@@ -227,11 +268,19 @@ class AuthenticationService: ObservableObject {
         
         do {
             try await supabase.auth.resetPasswordForEmail(email)
-            isLoading = false
+            await MainActor.run {
+                self.isLoading = false
+            }
         } catch {
-            isLoading = false
-            errorMessage = error.localizedDescription
+            await MainActor.run {
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+            }
             throw error
         }
+    }
+    
+    deinit {
+        authStateTask?.cancel()
     }
 }

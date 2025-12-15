@@ -80,10 +80,8 @@ struct SettingsView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
 
-                            if (userRole == "scanner" && isScannerActive) ||
-                                userRole == "siteAdmin" ||
-                                userRole == "venueAdmin" ||
-                                userRole == "subAdmin" {
+                            // --- Scanner Visibility FIX ---
+                            if userRole == "siteAdmin" {
                                 Button(action: {
                                     coordinator.navigate(to: .scanner)
                                 }) {
@@ -95,12 +93,14 @@ struct SettingsView: View {
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
+                            // --- End Scanner Visibility FIX ---
                         }
 
                         MenuSection(title: "APP") {
                             if needsBurnerSetup {
                                 Button(action: {
-                                    coordinator.showBurnerSetup()
+                                    // The `showBurnerSetup` now requires a completion handler
+                                    coordinator.showBurnerSetup(onCompletion: {})
                                 }) {
                                     MenuItemContent(
                                         title: "Setup Burner Mode",
@@ -134,6 +134,7 @@ struct SettingsView: View {
                             .buttonStyle(PlainButtonStyle())
                         }
 
+                        // --- Debug Menu Visibility FIX ---
                         if userRole == "siteAdmin" {
                             MenuSection(title: "DEBUG") {
                                 Button(action: {
@@ -148,7 +149,7 @@ struct SettingsView: View {
                                 .buttonStyle(PlainButtonStyle())
                             }
                         }
-
+                        // --- End Debug Menu Visibility FIX ---
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 100)

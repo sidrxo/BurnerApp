@@ -1,5 +1,5 @@
 import SwiftUI
-import FirebaseFunctions
+import Supabase
 
 // MARK: - Transfer Ticket View
 struct TransferTicketView: View {
@@ -13,6 +13,11 @@ struct TransferTicketView: View {
     @State private var showDisclaimerSlide = true
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var coordinator: NavigationCoordinator
+
+    // Access Supabase Client
+    private var client: SupabaseClient {
+        return SupabaseManager.shared.client
+    }
 
     var body: some View {
         ZStack {
@@ -170,69 +175,82 @@ struct TransferTicketView: View {
     }
 
     private func transferTicket() {
-        guard !recipientEmail.isEmpty else {
-            print("❌ Transfer failed: Recipient email is empty")
-            return
-        }
+        guard !recipientEmail.isEmpty else { return }
         
         guard let ticketId = ticketWithEvent.ticket.id, !ticketId.isEmpty else {
-            print("❌ Transfer failed: Ticket ID is nil or empty")
             errorMessage = "Invalid ticket ID. Please try again."
             showErrorAlert = true
             return
         }
         
         guard let eventId = ticketWithEvent.event.id, !eventId.isEmpty else {
-            print("❌ Transfer failed: Event ID is nil or empty")
             errorMessage = "Invalid event ID. Please try again."
             showErrorAlert = true
             return
         }
 
-        print("🎫 Starting transfer:")
-        print("   Ticket ID: \(ticketId)")
-        print("   Event ID: \(eventId)")
-        print("   Recipient: \(recipientEmail)")
-
         isTransferring = true
 
-        let functions = Functions.functions(region: "europe-west2")
-        let transferFunction = functions.httpsCallable("transferTicket")
-
-        transferFunction.call([
-            "ticketId": ticketId,
-            "recipientEmail": recipientEmail,
-            "eventId": eventId
-        ]) { result, error in
-            DispatchQueue.main.async {
-                isTransferring = false
-
-                if let error = error as NSError? {
-                    print("❌ Transfer error:")
-                    print("   Code: \(error.code)")
-                    print("   Domain: \(error.domain)")
-                    print("   Description: \(error.localizedDescription)")
-                    print("   User Info: \(error.userInfo)")
+        Task {
+            do {
+                let payload: [String: String] = [
+                    "ticketId": ticketId,
+                    "recipientEmail": recipientEmail,
+                    "eventId": eventId
+                ]
+                
+                // Invoke Supabase Edge Function
+                let response: Any = try await client.functions.invoke(
+                    "transfer-ticket", // Ensure your Edge Function is named this in Supabase
+                    options: FunctionInvokeOptions(
+                        body: payload
+                    )
+                )
+                
+                // Parse response manually if needed, or trust the error throw
+                await MainActor.run {
+                    isTransferring = false
                     
-                    // Handle error - show in custom alert
-                    if let message = error.userInfo["message"] as? String {
-                        errorMessage = message
-                    } else if let details = error.userInfo[NSLocalizedDescriptionKey] as? String {
-                        errorMessage = details
+                    // If we got here, it's likely success, but check response structure if your function returns specific success flags
+                    if let data = response as? [String: Any],
+                       let success = data["success"] as? Bool, success == true {
+                        print("✅ Transfer successful")
+                        showTransferSuccess = true
+                        recipientEmail = ""
                     } else {
-                        errorMessage = "Transfer failed. Please try again."
+                         // If no error threw, but success isn't true, show a generic error
+                         // (Depends on how your Edge Function returns data)
+                        if let data = response as? [String: Any], let msg = data["message"] as? String {
+                             errorMessage = msg
+                        } else {
+                            // Fallback for successful execution containing valid JSON
+                             print("✅ Transfer successful")
+                             showTransferSuccess = true
+                             recipientEmail = ""
+                        }
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isTransferring = false
+                    print("❌ Transfer error: \(error)")
+                    
+                    // Parse Supabase Function Error
+                    let errorMsg = error.localizedDescription
+                    if errorMsg.contains("Recipient must have") {
+                        errorMessage = "The recipient email is not registered on the app."
+                    } else if errorMsg.contains("Ticket not found") {
+                        errorMessage = "Ticket not found or you don't have permission."
+                    } else if errorMsg.contains("already has a ticket") {
+                        errorMessage = "The recipient already has a ticket for this event."
+                    } else if errorMsg.contains("Invalid ticket status") {
+                        errorMessage = "This ticket cannot be transferred (it may have been used)."
+                    } else {
+                        // Extract message from specific Supabase error types if available, otherwise default
+                        errorMessage = "Transfer failed: \(errorMsg)"
                     }
                     showErrorAlert = true
-                    return
                 }
-
-                // Success
-                print("✅ Transfer successful")
-                if let resultData = result?.data as? [String: Any] {
-                    print("   Result: \(resultData)")
-                }
-                showTransferSuccess = true
-                recipientEmail = ""
             }
         }
     }

@@ -214,7 +214,7 @@ class BurnerModeManager: ObservableObject {
     private func scheduleEventEndNotification(endTime: Date) {
         let content = UNMutableNotificationContent()
         content.title = "Event Ended"
-        content.body = "Your event has ended and Burner Mode has been automatically disabled. Welcome back! ðŸŽ‰"
+        content.body = "Your event has ended and Burner Mode has been automatically disabled."
         content.sound = .default
         content.badge = 1
 
@@ -262,9 +262,9 @@ class BurnerModeManager: ObservableObject {
 
     private func scheduleBurnerSetupReminder(eventCount: Int) {
         let content = UNMutableNotificationContent()
-        content.title = "Complete Burner Mode Setup"
+        content.title = "Complete BURNER Mode Setup"
         content.body = eventCount == 1
-            ? "You have an event today! Complete Burner Mode setup to access your ticket."
+            ? "You have an event today. Complete BURNER Mode setup to access your ticket."
             : "You have \(eventCount) events today! Complete Burner Mode setup to access your tickets."
         content.sound = .default
         content.badge = 1

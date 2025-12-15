@@ -13,13 +13,12 @@ struct NavigationCoordinatorView<Content: View>: View {
             .sheet(item: sheetBinding) { modal in
                 modalView(for: modal)
                     .onDisappear {
-                        // Handle sheet-specific completion if needed, but we focus on fullScreenCover
+                        // Handle sheet-specific completion if needed
                     }
             }
             .fullScreenCover(item: fullScreenBinding) { modal in
                 modalView(for: modal)
                     .environment(\.heroNamespace, ticketsHeroNamespace)
-                    // ✅ CRUCIAL FIX: Execute the action upon modal dismissal
                     .onDisappear {
                         if case .burnerSetup(let onCompletion) = modal {
                             onCompletion()
@@ -94,16 +93,14 @@ struct NavigationCoordinatorView<Content: View>: View {
                 isOnboarding: false
             )
             
-        case .burnerSetup: // The modal contains the closure now, but the ViewBuilder only needs to render the view
+        case .burnerSetup:
             BurnerModeSetupView(
                 burnerManager: appState.burnerManager,
                 onSkip: {
-                    // This is the dismissal action used internally by the setup view
                     coordinator.dismissModal()
                 }
             )
 
-        // REMOVED: No longer handled as a modal
         case .ticketPurchase:
             EmptyView()
             
@@ -160,13 +157,12 @@ struct NavigationDestinationBuilder: View {
             case .filteredEvents(let sectionDestination):
                 FilteredEventsView(title: sectionDestination.title, events: sectionDestination.events)
 
-            case .ticketDetail(let ticketWithEvent):
-                TicketDetailView(ticketWithEvent: ticketWithEvent)
+            case .ticketDetail(let ticketWithEvent, let shouldAnimate):
+                TicketDetailView(ticketWithEvent: ticketWithEvent, shouldAnimateFlip: shouldAnimate)
 
             case .ticketById(let ticketId):
                 TicketDetailByIdDestination(ticketId: ticketId)
 
-            // KEPT FOR NAVIGATION PUSH: Handles the purchase view when pushed to any path
             case .ticketPurchase(let event):
                 TicketPurchaseDestination(event: event)
 
@@ -228,12 +224,18 @@ struct TicketDetailDestination: View {
     var body: some View {
         Group {
             if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
-                TicketDetailView(ticketWithEvent: TicketWithEventData(ticket: ticket, event: event))
+                TicketDetailView(
+                    ticketWithEvent: TicketWithEventData(ticket: ticket, event: event),
+                    shouldAnimateFlip: false
+                )
             } else {
-                TicketDetailView(ticketWithEvent: TicketWithEventData(
-                    ticket: ticket,
-                    event: createPlaceholderEvent(from: ticket)
-                ), )
+                TicketDetailView(
+                    ticketWithEvent: TicketWithEventData(
+                        ticket: ticket,
+                        event: createPlaceholderEvent(from: ticket)
+                    ),
+                    shouldAnimateFlip: false
+                )
             }
         }
     }
@@ -250,12 +252,18 @@ struct TicketDetailByIdDestination: View {
         Group {
             if let ticket = ticketsViewModel.tickets.first(where: { $0.id == ticketId }) {
                 if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
-                    TicketDetailView(ticketWithEvent: TicketWithEventData(ticket: ticket, event: event))
+                    TicketDetailView(
+                        ticketWithEvent: TicketWithEventData(ticket: ticket, event: event),
+                        shouldAnimateFlip: false
+                    )
                 } else {
-                    TicketDetailView(ticketWithEvent: TicketWithEventData(
-                        ticket: ticket,
-                        event: createPlaceholderEvent(from: ticket)
-                    ))
+                    TicketDetailView(
+                        ticketWithEvent: TicketWithEventData(
+                            ticket: ticket,
+                            event: createPlaceholderEvent(from: ticket)
+                        ),
+                        shouldAnimateFlip: false
+                    )
                 }
             } else {
                 ZStack {
@@ -303,7 +311,7 @@ private func createPlaceholderEvent(from ticket: Ticket) -> Event {
         name: ticket.eventName,
         venue: ticket.venue,
         startTime: ticket.startTime,
-        price: ticket.totalPrice,
+        price: ticket.totalPrice ?? 0.0,
         maxTickets: 100,
         ticketsSold: 0,
         imageUrl: "",

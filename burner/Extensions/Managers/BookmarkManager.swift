@@ -29,40 +29,49 @@ class BookmarkManager: ObservableObject {
     ) {
         self.bookmarkRepository = bookmarkRepository
         self.eventRepository = eventRepository
-        setupBookmarkListener()
+        
+        // Call async setup in Task
+        Task {
+            await setupBookmarkListener()
+        }
     }
     
     // MARK: - Setup Listener
-    private func setupBookmarkListener() {
+    private func setupBookmarkListener() async {
         guard !isSimulatingEmptyData else { return }
 
         bookmarkRepository.stopObserving()
 
-        // Replaced Auth.auth().currentUser?.uid with Supabase current session
-        guard let userId = SupabaseManager.shared.client.auth.currentSession?.user.id.uuidString else { return }
+        // FIXED: Better error handling
+        do {
+            let session = try await SupabaseManager.shared.client.auth.session
+            let userId = session.user.id.uuidString
+            
+            bookmarkRepository.observeBookmarks(userId: userId) { [weak self] result in
+                guard let self = self else { return }
 
-        bookmarkRepository.observeBookmarks(userId: userId) { [weak self] result in
-            guard let self = self else { return }
+                Task { @MainActor in
+                    guard !self.isSimulatingEmptyData else { return }
 
-            Task { @MainActor in
-                guard !self.isSimulatingEmptyData else { return }
+                    switch result {
+                    case .success(let bookmarks):
+                        // Update bookmark status dictionary
+                        var newStatus: [String: Bool] = [:]
+                        for bookmark in bookmarks {
+                            newStatus[bookmark.eventId] = true
+                        }
+                        self.bookmarkStatus = newStatus
 
-                switch result {
-                case .success(let bookmarks):
-                    // Update bookmark status dictionary
-                    var newStatus: [String: Bool] = [:]
-                    for bookmark in bookmarks {
-                        newStatus[bookmark.eventId] = true
+                        // Fetch full event details
+                        await self.fetchBookmarkedEvents(bookmarks: bookmarks)
+
+                    case .failure(let error):
+                        print("❌ Error observing bookmarks: \(error.localizedDescription)")
                     }
-                    self.bookmarkStatus = newStatus
-
-                    // Fetch full event details
-                    await self.fetchBookmarkedEvents(bookmarks: bookmarks)
-
-                case .failure:
-                    break
                 }
             }
+        } catch {
+            print("❌ Failed to get user session for bookmarks: \(error.localizedDescription)")
         }
     }
     
@@ -100,7 +109,7 @@ class BookmarkManager: ObservableObject {
                 return allEvents
             }
         } catch {
-            // Fallback to empty array on error
+            print("❌ Error fetching bookmarked events: \(error.localizedDescription)")
             events = []
         }
 
@@ -121,18 +130,29 @@ class BookmarkManager: ObservableObject {
             self.bookmarkedEvents = sortedEvents
         }
     }
-    
-    // MARK: - Toggle Bookmark
-    func toggleBookmark(for event: Event) async {
-        guard !isSimulatingEmptyData else { return }
 
-        // Replaced Auth.auth().currentUser?.uid with Supabase current session
-        guard let userId = SupabaseManager.shared.client.auth.currentSession?.user.id.uuidString,
-              let eventId = event.id else {
+    func toggleBookmark(for event: Event) async {
+        guard !isSimulatingEmptyData else {
+            print("⚠️ Cannot toggle bookmark: simulating empty data")
             return
         }
 
-        // Prevent multiple simultaneous toggles for the same event
+        let userId: String
+        let eventId: String
+        
+        do {
+            let session = try await SupabaseManager.shared.client.auth.session
+            userId = session.user.id.uuidString
+            
+            guard let unwrappedEventId = event.id else { return }
+            eventId = unwrappedEventId
+            
+        } catch {
+            // ... (existing error handling)
+            return
+        }
+
+        // Prevent multiple simultaneous toggles
         guard isTogglingBookmark[eventId] != true else { return }
 
         let isCurrentlyBookmarked = bookmarkStatus[eventId] ?? false
@@ -140,10 +160,26 @@ class BookmarkManager: ObservableObject {
         // Set loading state
         await MainActor.run {
             isTogglingBookmark[eventId] = true
+            
+            // --- 1. OPTIMISTIC UPDATE START ---
+            
+            // A. Update the Status (Icon)
+            bookmarkStatus[eventId] = !isCurrentlyBookmarked
+            
+            // B. Update the List (The View)
+            if isCurrentlyBookmarked {
+                // We are removing: Filter it out immediately
+                bookmarkedEvents.removeAll { $0.id == eventId }
+            } else {
+                // We are adding: Add it to the list immediately
+                // Check if it exists just to be safe
+                if !bookmarkedEvents.contains(where: { $0.id == eventId }) {
+                    // Insert at the top (index 0) so it appears as the most recent save
+                    bookmarkedEvents.insert(event, at: 0)
+                }
+            }
+            // --- OPTIMISTIC UPDATE END ---
         }
-
-        // Optimistic update
-        bookmarkStatus[eventId] = !isCurrentlyBookmarked
 
         do {
             if isCurrentlyBookmarked {
@@ -153,7 +189,7 @@ class BookmarkManager: ObservableObject {
                     id: UUID().uuidString,
                     eventId: eventId,
                     eventName: event.name,
-                    eventVenue: event.venue,
+                    venue: event.venue,
                     startTime: event.startTime ?? Date(),
                     eventPrice: event.price,
                     eventImageUrl: event.imageUrl,
@@ -162,7 +198,6 @@ class BookmarkManager: ObservableObject {
                 try await bookmarkRepository.addBookmark(userId: userId, bookmark: bookmark)
             }
 
-            // Haptic feedback on success
             await MainActor.run {
                 let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                 impactFeedback.impactOccurred()
@@ -170,16 +205,28 @@ class BookmarkManager: ObservableObject {
             }
 
         } catch {
-            // Revert optimistic update on error
+            print("❌ Failed to toggle bookmark: \(error.localizedDescription)")
+            
+            // --- 2. REVERT OPTIMISTIC UPDATE ON ERROR ---
             await MainActor.run {
                 self.bookmarkStatus[eventId] = isCurrentlyBookmarked
                 self.isTogglingBookmark[eventId] = false
+                
+                // Revert the list change
+                if isCurrentlyBookmarked {
+                    // We tried to remove but failed -> Add it back
+                    if !bookmarkedEvents.contains(where: { $0.id == eventId }) {
+                        bookmarkedEvents.insert(event, at: 0)
+                    }
+                } else {
+                    // We tried to add but failed -> Remove it
+                    bookmarkedEvents.removeAll { $0.id == eventId }
+                }
 
-                // Show error with retry option
                 self.bookmarkError = BookmarkError(
                     eventId: eventId,
                     eventName: event.name,
-                    message: "Failed to update bookmark"
+                    message: "Failed to update bookmark: \(error.localizedDescription)"
                 )
             }
         }
@@ -197,7 +244,9 @@ class BookmarkManager: ObservableObject {
 
     func refreshBookmarks() {
         guard !isSimulatingEmptyData else { return }
-        setupBookmarkListener()
+        Task {
+            await setupBookmarkListener()
+        }
     }
 
     func clearBookmarks() {
@@ -219,6 +268,8 @@ class BookmarkManager: ObservableObject {
     func resumeFromSimulation() {
         guard isSimulatingEmptyData else { return }
         isSimulatingEmptyData = false
-        setupBookmarkListener()
+        Task {
+            await setupBookmarkListener()
+        }
     }
 }

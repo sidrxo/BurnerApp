@@ -31,6 +31,9 @@ protocol UserRepositoryProtocol {
     // User repository usually doesn't need stopObserving unless you listen to profile changes
 }
 
+// Add this to your RepositoryProtocols.swift file
+// Replace the makeEventViewModel() function with this:
+
 @MainActor
 class DependencyContainer {
     static let shared = DependencyContainer()
@@ -75,10 +78,19 @@ class DependencyContainer {
     }
 
     func makeEventViewModel() -> EventViewModel {
-        return EventViewModel(
+        // FIXED: Create EventViewModel without TicketsViewModel initially
+        let eventVM = EventViewModel(
             eventRepository: eventRepository,
             ticketRepository: ticketRepository
         )
+        
+        // Create TicketsViewModel
+        let ticketsVM = makeTicketsViewModel()
+        
+        // Connect them
+        eventVM.setTicketsViewModel(ticketsVM)
+        
+        return eventVM
     }
 
     func makeBookmarkManager() -> BookmarkManager {

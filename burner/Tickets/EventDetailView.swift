@@ -16,7 +16,7 @@ struct EventDetailView: View {
     @EnvironmentObject var coordinator: NavigationCoordinator
     @EnvironmentObject var appState: AppState
 
-    @State private var userHasTicket = false
+    // FIXED: Removed @State var userHasTicket = false. Now using computed property below.
     @State private var showingSignInAlert = false
     @State private var showingMapsSheet = false
     
@@ -45,7 +45,13 @@ struct EventDetailView: View {
         bookmarkManager.isBookmarked(eventId)
     }
 
+    // FIXED: userHasTicket is now a reactive computed property reading EventViewModel's source of truth.
+    private var userHasTicket: Bool {
+        eventViewModel.userHasTicket(for: eventId)
+    }
+    
     private var userTicket: Ticket? {
+        // Redundant with userHasTicket, but kept for clarity.
         ticketsViewModel.tickets.first { $0.eventId == eventId }
     }
 
@@ -109,13 +115,6 @@ struct EventDetailView: View {
         return "\(datePart) at \(timePart)"
     }
 
-    private func checkUserTicketStatus() {
-        eventViewModel.checkUserTicketStatus(for: eventId) { hasTicket in
-            DispatchQueue.main.async {
-                self.userHasTicket = hasTicket
-            }
-        }
-    }
 
     private func formatTimeRange(event: Event) -> String {
         guard let startTime = event.startTime else {
@@ -135,11 +134,12 @@ struct EventDetailView: View {
         }
     }
 
+    // NOTE: This logic is still problematic as a synchronous check for async state.
+    // It is kept identical to your provided code, relying on the synchronous
+    // `appState.authService.currentUser` for immediate UI decisions.
     private var isUserSignedIn: Bool {
-        Task {
-            return (try? await SupabaseManager.shared.client.auth.session) != nil
-        }
-        // For synchronous check, we'll use a simpler approach
+        // The Task block is invalid for synchronous properties, relying on the
+        // synchronous AppState property instead.
         return appState.authService.currentUser != nil
     }
 
@@ -168,7 +168,8 @@ struct EventDetailView: View {
             }
         }
         .onAppear {
-            checkUserTicketStatus()
+            // No need to manually check - EventViewModel automatically tracks ticket status
+            // via its Combine listener on TicketsViewModel
             
             withAnimation(.easeOut(duration: 0.4).delay(0.15)) {
                 didAppear = true
@@ -185,12 +186,7 @@ struct EventDetailView: View {
                 }
             }
         }
-        .onChange(of: ticketsViewModel.tickets.count) { _, _ in
-            checkUserTicketStatus()
-        }
-        .onChange(of: eventViewModel.events.first(where: { $0.id == eventId })?.ticketsSold) { _, _ in
-            checkUserTicketStatus()
-        }
+        
         .onReceive(eventViewModel.$errorMessage) { errorMessage in
             if let errorMessage = errorMessage {
                 coordinator.showError(title: "Error", message: errorMessage)
@@ -201,7 +197,6 @@ struct EventDetailView: View {
             if let successMessage = successMessage {
                 coordinator.showSuccess(title: "Success", message: successMessage)
                 eventViewModel.clearMessages()
-                checkUserTicketStatus()
             }
         }
     }
@@ -427,7 +422,7 @@ struct EventDetailView: View {
                             customColor: buttonStatus.color
                         ) {
                             if userHasTicket {
-                                
+                                // Action when user already has a ticket
                             } else if availableTickets > 0 {
                                 if !isUserSignedIn {
                                     showingSignInAlert = true

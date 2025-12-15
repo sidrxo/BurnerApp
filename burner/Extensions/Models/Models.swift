@@ -44,20 +44,20 @@ struct Ticket: Identifiable, Codable, Sendable {
     // Identity
     var eventId: String
     var userId: String
-    var ticketNumber: String?
+    var ticketNumber: String? // Nullable
     
-    // Event info (fallback data)
+    // Event info (fallback data) - These should all be present after the SQL fix
     var eventName: String
     var venue: String
     var startTime: Date
     
     // Purchase info
-    var totalPrice: Double
+    var totalPrice: Double? // FIX: Changed to optional Double? to handle DB nulls
     var purchaseDate: Date
     
     // Status & QR
     var status: String
-    var qrCode: String?
+    var qrCode: String? // Nullable
 
     // Optional metadata
     var venueId: String?

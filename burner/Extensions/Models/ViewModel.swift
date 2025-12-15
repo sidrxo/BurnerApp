@@ -17,16 +17,42 @@ class EventViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var isSimulatingEmptyData = false
     
+    private weak var ticketsViewModel: TicketsViewModel?
     private var eventObservationTask: Task<Void, Never>?
-    
-    private var isRefreshing = false
-    
+        
     init(
         eventRepository: EventRepositoryProtocol,
         ticketRepository: TicketRepositoryProtocol
     ) {
         self.eventRepository = eventRepository
         self.ticketRepository = ticketRepository
+    }
+    
+    func setTicketsViewModel(_ viewModel: TicketsViewModel) {
+        self.ticketsViewModel = viewModel
+        setupTicketStatusListener()
+    }
+    
+    private func setupTicketStatusListener() {
+        ticketsViewModel?.$tickets
+            .sink { [weak self] tickets in
+                guard let self = self else { return }
+                
+                var newStatus: [String: Bool] = [:]
+                
+                for event in self.events {
+                    if let eventId = event.id {
+                        newStatus[eventId] = false
+                    }
+                }
+                
+                for ticket in tickets where ticket.status == "confirmed" {
+                    newStatus[ticket.eventId] = true
+                }
+                
+                self.userTicketStatus = newStatus
+            }
+            .store(in: &cancellables)
     }
     
     func fetchEvents() {
@@ -68,16 +94,7 @@ class EventViewModel: ObservableObject {
 
     func refreshEvents() async {
         guard !isSimulatingEmptyData else { return }
-            
-        guard !isRefreshing else { return }
-        isRefreshing = true
-            
-        defer {
-            Task { @MainActor in
-                self.isRefreshing = false
-            }
-        }
-
+        
         await MainActor.run {
             self.errorMessage = nil
         }
@@ -95,6 +112,10 @@ class EventViewModel: ObservableObject {
             await self.refreshUserTicketStatus()
 
         } catch {
+            if (error as NSError).code == NSURLErrorCancelled {
+                return
+            }
+            
             let nsError = error as NSError
                 
             if nsError.domain == NSCocoaErrorDomain && nsError.code == NSUserCancelledError {
@@ -129,9 +150,7 @@ class EventViewModel: ObservableObject {
         fetchEvents()
     }
         
-        
     func fetchEvent(byId eventId: String) async throws -> Event {
-        // Updated to use Repository instead of Firestore direct call
         guard let event = try await eventRepository.fetchEvent(by: eventId) else {
              throw NSError(domain: "EventViewModel", code: 404, userInfo: [
                 NSLocalizedDescriptionKey: "Event not found"
@@ -149,7 +168,7 @@ class EventViewModel: ObservableObject {
         return event
     }
         
-    private func refreshUserTicketStatus() async {
+    func refreshUserTicketStatus() async {
         guard let user = try? await SupabaseManager.shared.client.auth.session.user else {
             userTicketStatus.removeAll()
             return
@@ -167,6 +186,7 @@ class EventViewModel: ObservableObject {
                 self.userTicketStatus = status
             }
         } catch {
+            // Silent fail - status will be updated by ticket listener
         }
     }
         
@@ -174,7 +194,6 @@ class EventViewModel: ObservableObject {
         let featured = events.filter { $0.isFeatured == true }
         return Array(featured.prefix(5))
     }
-        
         
     func checkUserTicketStatus(for eventId: String, completion: @escaping (Bool) -> Void) {
         Task {
@@ -243,7 +262,9 @@ class TicketsViewModel: ObservableObject {
                     return
                 }
 
-                isLoading = true
+                if self.tickets.isEmpty {
+                    isLoading = true
+                }
                 
                 ticketRepository.observeUserTickets(userId: user.id.uuidString) { [weak self] result in
                     guard let self = self else { return }
@@ -256,10 +277,13 @@ class TicketsViewModel: ObservableObject {
                         switch result {
                         case .success(let tickets):
                             self.tickets = tickets
+                            self.errorMessage = nil
 
                         case .failure(let error):
-                            if let _ = try? await SupabaseManager.shared.client.auth.session.user {
-                                self.errorMessage = "Failed to load tickets: \(error.localizedDescription)"
+                            Task {
+                                if let _ = try? await SupabaseManager.shared.client.auth.session.user {
+                                    self.errorMessage = "Failed to load tickets: \(error.localizedDescription)"
+                                }
                             }
                         }
                     }
@@ -274,7 +298,6 @@ class TicketsViewModel: ObservableObject {
     }
         
     func simulateEmptyData() {
-        // Protocol now includes stopObserving, so this is valid
         ticketRepository.stopObserving()
         isSimulatingEmptyData = true
         tickets = []
@@ -282,7 +305,6 @@ class TicketsViewModel: ObservableObject {
         errorMessage = nil
     }
         
-
     func resumeFromSimulation() {
         guard isSimulatingEmptyData else { return }
         isSimulatingEmptyData = false
