@@ -2,6 +2,7 @@ import SwiftUI
 import Kingfisher
 import Combine
 import Supabase
+import Network
 
 struct TicketGridItem: View {
     let ticketWithEvent: TicketWithEventData
@@ -63,8 +64,13 @@ struct TicketsView: View {
     @State private var selectedFilter: Int = 0
     @State private var showTicketsAnimation = false
     @State private var showEmptyStateAnimation = false
-    @State private var isLoadingTicketsAfterSignIn = false // State variable retained for manual loading control
-
+    @State private var isLoadingTicketsAfterSignIn = false
+    @State private var isViewActive = false
+    @State private var isOffline = false
+    @State private var monitor: NWPathMonitor?
+    @State private var networkQueue = DispatchQueue(label: "NetworkMonitor")
+    @State private var showingOfflineAlert = false
+    
     private let columns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12),
@@ -115,45 +121,52 @@ struct TicketsView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            ticketsHeader
+        ZStack {
+            Color.black
+                .edgesIgnoringSafeArea(.all)
+            
+            VStack(spacing: 0) {
+                ticketsHeader
 
-            if !ticketsViewModel.tickets.isEmpty || ticketsViewModel.isLoading {
-                if hasPastTickets {
-                    tabBarSection
+                if !ticketsViewModel.tickets.isEmpty || ticketsViewModel.isLoading {
+                    if hasPastTickets {
+                        tabBarSection
+                    }
+                }
+
+                if isLoadingTicketsAfterSignIn {
+                    loadingView
+                } else if ticketsViewModel.tickets.isEmpty && isViewActive {
+                    // Only show empty/error state if view is active
+                    if isOffline {
+                        offlineStateView
+                    } else if appState.authService.currentUser == nil {
+                        signedOutEmptyState
+                    } else {
+                        noTicketsEmptyState
+                    }
+                } else if !ticketsViewModel.tickets.isEmpty {
+                    ticketsList
+                        .opacity(showTicketsAnimation ? 1 : 0)
+                        .offset(y: showTicketsAnimation ? 0 : 30)
+                } else {
+                    // Show initial loading when view first appears
+                    loadingView
                 }
             }
-
-            if isLoadingTicketsAfterSignIn {
-                Color.black
-            } else if ticketsViewModel.tickets.isEmpty {
-                emptyStateView
-                    .opacity(showEmptyStateAnimation ? 1 : 0)
-                    .onAppear {
-                        withAnimation(.easeOut(duration: 0.5)) {
-                            showEmptyStateAnimation = true
-                        }
-                    }
-                    .onDisappear {
-                        showEmptyStateAnimation = false
-                    }
-            } else {
-                ticketsList
-                    .opacity(showTicketsAnimation ? 1 : 0)
-                    .offset(y: showTicketsAnimation ? 0 : 30)
-            }
+            .navigationBarHidden(true)
         }
-        .background(Color.black)
-        .navigationBarHidden(true)
         .onAppear {
+            isViewActive = true
             appState.syncBurnerModeAuthorization()
+            startNetworkMonitoring()
             
-            // 1. Fetch tickets if the user is logged in
-            if appState.authService.currentUser != nil {
+            // Only fetch tickets if we don't already have them
+            if appState.authService.currentUser != nil && ticketsViewModel.tickets.isEmpty && !isOffline {
                 ticketsViewModel.fetchUserTickets()
             }
 
-            // 2. Handle initial animation if data is already loaded
+            // Only animate if we have tickets right away (not coming from empty)
             if !ticketsViewModel.tickets.isEmpty {
                 withAnimation(.easeOut(duration: 0.5)) {
                     showTicketsAnimation = true
@@ -161,24 +174,35 @@ struct TicketsView: View {
             }
         }
         .onDisappear {
-            // Stop real-time connection when the view is not visible
-            ticketsViewModel.cleanup()
+            isViewActive = false
+            stopNetworkMonitoring()
+            // Don't cleanup when just navigating away - only cleanup on sign out
+        }
+        .alert("Network Connection Lost", isPresented: $showingOfflineAlert) {
+            Button("OK", role: .cancel) {
+                showingOfflineAlert = false
+            }
+            Button("Retry", action: retryConnection)
+        } message: {
+            Text("You've lost your internet connection. Some features may be unavailable.")
         }
         
-        // --- FIX: Simplify Sign-in/Sign-out Logic ---
+        // --- Handle user authentication changes ---
         .onChange(of: appState.authService.currentUser) { _, newUser in
-            if newUser != nil {
+            if newUser != nil && !isOffline {
                 // User just signed in: Start loading animation and fetch
                 showTicketsAnimation = false
                 isLoadingTicketsAfterSignIn = true
                 ticketsViewModel.fetchUserTickets()
-            } else {
+            } else if newUser == nil {
                 // User signed out: Stop observation and clear view
                 showTicketsAnimation = false
                 isLoadingTicketsAfterSignIn = false
                 ticketsViewModel.cleanup()
             }
         }
+        
+        // --- Handle loading state changes ---
         .onChange(of: ticketsViewModel.isLoading) { _, newValue in
             // Stop sign-in loading flag when the VM is no longer loading
             if isLoadingTicketsAfterSignIn && !newValue {
@@ -187,14 +211,25 @@ struct TicketsView: View {
                 }
             }
         }
+        
+        // --- Handle ticket data changes ---
         .onChange(of: ticketsViewModel.tickets.count) { oldCount, newCount in
-            // Re-trigger animation on data change (especially for real-time updates)
+            // Re-trigger animation on data change
             if (oldCount == 0 && newCount > 0) || (oldCount > 0 && newCount == 0) {
                 showTicketsAnimation = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     withAnimation(.easeOut(duration: 0.5)) {
                         showTicketsAnimation = true
                     }
+                }
+            }
+        }
+        
+        // --- Handle error messages from ViewModel ---
+        .onChange(of: ticketsViewModel.errorMessage) { _, newError in
+            if let error = newError, error.contains("network") || error.contains("connection") {
+                if isViewActive && !showingOfflineAlert {
+                    showingOfflineAlert = true
                 }
             }
         }
@@ -227,13 +262,47 @@ struct TicketsView: View {
         .padding(.bottom, 30)
     }
     
-    private var emptyStateView: some View {
-        Group {
-            if appState.authService.currentUser == nil {
-                signedOutEmptyState
-            } else {
-                noTicketsEmptyState
+    private var offlineStateView: some View {
+        GeometryReader { geometry in
+            VStack(spacing: 20) {
+                Image(systemName: "wifi.slash")
+                    .font(.system(size: 70))
+                    .foregroundColor(.gray)
+                    .frame(height: 140)
+                    .frame(maxWidth: .infinity)
+                    .padding(.bottom, 30)
+                
+                VStack(spacing: 8) {
+                    TightHeaderText("NO", "INTERNET", alignment: .center)
+                        .frame(maxWidth: .infinity)
+                    Text("Check your connection and try again.")
+                        .appCard()
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+                
+                VStack(spacing: 12) {
+                    BurnerButton("RETRY CONNECTION", style: .primary, maxWidth: 220) {
+                        retryConnection()
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
             }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .position(x: geometry.size.width / 2, y: geometry.size.height / 2 - 50)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
+        .opacity(showEmptyStateAnimation ? 1 : 0)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.5)) {
+                showEmptyStateAnimation = true
+            }
+        }
+        .onDisappear {
+            showEmptyStateAnimation = false
         }
     }
     
@@ -267,6 +336,15 @@ struct TicketsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
+        .opacity(showEmptyStateAnimation ? 1 : 0)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.5)) {
+                showEmptyStateAnimation = true
+            }
+        }
+        .onDisappear {
+            showEmptyStateAnimation = false
+        }
     }
     
     private var noTicketsEmptyState: some View {
@@ -299,6 +377,15 @@ struct TicketsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
+        .opacity(showEmptyStateAnimation ? 1 : 0)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.5)) {
+                showEmptyStateAnimation = true
+            }
+        }
+        .onDisappear {
+            showEmptyStateAnimation = false
+        }
     }
     
     private var tabBarSection: some View {
@@ -364,12 +451,7 @@ struct TicketsView: View {
     
     private var loadingView: some View {
         VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.2)
-                .tint(.white)
-            Text("Loading your tickets...")
-                .appBody()
-                .foregroundColor(.gray)
+
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
@@ -385,7 +467,9 @@ struct TicketsView: View {
                     ticketsGrid
                 }
                 .refreshable {
-                    ticketsViewModel.fetchUserTickets()
+                    if !isOffline {
+                        ticketsViewModel.fetchUserTickets()
+                    }
                 }
             } else {
                 ticketsGrid
@@ -416,5 +500,40 @@ struct TicketsView: View {
         let rows = ceil(Double(filteredTickets.count) / 3.0)
         let totalHeight = (itemHeight * CGFloat(rows)) + (12 * CGFloat(max(0, rows - 1))) + 100
         return totalHeight
+    }
+    
+    private func startNetworkMonitoring() {
+        monitor = NWPathMonitor()
+        monitor?.pathUpdateHandler = { path in
+            DispatchQueue.main.async {
+                let wasOffline = self.isOffline
+                self.isOffline = path.status != .satisfied
+                
+                // If we just came back online, try to fetch tickets
+                if wasOffline && !self.isOffline && appState.authService.currentUser != nil {
+                    ticketsViewModel.fetchUserTickets()
+                }
+                
+                // If we just went offline and have tickets, show alert
+                if !wasOffline && self.isOffline && self.isViewActive {
+                    self.showingOfflineAlert = true
+                }
+            }
+        }
+        monitor?.start(queue: networkQueue)
+    }
+    
+    private func stopNetworkMonitoring() {
+        monitor?.cancel()
+        monitor = nil
+    }
+    
+    private func retryConnection() {
+        showingOfflineAlert = false
+        isOffline = false
+        
+        if appState.authService.currentUser != nil {
+            ticketsViewModel.fetchUserTickets()
+        }
     }
 }

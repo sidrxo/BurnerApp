@@ -1,0 +1,89 @@
+Policy Name: "View profiles"
+
+Command: SELECT
+Roles: public
+USING: ( (auth.uid() = id) OR is_admin() )
+Policy Name: "Update own profile"
+
+Command: UPDATE
+Roles: public
+USING: ( auth.uid() = id )
+Policy Name: "Insert own profile"
+
+Command: INSERT
+Roles: public
+USING: null
+WITH CHECK: ( auth.uid() = id )
+Policy Name: "View tickets"
+
+Command: SELECT
+Roles: public
+USING: ( (auth.uid() = user_id) OR is_admin() )
+Policy Name: "Admins update tickets"
+
+Command: UPDATE
+Roles: public
+USING: is_admin()
+Policy Name: "View bookmarks"
+
+Command: SELECT
+Roles: public
+USING: ( (auth.uid() = user_id) OR is_admin() )
+Policy Name: "Users can create own bookmarks"
+
+Command: INSERT
+Roles: public
+USING: null
+WITH CHECK: ( auth.uid() = user_id )
+Policy Name: "Users can delete own bookmarks"
+
+Command: DELETE
+Roles: public
+USING: ( auth.uid() = user_id )
+Policy Name: "Users can update own profile"
+
+Command: UPDATE
+Roles: public
+USING: ( auth.uid() = id )
+Policy Name: "Users can insert own profile"
+
+Command: INSERT
+Roles: public
+USING: null
+WITH CHECK: ( auth.uid() = id )
+Policy Name: "Users can view own tickets"
+
+Command: SELECT
+Roles: public
+USING: ( auth.uid() = user_id )
+Policy Name: "Users can view own bookmarks"
+
+Command: SELECT
+Roles: public
+USING: ( auth.uid() = user_id )
+Policy Name: "Enable read access for all users"
+
+Command: SELECT
+Roles: public
+USING: true
+Policy Name: "Admins can insert events"
+
+Command: INSERT
+Roles: public
+USING: null
+WITH CHECK: is_admin()
+Policy Name: "Admins can update events"
+
+Command: UPDATE
+Roles: public
+USING: is_admin()
+Policy Name: "Admins can delete events"
+
+Command: DELETE
+Roles: public
+USING: is_admin()
+Policy Name: "Enable read access for all users"
+
+Command: SELECT
+Roles: public
+USING: true

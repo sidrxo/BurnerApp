@@ -22,7 +22,7 @@ class AppState: ObservableObject {
     @Published var userDidSignOut = false
     @Published var isSimulatingEmptyFirestore = false
     @Published var userRole: String = ""
-    @Published var userDisplayName: String = "" // Central source for display name
+    @Published var userDisplayName: String = ""
     @Published var isScannerActive: Bool = false
     @Published var showingBurnerLockScreen = false
     @Published var burnerSetupCompleted: Bool = false
@@ -76,18 +76,14 @@ class AppState: ObservableObject {
         self.burnerManager = BurnerModeManager()
         self.onboardingManager = OnboardingManager()
 
-        // Create EventViewModel first (without TicketsViewModel reference)
         self.eventViewModel = EventViewModel(
             eventRepository: eventRepository,
             ticketRepository: ticketRepository
         )
 
-        // Create TicketsViewModel
         self.ticketsViewModel = TicketsViewModel(
             ticketRepository: ticketRepository
         )
-
-        // Now connect them (this sets up the Combine listener)
 
         self.bookmarkManager = BookmarkManager(
             bookmarkRepository: bookmarkRepository,
@@ -120,7 +116,6 @@ class AppState: ObservableObject {
 
         loadInitialData()
         self.eventViewModel.setTicketsViewModel(ticketsViewModel)
-
     }
 
     private func loadBurnerSetupState() {
@@ -159,10 +154,20 @@ class AppState: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // UPDATED: Enhanced ticket change listener for burner mode
         ticketsViewModel.$tickets
+            .dropFirst() // Skip initial empty state
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] tickets in
                 guard let self = self else { return }
+                
+                // Check and schedule event day reminders
                 self.burnerManager.checkAndScheduleEventDayReminder(tickets: tickets)
+                
+                // Check if burner mode monitoring should be active
+                Task {
+                    await self.burnerModeMonitor.checkNow()
+                }
             }
             .store(in: &cancellables)
     }
@@ -216,11 +221,13 @@ class AppState: ObservableObject {
                 await eventViewModel.refreshEvents()
                 ticketsViewModel.fetchUserTickets()
                 bookmarkManager.refreshBookmarks()
+                
+                // IMPORTANT: Start burner mode monitoring after tickets are fetched
+                // Give tickets time to load first
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                burnerModeMonitor.startMonitoring()
             }
         }
-
-        burnerModeMonitor.stopMonitoring()
-        burnerModeMonitor.startMonitoring()
 
         let isEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
         if isEnabled {
@@ -235,18 +242,13 @@ class AppState: ObservableObject {
                 var finalRole: String = ""
                 
                 if let role = profile?.role {
-                    // 1. Get role from the fetched profile (preferred)
                     finalRole = role
                 } else if let fallbackRole = try? await authService.getUserRole() {
-                    // 2. Fall back to checking Auth metadata (getUserRole is async/throws)
                     finalRole = fallbackRole
                 }
                 
                 await MainActor.run {
-                    // 1. Use profile's displayName for the primary source
                     self.userDisplayName = profile?.displayName ?? ""
-                    
-                    // 2. Assign the determined role, safely defaulting to empty string
                     self.userRole = finalRole
                     self.isScannerActive = isScanner
                 }
@@ -268,7 +270,7 @@ class AppState: ObservableObject {
         burnerModeMonitor.stopMonitoring()
         showingBurnerLockScreen = false
         userRole = ""
-        userDisplayName = "" // Clear display name on sign out
+        userDisplayName = ""
         isScannerActive = false
     }
 
@@ -295,10 +297,6 @@ class AppState: ObservableObject {
         } else {
             Task {
                 await eventViewModel.refreshEvents()
-            }
-
-            if authService.currentUser != nil {
-                ticketsViewModel.fetchUserTickets()
             }
         }
     }

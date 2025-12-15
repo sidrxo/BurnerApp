@@ -3,7 +3,7 @@ import CoreLocation
 
 protocol EventRepositoryProtocol {
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void)
-    func fetchEventsFromServer(since date: Date) async throws -> [Event]
+    func fetchEventsFromServer(since date: Date, page: Int?, pageSize: Int?) async throws -> [Event]
     func eventStream(since date: Date) -> AsyncThrowingStream<[Event], Error>
     func fetchEvent(by id: String) async throws -> Event?
     func stopObserving()
@@ -107,57 +107,3 @@ class DependencyContainer {
     }
 }
 
-// MARK: - Mocks (Updated to conform to new protocol requirements)
-
-class MockEventRepository: EventRepositoryProtocol {
-    var mockEvents: [Event] = []
-    var shouldFail = false
-
-    func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void) {
-        if shouldFail { completion(.failure(NSError(domain: "Mock", code: -1))) }
-        else { completion(.success(mockEvents)) }
-    }
-
-    func fetchEventsFromServer(since date: Date) async throws -> [Event] {
-        if shouldFail { throw NSError(domain: "Mock", code: -1) }
-        return mockEvents
-    }
-
-    func eventStream(since date: Date) -> AsyncThrowingStream<[Event], Error> {
-        AsyncThrowingStream { continuation in
-            continuation.yield(mockEvents)
-            continuation.finish()
-        }
-    }
-    
-    func fetchEvent(by id: String) async throws -> Event? {
-        return mockEvents.first { $0.id == id }
-    }
-    
-    func stopObserving() {}
-}
-
-class MockTicketRepository: TicketRepositoryProtocol {
-    var mockTickets: [Ticket] = []
-    
-    func observeUserTickets(userId: String, completion: @escaping (Result<[Ticket], Error>) -> Void) {
-        completion(.success(mockTickets))
-    }
-
-    func fetchUserTicketStatus(userId: String, eventIds: [String]) async throws -> [String: Bool] {
-        return [:]
-    }
-
-    func userHasTicket(userId: String, eventId: String) async throws -> Bool {
-        return false
-    }
-    
-    func stopObserving() {}
-}
-
-class MockBookmarkRepository: BookmarkRepositoryProtocol {
-    func observeBookmarks(userId: String, completion: @escaping (Result<[BookmarkData], Error>) -> Void) {}
-    func addBookmark(userId: String, bookmark: BookmarkData) async throws {}
-    func removeBookmark(userId: String, eventId: String) async throws {}
-    func stopObserving() {}
-}

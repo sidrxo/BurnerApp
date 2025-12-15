@@ -18,7 +18,7 @@ struct ScannerView: View {
     @State private var isProcessing = false
     @State private var manualTicketNumber: String = ""
     @State private var showManualEntry = false
-    @State private var isCheckingScanner = true // Keep this to prevent UI flash
+    @State private var isCheckingScanner = true
     @State private var selectedEvent: Event?
     @State private var todaysEvents: [Event] = []
     @State private var isLoadingEvents = false
@@ -30,7 +30,6 @@ struct ScannerView: View {
         return SupabaseManager.shared.client
     }
     
-    // NEW: Computed property for the role
     private var appStateUserRole: String {
         return appState.userRole
     }
@@ -100,11 +99,10 @@ struct ScannerView: View {
 
                     Event: \(details.eventName)
                     Ticket: \(details.ticketNumber)
-                    Guest: \(details.userName)
 
                     Scanned: \(details.scannedAt)
                     By: \(details.scannedBy)
-                    \(details.scannedByEmail != nil ? "(\(details.scannedByEmail!))" : "")
+                    \(details.scannedByEmail != nil ? "()" : "")
                     """,
                     primaryAction: {
                         showingAlreadyUsed = false
@@ -401,7 +399,6 @@ struct ScannerView: View {
     }
     
     private var canScanTickets: Bool {
-        // FIXED: Use appStateUserRole for immediate role check
         return appStateUserRole == "scanner" || appStateUserRole == "venueAdmin" || appStateUserRole == "siteAdmin"
     }
     
@@ -413,14 +410,11 @@ struct ScannerView: View {
             return
         }
         
-        // This task now only waits for the session to ensure the AppState has loaded claims.
-        // It does not locally fetch or set the role.
         Task {
-            // Attempt to get session (which triggers claim fetch/refresh)
             _ = try? await client.auth.session
             
             await MainActor.run {
-                self.isCheckingScanner = false // Signal loading is complete
+                self.isCheckingScanner = false
             }
         }
     }
@@ -449,7 +443,6 @@ struct ScannerView: View {
             return
         }
 
-        // Build request data - minimal required parameters
         var data: [String: String] = [:]
         var identifierType: String = ""
         
@@ -458,6 +451,8 @@ struct ScannerView: View {
             data["ticket_id"] = ticketId
             identifierType = "UUID"
             print("🔍 QR Scan - UUID: \(ticketId)")
+            print("🔍 Full QR Data Length: \(qrData.count)")
+            print("🔍 First 100 chars: \(String(qrData.prefix(100)))")
         } else if let ticketNum = ticketNumber, !ticketNum.isEmpty {
             // Manual entry - send ticket number + event ID for context
             data["ticket_number"] = ticketNum
@@ -485,39 +480,111 @@ struct ScannerView: View {
             do {
                 print("📤 Sending scan request:", data)
                 
-                let responseData: Data = try await client.functions.invoke(
+                // Use the Supabase client's built-in JSON decoding
+                struct ScanResponse: Decodable {
+                    let success: Bool
+                    let message: String
+                    let errorType: String?
+                    let ticketNumber: String?
+                    let userName: String?
+                    let eventName: String?
+                    let scannedBy: String?
+                    let scannedByEmail: String?
+                    let scannedAt: String?
+                    let actualEvent: String?
+                    
+                    enum CodingKeys: String, CodingKey {
+                        case success, message, errorType
+                        case ticketNumber, userName, eventName
+                        case scannedBy, scannedByEmail, scannedAt
+                        case actualEvent
+                    }
+                }
+                
+                let response: ScanResponse = try await client.functions.invoke(
                     "scan-ticket",
                     options: FunctionInvokeOptions(body: data)
                 )
                 
-                // Parse response
-                guard let jsonData = try? JSONSerialization.jsonObject(with: responseData, options: []) as? [String: Any] else {
-                    throw NSError(domain: "Scanner", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response format"])
-                }
-
-                print("📥 Scan response:", jsonData)
+                print("📥 Scan response - Success: \(response.success), Message: \(response.message)")
 
                 await MainActor.run {
                     self.isProcessing = false
                     self.manualTicketNumber = ""
                     
-                    let success = jsonData["success"] as? Bool ?? false
-                    let message = jsonData["message"] as? String ?? "No message"
-                    let ticketStatus = jsonData["ticketStatus"] as? String ?? ""
-
-                    if success {
-                        self.successMessage = message
+                    if response.success {
+                        self.successMessage = response.message
                         self.showingSuccess = true
                         let generator = UINotificationFeedbackGenerator()
                         generator.notificationOccurred(.success)
-                    } else if ticketStatus == "used" {
-                        // Parse already used details
-                        self.handleAlreadyUsedTicket(jsonData: jsonData)
                     } else {
-                        self.errorMessage = message
-                        self.showingError = true
-                        let generator = UINotificationFeedbackGenerator()
-                        generator.notificationOccurred(.error)
+                        // Handle different error types
+                        switch response.errorType {
+                        case "ALREADY_USED":
+                            // Show detailed already-used alert
+                            if let scannedBy = response.scannedBy,
+                               let scannedAt = response.scannedAt {
+                                
+                                let userName = response.userName ?? "Guest"
+                                let ticketNum = response.ticketNumber ?? "Unknown"
+                                let eventName = response.eventName ?? selectedEvent.name ?? "Unknown Event"
+                                let formattedTime = self.formatScanTime(scannedAt)
+                                
+                                self.alreadyUsedDetails = AlreadyUsedTicket(
+                                    ticketNumber: ticketNum,
+                                    eventName: eventName,
+                                    userName: userName,
+                                    scannedAt: formattedTime,
+                                    scannedBy: scannedBy,
+                                    scannedByEmail: response.scannedByEmail
+                                )
+                                self.showingAlreadyUsed = true
+                            } else {
+                                self.errorMessage = response.message
+                                self.showingError = true
+                            }
+                            let generator = UINotificationFeedbackGenerator()
+                            generator.notificationOccurred(.error)
+                            
+                        case "WRONG_EVENT":
+                            if let actualEvent = response.actualEvent {
+                                self.errorMessage = "This ticket is for '\(actualEvent)', not this event."
+                            } else {
+                                self.errorMessage = response.message
+                            }
+                            self.showingError = true
+                            
+                        case "CANCELLED":
+                            self.errorMessage = "This ticket has been cancelled and cannot be used."
+                            self.showingError = true
+                            
+                        case "PERMISSION_DENIED":
+                            self.errorMessage = "You don't have permission to scan tickets at this venue."
+                            self.showingError = true
+                            
+                        case "TICKET_NOT_FOUND":
+                            self.errorMessage = "Ticket not found. Please check the ticket and try again."
+                            self.showingError = true
+                            
+                        case "UNAUTHENTICATED":
+                            self.errorMessage = "Please sign in to scan tickets."
+                            self.showingError = true
+                            
+                        case "INVALID_STATUS":
+                            self.errorMessage = "This ticket has an invalid status and cannot be scanned."
+                            self.showingError = true
+                            
+                        default:
+                            // Fallback to generic message
+                            self.errorMessage = response.message
+                            self.showingError = true
+                        }
+                        
+                        // Haptic feedback for errors (except already-used which is handled above)
+                        if response.errorType != "ALREADY_USED" {
+                            let generator = UINotificationFeedbackGenerator()
+                            generator.notificationOccurred(.error)
+                        }
                     }
                 }
             } catch {
@@ -528,7 +595,6 @@ struct ScannerView: View {
         }
     }
 
-    // Helper function for already used tickets
     private func handleAlreadyUsedTicket(jsonData: [String: Any]) {
         if let scannedBy = jsonData["scannedBy"] as? String,
            let scannedAt = jsonData["scannedAt"] as? String {
@@ -557,7 +623,6 @@ struct ScannerView: View {
         }
     }
 
-    // Helper function for error handling
     private func handleScanError(error: Error) {
         self.isProcessing = false
         self.manualTicketNumber = ""
@@ -566,7 +631,6 @@ struct ScannerView: View {
         let errorMsg = error.localizedDescription
         print("❌ Scan error:", errorMsg)
         
-        // User-friendly error messages
         if errorMsg.contains("Ticket not found") {
             self.errorMessage = "Ticket not found. Please check the ticket and try again."
         } else if errorMsg.contains("Permission denied") {
@@ -586,27 +650,53 @@ struct ScannerView: View {
         generator.notificationOccurred(.error)
     }
 
-    // Also update extractTicketId to return only UUID
+    // UPDATED: Enhanced QR code extraction with better debugging
     private func extractTicketId(from qrData: String) -> String? {
-      
+        print("🔍 Raw QR Data: \(qrData)")
+        
+        // First, try to parse as JSON directly
         if let data = qrData.data(using: .utf8),
            let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
            let type = json["type"] as? String, type == "EVENT_TICKET" {
             
             // Return ticket_id (UUID) from QR code
             if let ticketId = json["ticket_id"] as? String {
+                print("✅ Extracted ticket_id: \(ticketId)")
                 return ticketId
             } else if let ticketId = json["ticketId"] as? String {
-                return ticketId // Fallback for old QR codes
+                print("✅ Extracted ticketId (fallback): \(ticketId)")
+                return ticketId
+            }
+        }
+        
+        // If direct parsing fails, try unescaping first (for double-encoded JSON)
+        let unescaped = qrData
+            .replacingOccurrences(of: "\\\"", with: "\"")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+        
+        if unescaped != qrData {
+            print("🔄 Trying unescaped version...")
+            if let data = unescaped.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+               let type = json["type"] as? String, type == "EVENT_TICKET" {
+                
+                if let ticketId = json["ticket_id"] as? String {
+                    print("✅ Extracted ticket_id (after unescaping): \(ticketId)")
+                    return ticketId
+                } else if let ticketId = json["ticketId"] as? String {
+                    print("✅ Extracted ticketId (after unescaping): \(ticketId)")
+                    return ticketId
+                }
             }
         }
         
         // Check if it's already a UUID (contains hyphens and proper length)
         if qrData.contains("-") && qrData.count == 36 {
-            // Looks like a UUID
+            print("✅ Direct UUID detected: \(qrData)")
             return qrData
         }
         
+        print("❌ Failed to extract ticket_id from QR data")
         return nil
     }
     

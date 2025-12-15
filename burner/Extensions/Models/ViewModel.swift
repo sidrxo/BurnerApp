@@ -103,7 +103,10 @@ class EventViewModel: ObservableObject {
         let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
 
         do {
-            let serverEvents = try await eventRepository.fetchEventsFromServer(since: sevenDaysAgo)
+            let serverEvents = try await eventRepository.fetchEventsFromServer(
+                            since: sevenDaysAgo,
+                            page: 1,
+                            pageSize: 100)
 
             await MainActor.run {
                 self.events = serverEvents

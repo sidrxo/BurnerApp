@@ -61,18 +61,31 @@ class EventRepository: BaseRepository, EventRepositoryProtocol {
         }
     }
     
-    func fetchEventsFromServer(since date: Date) async throws -> [Event] {
-        let dateString = ISO8601DateFormatter().string(from: date)
-        
-        let events: [Event] = try await client
-            .from("events")
-            .select()
-            .gte("start_time", value: dateString)
-            .execute()
-            .value
-        
-        return events
-    }
+    // UPDATED Implementation
+        func fetchEventsFromServer(since date: Date, page: Int? = nil, pageSize: Int? = nil) async throws -> [Event] {
+            let dateString = ISO8601DateFormatter().string(from: date)
+            
+            // 1. Start the query
+            var query = client
+                .from("events")
+                .select()
+                .gte("start_time", value: dateString)
+            
+            // 2. Apply pagination if parameters exist
+            if let page = page, let pageSize = pageSize {
+                // Supabase uses 0-based indexing for ranges
+                // Page 1 (size 100) -> range(0, 99)
+                let lowerBound = (page - 1) * pageSize
+                let upperBound = lowerBound + pageSize - 1
+                
+                query = query.range(from: lowerBound, to: upperBound) as! PostgrestFilterBuilder
+            }
+            
+            // 3. Execute
+            let events: [Event] = try await query.execute().value
+            
+            return events
+        }
     
     func fetchEvent(by id: String) async throws -> Event? {
         let event: Event = try await client
