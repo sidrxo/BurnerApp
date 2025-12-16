@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { collection, doc, getDocs, updateDoc, setDoc, addDoc, deleteDoc, arrayUnion, arrayRemove, query, where, GeoPoint } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/useAuth";
 import { toast } from "sonner";
 
@@ -50,39 +49,35 @@ export function useVenuesData() {
 
   const fetchVenues = async () => {
     try {
-      let snapshot;
+      let query = supabase
+        .from('venues')
+        .select('*');
 
-      // Optimize query based on role - only fetch what the user needs
+      // Performance: Only fetch what the user needs based on role
       if (user && user.role === "venueAdmin" && user.venueId) {
         // venueAdmin only needs their own venue
-        const venueDoc = await getDocs(
-          query(collection(db, "venues"), where("__name__", "==", user.venueId))
-        );
-        snapshot = venueDoc;
-      } else {
-        // siteAdmin and others can see all venues
-        snapshot = await getDocs(collection(db, "venues"));
+        query = query.eq('id', user.venueId);
       }
 
-      const fetched: Venue[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        fetched.push({
-          id: doc.id,
-          name: data.name,
-          admins: data.admins || [],
-          subAdmins: data.subAdmins || [],
-          address: data.address,
-          city: data.city,
-          latitude: data.coordinates?.latitude,
-          longitude: data.coordinates?.longitude,
-          capacity: data.capacity,
-          contactEmail: data.contactEmail,
-          website: data.website,
-          active: data.active,
-          eventCount: data.eventCount,
-        });
-      });
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      const fetched: Venue[] = (data || []).map((venue: any) => ({
+        id: venue.id,
+        name: venue.name,
+        admins: venue.admins || [],
+        subAdmins: venue.sub_admins || [],
+        address: venue.address,
+        city: venue.city,
+        latitude: venue.coordinates?.latitude,
+        longitude: venue.coordinates?.longitude,
+        capacity: venue.capacity,
+        contactEmail: venue.contact_email,
+        website: venue.website,
+        active: venue.active,
+        eventCount: venue.event_count,
+      }));
 
       setVenues(fetched);
     } catch (err) {
@@ -93,7 +88,7 @@ export function useVenuesData() {
 
   const handleCreateVenueWithAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!newVenueName.trim() || !newVenueAdminEmail.trim()) {
       toast.error("Please fill in all fields");
       return;
@@ -108,51 +103,36 @@ export function useVenuesData() {
 
     setActionLoading(true);
     try {
-      // Prepare coordinates as GeoPoint if both latitude and longitude are provided
-      const coordinates = (newVenueLatitude && newVenueLongitude)
-        ? new GeoPoint(Number(newVenueLatitude), Number(newVenueLongitude))
-        : null;
-
-      // Create the venue first
-      const venueRef = await addDoc(collection(db, "venues"), {
-        name: newVenueName.trim(),
-        address: newVenueAddress.trim() || null,
-        city: newVenueCity.trim() || null,
-        coordinates: coordinates,
-        capacity: newVenueCapacity ? Number(newVenueCapacity) : null,
-        contactEmail: newVenueContactEmail.trim() || null,
-        website: newVenueWebsite.trim() || null,
-        admins: [newVenueAdminEmail.trim()],
-        subAdmins: [],
-        createdAt: new Date(),
-        createdBy: user?.uid ?? null,
-        active: true,
-        eventCount: 0,
+      // Use Supabase Edge Function to create venue (it handles admin setup too)
+      const { data, error } = await supabase.functions.invoke('create-venue', {
+        body: {
+          name: newVenueName.trim(),
+          adminEmail: newVenueAdminEmail.trim(),
+        },
       });
 
-      // Check if user already exists using query instead of loading all users
-      const usersQuery = query(
-        collection(db, "users"),
-        where("email", "==", newVenueAdminEmail.trim())
-      );
-      const usersSnapshot = await getDocs(usersQuery);
+      if (error) throw error;
 
-      // Create or update user document
-      if (!usersSnapshot.empty) {
-        // User exists, update their role
-        const userDoc = usersSnapshot.docs[0];
-        await updateDoc(userDoc.ref, {
-          role: "venueAdmin",
-          venueId: venueRef.id
-        });
-      } else {
-        // Create new user document
-        const newUserRef = doc(db, "users", newVenueAdminEmail.trim());
-        await setDoc(newUserRef, {
-          email: newVenueAdminEmail.trim(),
-          role: "venueAdmin",
-          venueId: venueRef.id
-        });
+      // Update the venue with additional details if provided
+      if (data?.venueId) {
+        const coordinates = (newVenueLatitude && newVenueLongitude)
+          ? { latitude: Number(newVenueLatitude), longitude: Number(newVenueLongitude) }
+          : null;
+
+        const updates: any = {};
+        if (newVenueAddress.trim()) updates.address = newVenueAddress.trim();
+        if (newVenueCity.trim()) updates.city = newVenueCity.trim();
+        if (coordinates) updates.coordinates = coordinates;
+        if (newVenueCapacity) updates.capacity = Number(newVenueCapacity);
+        if (newVenueContactEmail.trim()) updates.contact_email = newVenueContactEmail.trim();
+        if (newVenueWebsite.trim()) updates.website = newVenueWebsite.trim();
+
+        if (Object.keys(updates).length > 0) {
+          await supabase
+            .from('venues')
+            .update(updates)
+            .eq('id', data.venueId);
+        }
       }
 
       toast.success(`Venue "${newVenueName}" created with admin ${newVenueAdminEmail}`);
@@ -167,9 +147,9 @@ export function useVenuesData() {
       setNewVenueWebsite("");
       setShowCreateVenueDialog(false);
       fetchVenues();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to create venue");
+      toast.error(err.message || "Failed to create venue");
     } finally {
       setActionLoading(false);
     }
@@ -178,22 +158,24 @@ export function useVenuesData() {
   const handleRemoveVenue = async (venueId: string) => {
     const venue = venues.find(v => v.id === venueId);
     if (!venue) return;
-    
+
     setActionLoading(true);
     try {
-      await deleteDoc(doc(db, "venues", venueId));
+      // Delete the venue
+      const { error: venueError } = await supabase
+        .from('venues')
+        .delete()
+        .eq('id', venueId);
 
-      // Reset all users associated with this venue using query
-      const usersQuery = query(
-        collection(db, "users"),
-        where("venueId", "==", venueId)
-      );
-      const usersSnapshot = await getDocs(usersQuery);
+      if (venueError) throw venueError;
 
-      const updatePromises = usersSnapshot.docs.map((docSnap) =>
-        updateDoc(docSnap.ref, { role: "user", venueId: null })
-      );
-      await Promise.all(updatePromises);
+      // Reset all admins associated with this venue
+      const { error: adminsError } = await supabase
+        .from('admins')
+        .update({ role: 'user', venue_id: null })
+        .eq('venue_id', venueId);
+
+      if (adminsError) console.warn("Error resetting admins:", adminsError);
 
       toast.success(`Venue "${venue.name}" and all associated admins removed successfully`);
       fetchVenues();
@@ -222,38 +204,58 @@ export function useVenuesData() {
     try {
       if (!user) throw new Error("User not found");
 
-      // Lookup user by email using query instead of loading all users
-      const usersQuery = query(
-        collection(db, "users"),
-        where("email", "==", email.trim())
-      );
-      const usersSnapshot = await getDocs(usersQuery);
+      // Check if user exists in admins table
+      const { data: existingAdmin } = await supabase
+        .from('admins')
+        .select('id, email')
+        .eq('email', email.trim())
+        .single();
 
-      if (!usersSnapshot.empty) {
-        // User exists, update their role
-        const userDoc = usersSnapshot.docs[0];
-        await updateDoc(userDoc.ref, {
-          role: role,
-          venueId: venueId
-        });
+      if (existingAdmin) {
+        // Update existing admin
+        const { error } = await supabase
+          .from('admins')
+          .update({
+            role: role,
+            venue_id: venueId,
+            active: true,
+          })
+          .eq('email', email.trim());
+
+        if (error) throw error;
       } else {
-        // Create new user document
-        const newUserRef = doc(db, "users", email.trim());
-        await setDoc(newUserRef, {
-          email: email.trim(),
-          role: role,
-          venueId: venueId
-        });
+        // Create new admin entry
+        const { error } = await supabase
+          .from('admins')
+          .insert([{
+            email: email.trim(),
+            role: role,
+            venue_id: venueId,
+            active: true,
+            created_at: new Date().toISOString(),
+          }]);
+
+        if (error) throw error;
       }
 
-      const venueRef = doc(db, "venues", venueId);
+      // Update venue's admin array
       const venue = venues.find((v) => v.id === venueId);
       if (!venue) throw new Error("Venue not found");
 
-      const arrayField = role === "venueAdmin" ? "admins" : "subAdmins";
-      await updateDoc(venueRef, {
-        [arrayField]: arrayUnion(email.trim())
-      });
+      const arrayField = role === "venueAdmin" ? "admins" : "sub_admins";
+      const currentArray = role === "venueAdmin" ? venue.admins : venue.subAdmins;
+
+      // Add email to array if not already present
+      if (!currentArray.includes(email.trim())) {
+        const updatedArray = [...currentArray, email.trim()];
+
+        const { error } = await supabase
+          .from('venues')
+          .update({ [arrayField]: updatedArray })
+          .eq('id', venueId);
+
+        if (error) throw error;
+      }
 
       const roleType = role === "venueAdmin" ? "venue admin" : "sub-admin";
       toast.success(`${roleType} added successfully`);
@@ -270,30 +272,31 @@ export function useVenuesData() {
   const handleRemoveAdmin = async (venueId: string, email: string, isVenueAdmin: boolean) => {
     setActionLoading(true);
     try {
-      // Update venue's admin/subAdmin array
-      const venueRef = doc(db, "venues", venueId);
       const venue = venues.find((v) => v.id === venueId);
       if (!venue) throw new Error("Venue not found");
 
-      const arrayField = isVenueAdmin ? "admins" : "subAdmins";
-      await updateDoc(venueRef, {
-        [arrayField]: arrayRemove(email)
-      });
+      // Remove from venue's array
+      const arrayField = isVenueAdmin ? "admins" : "sub_admins";
+      const currentArray = isVenueAdmin ? venue.admins : venue.subAdmins;
+      const updatedArray = currentArray.filter(e => e !== email);
 
-      // Update user's role in /users using query instead of loading all users
-      const usersQuery = query(
-        collection(db, "users"),
-        where("email", "==", email)
-      );
-      const usersSnapshot = await getDocs(usersQuery);
+      const { error: venueError } = await supabase
+        .from('venues')
+        .update({ [arrayField]: updatedArray })
+        .eq('id', venueId);
 
-      if (!usersSnapshot.empty) {
-        const userDoc = usersSnapshot.docs[0];
-        await updateDoc(userDoc.ref, {
-          role: "user",
-          venueId: null
-        });
-      }
+      if (venueError) throw venueError;
+
+      // Update admin role in admins table
+      const { error: adminError } = await supabase
+        .from('admins')
+        .update({
+          role: 'user',
+          venue_id: null,
+        })
+        .eq('email', email);
+
+      if (adminError) console.warn("Error updating admin:", adminError);
 
       const roleType = isVenueAdmin ? "venue admin" : "sub-admin";
       toast.success(`${roleType} removed successfully`);
@@ -312,31 +315,33 @@ export function useVenuesData() {
   ) => {
     setActionLoading(true);
     try {
-      const venueRef = doc(db, "venues", venueId);
-
-      // Filter out undefined values and prepare update object
+      // Convert camelCase to snake_case and prepare update object
       const updateData: any = {};
       if (updates.name !== undefined) updateData.name = updates.name;
       if (updates.address !== undefined) updateData.address = updates.address;
       if (updates.city !== undefined) updateData.city = updates.city;
       if (updates.capacity !== undefined) updateData.capacity = updates.capacity;
-      if (updates.contactEmail !== undefined) updateData.contactEmail = updates.contactEmail;
+      if (updates.contactEmail !== undefined) updateData.contact_email = updates.contactEmail;
       if (updates.website !== undefined) updateData.website = updates.website;
       if (updates.active !== undefined) updateData.active = updates.active;
 
       // Handle coordinates update
       if (updates.latitude !== undefined && updates.longitude !== undefined) {
         if (updates.latitude && updates.longitude) {
-          updateData.coordinates = new GeoPoint(updates.latitude, updates.longitude);
+          updateData.coordinates = { latitude: updates.latitude, longitude: updates.longitude };
         } else {
           updateData.coordinates = null;
         }
       }
 
-      await updateDoc(venueRef, {
-        ...updateData,
-        updatedAt: new Date()
-      });
+      updateData.updated_at = new Date().toISOString();
+
+      const { error } = await supabase
+        .from('venues')
+        .update(updateData)
+        .eq('id', venueId);
+
+      if (error) throw error;
 
       toast.success("Venue updated successfully");
       fetchVenues();
