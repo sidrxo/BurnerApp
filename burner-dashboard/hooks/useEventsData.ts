@@ -563,7 +563,9 @@ export function useEventForm(
     if (!allowed.includes(file.type)) throw new Error("Invalid file type");
     if (file.size > 5 * 1024 * 1024) throw new Error("File too large (max 5MB)");
 
-    const fileName = `${Date.now()}_${file.name}`;
+    // Extract just the filename, removing any path components
+    const originalName = file.name.split('/').pop() || file.name;
+    const fileName = `${Date.now()}_${originalName}`;
     const storagePath = `event-images/${eventId}/${fileName}`;
 
     // Upload to Supabase Storage (bucket is event_images, folder is event-images)
