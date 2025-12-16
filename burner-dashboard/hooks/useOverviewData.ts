@@ -170,9 +170,9 @@ export function useOverviewData() {
 
   async function loadAggregatedEventStats() {
     try {
-      // Try to load from event_stats table/view if it exists
+      // Try to load from eventStats table/view if it exists
       // Otherwise return false to fall back to client-side aggregation
-      let query = supabase.from('event_stats').select('*');
+      let query = supabase.from('eventStats').select('*');
 
       if (user?.role === "venueAdmin" || user?.role === "subAdmin") {
         if (!user.venueId) return false;
