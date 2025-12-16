@@ -12,7 +12,6 @@ type AppUser = {
   role: Role;
   venueId?: string | null;
   active: boolean;
-  name?: string | null;
 };
 
 type AuthContextType = {
@@ -42,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // First check if user is an admin/scanner
       const { data: adminData, error: adminError } = await supabase
         .from('admins')
-        .select('id, email, name, role, venue_id, active')
+        .select('id, email, role, venue_id, active')
         .eq('id', supabaseUser.id)
         .single();
 
@@ -55,11 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await supabase.auth.signOut();
           return {
             uid: supabaseUser.id,
-            email: supabaseUser.email,
+            email: supabaseUser.email ?? null,
             role: "user",
             venueId: null,
             active: false,
-            name: null,
           };
         }
 
@@ -69,14 +67,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: isValidRole(adminData.role) ? adminData.role : "user",
           venueId: adminData.venue_id,
           active: adminData.active,
-          name: adminData.name,
         };
       }
 
       // If not an admin, check regular users table
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, email, name, active')
+        .select('id, email, active')
         .eq('id', supabaseUser.id)
         .single();
 
@@ -89,21 +86,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await supabase.auth.signOut();
           return {
             uid: supabaseUser.id,
-            email: supabaseUser.email,
+            email: supabaseUser.email ?? null,
             role: "user",
             venueId: null,
             active: false,
-            name: userData.name,
           };
         }
 
         return {
           uid: userData.id,
-          email: userData.email || supabaseUser.email,
+          email: userData.email,
           role: "user",
           venueId: null,
           active: userData.active !== false,
-          name: userData.name,
         };
       }
 
@@ -111,11 +106,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("User not found in database, creating basic profile");
       return {
         uid: supabaseUser.id,
-        email: supabaseUser.email,
+        email: supabaseUser.email ?? null,
         role: "user",
         venueId: null,
         active: true,
-        name: null,
       };
     } catch (error: any) {
       console.error("Error getting user profile:", error);
@@ -123,11 +117,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Fallback to basic user info
       return {
         uid: supabaseUser.id,
-        email: supabaseUser.email,
+        email: supabaseUser.email ?? null,
         role: "user",
         venueId: null,
         active: true,
-        name: null,
       };
     }
   };
