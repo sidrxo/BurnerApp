@@ -524,7 +524,6 @@ struct TicketPurchaseView: View {
     private func handleApplePayPayment() {
         print("🟡 [TicketView] Initiating Apple Pay transaction.")
         guard !hasInitiatedPurchase else {
-            print("⚠️ Purchase already in progress, ignoring duplicate tap")
             return
         }
 
@@ -566,7 +565,6 @@ struct TicketPurchaseView: View {
                     self.isLoadingPayment = false
                     
                 } else {
-                    print("❌ [TicketView] Apple Pay FAILURE. Message: \(result.message)")
                     self.showLoadingSuccess = false
                     if !result.message.isEmpty {
                         self.showError(result.message)
@@ -579,7 +577,6 @@ struct TicketPurchaseView: View {
     private func handleCardPayment() {
         print("🟡 [TicketView] Initiating Card Payment transaction.")
         guard !hasInitiatedPurchase else {
-            print("⚠️ Purchase already in progress, ignoring duplicate tap")
             return
         }
 
@@ -616,7 +613,6 @@ struct TicketPurchaseView: View {
                     self.isLoadingPayment = false
                     
                 } else {
-                    print("❌ [TicketView] Card Payment FAILURE. Message: \(result.message)")
                     self.showLoadingSuccess = false
                     self.showError(result.message)
                 }
@@ -627,7 +623,6 @@ struct TicketPurchaseView: View {
     private func handleSavedCardPayment() {
         print("🟡 [TicketView] Initiating Saved Card Payment transaction.")
         guard !hasInitiatedPurchase else {
-            print("⚠️ Purchase already in progress, ignoring duplicate tap")
             return
         }
 
@@ -663,7 +658,6 @@ struct TicketPurchaseView: View {
                     self.isLoadingPayment = false
                     
                 } else {
-                    print("❌ [TicketView] Saved Card Payment FAILURE. Message: \(result.message)")
                     self.showLoadingSuccess = false
                     self.showError(result.message)
                 }
@@ -690,7 +684,6 @@ struct TicketPurchaseView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             
             guard let definitiveTicketId = ticketId else {
-                print("❌ [TicketView] Critical error: Payment succeeded but ticketId was null.")
                 coordinator.showSuccess(
                     title: "Purchase Successful",
                     message: "Your ticket for \(event.name) is now available in the Tickets tab, but an error occurred during navigation."
@@ -725,7 +718,6 @@ struct TicketPurchaseView: View {
                 self.waitForTicketSync(ticketId: ticketId, event: event, tab: tab, retryCount: retryCount + 1)
             }
         } else {
-            print("❌ [TicketView] Ticket ID \(ticketId) not found after \(maxRetries) retries (1.0s total). Showing fallback.")
             coordinator.showSuccess(
                 title: "Purchase Successful",
                 message: "Your ticket for \(event.name) is now available in the Tickets tab."

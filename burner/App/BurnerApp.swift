@@ -165,13 +165,9 @@ struct BurnerApp: App {
             
             if newPhase == .active {
                 appState.syncBurnerModeAuthorization()
-                
-                UNUserNotificationCenter.current().setBadgeCount(0) { error in
-                    if let error = error {
-                        print("⚠️ Error clearing badge count: \(error.localizedDescription)")
-                    }
-                }
-                
+
+                UNUserNotificationCenter.current().setBadgeCount(0) { _ in }
+
                 if #available(iOS 16.1, *) {
                     TicketLiveActivityManager.updateLiveActivity()
                 }

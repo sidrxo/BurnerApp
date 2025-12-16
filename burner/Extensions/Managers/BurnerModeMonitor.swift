@@ -27,14 +27,12 @@ class BurnerModeMonitor: ObservableObject {
     
     // MARK: - Start Monitoring
     func startMonitoring() {
-        print("🔥 BurnerModeMonitor: Starting monitoring...")
-        
         // Stop any existing monitoring
         stopMonitoring()
-        
+
         // Set up listener for ticket changes
         setupTicketChangeListener()
-        
+
         // Do initial check
         Task {
             await checkShouldMonitor()
@@ -48,9 +46,7 @@ class BurnerModeMonitor: ObservableObject {
             .dropFirst() // Skip initial value
             .sink { [weak self] tickets in
                 guard let self = self else { return }
-                
-                print("🎫 BurnerModeMonitor: Tickets changed, checking conditions...")
-                
+
                 Task { @MainActor in
                     await self.checkShouldMonitor()
                 }
@@ -61,22 +57,18 @@ class BurnerModeMonitor: ObservableObject {
     private func checkShouldMonitor() async {
         // Check if user has tickets for today's events
         let todayTickets = getTodaysEventTickets()
-        
-        print("📋 BurnerModeMonitor: Found \(todayTickets.count) tickets for today's events")
-        
+
         if !todayTickets.isEmpty {
             // User has tickets for today - start real-time monitoring
             if !isMonitoring {
-                print("✅ BurnerModeMonitor: User has tickets for today, starting real-time monitoring")
                 await startRealtimeMonitoring()
             }
-            
+
             // Also check if any tickets meet burner mode criteria
             await checkTicketsForBurnerMode(todayTickets)
         } else {
             // No tickets for today - stop monitoring
             if isMonitoring {
-                print("ℹ️ BurnerModeMonitor: No tickets for today, stopping monitoring")
                 stopRealtimeMonitoring()
             }
         }
@@ -122,16 +114,15 @@ class BurnerModeMonitor: ObservableObject {
     // MARK: - Start Real-time Monitoring
     private func startRealtimeMonitoring() async {
         guard let userId = await getCurrentUserId() else {
-            print("❌ BurnerModeMonitor: No user ID for real-time monitoring")
             return
         }
-        
+
         // Cancel any existing subscription
         subscriptionTask?.cancel()
-        
+
         subscriptionTask = Task {
             let channel = await client.channel("burner-tickets:\(userId)")
-            
+
             await channel.onPostgresChange(
                 AnyAction.self,
                 schema: "public",
@@ -139,30 +130,26 @@ class BurnerModeMonitor: ObservableObject {
                 filter: "user_id=eq.\(userId)"
             ) { [weak self] payload in
                 guard let self = self else { return }
-                
-                print("🔔 BurnerModeMonitor: Real-time ticket change detected")
-                
+
                 Task { @MainActor in
                     // Re-check all conditions
                     await self.checkShouldMonitor()
                 }
             }
-            
+
             await channel.subscribe()
-            
+
             await MainActor.run {
                 self.isMonitoring = true
             }
-            
-            print("✅ BurnerModeMonitor: Real-time subscription active")
-            
+
             // Keep the task alive
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
-            
+
             await channel.unsubscribe()
-            
+
             await MainActor.run {
                 self.isMonitoring = false
             }
@@ -174,61 +161,39 @@ class BurnerModeMonitor: ObservableObject {
         subscriptionTask?.cancel()
         subscriptionTask = nil
         isMonitoring = false
-        print("🛑 BurnerModeMonitor: Real-time monitoring stopped")
     }
     
     // MARK: - Check Tickets for Burner Mode
     private func checkTicketsForBurnerMode(_ tickets: [Ticket]) async {
         let now = Date()
-        
-        print("🔍 BurnerModeMonitor: Checking \(tickets.count) tickets for burner mode criteria...")
-        
+
         for ticket in tickets {
             // Skip if not scanned
-            guard ticket.status == "used", let scannedAt = ticket.usedAt else {
-                print("  ⏭️ Ticket \(ticket.ticketNumber ?? "unknown") - not scanned yet")
+            guard ticket.status == "used", ticket.usedAt != nil else {
                 continue
             }
-            
+
             let eventStart = ticket.startTime
-            
-            print("  🎫 Ticket \(ticket.ticketNumber ?? "unknown"):")
-            print("     - Scanned: \(scannedAt)")
-            print("     - Event start: \(eventStart)")
-            print("     - Current time: \(now)")
-            
+
             // Check if event has started
             if now >= eventStart {
-                print("     ✅ Event has started! Enabling burner mode...")
                 await enableBurnerMode()
                 return // Exit after enabling once
-            } else {
-                let timeUntilStart = eventStart.timeIntervalSince(now)
-                let minutesUntilStart = Int(timeUntilStart / 60)
-                print("     ⏳ Event starts in \(minutesUntilStart) minutes")
             }
         }
-        
-        print("ℹ️ BurnerModeMonitor: No tickets meet burner mode criteria yet")
     }
     
     // MARK: - Enable Burner Mode
     private func enableBurnerMode() async {
         // Check if already enabled
         guard !UserDefaults.standard.bool(forKey: "burnerModeEnabled") else {
-            print("ℹ️ BurnerModeMonitor: Burner mode already enabled")
-            return
-        }
-        
-        // Check if setup is valid
-        guard burnerManager.isSetupValid else {
-            print("⚠️ BurnerModeMonitor: Burner mode setup not valid")
-            print("   - Authorized: \(burnerManager.isAuthorized)")
-            print("   - Categories: \(burnerManager.selectedApps.categoryTokens.count)/\(burnerManager.minimumCategoriesRequired)")
             return
         }
 
-        print("🔥 BurnerModeMonitor: Enabling burner mode...")
+        // Check if setup is valid
+        guard burnerManager.isSetupValid else {
+            return
+        }
 
         do {
             try await burnerManager.enable(appState: appState)
@@ -238,14 +203,8 @@ class BurnerModeMonitor: ObservableObject {
                 name: NSNotification.Name("BurnerModeAutoEnabled"),
                 object: nil
             )
-            
-            print("✅ BurnerModeMonitor: Burner mode enabled successfully")
-        } catch BurnerModeError.notAuthorized {
-            print("❌ BurnerModeMonitor: Not authorized for Screen Time")
-        } catch BurnerModeError.invalidSetup(let reason) {
-            print("❌ BurnerModeMonitor: Invalid setup - \(reason)")
         } catch {
-            print("❌ BurnerModeMonitor: Error enabling burner mode: \(error.localizedDescription)")
+            // Silent fail
         }
     }
     
@@ -254,12 +213,10 @@ class BurnerModeMonitor: ObservableObject {
         stopRealtimeMonitoring()
         ticketsChangeCancellable?.cancel()
         ticketsChangeCancellable = nil
-        print("🛑 BurnerModeMonitor: All monitoring stopped")
     }
 
     // MARK: - Manual Check
     func checkNow() async {
-        print("🔄 BurnerModeMonitor: Manual check triggered")
         await checkShouldMonitor()
     }
 

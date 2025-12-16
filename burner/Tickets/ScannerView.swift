@@ -450,15 +450,11 @@ struct ScannerView: View {
             // QR scan - send UUID only
             data["ticket_id"] = ticketId
             identifierType = "UUID"
-            print("🔍 QR Scan - UUID: \(ticketId)")
-            print("🔍 Full QR Data Length: \(qrData.count)")
-            print("🔍 First 100 chars: \(String(qrData.prefix(100)))")
         } else if let ticketNum = ticketNumber, !ticketNum.isEmpty {
             // Manual entry - send ticket number + event ID for context
             data["ticket_number"] = ticketNum
             data["event_id"] = eventId
             identifierType = "Ticket Number"
-            print("🔍 Manual Entry - Ticket: \(ticketNum), Event: \(eventId)")
         } else {
             errorMessage = "Invalid QR Code or Ticket Number"
             showingError = true
@@ -478,7 +474,6 @@ struct ScannerView: View {
 
         Task {
             do {
-                print("📤 Sending scan request:", data)
                 
                 // Use the Supabase client's built-in JSON decoding
                 struct ScanResponse: Decodable {
@@ -506,7 +501,6 @@ struct ScannerView: View {
                     options: FunctionInvokeOptions(body: data)
                 )
                 
-                print("📥 Scan response - Success: \(response.success), Message: \(response.message)")
 
                 await MainActor.run {
                     self.isProcessing = false
@@ -629,7 +623,6 @@ struct ScannerView: View {
         self.isScanning = false
         
         let errorMsg = error.localizedDescription
-        print("❌ Scan error:", errorMsg)
         
         if errorMsg.contains("Ticket not found") {
             self.errorMessage = "Ticket not found. Please check the ticket and try again."
@@ -652,7 +645,6 @@ struct ScannerView: View {
 
     // UPDATED: Enhanced QR code extraction with better debugging
     private func extractTicketId(from qrData: String) -> String? {
-        print("🔍 Raw QR Data: \(qrData)")
         
         // First, try to parse as JSON directly
         if let data = qrData.data(using: .utf8),
@@ -661,10 +653,8 @@ struct ScannerView: View {
             
             // Return ticket_id (UUID) from QR code
             if let ticketId = json["ticket_id"] as? String {
-                print("✅ Extracted ticket_id: \(ticketId)")
                 return ticketId
             } else if let ticketId = json["ticketId"] as? String {
-                print("✅ Extracted ticketId (fallback): \(ticketId)")
                 return ticketId
             }
         }
@@ -675,16 +665,13 @@ struct ScannerView: View {
             .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
         
         if unescaped != qrData {
-            print("🔄 Trying unescaped version...")
             if let data = unescaped.data(using: .utf8),
                let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                let type = json["type"] as? String, type == "EVENT_TICKET" {
                 
                 if let ticketId = json["ticket_id"] as? String {
-                    print("✅ Extracted ticket_id (after unescaping): \(ticketId)")
                     return ticketId
                 } else if let ticketId = json["ticketId"] as? String {
-                    print("✅ Extracted ticketId (after unescaping): \(ticketId)")
                     return ticketId
                 }
             }
@@ -696,7 +683,6 @@ struct ScannerView: View {
             return qrData
         }
         
-        print("❌ Failed to extract ticket_id from QR data")
         return nil
     }
     

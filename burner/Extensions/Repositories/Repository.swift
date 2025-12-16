@@ -81,57 +81,9 @@ class EventRepository: BaseRepository, EventRepositoryProtocol {
                 query = query.range(from: lowerBound, to: upperBound) as! PostgrestFilterBuilder
             }
 
-            // 3. Execute and DEBUG
-            print("\n🔍 DEBUG: Fetching events from Supabase...")
-
-            do {
-                let events: [Event] = try await query.execute().value
-
-                print("✅ Successfully decoded \(events.count) events")
-
-                // Print first event details
-                if let firstEvent = events.first {
-                    print("\n🎫 FIRST EVENT DECODED:")
-                    print("  ID: \(firstEvent.id ?? "nil")")
-                    print("  Name: \(firstEvent.name)")
-                    print("  Venue: \(firstEvent.venue)")
-                    print("  Price: \(firstEvent.price) (type: \(type(of: firstEvent.price)))")
-                    print("  Max Tickets: \(firstEvent.maxTickets) (type: \(type(of: firstEvent.maxTickets)))")
-                    print("  Tickets Sold: \(firstEvent.ticketsSold) (type: \(type(of: firstEvent.ticketsSold)))")
-                    print("  Tags: \(firstEvent.tags ?? []) (type: \(type(of: firstEvent.tags)))")
-                    print("  Coordinates: \(String(describing: firstEvent.coordinates))")
-                    print("  Image URL: \(firstEvent.imageUrl)")
-                }
-
-                return events
-
-            } catch let decodingError as DecodingError {
-                print("❌ DECODING ERROR:")
-                switch decodingError {
-                case .typeMismatch(let type, let context):
-                    print("  Type mismatch: Expected \(type)")
-                    print("  Context: \(context.debugDescription)")
-                    print("  Coding path: \(context.codingPath)")
-                case .valueNotFound(let type, let context):
-                    print("  Value not found: \(type)")
-                    print("  Context: \(context.debugDescription)")
-                    print("  Coding path: \(context.codingPath)")
-                case .keyNotFound(let key, let context):
-                    print("  Key not found: \(key)")
-                    print("  Context: \(context.debugDescription)")
-                    print("  Coding path: \(context.codingPath)")
-                case .dataCorrupted(let context):
-                    print("  Data corrupted")
-                    print("  Context: \(context.debugDescription)")
-                    print("  Coding path: \(context.codingPath)")
-                @unknown default:
-                    print("  Unknown decoding error: \(decodingError)")
-                }
-                throw decodingError
-            } catch {
-                print("❌ OTHER ERROR: \(error)")
-                throw error
-            }
+            // Execute query
+            let events: [Event] = try await query.execute().value
+            return events
         }
     
     func fetchEvent(by id: String) async throws -> Event? {
@@ -526,11 +478,10 @@ class UserRepository: BaseRepository, UserRepositoryProtocol {
                 .eq("id", value: userId)
                 .execute()
                 .value
-            
+
             // Return first match or nil
             return profiles.first
         } catch {
-            print("⚠️ Error fetching user profile: \(error)")
             return nil
         }
     }

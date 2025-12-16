@@ -214,7 +214,6 @@ struct TransferTicketView: View {
                     // If we got here, it's likely success, but check response structure if your function returns specific success flags
                     if let data = response as? [String: Any],
                        let success = data["success"] as? Bool, success == true {
-                        print("✅ Transfer successful")
                         showTransferSuccess = true
                         recipientEmail = ""
                     } else {
@@ -224,7 +223,6 @@ struct TransferTicketView: View {
                              errorMessage = msg
                         } else {
                             // Fallback for successful execution containing valid JSON
-                             print("✅ Transfer successful")
                              showTransferSuccess = true
                              recipientEmail = ""
                         }
@@ -233,7 +231,6 @@ struct TransferTicketView: View {
             } catch {
                 await MainActor.run {
                     isTransferring = false
-                    print("❌ Transfer error: \(error)")
                     
                     // Parse Supabase Function Error
                     let errorMsg = error.localizedDescription
