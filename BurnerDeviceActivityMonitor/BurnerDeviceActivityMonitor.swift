@@ -62,7 +62,6 @@ class BurnerDeviceActivityMonitor: DeviceActivityMonitor {
     
     override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
         super.eventDidReachThreshold(event, activity: activity)
-        print("⚠️ Event threshold reached: \(event) for activity: \(activity)")
     }
     
     override func intervalWillStartWarning(for activity: DeviceActivityName) {

@@ -438,7 +438,6 @@ class AppState: ObservableObject {
             return
         }
 
-        print("⚠️ Burner Mode Authorization revoked. Clearing internal state.")
         Task { @MainActor in
             burnerManager.disable()
             self.showingBurnerLockScreen = false

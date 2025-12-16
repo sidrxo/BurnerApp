@@ -192,9 +192,7 @@ class StripePaymentService: NSObject, ObservableObject {
         if let error = error {
             await MainActor.run { self.isProcessing = false }
             let paymentError = PaymentError.from(stripeError: error)
-           
-            print("❌ \(logPrefix) Confirmation Error: \(error.localizedDescription)")
-           
+
             completion(PaymentResult(
                 success: false,
                 message: paymentError.errorDescription ?? error.localizedDescription,
@@ -225,9 +223,7 @@ class StripePaymentService: NSObject, ObservableObject {
             completion(ticketResult)
         } catch {
             await MainActor.run { self.isProcessing = false }
-           
-            print("❌ \(logPrefix) Ticket Creation Error: \(error.localizedDescription)")
-           
+
             completion(PaymentResult(
                 success: false,
                 message: PaymentError.processingError.errorDescription ?? "Payment processing error",
@@ -274,8 +270,7 @@ class StripePaymentService: NSObject, ObservableObject {
               
             } catch {
                 let msg = error.localizedDescription
-                print("❌ Payment Sheet Setup Error: \(msg)")
-              
+
                 await MainActor.run {
                     self.isProcessing = false
                     self.isPaymentSheetReady = false
@@ -349,19 +344,10 @@ class StripePaymentService: NSObject, ObservableObject {
 
         do {
             let requestBody = ConfirmPurchaseRequest(paymentIntentId: paymentIntentId)
-            
-            print("📤 [DEBUG] Sending confirm-purchase request with paymentIntentId:", paymentIntentId)
-            
+
             let response: ConfirmPurchaseResponse = try await supabase.functions
                 .invoke("confirm-purchase", options: FunctionInvokeOptions(body: requestBody))
-            
-            // DEBUG: Print what we received
-            print("📥 [DEBUG] confirmPurchase response received:")
-            print("📥 [DEBUG] - success:", response.success)
-            print("📥 [DEBUG] - ticketId:", response.ticketId ?? "nil")
-            print("📥 [DEBUG] - ticketNumber:", response.ticketNumber ?? "nil")
-            print("📥 [DEBUG] - message:", response.message ?? "nil")
-            
+
             return PaymentResult(
                 success: response.success,
                 message: response.message ?? "Purchase completed",
@@ -370,7 +356,6 @@ class StripePaymentService: NSObject, ObservableObject {
             )
 
         } catch {
-            print("❌ [DEBUG] confirmPurchase error:", error)
             let nsError = error as NSError
             let isNetworkError = nsError.domain == NSURLErrorDomain ||
                                 nsError.code == NSURLErrorNotConnectedToInternet ||
@@ -379,14 +364,10 @@ class StripePaymentService: NSObject, ObservableObject {
 
             if isNetworkError && retryCount < maxRetries {
                 let delay = baseDelay * UInt64(pow(2.0, Double(retryCount)))
-                print("⚠️ [Payment] Network error, retrying (\(retryCount + 1)/\(maxRetries))...")
 
                 try await Task.sleep(nanoseconds: delay)
                 return try await confirmPurchase(paymentIntentId: paymentIntentId, retryCount: retryCount + 1)
             } else {
-                if let functionError = error as? FunctionsError {
-                   print("❌ [Payment] Edge Function Error: \(functionError.localizedDescription)")
-                }
                 throw error
             }
         }

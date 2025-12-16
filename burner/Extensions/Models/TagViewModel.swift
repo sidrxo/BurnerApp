@@ -110,7 +110,6 @@ class TagViewModel: ObservableObject {
                 self.tags = fetchedTags
                 self.isLoading = false
             } catch {
-                print("❌ Error fetching tags: \(error)")
                 self.error = error.localizedDescription
                 self.isLoading = false
             }

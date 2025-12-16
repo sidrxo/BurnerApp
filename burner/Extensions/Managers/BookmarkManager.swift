@@ -77,13 +77,11 @@ class BookmarkManager: ObservableObject {
                                 return
                             }
                             // MARK: - FIX ENDS HERE
-                            
-                            print("❌ Error observing bookmarks: \(error.localizedDescription)")
                         }
                     }
                 }
             } catch {
-                print("❌ Failed to get user session for bookmarks: \(error.localizedDescription)")
+                // Failed to get user session
             }
         }
     
@@ -121,7 +119,6 @@ class BookmarkManager: ObservableObject {
                 return allEvents
             }
         } catch {
-            print("❌ Error fetching bookmarked events: \(error.localizedDescription)")
             events = []
         }
 
@@ -145,7 +142,6 @@ class BookmarkManager: ObservableObject {
 
     func toggleBookmark(for event: Event) async {
         guard !isSimulatingEmptyData else {
-            print("⚠️ Cannot toggle bookmark: simulating empty data")
             return
         }
 
@@ -217,8 +213,6 @@ class BookmarkManager: ObservableObject {
             }
 
         } catch {
-            print("❌ Failed to toggle bookmark: \(error.localizedDescription)")
-            
             // --- 2. REVERT OPTIMISTIC UPDATE ON ERROR ---
             await MainActor.run {
                 self.bookmarkStatus[eventId] = isCurrentlyBookmarked
