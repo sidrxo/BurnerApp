@@ -15,21 +15,32 @@ export interface Event {
   description?: string | null;
   venue?: string;
   venue_id?: string | null;
+  venueId?: string | null; // Legacy camelCase
   start_time?: string;
+  startTime?: string; // Legacy camelCase
   end_time?: string | null;
+  endTime?: string | null; // Legacy camelCase
   price: number;
   max_tickets: number;
+  maxTickets?: number; // Legacy camelCase
   tickets_sold: number;
+  ticketsSold?: number; // Legacy camelCase
   is_featured?: boolean;
+  isFeatured?: boolean; // Legacy camelCase
   featured_priority?: number;
+  featuredPriority?: number; // Legacy camelCase
   image_url?: string | null;
+  imageUrl?: string | null; // Legacy camelCase
   status?: EventStatus | string | null;
   category?: string | null;
   tags?: string[];
   coordinates?: { latitude: number; longitude: number } | null;
   organizer_id?: string | null;
+  organizerId?: string | null; // Legacy camelCase
   created_at?: string;
+  createdAt?: string; // Legacy camelCase
   updated_at?: string;
+  updatedAt?: string; // Legacy camelCase
 }
 
 export interface Venue {
