@@ -172,8 +172,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (event, session) => {
         console.log("Auth state changed:", event, !!session);
 
+        // Skip reloading for SIGNED_IN events when user is already authenticated
+        // This prevents loading spinners when navigating between pages
+        if (event === 'SIGNED_IN' && user !== null && session?.user?.id === user.uid) {
+          console.log("Skipping reload - user already authenticated");
+          return;
+        }
+
+        // Only show loading for meaningful auth state changes
+        const shouldShowLoading = event !== 'SIGNED_IN' || user === null;
+
         if (session?.user) {
-          setLoading(true);
+          if (shouldShowLoading) {
+            setLoading(true);
+          }
+
           try {
             // Retry logic with exponential backoff for database sync
             let appUser: AppUser | null = null;
@@ -212,7 +225,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.error("Error processing authenticated user:", error);
             setUser(null);
           } finally {
-            setLoading(false);
+            if (shouldShowLoading) {
+              setLoading(false);
+            }
           }
         } else {
           setUser(null);
