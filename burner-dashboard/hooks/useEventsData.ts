@@ -1,23 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  setDoc,
-  Timestamp,
-  updateDoc,
-  where,
-  writeBatch,
-} from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/useAuth";
-import { db, storage } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import {
   EVENT_CATEGORY_OPTIONS,
   EVENT_STATUS_OPTIONS,
@@ -29,23 +14,22 @@ export interface Event {
   name: string;
   description?: string | null;
   venue?: string;
-  venueId?: string | null;
-  startTime?: Timestamp;
-  endTime?: Timestamp | null;
+  venue_id?: string | null;
+  start_time?: string;
+  end_time?: string | null;
   price: number;
-  maxTickets: number;
-  ticketsSold: number;
-  isFeatured?: boolean;
-  featuredPriority?: number; // Lower number = higher priority (0 = top)
-  imageUrl?: string | null;
+  max_tickets: number;
+  tickets_sold: number;
+  is_featured?: boolean;
+  featured_priority?: number;
+  image_url?: string | null;
   status?: EventStatus | string | null;
   category?: string | null;
   tags?: string[];
   coordinates?: { latitude: number; longitude: number } | null;
-  organizerId?: string | null;
-  date?: Timestamp; // legacy support
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
+  organizer_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Venue {
@@ -69,26 +53,22 @@ export interface EventFormData {
   tag: string;
 }
 
-function timestampToInputValue(timestamp?: Timestamp | null) {
+function timestampToInputValue(timestamp?: string | null) {
   if (!timestamp) return "";
   try {
-    return timestamp.toDate().toISOString().slice(0, 16);
+    return new Date(timestamp).toISOString().slice(0, 16);
   } catch {
     return "";
   }
 }
 
-function toDate(value?: Timestamp | { seconds: number } | null) {
+function toDate(value?: string | null) {
   if (!value) return undefined;
   try {
-    if (value instanceof Timestamp) return value.toDate();
-    if (typeof value.seconds === "number") {
-      return new Date(value.seconds * 1000);
-    }
+    return new Date(value);
   } catch {
-    /* ignore */
+    return undefined;
   }
-  return undefined;
 }
 
 function normaliseTag(tag?: string | null) {
@@ -107,6 +87,9 @@ export function useEventsData() {
   const [sortBy, setSortBy] = useState<string>("date-desc");
   const [tagsFromCollection, setTagsFromCollection] = useState<string[]>([]);
 
+  // Cache for venue lookups (performance improvement)
+  const [venueCache, setVenueCache] = useState<Map<string, string>>(new Map());
+
   useEffect(() => {
     if (!authLoading && user) {
       loadEvents();
@@ -119,40 +102,46 @@ export function useEventsData() {
 
   const loadTagsFromCollection = async () => {
     try {
-      const tagsSnapshot = await getDocs(
-        query(collection(db, "tags"), where("active", "==", true), orderBy("order", "asc"))
-      );
-      const tags = tagsSnapshot.docs.map((doc) => {
-        const data = doc.data();
-        return data.nameLowercase || data.name?.toLowerCase() || "";
-      }).filter(Boolean);
+      const { data, error } = await supabase
+        .from('tags')
+        .select('name')
+        .eq('active', true)
+        .order('order', { ascending: true });
+
+      if (error) throw error;
+
+      const tags = data
+        ?.map((tag: any) => tag.name?.toLowerCase() || "")
+        .filter(Boolean) || [];
+
       setTagsFromCollection(tags);
     } catch (error) {
       console.error("Error loading tags:", error);
-      // Fallback to empty array if tags collection doesn't exist yet
       setTagsFromCollection([]);
     }
   };
 
   const loadVenues = async () => {
     try {
-      const snapshot = await getDocs(collection(db, "venues"));
-      const loadedVenues: Venue[] = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        let coordinates = null;
-        if (data.coordinates) {
-          coordinates = {
-            latitude: data.coordinates.latitude,
-            longitude: data.coordinates.longitude,
-          };
-        }
-        return {
-          id: doc.id,
-          name: data.name ?? doc.id,
-          coordinates,
-        };
-      });
+      // Performance: Only select needed fields
+      const { data, error } = await supabase
+        .from('venues')
+        .select('id, name, coordinates');
+
+      if (error) throw error;
+
+      const loadedVenues: Venue[] = (data || []).map((venue: any) => ({
+        id: venue.id,
+        name: venue.name ?? venue.id,
+        coordinates: venue.coordinates,
+      }));
+
       setVenues(loadedVenues);
+
+      // Build venue cache for faster lookups
+      const cache = new Map<string, string>();
+      loadedVenues.forEach(v => cache.set(v.id, v.name));
+      setVenueCache(cache);
     } catch (error) {
       console.error("Error loading venues:", error);
       toast.error("Failed to load venues");
@@ -164,39 +153,60 @@ export function useEventsData() {
     setLoading(true);
 
     try {
-      let eventsQuery;
+      let query = supabase
+        .from('events')
+        .select('*')
+        .order('start_time', { ascending: false });
 
-      if (user.role === "siteAdmin") {
-        eventsQuery = query(collection(db, "events"), orderBy("startTime", "desc"));
-      } else if (user.role === "venueAdmin" || user.role === "subAdmin") {
+      // Role-based filtering
+      if (user.role === "venueAdmin" || user.role === "subAdmin") {
         if (!user.venueId) {
           toast.error("No venue assigned to your account");
           setEvents([]);
           setLoading(false);
           return;
         }
-        eventsQuery = query(
-          collection(db, "events"),
-          where("venueId", "==", user.venueId),
-          orderBy("startTime", "desc")
-        );
-      } else {
+        query = query.eq('venue_id', user.venueId);
+      } else if (user.role !== "siteAdmin") {
         setEvents([]);
         setLoading(false);
         return;
       }
 
-      const snap = await getDocs(eventsQuery);
-      const list: Event[] = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as any),
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      const list: Event[] = (data || []).map((d: any) => ({
+        ...d,
+        // Keep both naming conventions for compatibility
+        venueId: d.venue_id,
+        startTime: d.start_time,
+        endTime: d.end_time,
+        isFeatured: d.is_featured,
+        featuredPriority: d.featured_priority,
+        imageUrl: d.image_url,
+        maxTickets: d.max_tickets,
+        ticketsSold: d.tickets_sold,
+        organizerId: d.organizer_id,
+        createdAt: d.created_at,
+        updatedAt: d.updated_at,
       }));
 
+      // Sort featured events to top
       list.sort((a, b) => {
-        const featuredSort = Number(!!b.isFeatured) - Number(!!a.isFeatured);
+        const featuredSort = Number(!!b.is_featured) - Number(!!a.is_featured);
         if (featuredSort !== 0) return featuredSort;
-        const aDate = toDate(a.startTime) ?? toDate(a.date) ?? new Date(0);
-        const bDate = toDate(b.startTime) ?? toDate(b.date) ?? new Date(0);
+
+        // Then by featured priority if both featured
+        if (a.is_featured && b.is_featured) {
+          const aPriority = a.featured_priority ?? 999;
+          const bPriority = b.featured_priority ?? 999;
+          if (aPriority !== bPriority) return aPriority - bPriority;
+        }
+
+        const aDate = toDate(a.start_time) ?? new Date(0);
+        const bDate = toDate(b.start_time) ?? new Date(0);
         return bDate.getTime() - aDate.getTime();
       });
 
@@ -210,7 +220,6 @@ export function useEventsData() {
   };
 
   const availableTags = useMemo(() => {
-    // Combine tags from collection with tags used in events
     const tagSet = new Set<string>(tagsFromCollection);
     events.forEach((event) => {
       const tags = event.tags ?? [];
@@ -221,6 +230,7 @@ export function useEventsData() {
     return Array.from(tagSet).filter(Boolean);
   }, [events, tagsFromCollection]);
 
+  // Performance: Debounced filtering and sorting
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
 
@@ -251,13 +261,13 @@ export function useEventsData() {
     result.sort((a, b) => {
       switch (sortBy) {
         case "date-asc": {
-          const aDate = toDate(a.startTime) ?? toDate(a.date) ?? new Date(0);
-          const bDate = toDate(b.startTime) ?? toDate(b.date) ?? new Date(0);
+          const aDate = toDate(a.start_time) ?? new Date(0);
+          const bDate = toDate(b.start_time) ?? new Date(0);
           return aDate.getTime() - bDate.getTime();
         }
         case "date-desc": {
-          const aDate = toDate(a.startTime) ?? toDate(a.date) ?? new Date(0);
-          const bDate = toDate(b.startTime) ?? toDate(b.date) ?? new Date(0);
+          const aDate = toDate(a.start_time) ?? new Date(0);
+          const bDate = toDate(b.start_time) ?? new Date(0);
           return bDate.getTime() - aDate.getTime();
         }
         case "name-asc":
@@ -269,11 +279,11 @@ export function useEventsData() {
         case "price-desc":
           return (b.price || 0) - (a.price || 0);
         case "tickets-asc":
-          return (a.ticketsSold || 0) - (b.ticketsSold || 0);
+          return (a.tickets_sold || 0) - (b.tickets_sold || 0);
         case "tickets-desc":
-          return (b.ticketsSold || 0) - (a.ticketsSold || 0);
+          return (b.tickets_sold || 0) - (a.tickets_sold || 0);
         case "featured":
-          return Number(!!b.isFeatured) - Number(!!a.isFeatured);
+          return Number(!!b.is_featured) - Number(!!a.is_featured);
         default:
           return 0;
       }
@@ -289,16 +299,22 @@ export function useEventsData() {
     }
 
     try {
-      await updateDoc(doc(db, "events", ev.id), {
-        isFeatured: !ev.isFeatured,
-        updatedAt: Timestamp.now(),
-      });
+      const { error } = await supabase
+        .from('events')
+        .update({
+          is_featured: !ev.is_featured,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', ev.id);
+
+      if (error) throw error;
+
       setEvents((prev) =>
         prev.map((event) =>
-          event.id === ev.id ? { ...event, isFeatured: !event.isFeatured } : event
+          event.id === ev.id ? { ...event, is_featured: !event.is_featured } : event
         )
       );
-      toast.success(`Event ${!ev.isFeatured ? "featured" : "unfeatured"}`);
+      toast.success(`Event ${!ev.is_featured ? "featured" : "unfeatured"}`);
     } catch (error: any) {
       toast.error(error.message || "Failed to toggle feature");
     }
@@ -311,17 +327,21 @@ export function useEventsData() {
     }
 
     try {
-      // Set this event as top priority (0) and make it featured if not already
-      await updateDoc(doc(db, "events", ev.id), {
-        isFeatured: true,
-        featuredPriority: 0,
-        updatedAt: Timestamp.now(),
-      });
+      const { error } = await supabase
+        .from('events')
+        .update({
+          is_featured: true,
+          featured_priority: 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', ev.id);
+
+      if (error) throw error;
 
       setEvents((prev) =>
         prev.map((event) =>
           event.id === ev.id
-            ? { ...event, isFeatured: true, featuredPriority: 0 }
+            ? { ...event, is_featured: true, featured_priority: 0 }
             : event
         )
       );
@@ -334,22 +354,40 @@ export function useEventsData() {
 
   const onDelete = async (ev: Event) => {
     try {
-      const ticketsSnap = await getDocs(collection(db, "events", ev.id, "tickets"));
-      if (!ticketsSnap.empty) {
-        const batch = writeBatch(db);
-        ticketsSnap.forEach((ticket) => batch.delete(ticket.ref));
-        await batch.commit();
-      }
+      // Delete associated tickets first
+      const { error: ticketsError } = await supabase
+        .from('tickets')
+        .delete()
+        .eq('event_id', ev.id);
 
-      if (ev.imageUrl) {
+      if (ticketsError) throw ticketsError;
+
+      // Delete image from storage if exists
+      if (ev.image_url) {
         try {
-          await deleteObject(ref(storage, ev.imageUrl));
+          // Extract path from URL
+          const urlParts = ev.image_url.split('/');
+          const bucket = 'event-images';
+          const path = urlParts.slice(urlParts.indexOf(bucket) + 1).join('/');
+
+          const { error: storageError } = await supabase.storage
+            .from(bucket)
+            .remove([path]);
+
+          if (storageError) console.warn("Unable to delete image", storageError);
         } catch (storageError) {
           console.warn("Unable to delete existing image", storageError);
         }
       }
 
-      await deleteDoc(doc(db, "events", ev.id));
+      // Delete the event
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', ev.id);
+
+      if (error) throw error;
+
       setEvents((prev) => prev.filter((event) => event.id !== ev.id));
       toast.success("Event deleted successfully");
     } catch (error: any) {
@@ -375,7 +413,7 @@ export function useEventsData() {
       case "cancelled":
         return { status: "cancelled", label: "Cancelled", variant: "destructive" as const };
       default: {
-        const isSoldOut = (ev.ticketsSold ?? 0) >= (ev.maxTickets ?? 0);
+        const isSoldOut = (ev.tickets_sold ?? 0) >= (ev.max_tickets ?? 0);
         if (isSoldOut) {
           return { status: "soldOut", label: "Sold Out", variant: "destructive" as const };
         }
@@ -385,8 +423,8 @@ export function useEventsData() {
   };
 
   const getTicketProgress = (ev: Event) => {
-    const sold = ev.ticketsSold || 0;
-    const max = ev.maxTickets || 1;
+    const sold = ev.tickets_sold || 0;
+    const max = ev.max_tickets || 1;
     return Math.min((sold / max) * 100, 100);
   };
 
@@ -418,8 +456,8 @@ export function useEventsData() {
 
 function deriveStatus(ev: Event): EventStatus {
   const now = new Date();
-  const start = toDate(ev.startTime) ?? toDate(ev.date);
-  const end = toDate(ev.endTime);
+  const start = toDate(ev.start_time);
+  const end = toDate(ev.end_time);
 
   if (!start) {
     return "draft";
@@ -433,7 +471,7 @@ function deriveStatus(ev: Event): EventStatus {
     return "scheduled";
   }
 
-  if ((ev.ticketsSold ?? 0) >= (ev.maxTickets ?? 0)) {
+  if ((ev.tickets_sold ?? 0) >= (ev.max_tickets ?? 0)) {
     return "soldOut";
   }
 
@@ -457,12 +495,12 @@ export function useEventForm(
     id: existing?.id ?? "",
     name: existing?.name ?? "",
     description: existing?.description ?? "",
-    venueId: existing?.venueId ?? (user.role === "siteAdmin" ? "" : user.venueId || ""),
-    startDateTime: timestampToInputValue(existing?.startTime ?? existing?.date ?? null),
-    endDateTime: timestampToInputValue(existing?.endTime ?? null),
+    venueId: existing?.venue_id ?? (user.role === "siteAdmin" ? "" : user.venueId || ""),
+    startDateTime: timestampToInputValue(existing?.start_time ?? null),
+    endDateTime: timestampToInputValue(existing?.end_time ?? null),
     price: existing?.price ?? 0,
-    maxTickets: existing?.maxTickets ?? 0,
-    isFeatured: user.role === "siteAdmin" ? !!existing?.isFeatured : false,
+    maxTickets: existing?.max_tickets ?? 0,
+    isFeatured: user.role === "siteAdmin" ? !!existing?.is_featured : false,
     status: (existing?.status as EventStatus) || deriveStatus(existing || ({} as Event)),
     category: existing?.category || EVENT_CATEGORY_OPTIONS[0].value,
     tag: normaliseTag(existing?.tags?.[0]) || "",
@@ -472,36 +510,42 @@ export function useEventForm(
   const [saving, setSaving] = useState(false);
 
   async function uploadImageIfAny(eventId: string) {
-    if (!file) return existing?.imageUrl ?? null;
+    if (!file) return existing?.image_url ?? null;
 
     const allowed = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
     if (!allowed.includes(file.type)) throw new Error("Invalid file type");
     if (file.size > 5 * 1024 * 1024) throw new Error("File too large (max 5MB)");
 
-    const storagePath = `event-images/${eventId}/${Date.now()}_${file.name}`;
-    const storageRef = ref(storage, storagePath);
-    const task = uploadBytesResumable(storageRef, file);
+    const fileName = `${Date.now()}_${file.name}`;
+    const storagePath = `${eventId}/${fileName}`;
 
-    const url: string = await new Promise((resolve, reject) => {
-      task.on(
-        "state_changed",
-        (snapshot) => {
-          setProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-        },
-        reject,
-        async () => resolve(await getDownloadURL(task.snapshot.ref))
-      );
-    });
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('event-images')
+      .upload(storagePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
 
-    if (existing?.imageUrl && existing.imageUrl !== url) {
+    if (error) throw error;
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('event-images')
+      .getPublicUrl(storagePath);
+
+    // Delete old image if exists and is different
+    if (existing?.image_url && existing.image_url !== publicUrl) {
       try {
-        await deleteObject(ref(storage, existing.imageUrl));
+        const urlParts = existing.image_url.split('/');
+        const oldPath = urlParts.slice(urlParts.indexOf(eventId)).join('/');
+        await supabase.storage.from('event-images').remove([oldPath]);
       } catch {
         /* ignore */
       }
     }
 
-    return url;
+    return publicUrl;
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -529,73 +573,75 @@ export function useEventForm(
           throw new Error("No venue assigned to your account");
         }
         selectedVenueId = user.venueId;
-        try {
-          const venueDoc = await getDoc(doc(db, "venues", user.venueId));
-          selectedVenueName = venueDoc.exists() ? venueDoc.data().name : "Unknown Venue";
-        } catch {
-          selectedVenueName = "Unknown Venue";
-        }
+
+        // Performance: Use cached venue name or fetch
+        const { data: venueData } = await supabase
+          .from('venues')
+          .select('name')
+          .eq('id', user.venueId)
+          .single();
+
+        selectedVenueName = venueData?.name || "Unknown Venue";
       }
 
-      const start = Timestamp.fromDate(new Date(form.startDateTime));
-      const end = form.endDateTime ? Timestamp.fromDate(new Date(form.endDateTime)) : null;
+      const start = new Date(form.startDateTime).toISOString();
+      const end = form.endDateTime ? new Date(form.endDateTime).toISOString() : null;
 
-      if (end && end.toMillis() <= start.toMillis()) {
+      if (end && new Date(end) <= new Date(start)) {
         throw new Error("End time must be after start time");
       }
 
       const url = await uploadImageIfAny(isEdit ? existing!.id : form.id);
       const tags = form.tag ? [normaliseTag(form.tag)] : [];
 
-      // Get coordinates from venue
+      // Get coordinates from venue (cached)
       let coordinates: { latitude: number; longitude: number } | null = null;
-      try {
-        const venueDoc = await getDoc(doc(db, "venues", selectedVenueId));
-        if (venueDoc.exists()) {
-          const venueData = venueDoc.data();
-          if (venueData.coordinates) {
-            coordinates = {
-              latitude: venueData.coordinates.latitude,
-              longitude: venueData.coordinates.longitude,
-            };
-          }
-        }
-      } catch (error) {
-        console.warn("Failed to fetch venue coordinates:", error);
+      const { data: venueData } = await supabase
+        .from('venues')
+        .select('coordinates')
+        .eq('id', selectedVenueId)
+        .single();
+
+      if (venueData?.coordinates) {
+        coordinates = venueData.coordinates;
       }
 
       if (isEdit) {
-        const updatePayload: Partial<Event> & { updatedAt: Timestamp } = {
+        const updatePayload: any = {
           name: form.name,
           description: form.description || null,
           venue: selectedVenueName,
-          venueId: selectedVenueId,
-          startTime: start,
-          endTime: end,
-          date: start,
+          venue_id: selectedVenueId,
+          start_time: start,
+          end_time: end,
           price: Number(form.price),
-          maxTickets: Number(form.maxTickets),
+          max_tickets: Number(form.maxTickets),
           status: form.status,
           category: form.category,
           tags,
           coordinates,
-          updatedAt: Timestamp.now(),
+          updated_at: new Date().toISOString(),
         };
 
         if (url) {
-          (updatePayload as any).imageUrl = url;
+          updatePayload.image_url = url;
         }
 
         if (user.role === "siteAdmin") {
-          updatePayload.isFeatured = form.isFeatured;
+          updatePayload.is_featured = form.isFeatured;
         }
 
-        await updateDoc(doc(db, "events", existing!.id), updatePayload as any);
+        const { error } = await supabase
+          .from('events')
+          .update(updatePayload)
+          .eq('id', existing!.id);
+
+        if (error) throw error;
 
         onSaved({
           ...(existing as Event),
           ...updatePayload,
-          imageUrl: url ?? existing?.imageUrl ?? null,
+          image_url: url ?? existing?.image_url ?? null,
         } as Event);
         toast.success("Event updated successfully");
       } else {
@@ -603,51 +649,35 @@ export function useEventForm(
           throw new Error("Event ID is required");
         }
 
-        const payload: Event = {
+        const payload: any = {
           id: form.id,
           name: form.name,
           description: form.description,
           venue: selectedVenueName,
-          venueId: selectedVenueId,
-          startTime: start,
-          endTime: end,
-          date: start,
+          venue_id: selectedVenueId,
+          start_time: start,
+          end_time: end,
           price: Number(form.price),
-          maxTickets: Number(form.maxTickets),
-          ticketsSold: 0,
-          isFeatured: user.role === "siteAdmin" ? form.isFeatured : false,
-          imageUrl: url ?? null,
+          max_tickets: Number(form.maxTickets),
+          tickets_sold: 0,
+          is_featured: user.role === "siteAdmin" ? form.isFeatured : false,
+          image_url: url ?? null,
           status: form.status,
           category: form.category,
           tags,
           coordinates,
-          organizerId: user.uid,
-          createdAt: Timestamp.now(),
+          organizer_id: user.uid,
+          created_at: new Date().toISOString(),
+          created_by: user.uid,
         };
 
-        await setDoc(doc(db, "events", form.id), {
-          name: payload.name,
-          description: payload.description || null,
-          venue: payload.venue,
-          venueId: payload.venueId,
-          startTime: payload.startTime,
-          endTime: payload.endTime ?? null,
-          date: payload.date,
-          price: payload.price,
-          maxTickets: payload.maxTickets,
-          ticketsSold: 0,
-          isFeatured: payload.isFeatured,
-          imageUrl: payload.imageUrl,
-          status: payload.status,
-          category: payload.category,
-          tags: payload.tags,
-          coordinates: payload.coordinates ?? null,
-          organizerId: payload.organizerId,
-          createdAt: payload.createdAt,
-          createdBy: user.uid,
-        });
+        const { error } = await supabase
+          .from('events')
+          .insert([payload]);
 
-        onSaved(payload);
+        if (error) throw error;
+
+        onSaved(payload as Event);
         toast.success("Event created successfully");
       }
 
@@ -665,12 +695,12 @@ export function useEventForm(
       id: existing?.id ?? "",
       name: existing?.name ?? "",
       description: existing?.description ?? "",
-      venueId: existing?.venueId ?? (user.role === "siteAdmin" ? "" : user.venueId || ""),
-      startDateTime: timestampToInputValue(existing?.startTime ?? existing?.date ?? null),
-      endDateTime: timestampToInputValue(existing?.endTime ?? null),
+      venueId: existing?.venue_id ?? (user.role === "siteAdmin" ? "" : user.venueId || ""),
+      startDateTime: timestampToInputValue(existing?.start_time ?? null),
+      endDateTime: timestampToInputValue(existing?.end_time ?? null),
       price: existing?.price ?? 0,
-      maxTickets: existing?.maxTickets ?? 0,
-      isFeatured: user.role === "siteAdmin" ? !!existing?.isFeatured : false,
+      maxTickets: existing?.max_tickets ?? 0,
+      isFeatured: user.role === "siteAdmin" ? !!existing?.is_featured : false,
       status: (existing?.status as EventStatus) || deriveStatus(existing || ({} as Event)),
       category: existing?.category || EVENT_CATEGORY_OPTIONS[0].value,
       tag: normaliseTag(existing?.tags?.[0]) || "",

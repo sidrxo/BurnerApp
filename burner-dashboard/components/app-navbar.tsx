@@ -6,9 +6,7 @@ import { Calendar, Home, Settings, Ticket, MapPin, Shield, User, Tag, LogOut } f
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/useAuth";
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { db, auth } from "@/lib/firebase";
-import { signOut } from "firebase/auth";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -31,9 +29,14 @@ export function AppNavbar() {
     const fetchVenueName = async () => {
       if (user?.venueId) {
         try {
-          const venueDoc = await getDoc(doc(db, "venues", user.venueId));
-          if (venueDoc.exists()) {
-            setVenueName(venueDoc.data().name);
+          const { data, error } = await supabase
+            .from('venues')
+            .select('name')
+            .eq('id', user.venueId)
+            .single();
+
+          if (data && !error) {
+            setVenueName(data.name);
           }
         } catch (error) {
           console.error("Error fetching venue name:", error);
@@ -51,7 +54,7 @@ export function AppNavbar() {
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      await supabase.auth.signOut();
       toast.success("Signed out successfully");
       router.replace("/login");
     } catch (e: any) {
