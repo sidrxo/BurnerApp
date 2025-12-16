@@ -90,33 +90,6 @@ struct Event: Identifiable, Codable, Sendable {
         self.updatedAt = updatedAt
     }
 
-    // Custom decoder to handle NULL values with defaults
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-
-        id = try container.decodeIfPresent(String.self, forKey: .id)
-        name = try container.decode(String.self, forKey: .name)
-        venue = try container.decodeIfPresent(String.self, forKey: .venue) ?? "Unknown Venue"
-        venueId = try container.decodeIfPresent(String.self, forKey: .venueId)
-
-        startTime = try container.decodeIfPresent(Date.self, forKey: .startTime)
-        endTime = try container.decodeIfPresent(Date.self, forKey: .endTime)
-
-        price = try container.decodeIfPresent(Double.self, forKey: .price) ?? 0.0
-        maxTickets = try container.decodeIfPresent(Int.self, forKey: .maxTickets) ?? 0
-        ticketsSold = try container.decodeIfPresent(Int.self, forKey: .ticketsSold) ?? 0
-        imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl) ?? ""
-        isFeatured = try container.decodeIfPresent(Bool.self, forKey: .isFeatured) ?? false
-        featuredPriority = try container.decodeIfPresent(Int.self, forKey: .featuredPriority)
-        description = try container.decodeIfPresent(String.self, forKey: .description)
-
-        status = try container.decodeIfPresent(String.self, forKey: .status)
-        tags = try container.decodeIfPresent([String].self, forKey: .tags)
-        coordinates = try container.decodeIfPresent(Coordinate.self, forKey: .coordinates)
-
-        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
-        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
-    }
 }
 
 // MARK: - Ticket Model
