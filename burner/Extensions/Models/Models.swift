@@ -49,6 +49,47 @@ struct Event: Identifiable, Codable, Sendable {
         case updatedAt = "updated_at"
     }
 
+    // Memberwise initializer
+    init(
+        id: String? = nil,
+        name: String,
+        venue: String,
+        venueId: String? = nil,
+        startTime: Date? = nil,
+        endTime: Date? = nil,
+        price: Double,
+        maxTickets: Int,
+        ticketsSold: Int,
+        imageUrl: String,
+        isFeatured: Bool,
+        featuredPriority: Int? = nil,
+        description: String? = nil,
+        status: String? = nil,
+        tags: [String]? = nil,
+        coordinates: Coordinate? = nil,
+        createdAt: Date? = nil,
+        updatedAt: Date? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.venue = venue
+        self.venueId = venueId
+        self.startTime = startTime
+        self.endTime = endTime
+        self.price = price
+        self.maxTickets = maxTickets
+        self.ticketsSold = ticketsSold
+        self.imageUrl = imageUrl
+        self.isFeatured = isFeatured
+        self.featuredPriority = featuredPriority
+        self.description = description
+        self.status = status
+        self.tags = tags
+        self.coordinates = coordinates
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+
     // Custom decoder to handle NULL values with defaults
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
