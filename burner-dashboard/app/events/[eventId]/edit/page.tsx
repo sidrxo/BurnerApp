@@ -3,8 +3,7 @@
 import RequireAuth from "@/components/require-auth";
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useEventsData, Event } from "@/hooks/useEventsData";
 import { EventForm, AccessDenied } from "@/components/events/EventsComponents";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -39,25 +38,59 @@ function EditEventPageContent() {
 
     try {
       setLoading(true);
-      const eventDoc = await getDoc(doc(db, "events", eventId));
 
-      if (!eventDoc.exists()) {
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError || !eventData) {
         setError("Event not found");
         return;
       }
 
-      const eventData = {
-        id: eventDoc.id,
-        ...eventDoc.data()
-      } as Event;
+      const event: Event = {
+        id: eventData.id,
+        name: eventData.name,
+        description: eventData.description,
+        venue: eventData.venue,
+        venue_id: eventData.venue_id,
+        venueId: eventData.venue_id,
+        start_time: eventData.start_time,
+        startTime: eventData.start_time,
+        end_time: eventData.end_time,
+        endTime: eventData.end_time,
+        price: eventData.price || 0,
+        max_tickets: eventData.max_tickets || 0,
+        maxTickets: eventData.max_tickets || 0,
+        tickets_sold: eventData.tickets_sold || 0,
+        ticketsSold: eventData.tickets_sold || 0,
+        is_featured: eventData.is_featured || false,
+        isFeatured: eventData.is_featured || false,
+        featured_priority: eventData.featured_priority || 0,
+        featuredPriority: eventData.featured_priority || 0,
+        image_url: eventData.image_url,
+        imageUrl: eventData.image_url,
+        status: eventData.status,
+        category: eventData.category,
+        tags: eventData.tags || [],
+        coordinates: eventData.coordinates,
+        organizer_id: eventData.organizer_id,
+        organizerId: eventData.organizer_id,
+        created_at: eventData.created_at,
+        createdAt: eventData.created_at,
+        updated_at: eventData.updated_at,
+        updatedAt: eventData.updated_at,
+      };
 
       // Check if user has access to edit this event
-      if (user?.role === "venueAdmin" && eventData.venueId !== user.venueId) {
+      if (user?.role === "venueAdmin" && event.venueId !== user.venueId) {
         setError("You don't have access to edit this event");
         return;
       }
 
-      setEvent(eventData);
+      setEvent(event);
     } catch (err) {
       console.error("Error loading event:", err);
       setError("Failed to load event");

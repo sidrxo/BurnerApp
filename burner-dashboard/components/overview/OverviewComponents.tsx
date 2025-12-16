@@ -91,11 +91,11 @@ export function MetricsCards({ metrics, userRole }: {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Tickets Sold</CardTitle>
-          <Ticket className="h-4 w-4 text-muted-foreground" />
+          <Ticket className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{metrics.totalTickets.toLocaleString()}</div>
-          <p className="text-xs text-muted-foreground">
+          <div className="text-2xl font-bold break-words">{metrics.totalTickets.toLocaleString()}</div>
+          <p className="text-xs text-muted-foreground break-words">
             {metrics.usedTickets} used ({metrics.usageRate.toFixed(1)}%)
           </p>
         </CardContent>

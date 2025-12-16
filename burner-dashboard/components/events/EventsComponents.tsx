@@ -551,7 +551,6 @@ export function EventForm({
     resetForm,
     isEdit,
     statusOptions,
-    categoryOptions,
     tagOptions
   } = useEventForm(existing, user, venues, onSaved, onClose, availableTags);
 
@@ -651,43 +650,23 @@ export function EventForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <Select
-            value={form.status}
-            onValueChange={(value) => setForm((state) => ({ ...state, status: value as typeof form.status }))}
-          >
-            <SelectTrigger id="status">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {statusOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="category">Category</Label>
-          <Select
-            value={form.category}
-            onValueChange={(value) => setForm((state) => ({ ...state, category: value }))}
-          >
-            <SelectTrigger id="category">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {categoryOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="status">Status</Label>
+        <Select
+          value={form.status}
+          onValueChange={(value) => setForm((state) => ({ ...state, status: value as typeof form.status }))}
+        >
+          <SelectTrigger id="status">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {statusOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">

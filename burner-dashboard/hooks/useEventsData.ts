@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/components/useAuth";
 import { supabase } from "@/lib/supabase";
 import {
-  EVENT_CATEGORY_OPTIONS,
   EVENT_STATUS_OPTIONS,
   EventStatus,
 } from "@/lib/constants";
@@ -60,7 +59,6 @@ export interface EventFormData {
   maxTickets: number;
   isFeatured: boolean;
   status: EventStatus;
-  category: string;
   tag: string;
 }
 
@@ -513,7 +511,6 @@ export function useEventForm(
     maxTickets: existing?.max_tickets ?? 0,
     isFeatured: user.role === "siteAdmin" ? !!existing?.is_featured : false,
     status: (existing?.status as EventStatus) || deriveStatus(existing || ({} as Event)),
-    category: existing?.category || EVENT_CATEGORY_OPTIONS[0].value,
     tag: normaliseTag(existing?.tags?.[0]) || "",
   });
   const [file, setFile] = useState<File | null>(null);
@@ -713,7 +710,6 @@ export function useEventForm(
       maxTickets: existing?.max_tickets ?? 0,
       isFeatured: user.role === "siteAdmin" ? !!existing?.is_featured : false,
       status: (existing?.status as EventStatus) || deriveStatus(existing || ({} as Event)),
-      category: existing?.category || EVENT_CATEGORY_OPTIONS[0].value,
       tag: normaliseTag(existing?.tags?.[0]) || "",
     });
     setFile(null);
@@ -731,7 +727,6 @@ export function useEventForm(
     resetForm,
     isEdit,
     statusOptions: EVENT_STATUS_OPTIONS,
-    categoryOptions: EVENT_CATEGORY_OPTIONS,
     tagOptions: suggestedTags,
   };
 }
