@@ -413,9 +413,9 @@ export function useEventsData() {
       // Delete image from storage if exists
       if (ev.image_url) {
         try {
-          // Extract path from URL
+          // Extract path from URL - bucket is event_images, folder is event-images
           const urlParts = ev.image_url.split('/');
-          const bucket = 'event-images';
+          const bucket = 'event_images';
           const path = urlParts.slice(urlParts.indexOf(bucket) + 1).join('/');
 
           const { error: storageError } = await supabase.storage
@@ -564,11 +564,11 @@ export function useEventForm(
     if (file.size > 5 * 1024 * 1024) throw new Error("File too large (max 5MB)");
 
     const fileName = `${Date.now()}_${file.name}`;
-    const storagePath = `${eventId}/${fileName}`;
+    const storagePath = `event-images/${eventId}/${fileName}`;
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage (bucket is event_images, folder is event-images)
     const { data, error } = await supabase.storage
-      .from('event-images')
+      .from('event_images')
       .upload(storagePath, file, {
         cacheControl: '3600',
         upsert: false,
@@ -578,15 +578,15 @@ export function useEventForm(
 
     // Get public URL
     const { data: { publicUrl } } = supabase.storage
-      .from('event-images')
+      .from('event_images')
       .getPublicUrl(storagePath);
 
     // Delete old image if exists and is different
     if (existing?.image_url && existing.image_url !== publicUrl) {
       try {
         const urlParts = existing.image_url.split('/');
-        const oldPath = urlParts.slice(urlParts.indexOf(eventId)).join('/');
-        await supabase.storage.from('event-images').remove([oldPath]);
+        const oldPath = urlParts.slice(urlParts.indexOf('event-images')).join('/');
+        await supabase.storage.from('event_images').remove([oldPath]);
       } catch {
         /* ignore */
       }
