@@ -1,7 +1,28 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/useAuth";
 import { toast } from "sonner";
+
+// Cache configuration
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const cache = new Map<string, { data: any; timestamp: number }>();
+
+function getCacheKey(userId: string, role: string, venueId?: string | null): string {
+  return `venues_${userId}_${role}_${venueId || 'all'}`;
+}
+
+function getFromCache<T>(key: string): T | null {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data as T;
+  }
+  cache.delete(key);
+  return null;
+}
+
+function setCache(key: string, data: any): void {
+  cache.set(key, { data, timestamp: Date.now() });
+}
 
 export type Venue = {
   id: string;
@@ -40,6 +61,8 @@ export function useVenuesData() {
   const [newVenueWebsite, setNewVenueWebsite] = useState("");
   const [showCreateVenueDialog, setShowCreateVenueDialog] = useState(false);
   const [sortBy, setSortBy] = useState<string>("name-asc");
+  const [fetchLoading, setFetchLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -48,6 +71,20 @@ export function useVenuesData() {
   }, [user, loading]);
 
   const fetchVenues = async () => {
+    if (!user) return;
+
+    // Check cache first
+    const cacheKey = getCacheKey(user.uid, user.role, user.venueId);
+    const cachedVenues = getFromCache<Venue[]>(cacheKey);
+
+    if (cachedVenues && hasLoadedRef.current) {
+      // Use cached data and skip loading state
+      setVenues(cachedVenues);
+      setFetchLoading(false);
+      return;
+    }
+
+    setFetchLoading(true);
     try {
       let query = supabase
         .from('venues')
@@ -80,9 +117,16 @@ export function useVenuesData() {
       }));
 
       setVenues(fetched);
+
+      // Cache the results
+      const cacheKey = getCacheKey(user.uid, user.role, user.venueId);
+      setCache(cacheKey, fetched);
+      hasLoadedRef.current = true;
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch venues");
+    } finally {
+      setFetchLoading(false);
     }
   };
 
@@ -392,7 +436,7 @@ export function useVenuesData() {
 
   return {
     user,
-    loading,
+    loading: fetchLoading,
     venues: sortedVenues,
     newAdminEmail,
     setNewAdminEmail,

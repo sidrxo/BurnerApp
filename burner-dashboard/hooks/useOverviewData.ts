@@ -1,7 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/useAuth";
 import { toast } from "sonner";
+
+// Cache configuration
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const cache = new Map<string, { data: any; timestamp: number }>();
+
+function getCacheKey(userId: string, role: string, venueId?: string | null): string {
+  return `overview_${userId}_${role}_${venueId || 'all'}`;
+}
+
+function getFromCache<T>(key: string): T | null {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data as T;
+  }
+  cache.delete(key);
+  return null;
+}
+
+function setCache(key: string, data: any): void {
+  cache.set(key, { data, timestamp: Date.now() });
+}
 
 export type Ticket = {
   id: string;
@@ -69,6 +90,7 @@ export function useOverviewData() {
   const [dailySales, setDailySales] = useState<DailySales[]>([]);
   const [loading, setLoading] = useState(true);
   const daysToShow = 90;
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -78,6 +100,25 @@ export function useOverviewData() {
 
   async function loadTicketsAndUsers() {
     if (!user) return;
+
+    // Check cache first
+    const cacheKey = getCacheKey(user.uid, user.role, user.venueId);
+    const cachedData = getFromCache<{
+      tickets: Ticket[];
+      users: UserStats[];
+      eventStats: EventStats[];
+      dailySales: DailySales[];
+    }>(cacheKey);
+
+    if (cachedData && hasLoadedRef.current) {
+      // Use cached data and skip loading state
+      setTickets(cachedData.tickets);
+      setUsers(cachedData.users);
+      setEventStats(cachedData.eventStats);
+      setDailySales(cachedData.dailySales);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -155,12 +196,25 @@ export function useOverviewData() {
       }
 
       setTickets(allTickets);
-      processUserStats(allTickets);
+      const userStatsData = processUserStats(allTickets);
       const aggregatedLoaded = await loadAggregatedEventStats();
+      let eventStatsData: EventStats[];
       if (!aggregatedLoaded) {
-        processEventStats(allTickets);
+        eventStatsData = processEventStats(allTickets);
+      } else {
+        eventStatsData = eventStats; // Use existing state if aggregated loaded
       }
-      processDailySales(allTickets);
+      const dailySalesData = processDailySales(allTickets);
+
+      // Cache the results
+      const cacheKey = getCacheKey(user.uid, user.role, user.venueId);
+      setCache(cacheKey, {
+        tickets: allTickets,
+        users: userStatsData,
+        eventStats: eventStatsData,
+        dailySales: dailySalesData
+      });
+      hasLoadedRef.current = true;
     } catch (error: any) {
       toast.error("Failed to load overview: " + error.message);
     } finally {
@@ -206,7 +260,7 @@ export function useOverviewData() {
     }
   }
 
-  function processUserStats(allTickets: Ticket[]) {
+  function processUserStats(allTickets: Ticket[]): UserStats[] {
     const userMap: Record<string, UserStats> = {};
     allTickets.forEach((ticket) => {
       if (!userMap[ticket.user_id]) {
@@ -225,10 +279,12 @@ export function useOverviewData() {
         target.events.push(ticket.eventName);
       }
     });
-    setUsers(Object.values(userMap));
+    const userStatsArray = Object.values(userMap);
+    setUsers(userStatsArray);
+    return userStatsArray;
   }
 
-  function processEventStats(allTickets: Ticket[]) {
+  function processEventStats(allTickets: Ticket[]): EventStats[] {
     const eventMap: Record<string, EventStats> = {};
     allTickets.forEach((ticket) => {
       if (!eventMap[ticket.event_name]) {
@@ -246,10 +302,12 @@ export function useOverviewData() {
         event.usedTickets++;
       }
     });
-    setEventStats(Object.values(eventMap).sort((a, b) => b.revenue - a.revenue));
+    const eventStatsArray = Object.values(eventMap).sort((a, b) => b.revenue - a.revenue);
+    setEventStats(eventStatsArray);
+    return eventStatsArray;
   }
 
-  function processDailySales(allTickets: Ticket[]) {
+  function processDailySales(allTickets: Ticket[]): DailySales[] {
     const salesMap: Record<string, DailySales> = {};
     const now = new Date();
 
@@ -300,6 +358,7 @@ export function useOverviewData() {
       }));
 
     setDailySales(dailySalesArray);
+    return dailySalesArray;
   }
 
   const activeEvents = eventStats.filter((event) => (event.status || "").toLowerCase() === "active").length;

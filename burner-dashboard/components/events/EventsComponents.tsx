@@ -289,19 +289,9 @@ export function EventCard({
   onDelete: (event: Event) => void;
   onEditClick: () => void;
 }) {
-  const startTimestamp: any = ev.startTime;
-  const endTimestamp: any = ev.endTime ?? null;
-
-  const startDate = startTimestamp?.toDate
-    ? startTimestamp.toDate()
-    : startTimestamp?.seconds
-      ? new Date(startTimestamp.seconds * 1000)
-      : undefined;
-  const endDate = endTimestamp?.toDate
-    ? endTimestamp.toDate()
-    : endTimestamp?.seconds
-      ? new Date(endTimestamp.seconds * 1000)
-      : undefined;
+  // Parse start_time and end_time as ISO strings from Supabase
+  const startDate = ev.start_time ? new Date(ev.start_time) : ev.startTime ? new Date(ev.startTime) : undefined;
+  const endDate = ev.end_time ? new Date(ev.end_time) : ev.endTime ? new Date(ev.endTime) : undefined;
 
   const formattedDate = startDate
     ? startDate.toLocaleDateString("en-GB", {
