@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/useAuth";
@@ -7,6 +7,27 @@ import {
   EVENT_STATUS_OPTIONS,
   EventStatus,
 } from "@/lib/constants";
+
+// Cache configuration
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const cache = new Map<string, { data: any; timestamp: number }>();
+
+function getCacheKey(userId: string, role: string, venueId?: string | null): string {
+  return `events_${userId}_${role}_${venueId || 'all'}`;
+}
+
+function getFromCache<T>(key: string): T | null {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data as T;
+  }
+  cache.delete(key);
+  return null;
+}
+
+function setCache(key: string, data: any): void {
+  cache.set(key, { data, timestamp: Date.now() });
+}
 
 export interface Event {
   id: string;
@@ -98,6 +119,7 @@ export function useEventsData() {
 
   // Cache for venue lookups (performance improvement)
   const [venueCache, setVenueCache] = useState<Map<string, string>>(new Map());
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -159,6 +181,18 @@ export function useEventsData() {
 
   const loadEvents = async () => {
     if (!user) return;
+
+    // Check cache first
+    const cacheKey = getCacheKey(user.uid, user.role, user.venueId);
+    const cachedEvents = getFromCache<Event[]>(cacheKey);
+
+    if (cachedEvents && hasLoadedRef.current) {
+      // Use cached data and skip loading state
+      setEvents(cachedEvents);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -220,6 +254,11 @@ export function useEventsData() {
       });
 
       setEvents(list);
+
+      // Cache the results
+      const cacheKey = getCacheKey(user.uid, user.role, user.venueId);
+      setCache(cacheKey, list);
+      hasLoadedRef.current = true;
     } catch (error: any) {
       console.error("Error loading events:", error);
       toast.error(`Failed to load events: ${error.message ?? "Unknown error"}`);

@@ -418,7 +418,7 @@ export function useTicketsData() {
           status: 'used',
           used_at: new Date().toISOString()
         })
-        .eq('id', ticket.id);
+        .eq('ticket_id', ticket.id);
 
       if (error) throw error;
 
@@ -443,7 +443,7 @@ export function useTicketsData() {
           cancelled_at: new Date().toISOString(),
           cancelled_by: user?.email || 'admin'
         })
-        .eq('id', ticket.id);
+        .eq('ticket_id', ticket.id);
 
       if (error) throw error;
 
@@ -467,7 +467,7 @@ export function useTicketsData() {
         const { error } = await supabase
           .from('tickets')
           .delete()
-          .eq('id', ticket.id);
+          .eq('ticket_id', ticket.id);
 
         if (error) throw error;
 
@@ -481,7 +481,7 @@ export function useTicketsData() {
             deleted_at: new Date().toISOString(),
             deleted_by: user?.email || 'admin'
           })
-          .eq('id', ticket.id);
+          .eq('ticket_id', ticket.id);
 
         if (error) throw error;
 

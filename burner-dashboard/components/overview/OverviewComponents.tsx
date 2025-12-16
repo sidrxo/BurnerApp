@@ -172,7 +172,8 @@ export function SalesChart({ dailySales, userRole }: {
                 className="text-xs fill-muted-foreground"
                 tick={{ fontSize: 12 }}
               />
-              <Tooltip 
+              <Tooltip
+                isAnimationActive={false}
                 contentStyle={{
                   backgroundColor: 'white',
                   border: 'none',
