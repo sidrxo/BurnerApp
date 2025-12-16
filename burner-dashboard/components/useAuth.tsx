@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, createContext, useContext, ReactNode } from "react";
+import { useEffect, useState, useRef, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
@@ -35,6 +35,8 @@ function isValidRole(role: any): role is Role {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const userRef = useRef<AppUser | null>(null);
+  const isInitializedRef = useRef(false);
 
   const getUserProfile = async (supabaseUser: SupabaseUser): Promise<AppUser> => {
     try {
@@ -125,6 +127,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUser = (newUser: AppUser | null) => {
+    userRef.current = newUser;
+    setUser(newUser);
+  };
+
   const refreshUser = async () => {
     try {
       console.log("Refreshing user...");
@@ -132,14 +139,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (supabaseUser) {
         const appUser = await getUserProfile(supabaseUser);
-        setUser(appUser);
+        updateUser(appUser);
         console.log("User refreshed:", appUser);
       } else {
-        setUser(null);
+        updateUser(null);
       }
     } catch (error) {
       console.error("Error refreshing user:", error);
-      setUser(null);
+      updateUser(null);
     }
   };
 
@@ -152,16 +159,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (session?.user) {
           const appUser = await getUserProfile(session.user);
-          setUser(appUser);
+          updateUser(appUser);
           console.log("Initial user set:", appUser);
         } else {
-          setUser(null);
+          updateUser(null);
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
-        setUser(null);
+        updateUser(null);
       } finally {
         setLoading(false);
+        isInitializedRef.current = true;
       }
     };
 
@@ -172,15 +180,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (event, session) => {
         console.log("Auth state changed:", event, !!session);
 
-        // Skip reloading for SIGNED_IN events when user is already authenticated
-        // This prevents loading spinners when navigating between pages
-        if (event === 'SIGNED_IN' && user !== null && session?.user?.id === user.uid) {
-          console.log("Skipping reload - user already authenticated");
+        // Skip reloading for SIGNED_IN and TOKEN_REFRESHED events when user is already authenticated
+        // This prevents loading spinners when navigating between pages or when tab regains focus
+        const currentUser = userRef.current;
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') &&
+            currentUser !== null &&
+            session?.user?.id === currentUser.uid &&
+            isInitializedRef.current) {
+          console.log(`Skipping reload for ${event} - user already authenticated`);
           return;
         }
 
         // Only show loading for meaningful auth state changes
-        const shouldShowLoading = event !== 'SIGNED_IN' || user === null;
+        const shouldShowLoading = (event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED') || currentUser === null;
 
         if (session?.user) {
           if (shouldShowLoading) {
@@ -219,18 +231,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               }
             }
 
-            setUser(appUser);
+            updateUser(appUser);
             console.log("Final user set:", appUser);
           } catch (error) {
             console.error("Error processing authenticated user:", error);
-            setUser(null);
+            updateUser(null);
           } finally {
             if (shouldShowLoading) {
               setLoading(false);
             }
           }
         } else {
-          setUser(null);
+          updateUser(null);
           setLoading(false);
         }
       }
