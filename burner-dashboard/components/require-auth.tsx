@@ -1,7 +1,7 @@
 "use client";
 
-import { useAuth } from "@/components/useAuthSupabase";
-import { LoginForm } from "@/components/login-form-supabase";
+import { useAuth } from "@/components/useAuth";
+import { LoginForm } from "@/components/login-form";
 
 export default function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
