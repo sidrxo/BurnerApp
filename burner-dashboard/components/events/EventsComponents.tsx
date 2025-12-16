@@ -289,7 +289,7 @@ export function EventCard({
   onDelete: (event: Event) => void;
   onEditClick: () => void;
 }) {
-  const startTimestamp: any = ev.startTime ?? ev.date;
+  const startTimestamp: any = ev.startTime;
   const endTimestamp: any = ev.endTime ?? null;
 
   const startDate = startTimestamp?.toDate

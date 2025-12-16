@@ -1,4 +1,3 @@
-const { onRequest } = require("firebase-functions/v2/https");
 const next = require("next");
 
 const isDev = process.env.NODE_ENV !== "production";

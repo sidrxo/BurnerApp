@@ -209,16 +209,16 @@ export function useOverviewData() {
   function processUserStats(allTickets: Ticket[]) {
     const userMap: Record<string, UserStats> = {};
     allTickets.forEach((ticket) => {
-      if (!userMap[ticket.userID]) {
-        userMap[ticket.userID] = {
-          userID: ticket.userID,
+      if (!userMap[ticket.user_id]) {
+        userMap[ticket.user_id] = {
+          userID: ticket.user_id,
           email: ticket.userEmail || "Unknown",
           ticketCount: 0,
           totalSpent: 0,
           events: [],
         };
       }
-      const target = userMap[ticket.userID];
+      const target = userMap[ticket.user_id];
       target.ticketCount++;
       target.totalSpent += ticket.totalPrice || 0;
       if (ticket.eventName && !target.events.includes(ticket.eventName)) {
@@ -231,15 +231,15 @@ export function useOverviewData() {
   function processEventStats(allTickets: Ticket[]) {
     const eventMap: Record<string, EventStats> = {};
     allTickets.forEach((ticket) => {
-      if (!eventMap[ticket.eventName]) {
-        eventMap[ticket.eventName] = {
-          eventName: ticket.eventName,
+      if (!eventMap[ticket.event_name]) {
+        eventMap[ticket.event_name] = {
+          eventName: ticket.event_name,
           ticketCount: 0,
           revenue: 0,
           usedTickets: 0,
         };
       }
-      const event = eventMap[ticket.eventName];
+      const event = eventMap[ticket.event_name];
       event.ticketCount++;
       event.revenue += ticket.totalPrice || 0;
       if (ticket.status?.toLowerCase() === "used") {
@@ -272,12 +272,12 @@ export function useOverviewData() {
         // Handle various date formats (ISO string, Date object, Firebase Timestamp)
         if (typeof purchaseDateStr === 'string') {
           purchaseDate = new Date(purchaseDateStr);
-        } else if (purchaseDateStr instanceof Date) {
-          purchaseDate = purchaseDateStr;
+        } else if ((purchaseDateStr as any) instanceof Date) {
+          purchaseDate = purchaseDateStr as any;
         } else if ((purchaseDateStr as any).toDate) {
           purchaseDate = (purchaseDateStr as any).toDate();
         } else {
-          purchaseDate = new Date(purchaseDateStr);
+          purchaseDate = new Date(purchaseDateStr as any);
         }
 
         const key = purchaseDate.toISOString().split("T")[0];
