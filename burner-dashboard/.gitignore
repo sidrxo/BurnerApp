@@ -14,6 +14,7 @@ out/
 # Build outputs
 dist/
 build/
+*.tsbuildinfo
 
 # Logs
 *.log
