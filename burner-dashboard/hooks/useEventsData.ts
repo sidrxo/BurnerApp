@@ -563,9 +563,11 @@ export function useEventForm(
     if (!allowed.includes(file.type)) throw new Error("Invalid file type");
     if (file.size > 5 * 1024 * 1024) throw new Error("File too large (max 5MB)");
 
-    // Extract just the filename, removing any path components
-    const originalName = file.name.split('/').pop() || file.name;
-    const fileName = `${Date.now()}_${originalName}`;
+    // Extract just the filename, removing any path components and URL encoding
+    const decodedName = decodeURIComponent(file.name);
+    const originalName = decodedName.split('/').pop()?.split('\\').pop() || file.name;
+    const cleanName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const fileName = `${Date.now()}_${cleanName}`;
     const storagePath = `event-images/${eventId}/${fileName}`;
 
     // Upload to Supabase Storage (bucket is event_images, folder is event-images)
@@ -578,10 +580,14 @@ export function useEventForm(
 
     if (error) throw error;
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    // Get signed URL (valid for 10 years) instead of public URL
+    const { data: signedData, error: signedError } = await supabase.storage
       .from('event_images')
-      .getPublicUrl(storagePath);
+      .createSignedUrl(storagePath, 315360000); // 10 years in seconds
+
+    if (signedError) throw signedError;
+
+    const publicUrl = signedData.signedUrl;
 
     // Delete old image if exists and is different
     if (existing?.image_url && existing.image_url !== publicUrl) {
