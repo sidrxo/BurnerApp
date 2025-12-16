@@ -25,6 +25,10 @@ export interface Scanner {
   active: boolean;
   created_at?: string;
   last_active_at?: string | null;
+  // Legacy camelCase for backward compatibility
+  venueId?: string | null;
+  createdAt?: string;
+  lastActiveAt?: string | null;
 }
 
 export interface Venue {
@@ -109,6 +113,10 @@ export function useAdminManagement() {
         active: scanner.active !== false,
         created_at: scanner.created_at,
         last_active_at: scanner.last_active_at ?? null,
+        // Legacy camelCase for backward compatibility
+        venueId: scanner.venue_id ?? null,
+        createdAt: scanner.created_at,
+        lastActiveAt: scanner.last_active_at ?? null,
       })));
 
     } catch (error) {
