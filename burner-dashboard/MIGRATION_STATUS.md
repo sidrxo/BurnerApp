@@ -31,23 +31,37 @@ This document tracks the progress of migrating the burner-dashboard from Firebas
   - Replaced Firestore venue queries with Supabase queries
   - Replaced `signOut(auth)` with `supabase.auth.signOut()`
 
-## 🚧 In Progress / Pending
+### 4. **Database Hooks**
 
-### 4. **Database Hooks** (Large migration task)
+#### ✅ Completed Hooks:
 
-The following hooks need to be migrated from Firestore to Supabase PostgreSQL:
+**`/hooks/useEventsData.ts`** - Fully migrated with performance improvements
+- ✅ Query events with role-based filtering
+- ✅ Venue caching for faster lookups
+- ✅ Selective field queries (only fetch needed columns)
+- ✅ Database-side ordering
+- ✅ Supabase Storage for event images
+- ✅ CRUD operations (create/update/delete events)
+- ✅ Featured event management
+- ✅ Updated field names (camelCase → snake_case)
 
-#### `/hooks/useEventsData.ts` (~697 lines)
-**Operations to migrate:**
-- Query events with role-based filtering (siteAdmin sees all, venueAdmin sees venue-specific)
-- Load venues list
-- Load tags from collection
-- Create/update/delete events
-- Upload event images to Storage
-- Toggle featured status
-- Search and filter events
+**`/hooks/useAccountData.ts`** - Fully migrated
+- ✅ Password management using Supabase Auth
+- ✅ Password strength validation
+- ✅ Sign out functionality
+- ✅ User profile display
 
-**Key changes needed:**
+**`/hooks/useVenuesData.ts`** - Fully migrated
+- ✅ Uses Supabase Edge Function 'create-venue'
+- ✅ Admin management with admins table
+- ✅ PostgreSQL array handling for admins
+- ✅ JSONB coordinates instead of GeoPoint
+- ✅ Role-based query optimization
+
+## 🚧 Remaining Hooks to Migrate
+
+#### `/hooks/useTagManagement.ts`
+**Operations needed:**
 - Replace Firestore `collection()`, `doc()`, `getDocs()`, `getDoc()` with Supabase queries
 - Replace `Timestamp` with ISO date strings or PostgreSQL timestamps
 - Replace `setDoc()`, `updateDoc()`, `deleteDoc()` with Supabase `.insert()`, `.update()`, `.delete()`
