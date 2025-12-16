@@ -588,7 +588,7 @@ export function AdminsTable({ admins, venues, onDeleteAdmin, onUpdateAdmin }: Ad
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {admin.createdAt.toLocaleDateString()}
+                    {admin.created_at ? new Date(admin.created_at).toLocaleDateString() : 'N/A'}
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
