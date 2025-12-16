@@ -36,7 +36,6 @@ export interface Venue {
   name: string;
   address?: string;
   city?: string;
-  state?: string;
   admins: string[];
   subAdmins: string[];
 }
@@ -46,6 +45,7 @@ export interface CreateAdminData {
   name: string;
   role: 'venueAdmin' | 'subAdmin' | 'siteAdmin';
   venueId?: string;
+  password?: string;
 }
 
 export interface CreateScannerData {
@@ -75,7 +75,7 @@ export function useAdminManagement() {
       // Load venues
       const { data: venuesData, error: venuesError } = await supabase
         .from('venues')
-        .select('id, name, address, city, state, admins, sub_admins')
+        .select('id, name, address, city, admins, sub_admins')
         .order('name', { ascending: true });
 
       if (venuesError) throw venuesError;
@@ -131,9 +131,34 @@ export function useAdminManagement() {
     try {
       setLoading(true);
 
-      // NOTE: This requires a Supabase Edge Function to create auth users
-      // For now, we'll create the admin entry in the database
-      // TODO: Create 'create-admin' Edge Function for auth user creation
+      // If password is provided, use the Edge Function to create auth user + admin entry
+      if (adminData.password) {
+        const { data, error } = await supabase.functions.invoke('create-admin', {
+          body: {
+            email: adminData.email.trim(),
+            password: adminData.password,
+            name: adminData.name.trim(),
+            role: adminData.role,
+            venueId: adminData.venueId || null,
+          },
+        });
+
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        toast.success("Admin created successfully with authentication credentials.");
+
+        // Refresh user permissions
+        await refreshUser();
+
+        // Reload data
+        await loadData();
+
+        return { success: true };
+      }
+
+      // Fallback: Create admin entry in database only (without auth user)
+      // This is for backward compatibility or manual auth user creation
 
       // Check if admin already exists
       const { data: existing } = await supabase
@@ -163,7 +188,7 @@ export function useAdminManagement() {
 
       if (error) throw error;
 
-      toast.success("Admin created successfully. Auth user needs to be created via backend.");
+      toast.success("Admin entry created. Auth user needs to be created separately.");
 
       // Refresh user permissions
       await refreshUser();

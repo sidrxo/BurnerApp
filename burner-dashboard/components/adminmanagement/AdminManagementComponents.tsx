@@ -18,7 +18,7 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { Trash2, Edit, UserPlus, Shield, Building, Scan, Activity, Power } from "lucide-react";
+import { Trash2, Edit, UserPlus, Shield, Building, Scan, Activity, Power, Eye, EyeOff } from "lucide-react";
 import { Admin, Venue, CreateAdminData, Scanner, CreateScannerData } from "@/hooks/useAdminManagement";
 import { formatDateSafe } from "@/lib/utils";
 
@@ -76,12 +76,33 @@ export function UnifiedCreateForm({
     email: '',
     name: '',
     role: 'venueAdmin' as 'venueAdmin' | 'subAdmin' | 'siteAdmin' | 'scanner',
-    venueId: currentUserRole === 'siteAdmin' ? '' : defaultVenueId || ''
+    venueId: currentUserRole === 'siteAdmin' ? '' : defaultVenueId || '',
+    password: '',
+    confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Password validation for admin roles (not scanners)
+    if (formData.role !== 'scanner') {
+      if (!formData.password) {
+        alert('Password is required for creating admins');
+        return;
+      }
+      if (formData.password.length < 6) {
+        alert('Password must be at least 6 characters long');
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        alert('Passwords do not match');
+        return;
+      }
+    }
+
     setLoading(true);
 
     let result;
@@ -97,7 +118,8 @@ export function UnifiedCreateForm({
         email: formData.email,
         name: formData.name,
         role: formData.role as 'venueAdmin' | 'subAdmin' | 'siteAdmin',
-        venueId: (formData.role === 'venueAdmin' || formData.role === 'subAdmin') ? formData.venueId : undefined
+        venueId: (formData.role === 'venueAdmin' || formData.role === 'subAdmin') ? formData.venueId : undefined,
+        password: formData.password
       };
       result = await onCreateAdmin(adminData);
     }
@@ -107,8 +129,12 @@ export function UnifiedCreateForm({
         email: '',
         name: '',
         role: 'venueAdmin',
-        venueId: currentUserRole === 'siteAdmin' ? '' : defaultVenueId || ''
+        venueId: currentUserRole === 'siteAdmin' ? '' : defaultVenueId || '',
+        password: '',
+        confirmPassword: ''
       });
+      setShowPassword(false);
+      setShowConfirmPassword(false);
     }
 
     setLoading(false);
@@ -147,6 +173,73 @@ export function UnifiedCreateForm({
               required
             />
           </div>
+
+          {/* Password fields - only for admin roles, not scanners */}
+          {formData.role !== 'scanner' && (
+            <>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    required
+                    placeholder="Minimum 6 characters"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Required for creating admin accounts with authentication
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    required
+                    placeholder="Re-enter password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                {formData.password && formData.confirmPassword && (
+                  <p className={`text-xs mt-1 ${formData.password === formData.confirmPassword ? 'text-green-600' : 'text-red-600'}`}>
+                    {formData.password === formData.confirmPassword ? '✓ Passwords match' : '✗ Passwords do not match'}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
 
           <div>
             <Label htmlFor="role">Role</Label>

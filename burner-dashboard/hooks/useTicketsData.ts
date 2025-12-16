@@ -395,8 +395,7 @@ export function useTicketsData() {
     return (
       group.eventName.toLowerCase().includes(searchLower) ||
       group.tickets.some(ticket =>
-        ticket.userEmail?.toLowerCase().includes(searchLower) ||
-        ticket.userID?.toLowerCase().includes(searchLower)
+        ticket.userEmail?.toLowerCase().includes(searchLower)
       )
     );
   });
@@ -406,8 +405,7 @@ export function useTicketsData() {
     const searchLower = search.toLowerCase();
     return (
       t.userEmail?.toLowerCase().includes(searchLower) ||
-      t.eventName?.toLowerCase().includes(searchLower) ||
-      t.userID?.toLowerCase().includes(searchLower)
+      t.eventName?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -461,27 +459,44 @@ export function useTicketsData() {
     }
   };
 
-  const deleteTicket = async (ticket: Ticket) => {
+  const deleteTicket = async (ticket: Ticket, permanent: boolean = false) => {
     try {
-      // Mark as deleted instead of actually deleting
-      const { error } = await supabase
-        .from('tickets')
-        .update({
-          status: 'deleted',
-          deleted_at: new Date().toISOString(),
-          deleted_by: user?.email || 'admin'
-        })
-        .eq('id', ticket.id);
+      // For siteAdmins with permanent deletion enabled, actually delete from database
+      // For used tickets, siteAdmins can permanently delete them
+      if (permanent && user?.role === 'siteAdmin' && ticket.is_used) {
+        const { error } = await supabase
+          .from('tickets')
+          .delete()
+          .eq('id', ticket.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast.success("Ticket deleted successfully!");
+        toast.success("Ticket permanently deleted from database!");
+      } else {
+        // Mark as deleted instead of actually deleting
+        const { error } = await supabase
+          .from('tickets')
+          .update({
+            status: 'deleted',
+            deleted_at: new Date().toISOString(),
+            deleted_by: user?.email || 'admin'
+          })
+          .eq('id', ticket.id);
+
+        if (error) throw error;
+
+        toast.success("Ticket marked as deleted!");
+      }
+
       // Clear cache and reload
       if (user) {
         const cacheKey = getCacheKey(user.uid, user.role, user.venueId);
+        const statsCacheKey = `stats_${user.uid}_${user.role}_${user.venueId || 'all'}`;
         cache.delete(cacheKey);
+        cache.delete(statsCacheKey);
       }
       loadTickets(true, true);
+      loadStats();
     } catch (e: any) {
       toast.error("Error deleting ticket: " + e.message);
     }

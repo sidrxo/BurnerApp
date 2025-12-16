@@ -245,7 +245,7 @@ export function GroupedTicketsView({
   toggleEventExpansion: (eventName: string) => void;
   markUsed: (ticket: Ticket) => void;
   cancelTicket: (ticket: Ticket) => void;
-  deleteTicket: (ticket: Ticket) => void;
+  deleteTicket: (ticket: Ticket, permanent?: boolean) => void;
   search: string;
   userRole: string;
 }) {
@@ -318,12 +318,7 @@ export function GroupedTicketsView({
                       return (
                       <TableRow key={`${group.eventName}-ticket-${ticket.id}-${index}`}>
                         <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-medium">{ticket.userEmail}</div>
-                            <div className="text-xs text-muted-foreground font-mono">
-                              {ticket.userID}
-                            </div>
-                          </div>
+                          <div className="font-medium">{ticket.userEmail || 'No email'}</div>
                         </TableCell>
                         <TableCell>
                           {formatDateSafe(ticket.purchaseDate)}
@@ -407,14 +402,35 @@ export function GroupedTicketsView({
                                     <AlertDialogHeader>
                                       <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
                                       <AlertDialogDescription>
-                                        Are you sure you want to delete this ticket? This will mark the ticket as deleted but it will still be visible in the deleted tickets view.
+                                        {userRole === 'siteAdmin' && ticket.is_used ? (
+                                          <>
+                                            <strong>This is a used ticket.</strong> As a site administrator, you can:
+                                            <ul className="list-disc pl-5 mt-2 space-y-1">
+                                              <li><strong>Mark as deleted:</strong> Soft delete (ticket remains in database)</li>
+                                              <li><strong>Permanently delete:</strong> Remove from database completely</li>
+                                            </ul>
+                                          </>
+                                        ) : (
+                                          'Are you sure you want to delete this ticket? This will mark the ticket as deleted but it will still be visible in the deleted tickets view.'
+                                        )}
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                       <AlertDialogCancel>Go Back</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => deleteTicket(ticket)} className="bg-destructive text-destructive-foreground">
-                                        Delete Ticket
-                                      </AlertDialogAction>
+                                      {userRole === 'siteAdmin' && ticket.is_used ? (
+                                        <>
+                                          <AlertDialogAction onClick={() => deleteTicket(ticket, false)} className="bg-orange-600 hover:bg-orange-700">
+                                            Mark as Deleted
+                                          </AlertDialogAction>
+                                          <AlertDialogAction onClick={() => deleteTicket(ticket, true)} className="bg-destructive text-destructive-foreground">
+                                            Permanently Delete
+                                          </AlertDialogAction>
+                                        </>
+                                      ) : (
+                                        <AlertDialogAction onClick={() => deleteTicket(ticket)} className="bg-destructive text-destructive-foreground">
+                                          Delete Ticket
+                                        </AlertDialogAction>
+                                      )}
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
                                 </AlertDialog>
@@ -446,7 +462,7 @@ export function ListTicketsView({
   filteredTickets: Ticket[];
   markUsed: (ticket: Ticket) => void;
   cancelTicket: (ticket: Ticket) => void;
-  deleteTicket: (ticket: Ticket) => void;
+  deleteTicket: (ticket: Ticket, permanent?: boolean) => void;
   search: string;
   userRole: string;
 }) {
@@ -484,12 +500,7 @@ export function ListTicketsView({
                     {ticket.eventName}
                   </TableCell>
                   <TableCell>
-                    <div className="space-y-1">
-                      <div>{ticket.userEmail}</div>
-                      <div className="text-xs text-muted-foreground font-mono">
-                        {ticket.userID}
-                      </div>
-                    </div>
+                    <div>{ticket.userEmail || 'No email'}</div>
                   </TableCell>
                   <TableCell>
                     {formatDateSafe(ticket.purchaseDate)}
