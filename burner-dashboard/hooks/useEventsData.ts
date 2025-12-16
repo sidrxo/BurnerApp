@@ -641,16 +641,28 @@ export function useEventForm(
       const url = await uploadImageIfAny(isEdit ? existing!.id : form.id);
       const tags = form.tag ? [normaliseTag(form.tag)] : [];
 
-      // Get coordinates from venue (cached)
+      // Only fetch coordinates if venue has changed
       let coordinates: { latitude: number; longitude: number } | null = null;
-      const { data: venueData } = await supabase
-        .from('venues')
-        .select('coordinates')
-        .eq('id', selectedVenueId)
-        .single();
+      const venueChanged = !isEdit || (isEdit && existing?.venue_id !== selectedVenueId);
 
-      if (venueData?.coordinates) {
-        coordinates = venueData.coordinates;
+      if (venueChanged) {
+        const { data: venueData } = await supabase
+          .from('venues')
+          .select('coordinates')
+          .eq('id', selectedVenueId)
+          .single();
+
+        if (venueData?.coordinates) {
+          // Validate coordinates before using them
+          const lat = venueData.coordinates.latitude;
+          const lng = venueData.coordinates.longitude;
+
+          if (typeof lat === 'number' && typeof lng === 'number' &&
+              !isNaN(lat) && !isNaN(lng) &&
+              lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+            coordinates = { latitude: lat, longitude: lng };
+          }
+        }
       }
 
       if (isEdit) {
@@ -665,9 +677,13 @@ export function useEventForm(
           max_tickets: Number(form.maxTickets),
           status: form.status,
           tags,
-          coordinates,
           updated_at: new Date().toISOString(),
         };
+
+        // Only update coordinates if venue changed
+        if (venueChanged && coordinates) {
+          updatePayload.coordinates = coordinates;
+        }
 
         if (url) {
           updatePayload.image_url = url;
