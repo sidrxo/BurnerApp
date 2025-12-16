@@ -1,38 +1,32 @@
 import { useEffect, useState, useCallback } from "react";
-import {
-  collectionGroup,
-  getDocs,
-  updateDoc,
-  Timestamp,
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  startAfter,
-  QueryDocumentSnapshot,
-  onSnapshot,
-  doc,
-  getDoc
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/useAuth";
 import { toast } from "sonner";
 
 export type Ticket = {
   id: string;
-  userID: string;
+  user_id: string;
+  user_email?: string;
+  event_name: string;
+  event_id?: string;
+  venue_id?: string;
+  ticket_number?: string;
+  total_price: number;
+  purchase_date: string;
+  status: string;
+  is_used: boolean;
+  used_at?: string;
+  // Legacy camelCase for backward compatibility
+  userID?: string;
   userEmail?: string;
-  eventName: string;
+  eventName?: string;
   eventId?: string;
   venueId?: string;
   ticketNumber?: string;
-  totalPrice: number;
-  purchaseDate: any;
-  status: string;
-  isUsed: boolean;
-  usedAt?: any;
-  docRef?: any;
+  totalPrice?: number;
+  purchaseDate?: string;
+  isUsed?: boolean;
+  usedAt?: string;
 };
 
 export type EventGroup = {
@@ -84,7 +78,7 @@ export function useTicketsData() {
   const [search, setSearch] = useState("");
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'grouped' | 'list'>('grouped');
-  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
+  const [currentOffset, setCurrentOffset] = useState<number>(0);
   const [hasMore, setHasMore] = useState(true);
   const [dateFilter, setDateFilter] = useState<number>(DEFAULT_DATE_RANGE_DAYS); // days to look back
   const [stats, setStats] = useState<TicketsStats>({
@@ -101,25 +95,43 @@ export function useTicketsData() {
     }
   }, [user, authLoading, dateFilter]);
 
-  const transformTicket = useCallback((doc: any) => {
-    const data = doc.data();
-    const status = (data.status || (data.isUsed ? "used" : "confirmed")) as string;
-    const totalPrice = typeof data.totalPrice === "number"
-      ? data.totalPrice
-      : typeof data.ticketPrice === "number"
-        ? data.ticketPrice
+  const transformTicket = useCallback((data: any) => {
+    const status = (data.status || (data.is_used ? "used" : "confirmed")) as string;
+    const totalPrice = typeof data.total_price === "number"
+      ? data.total_price
+      : typeof data.ticket_price === "number"
+        ? data.ticket_price
         : 0;
+
+    // Return both snake_case (primary) and camelCase (compatibility)
     return {
-      id: doc.id,
-      docRef: doc.ref,
-      ...data,
-      totalPrice,
+      id: data.id,
+      user_id: data.user_id,
+      user_email: data.user_email,
+      event_name: data.event_name,
+      event_id: data.event_id,
+      venue_id: data.venue_id,
+      ticket_number: data.ticket_number,
+      total_price: totalPrice,
+      purchase_date: data.purchase_date,
       status,
+      is_used: status.toLowerCase() === 'used',
+      used_at: data.used_at,
+      // Legacy camelCase for backward compatibility
+      userID: data.user_id,
+      userEmail: data.user_email,
+      eventName: data.event_name,
+      eventId: data.event_id,
+      venueId: data.venue_id,
+      ticketNumber: data.ticket_number,
+      totalPrice: totalPrice,
+      purchaseDate: data.purchase_date,
       isUsed: status.toLowerCase() === 'used',
+      usedAt: data.used_at,
     } as Ticket;
   }, []);
 
-  // Load aggregated stats from eventStats collection with caching
+  // Load aggregated stats with caching
   const loadStats = async () => {
     if (!user) return;
 
@@ -136,32 +148,57 @@ export function useTicketsData() {
       let totalRevenue = 0;
       let activeEvents = 0;
 
+      // Calculate date cutoff for filtering
+      const dateCutoff = new Date(Date.now() - dateFilter * 24 * 60 * 60 * 1000).toISOString();
+
       if (user.role === "siteAdmin") {
-        // Load all eventStats
-        const eventStatsSnap = await getDocs(collection(db, "eventStats"));
-        eventStatsSnap.forEach(doc => {
-          const data = doc.data();
-          totalTickets += data.ticketsSold || 0;
-          usedTickets += data.ticketsUsed || 0;
-          totalRevenue += data.totalRevenue || 0;
-          activeEvents++;
+        // Aggregate all tickets across all events
+        const { data: ticketsData, error } = await supabase
+          .from('tickets')
+          .select('total_price, status, event_id')
+          .gte('purchase_date', dateCutoff);
+
+        if (error) throw error;
+
+        const eventIds = new Set<string>();
+        ticketsData?.forEach((ticket: any) => {
+          totalTickets++;
+          totalRevenue += ticket.total_price || 0;
+          if (ticket.status === 'used') usedTickets++;
+          if (ticket.event_id) eventIds.add(ticket.event_id);
         });
+        activeEvents = eventIds.size;
+
       } else if (user.role === "venueAdmin" || user.role === "subAdmin") {
         if (!user.venueId) return;
 
-        // Load eventStats for this venue
-        const eventStatsQuery = query(
-          collection(db, "eventStats"),
-          where("venueId", "==", user.venueId)
-        );
-        const eventStatsSnap = await getDocs(eventStatsQuery);
-        eventStatsSnap.forEach(doc => {
-          const data = doc.data();
-          totalTickets += data.ticketsSold || 0;
-          usedTickets += data.ticketsUsed || 0;
-          totalRevenue += data.totalRevenue || 0;
-          activeEvents++;
-        });
+        // Get events for this venue first
+        const { data: eventsData, error: eventsError } = await supabase
+          .from('events')
+          .select('id')
+          .eq('venue_id', user.venueId);
+
+        if (eventsError) throw eventsError;
+
+        const eventIds = eventsData?.map((e: any) => e.id) || [];
+        activeEvents = eventIds.length;
+
+        if (eventIds.length > 0) {
+          // Aggregate tickets for this venue's events
+          const { data: ticketsData, error } = await supabase
+            .from('tickets')
+            .select('total_price, status')
+            .in('event_id', eventIds)
+            .gte('purchase_date', dateCutoff);
+
+          if (error) throw error;
+
+          ticketsData?.forEach((ticket: any) => {
+            totalTickets++;
+            totalRevenue += ticket.total_price || 0;
+            if (ticket.status === 'used') usedTickets++;
+          });
+        }
       }
 
       const statsData = {
@@ -195,7 +232,7 @@ export function useTicketsData() {
 
     if (reset) {
       setLoading(true);
-      setLastVisible(null);
+      setCurrentOffset(0);
       setHasMore(true);
       setTickets([]);
     } else {
@@ -206,36 +243,27 @@ export function useTicketsData() {
       let allTickets: Ticket[] = reset ? [] : [...tickets];
 
       // Calculate date cutoff for filtering
-      const dateCutoff = Timestamp.fromDate(
-        new Date(Date.now() - dateFilter * 24 * 60 * 60 * 1000)
-      );
+      const dateCutoff = new Date(Date.now() - dateFilter * 24 * 60 * 60 * 1000).toISOString();
+
+      const offset = reset ? 0 : currentOffset;
 
       if (user.role === "siteAdmin") {
-        // Site admin: Use collection group query with date filter and pagination
-        const ticketsQuery = lastVisible && !reset
-          ? query(
-              collectionGroup(db, "tickets"),
-              where("purchaseDate", ">=", dateCutoff),
-              orderBy("purchaseDate", "desc"),
-              startAfter(lastVisible),
-              limit(PAGE_SIZE)
-            )
-          : query(
-              collectionGroup(db, "tickets"),
-              where("purchaseDate", ">=", dateCutoff),
-              orderBy("purchaseDate", "desc"),
-              limit(PAGE_SIZE)
-            );
+        // Site admin: Query all tickets with date filter and pagination
+        const { data, error } = await supabase
+          .from('tickets')
+          .select('*')
+          .gte('purchase_date', dateCutoff)
+          .order('purchase_date', { ascending: false })
+          .range(offset, offset + PAGE_SIZE - 1);
 
-        const snap = await getDocs(ticketsQuery);
-        const newTickets = snap.docs.map(transformTicket);
+        if (error) throw error;
+
+        const newTickets = (data || []).map(transformTicket);
         allTickets = [...allTickets, ...newTickets];
 
         // Update pagination state
-        if (snap.docs.length > 0) {
-          setLastVisible(snap.docs[snap.docs.length - 1]);
-        }
-        setHasMore(snap.docs.length === PAGE_SIZE);
+        setCurrentOffset(offset + newTickets.length);
+        setHasMore(newTickets.length === PAGE_SIZE);
 
       } else if (user.role === "venueAdmin" || user.role === "subAdmin") {
         if (!user.venueId) {
@@ -245,59 +273,64 @@ export function useTicketsData() {
           return;
         }
 
-        // Load events for this venue with date filter
-        const eventsQuery = query(
-          collection(db, "events"),
-          where("venueId", "==", user.venueId),
-          where("startTime", ">=", dateCutoff)
-        );
-        const eventsSnap = await getDocs(eventsQuery);
+        // Get events for this venue
+        const { data: eventsData, error: eventsError } = await supabase
+          .from('events')
+          .select('id')
+          .eq('venue_id', user.venueId)
+          .gte('start_time', dateCutoff);
 
-        // Fetch tickets for each event in parallel (limited to PAGE_SIZE total)
-        let loadedCount = 0;
-        const ticketPromises = eventsSnap.docs.map(async (eventDoc) => {
-          if (loadedCount >= PAGE_SIZE) return [];
+        if (eventsError) throw eventsError;
 
-          const ticketsQuery = query(
-            collection(db, "events", eventDoc.id, "tickets"),
-            orderBy("purchaseDate", "desc"),
-            limit(Math.min(PAGE_SIZE - loadedCount, 20)) // Limit per event
-          );
-          const ticketsSnap = await getDocs(ticketsQuery);
-          loadedCount += ticketsSnap.docs.length;
-          return ticketsSnap.docs.map(transformTicket);
-        });
+        const eventIds = eventsData?.map((e: any) => e.id) || [];
 
-        const ticketArrays = await Promise.all(ticketPromises);
-        const newTickets = ticketArrays.flat();
-        allTickets = [...allTickets, ...newTickets];
+        if (eventIds.length > 0) {
+          // Query tickets for this venue's events with pagination
+          const { data, error } = await supabase
+            .from('tickets')
+            .select('*')
+            .in('event_id', eventIds)
+            .order('purchase_date', { ascending: false })
+            .range(offset, offset + PAGE_SIZE - 1);
 
-        // For venue admins, we don't have perfect pagination across events
-        // So we just disable "load more" after first load
-        setHasMore(false);
+          if (error) throw error;
+
+          const newTickets = (data || []).map(transformTicket);
+          allTickets = [...allTickets, ...newTickets];
+
+          // Update pagination state
+          setCurrentOffset(offset + newTickets.length);
+          setHasMore(newTickets.length === PAGE_SIZE);
+        } else {
+          setHasMore(false);
+        }
 
       } else {
         // For scanners or other roles with venue access
         if (user.venueId) {
-          const eventsQuery = query(
-            collection(db, "events"),
-            where("venueId", "==", user.venueId),
-            where("startTime", ">=", dateCutoff)
-          );
-          const eventsSnap = await getDocs(eventsQuery);
+          // Get events for this venue
+          const { data: eventsData, error: eventsError } = await supabase
+            .from('events')
+            .select('id')
+            .eq('venue_id', user.venueId)
+            .gte('start_time', dateCutoff);
 
-          const ticketPromises = eventsSnap.docs.map(async (eventDoc) => {
-            const ticketsQuery = query(
-              collection(db, "events", eventDoc.id, "tickets"),
-              orderBy("purchaseDate", "desc"),
-              limit(PAGE_SIZE)
-            );
-            const ticketsSnap = await getDocs(ticketsQuery);
-            return ticketsSnap.docs.map(transformTicket);
-          });
+          if (eventsError) throw eventsError;
 
-          const ticketArrays = await Promise.all(ticketPromises);
-          allTickets = ticketArrays.flat();
+          const eventIds = eventsData?.map((e: any) => e.id) || [];
+
+          if (eventIds.length > 0) {
+            const { data, error } = await supabase
+              .from('tickets')
+              .select('*')
+              .in('event_id', eventIds)
+              .order('purchase_date', { ascending: false })
+              .limit(PAGE_SIZE);
+
+            if (error) throw error;
+
+            allTickets = (data || []).map(transformTicket);
+          }
           setHasMore(false);
         }
       }
@@ -322,7 +355,7 @@ export function useTicketsData() {
     if (!loadingMore && hasMore) {
       loadTickets(false);
     }
-  }, [loadingMore, hasMore, lastVisible, tickets]);
+  }, [loadingMore, hasMore, currentOffset, tickets]);
 
   const groupTicketsByEvent = (ticketList: Ticket[]) => {
     const groups: Record<string, EventGroup> = {};
@@ -379,11 +412,18 @@ export function useTicketsData() {
   });
 
   const markUsed = async (ticket: Ticket) => {
-    if (ticket.isUsed) return;
+    if (ticket.is_used) return;
     try {
-      if (ticket.docRef) {
-        await updateDoc(ticket.docRef, { status: 'used', usedAt: Timestamp.now() });
-      }
+      const { error } = await supabase
+        .from('tickets')
+        .update({
+          status: 'used',
+          used_at: new Date().toISOString()
+        })
+        .eq('id', ticket.id);
+
+      if (error) throw error;
+
       toast.success("Ticket marked as used!");
       // Clear cache and reload
       if (user) {
@@ -398,13 +438,17 @@ export function useTicketsData() {
 
   const cancelTicket = async (ticket: Ticket) => {
     try {
-      if (ticket.docRef) {
-        await updateDoc(ticket.docRef, {
+      const { error } = await supabase
+        .from('tickets')
+        .update({
           status: 'cancelled',
-          cancelledAt: Timestamp.now(),
-          cancelledBy: user?.email || 'admin'
-        });
-      }
+          cancelled_at: new Date().toISOString(),
+          cancelled_by: user?.email || 'admin'
+        })
+        .eq('id', ticket.id);
+
+      if (error) throw error;
+
       toast.success("Ticket cancelled successfully!");
       // Clear cache and reload
       if (user) {
@@ -419,14 +463,18 @@ export function useTicketsData() {
 
   const deleteTicket = async (ticket: Ticket) => {
     try {
-      if (ticket.docRef) {
-        // Mark as deleted instead of actually deleting
-        await updateDoc(ticket.docRef, {
+      // Mark as deleted instead of actually deleting
+      const { error } = await supabase
+        .from('tickets')
+        .update({
           status: 'deleted',
-          deletedAt: Timestamp.now(),
-          deletedBy: user?.email || 'admin'
-        });
-      }
+          deleted_at: new Date().toISOString(),
+          deleted_by: user?.email || 'admin'
+        })
+        .eq('id', ticket.id);
+
+      if (error) throw error;
+
       toast.success("Ticket deleted successfully!");
       // Clear cache and reload
       if (user) {
