@@ -2,26 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/useAuth";
-import {
-  collection,
-  getDocs,
-  query,
-  orderBy
-} from "firebase/firestore";
-import { httpsCallable } from "firebase/functions";
-import { db, functions } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export interface Tag {
   id: string;
   name: string;
-  nameLowercase?: string;
+  name_lowercase?: string;
   description?: string | null;
   color?: string | null;
   order: number;
   active: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateTagData {
@@ -46,18 +39,15 @@ export function useTagManagement() {
   const loadTags = async () => {
     setLoading(true);
     try {
-      const tagsSnapshot = await getDocs(
-        query(collection(db, "tags"), orderBy("order", "asc"), orderBy("name", "asc"))
-      );
+      const { data, error } = await supabase
+        .from('tags')
+        .select('*')
+        .order('order', { ascending: true })
+        .order('name', { ascending: true });
 
-      const tagsData = tagsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate(),
-      } as Tag));
+      if (error) throw error;
 
-      setTags(tagsData);
+      setTags(data || []);
     } catch (error) {
       console.error("Error loading tags:", error);
       toast.error("Failed to load tags");
@@ -70,35 +60,52 @@ export function useTagManagement() {
     try {
       setLoading(true);
 
-      const createTagFunction = httpsCallable(functions, 'createTag');
-      const result = await createTagFunction({
-        name: tagData.name.trim(),
-        description: tagData.description?.trim() || null,
-        color: tagData.color || null,
-      });
+      // Check if tag with this name already exists
+      const { data: existing } = await supabase
+        .from('tags')
+        .select('id')
+        .ilike('name', tagData.name.trim())
+        .single();
 
-      const response = result.data as any;
-
-      if (response.success) {
-        toast.success(response.message);
-        await loadTags();
-        return { success: true, tagId: response.tagId };
-      } else {
-        throw new Error(response.message || "Failed to create tag");
+      if (existing) {
+        toast.error("A tag with this name already exists");
+        return { success: false, error: "Tag already exists" };
       }
+
+      // Get the highest order number
+      const { data: maxOrderTag } = await supabase
+        .from('tags')
+        .select('order')
+        .order('order', { ascending: false })
+        .limit(1)
+        .single();
+
+      const nextOrder = (maxOrderTag?.order ?? -1) + 1;
+
+      // Create the tag
+      const { data, error } = await supabase
+        .from('tags')
+        .insert([{
+          name: tagData.name.trim(),
+          name_lowercase: tagData.name.trim().toLowerCase(),
+          description: tagData.description?.trim() || null,
+          color: tagData.color || null,
+          order: nextOrder,
+          active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success("Tag created successfully");
+      await loadTags();
+      return { success: true, tagId: data.id };
     } catch (error: any) {
       console.error("Error creating tag:", error);
-
-      let errorMessage = "Failed to create tag";
-
-      if (error.code === 'functions/permission-denied') {
-        errorMessage = "You don't have permission to create tags";
-      } else if (error.code === 'functions/already-exists') {
-        errorMessage = "A tag with this name already exists";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
+      let errorMessage = error.message || "Failed to create tag";
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -110,42 +117,47 @@ export function useTagManagement() {
     try {
       setLoading(true);
 
-      const updateTagFunction = httpsCallable(functions, 'updateTag');
-      const result = await updateTagFunction({
-        tagId: tagId,
-        updates: {
-          ...(updates.name && { name: updates.name }),
-          ...(updates.description !== undefined && { description: updates.description }),
-          ...(updates.color !== undefined && { color: updates.color }),
-          ...(typeof updates.active === 'boolean' && { active: updates.active }),
-          ...(typeof updates.order === 'number' && { order: updates.order }),
+      // If name is being updated, check for duplicates
+      if (updates.name) {
+        const { data: existing } = await supabase
+          .from('tags')
+          .select('id')
+          .ilike('name', updates.name.trim())
+          .neq('id', tagId)
+          .single();
+
+        if (existing) {
+          toast.error("A tag with this name already exists");
+          return { success: false, error: "Tag already exists" };
         }
-      });
-
-      const response = result.data as any;
-
-      if (response.success) {
-        toast.success(response.message);
-        await loadTags();
-        return { success: true };
-      } else {
-        throw new Error(response.message || "Failed to update tag");
       }
+
+      const updateData: any = {
+        updated_at: new Date().toISOString(),
+      };
+
+      if (updates.name) {
+        updateData.name = updates.name;
+        updateData.name_lowercase = updates.name.toLowerCase();
+      }
+      if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.color !== undefined) updateData.color = updates.color;
+      if (typeof updates.active === 'boolean') updateData.active = updates.active;
+      if (typeof updates.order === 'number') updateData.order = updates.order;
+
+      const { error } = await supabase
+        .from('tags')
+        .update(updateData)
+        .eq('id', tagId);
+
+      if (error) throw error;
+
+      toast.success("Tag updated successfully");
+      await loadTags();
+      return { success: true };
     } catch (error: any) {
       console.error("Error updating tag:", error);
-
-      let errorMessage = "Failed to update tag";
-
-      if (error.code === 'functions/permission-denied') {
-        errorMessage = "You don't have permission to update this tag";
-      } else if (error.code === 'functions/not-found') {
-        errorMessage = "Tag not found";
-      } else if (error.code === 'functions/already-exists') {
-        errorMessage = "A tag with this name already exists";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
+      let errorMessage = error.message || "Failed to update tag";
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -157,35 +169,33 @@ export function useTagManagement() {
     try {
       setLoading(true);
 
-      const deleteTagFunction = httpsCallable(functions, 'deleteTag');
-      const result = await deleteTagFunction({
-        tagId: tagId
-      });
+      // Check if tag is being used by any events
+      const { data: eventsUsingTag, error: checkError } = await supabase
+        .from('events')
+        .select('id')
+        .contains('tags', [tagId])
+        .limit(1);
 
-      const response = result.data as any;
+      if (checkError) throw checkError;
 
-      if (response.success) {
-        toast.success(response.message);
-        await loadTags();
-        return { success: true };
-      } else {
-        throw new Error(response.message || "Failed to delete tag");
+      if (eventsUsingTag && eventsUsingTag.length > 0) {
+        toast.error("Cannot delete tag because it's being used by events");
+        return { success: false, error: "Tag is in use" };
       }
+
+      const { error } = await supabase
+        .from('tags')
+        .delete()
+        .eq('id', tagId);
+
+      if (error) throw error;
+
+      toast.success("Tag deleted successfully");
+      await loadTags();
+      return { success: true };
     } catch (error: any) {
       console.error("Error deleting tag:", error);
-
-      let errorMessage = "Failed to delete tag";
-
-      if (error.code === 'functions/permission-denied') {
-        errorMessage = "You don't have permission to delete this tag";
-      } else if (error.code === 'functions/not-found') {
-        errorMessage = "Tag not found";
-      } else if (error.code === 'functions/failed-precondition') {
-        errorMessage = error.message || "Cannot delete tag because it's in use";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
+      let errorMessage = error.message || "Failed to delete tag";
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -197,31 +207,28 @@ export function useTagManagement() {
     try {
       setLoading(true);
 
-      const reorderTagsFunction = httpsCallable(functions, 'reorderTags');
-      const result = await reorderTagsFunction({
-        tagOrders
-      });
+      // Update all tags in parallel
+      const updatePromises = tagOrders.map(({ tagId, order }) =>
+        supabase
+          .from('tags')
+          .update({ order, updated_at: new Date().toISOString() })
+          .eq('id', tagId)
+      );
 
-      const response = result.data as any;
+      const results = await Promise.all(updatePromises);
 
-      if (response.success) {
-        toast.success(response.message);
-        await loadTags();
-        return { success: true };
-      } else {
-        throw new Error(response.message || "Failed to reorder tags");
+      // Check if any updates failed
+      const errors = results.filter(r => r.error);
+      if (errors.length > 0) {
+        throw new Error("Some tags failed to update");
       }
+
+      toast.success("Tags reordered successfully");
+      await loadTags();
+      return { success: true };
     } catch (error: any) {
       console.error("Error reordering tags:", error);
-
-      let errorMessage = "Failed to reorder tags";
-
-      if (error.code === 'functions/permission-denied') {
-        errorMessage = "You don't have permission to reorder tags";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
+      let errorMessage = error.message || "Failed to reorder tags";
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
