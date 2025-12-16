@@ -144,7 +144,7 @@ export function AccountInfoCard({
               <Label className="text-sm font-medium text-muted-foreground">Account Created</Label>
               <div className="flex items-center gap-3 mt-1 p-3 bg-muted/50 rounded-lg">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{formatDate(user.metadata.creationTime || null)}</span>
+                <span className="font-medium">{formatDate(authUser?.created_at || null)}</span>
               </div>
             </div>
 
