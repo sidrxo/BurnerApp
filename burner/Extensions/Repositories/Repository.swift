@@ -85,19 +85,7 @@ class EventRepository: BaseRepository, EventRepositoryProtocol {
             print("\n🔍 DEBUG: Fetching events from Supabase...")
 
             do {
-                let response = try await query.execute()
-
-                // Print raw response data as JSON string
-                if let jsonData = try? JSONSerialization.data(withJSONObject: response.value as Any, options: .prettyPrinted),
-                   let jsonString = String(data: jsonData, encoding: .utf8) {
-                    print("📦 RAW RESPONSE (first 2000 chars):")
-                    print(String(jsonString.prefix(2000)))
-                } else {
-                    print("⚠️ Could not serialize response to JSON")
-                }
-
-                // Try to decode events
-                let events: [Event] = response.value
+                let events: [Event] = try await query.execute().value
 
                 print("✅ Successfully decoded \(events.count) events")
 
@@ -106,11 +94,13 @@ class EventRepository: BaseRepository, EventRepositoryProtocol {
                     print("\n🎫 FIRST EVENT DECODED:")
                     print("  ID: \(firstEvent.id ?? "nil")")
                     print("  Name: \(firstEvent.name)")
+                    print("  Venue: \(firstEvent.venue)")
                     print("  Price: \(firstEvent.price) (type: \(type(of: firstEvent.price)))")
                     print("  Max Tickets: \(firstEvent.maxTickets) (type: \(type(of: firstEvent.maxTickets)))")
                     print("  Tickets Sold: \(firstEvent.ticketsSold) (type: \(type(of: firstEvent.ticketsSold)))")
                     print("  Tags: \(firstEvent.tags ?? []) (type: \(type(of: firstEvent.tags)))")
                     print("  Coordinates: \(String(describing: firstEvent.coordinates))")
+                    print("  Image URL: \(firstEvent.imageUrl)")
                 }
 
                 return events
