@@ -413,9 +413,9 @@ export function useEventsData() {
       // Delete image from storage if exists
       if (ev.image_url) {
         try {
-          // Extract path from URL
+          // Extract path from URL - bucket is event_images, folder is event-images
           const urlParts = ev.image_url.split('/');
-          const bucket = 'event-images';
+          const bucket = 'event_images';
           const path = urlParts.slice(urlParts.indexOf(bucket) + 1).join('/');
 
           const { error: storageError } = await supabase.storage
@@ -563,12 +563,14 @@ export function useEventForm(
     if (!allowed.includes(file.type)) throw new Error("Invalid file type");
     if (file.size > 5 * 1024 * 1024) throw new Error("File too large (max 5MB)");
 
-    const fileName = `${Date.now()}_${file.name}`;
-    const storagePath = `${eventId}/${fileName}`;
+    // Extract just the filename, removing any path components
+    const originalName = file.name.split('/').pop() || file.name;
+    const fileName = `${Date.now()}_${originalName}`;
+    const storagePath = `event-images/${eventId}/${fileName}`;
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage (bucket is event_images, folder is event-images)
     const { data, error } = await supabase.storage
-      .from('event-images')
+      .from('event_images')
       .upload(storagePath, file, {
         cacheControl: '3600',
         upsert: false,
@@ -578,15 +580,15 @@ export function useEventForm(
 
     // Get public URL
     const { data: { publicUrl } } = supabase.storage
-      .from('event-images')
+      .from('event_images')
       .getPublicUrl(storagePath);
 
     // Delete old image if exists and is different
     if (existing?.image_url && existing.image_url !== publicUrl) {
       try {
         const urlParts = existing.image_url.split('/');
-        const oldPath = urlParts.slice(urlParts.indexOf(eventId)).join('/');
-        await supabase.storage.from('event-images').remove([oldPath]);
+        const oldPath = urlParts.slice(urlParts.indexOf('event-images')).join('/');
+        await supabase.storage.from('event_images').remove([oldPath]);
       } catch {
         /* ignore */
       }
@@ -641,16 +643,28 @@ export function useEventForm(
       const url = await uploadImageIfAny(isEdit ? existing!.id : form.id);
       const tags = form.tag ? [normaliseTag(form.tag)] : [];
 
-      // Get coordinates from venue (cached)
+      // Only fetch coordinates if venue has changed
       let coordinates: { latitude: number; longitude: number } | null = null;
-      const { data: venueData } = await supabase
-        .from('venues')
-        .select('coordinates')
-        .eq('id', selectedVenueId)
-        .single();
+      const venueChanged = !isEdit || (isEdit && existing?.venue_id !== selectedVenueId);
 
-      if (venueData?.coordinates) {
-        coordinates = venueData.coordinates;
+      if (venueChanged) {
+        const { data: venueData } = await supabase
+          .from('venues')
+          .select('coordinates')
+          .eq('id', selectedVenueId)
+          .single();
+
+        if (venueData?.coordinates) {
+          // Validate coordinates before using them
+          const lat = venueData.coordinates.latitude;
+          const lng = venueData.coordinates.longitude;
+
+          if (typeof lat === 'number' && typeof lng === 'number' &&
+              !isNaN(lat) && !isNaN(lng) &&
+              lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+            coordinates = { latitude: lat, longitude: lng };
+          }
+        }
       }
 
       if (isEdit) {
@@ -665,9 +679,13 @@ export function useEventForm(
           max_tickets: Number(form.maxTickets),
           status: form.status,
           tags,
-          coordinates,
           updated_at: new Date().toISOString(),
         };
+
+        // Only update coordinates if venue changed
+        if (venueChanged && coordinates) {
+          updatePayload.coordinates = coordinates;
+        }
 
         if (url) {
           updatePayload.image_url = url;

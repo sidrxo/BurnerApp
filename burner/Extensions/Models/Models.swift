@@ -4,6 +4,43 @@ import Foundation
 struct Coordinate: Codable, Sendable {
     let latitude: Double
     let longitude: Double
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Try to decode latitude, handle string-encoded numbers
+        if let lat = try? container.decode(Double.self, forKey: .latitude) {
+            latitude = lat
+        } else if let latString = try? container.decode(String.self, forKey: .latitude),
+                  let lat = Double(latString) {
+            latitude = lat
+        } else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .latitude,
+                in: container,
+                debugDescription: "Invalid latitude value"
+            )
+        }
+
+        // Try to decode longitude, handle string-encoded numbers
+        if let lng = try? container.decode(Double.self, forKey: .longitude) {
+            longitude = lng
+        } else if let lngString = try? container.decode(String.self, forKey: .longitude),
+                  let lng = Double(lngString) {
+            longitude = lng
+        } else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .longitude,
+                in: container,
+                debugDescription: "Invalid longitude value"
+            )
+        }
+    }
+
+    init(latitude: Double, longitude: Double) {
+        self.latitude = latitude
+        self.longitude = longitude
+    }
 }
 
 // MARK: - Event Model
@@ -88,6 +125,33 @@ struct Event: Identifiable, Codable, Sendable {
         self.coordinates = coordinates
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+    }
+
+    // Custom decoder to handle bad coordinate data gracefully
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decodeIfPresent(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        venue = try container.decode(String.self, forKey: .venue)
+        venueId = try container.decodeIfPresent(String.self, forKey: .venueId)
+        startTime = try container.decodeIfPresent(Date.self, forKey: .startTime)
+        endTime = try container.decodeIfPresent(Date.self, forKey: .endTime)
+        price = try container.decode(Double.self, forKey: .price)
+        maxTickets = try container.decode(Int.self, forKey: .maxTickets)
+        ticketsSold = try container.decode(Int.self, forKey: .ticketsSold)
+        imageUrl = try container.decode(String.self, forKey: .imageUrl)
+        isFeatured = try container.decode(Bool.self, forKey: .isFeatured)
+        featuredPriority = try container.decodeIfPresent(Int.self, forKey: .featuredPriority)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        status = try container.decodeIfPresent(String.self, forKey: .status)
+        tags = try container.decodeIfPresent([String].self, forKey: .tags)
+
+        // Try to decode coordinates, but don't fail the whole event if they're bad
+        coordinates = try? container.decodeIfPresent(Coordinate.self, forKey: .coordinates)
+
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
     }
 
 }
