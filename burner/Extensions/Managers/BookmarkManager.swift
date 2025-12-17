@@ -14,7 +14,6 @@ class BookmarkManager: ObservableObject {
 
     private let bookmarkRepository: BookmarkRepository
     private let eventRepository: EventRepository
-    private var isSimulatingEmptyData = false
 
     struct BookmarkError: Identifiable {
         let id = UUID()
@@ -37,10 +36,7 @@ class BookmarkManager: ObservableObject {
     }
     
     // MARK: - Setup Listener
-    // MARK: - Setup Listener
         private func setupBookmarkListener() async {
-            guard !isSimulatingEmptyData else { return }
-
             // This call cancels any existing task, which triggers the 'cancelled' error
             // in the previous observer if one was active.
             bookmarkRepository.stopObserving()
@@ -53,8 +49,6 @@ class BookmarkManager: ObservableObject {
                     guard let self = self else { return }
 
                     Task { @MainActor in
-                        guard !self.isSimulatingEmptyData else { return }
-
                         switch result {
                         case .success(let bookmarks):
                             // Update bookmark status dictionary
@@ -141,10 +135,6 @@ class BookmarkManager: ObservableObject {
     }
 
     func toggleBookmark(for event: Event) async {
-        guard !isSimulatingEmptyData else {
-            return
-        }
-
         let userId: String
         let eventId: String
         
@@ -249,7 +239,6 @@ class BookmarkManager: ObservableObject {
     }
 
     func refreshBookmarks() {
-        guard !isSimulatingEmptyData else { return }
         Task {
             await setupBookmarkListener()
         }
@@ -259,23 +248,5 @@ class BookmarkManager: ObservableObject {
         bookmarkedEvents = []
         bookmarkStatus = [:]
         bookmarkRepository.stopObserving()
-    }
-
-    // MARK: - Debug helpers
-    
-    func simulateEmptyData() {
-        isSimulatingEmptyData = true
-        bookmarkRepository.stopObserving()
-        bookmarkedEvents = []
-        bookmarkStatus = [:]
-        isLoading = false
-    }
-
-    func resumeFromSimulation() {
-        guard isSimulatingEmptyData else { return }
-        isSimulatingEmptyData = false
-        Task {
-            await setupBookmarkListener()
-        }
     }
 }

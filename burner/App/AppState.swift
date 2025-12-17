@@ -20,7 +20,6 @@ class AppState: ObservableObject {
     @Published var showingError = false
     @Published var errorMessage: String?
     @Published var userDidSignOut = false
-    @Published var isSimulatingEmptyFirestore = false
     @Published var userRole: String = ""
     @Published var userDisplayName: String = ""
     @Published var isScannerActive: Bool = false
@@ -30,8 +29,6 @@ class AppState: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var burnerModeObserver: NSObjectProtocol?
     private var resetObserver: NSObjectProtocol?
-    private var emptyStateEnabledObserver: NSObjectProtocol?
-    private var emptyStateDisabledObserver: NSObjectProtocol?
     private var imagePrefetchCancellable: AnyCancellable?
 
     private let eventRepository: EventRepository
@@ -54,12 +51,6 @@ class AppState: ObservableObject {
             NotificationCenter.default.removeObserver(observer)
         }
         if let observer = resetObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
-        if let observer = emptyStateEnabledObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
-        if let observer = emptyStateDisabledObserver {
             NotificationCenter.default.removeObserver(observer)
         }
 
@@ -216,17 +207,15 @@ class AppState: ObservableObject {
     }
 
     private func handleUserSignedIn() {
-        if !isSimulatingEmptyFirestore {
-            Task {
-                await eventViewModel.refreshEvents()
-                ticketsViewModel.fetchUserTickets()
-                bookmarkManager.refreshBookmarks()
-                
-                // IMPORTANT: Start burner mode monitoring after tickets are fetched
-                // Give tickets time to load first
-                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                burnerModeMonitor.startMonitoring()
-            }
+        Task {
+            await eventViewModel.refreshEvents()
+            ticketsViewModel.fetchUserTickets()
+            bookmarkManager.refreshBookmarks()
+
+            // IMPORTANT: Start burner mode monitoring after tickets are fetched
+            // Give tickets time to load first
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+            burnerModeMonitor.startMonitoring()
         }
 
         let isEnabled = UserDefaults.standard.bool(forKey: "burnerModeEnabled")
@@ -290,50 +279,8 @@ class AppState: ObservableObject {
     }
 
     func loadInitialData() {
-        if isSimulatingEmptyFirestore {
-            eventViewModel.simulateEmptyData()
-            ticketsViewModel.simulateEmptyData()
-            bookmarkManager.simulateEmptyData()
-        } else {
-            Task {
-                await eventViewModel.refreshEvents()
-            }
-        }
-    }
-
-    func enableEmptyFirestoreSimulation() {
-        guard !isSimulatingEmptyFirestore else { return }
-        isSimulatingEmptyFirestore = true
-        eventViewModel.simulateEmptyData()
-        ticketsViewModel.simulateEmptyData()
-        bookmarkManager.simulateEmptyData()
-
-        NotificationCenter.default.post(name: NSNotification.Name("EmptyStateEnabled"), object: nil)
-
-        if emptyStateEnabledObserver == nil {
-            emptyStateEnabledObserver = NotificationCenter.default.addObserver(
-                forName: NSNotification.Name("EmptyStateEnabled"),
-                object: nil,
-                queue: .main
-            ) { _ in }
-        }
-    }
-
-    func disableEmptyFirestoreSimulation() {
-        guard isSimulatingEmptyFirestore else { return }
-        isSimulatingEmptyFirestore = false
-        eventViewModel.resumeFromSimulation()
-        ticketsViewModel.resumeFromSimulation()
-        bookmarkManager.resumeFromSimulation()
-
-        NotificationCenter.default.post(name: NSNotification.Name("EmptyStateDisabled"), object: nil)
-
-        if emptyStateDisabledObserver == nil {
-            emptyStateDisabledObserver = NotificationCenter.default.addObserver(
-                forName: NSNotification.Name("EmptyStateDisabled"),
-                object: nil,
-                queue: .main
-            ) { _ in }
+        Task {
+            await eventViewModel.refreshEvents()
         }
     }
 

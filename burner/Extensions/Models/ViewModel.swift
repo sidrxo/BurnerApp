@@ -15,8 +15,7 @@ class EventViewModel: ObservableObject {
     private let eventRepository: EventRepositoryProtocol
     private let ticketRepository: TicketRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
-    private var isSimulatingEmptyData = false
-    
+
     private weak var ticketsViewModel: TicketsViewModel?
     private var eventObservationTask: Task<Void, Never>?
         
@@ -57,35 +56,26 @@ class EventViewModel: ObservableObject {
     
     func fetchEvents() {
         eventObservationTask?.cancel()
-        
-        guard !isSimulatingEmptyData else {
-            isLoading = false
-            events = []
-            userTicketStatus = [:]
-            return
-        }
 
         isLoading = true
         errorMessage = nil
 
         let calendar = Calendar.current
         let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-        
+
         eventObservationTask = Task { @MainActor in
             do {
                 for try await events in eventRepository.eventStream(since: sevenDaysAgo) {
                     guard !Task.isCancelled else { return }
-                    
-                    guard !self.isSimulatingEmptyData else { return }
-                    
+
                     self.isLoading = false
                     self.events = events
-                    
+
                     await self.refreshUserTicketStatus()
                 }
             } catch {
                 if Task.isCancelled { return }
-                
+
                 self.isLoading = false
                 self.errorMessage = "Failed to load events: \(error.localizedDescription)"
             }
@@ -93,8 +83,6 @@ class EventViewModel: ObservableObject {
     }
 
     func refreshEvents() async {
-        guard !isSimulatingEmptyData else { return }
-        
         await MainActor.run {
             self.errorMessage = nil
         }
@@ -110,6 +98,8 @@ class EventViewModel: ObservableObject {
 
             await MainActor.run {
                 self.events = serverEvents
+                // Force SwiftUI to detect the change
+                self.objectWillChange.send()
             }
 
             await self.refreshUserTicketStatus()
@@ -136,23 +126,7 @@ class EventViewModel: ObservableObject {
             }
         }
     }
-        
-    func simulateEmptyData() {
-        eventObservationTask?.cancel()
-        isSimulatingEmptyData = true
-        events = []
-        userTicketStatus = [:]
-        isLoading = false
-        errorMessage = nil
-        successMessage = nil
-    }
 
-    func resumeFromSimulation() {
-        guard isSimulatingEmptyData else { return }
-        isSimulatingEmptyData = false
-        fetchEvents()
-    }
-        
     func fetchEvent(byId eventId: String) async throws -> Event {
         guard let event = try await eventRepository.fetchEvent(by: eventId) else {
              throw NSError(domain: "EventViewModel", code: 404, userInfo: [
@@ -244,19 +218,12 @@ class TicketsViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let ticketRepository: TicketRepositoryProtocol
-    private var isSimulatingEmptyData = false
-        
+
     init(ticketRepository: TicketRepositoryProtocol) {
         self.ticketRepository = ticketRepository
     }
-        
-    func fetchUserTickets() {
-        guard !isSimulatingEmptyData else {
-            isLoading = false
-            tickets = []
-            return
-        }
 
+    func fetchUserTickets() {
         Task {
             do {
                 guard let user = try? await SupabaseManager.shared.client.auth.session.user else {
@@ -272,8 +239,6 @@ class TicketsViewModel: ObservableObject {
                     guard let self = self else { return }
 
                     Task { @MainActor in
-                        guard !self.isSimulatingEmptyData else { return }
-
                         self.isLoading = false
 
                         switch result {
@@ -311,21 +276,7 @@ class TicketsViewModel: ObservableObject {
         tickets = []
         errorMessage = nil
     }
-        
-    func simulateEmptyData() {
-        ticketRepository.stopObserving()
-        isSimulatingEmptyData = true
-        tickets = []
-        isLoading = false
-        errorMessage = nil
-    }
-        
-    func resumeFromSimulation() {
-        guard isSimulatingEmptyData else { return }
-        isSimulatingEmptyData = false
-        fetchUserTickets()
-    }
-        
+
     func addDebugTicket(_ ticket: Ticket) {
         self.tickets.append(ticket)
             
