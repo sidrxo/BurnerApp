@@ -4,9 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.functions.FirebaseFunctions
+import com.burner.app.data.BurnerSupabaseClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,26 +20,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
-
-    @Provides
-    @Singleton
-    fun provideFirebaseFirestore(): FirebaseFirestore {
-        val firestore = FirebaseFirestore.getInstance()
-
-        // Enable offline persistence (matching iOS behavior)
-        firestore.firestoreSettings = com.google.firebase.firestore.FirebaseFirestoreSettings.Builder()
-            .setPersistenceEnabled(true)
-            .setCacheSizeBytes(100 * 1024 * 1024) // 100 MB cache
-            .build()
-
-        return firestore
-    }
-
-    @Provides
-    @Singleton
-    fun provideFirebaseFunctions(): FirebaseFunctions =
-        FirebaseFunctions.getInstance("europe-west2")
+    fun provideBurnerSupabaseClient(): BurnerSupabaseClient = BurnerSupabaseClient()
 
     @Provides
     @Singleton

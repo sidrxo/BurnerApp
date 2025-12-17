@@ -1,23 +1,24 @@
 package com.burner.app.data.models
 
-import com.google.firebase.firestore.DocumentId
-import com.google.firebase.firestore.GeoPoint
-import com.google.firebase.firestore.PropertyName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Venue model matching iOS Venue struct
+ * Updated for Supabase
  */
+@Serializable
 data class Venue(
-    @DocumentId
     val id: String? = null,
     val name: String = "",
     val address: String = "",
     val city: String = "",
     val capacity: Int = 0,
-    @PropertyName("imageUrl")
+    @SerialName("image_url")
     val imageUrl: String = "",
-    val coordinates: GeoPoint? = null,
-    @PropertyName("eventCount")
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    @SerialName("event_count")
     val eventCount: Int = 0
 ) {
     companion object {

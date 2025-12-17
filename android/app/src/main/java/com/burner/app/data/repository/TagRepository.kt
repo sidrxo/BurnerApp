@@ -1,54 +1,45 @@
 package com.burner.app.data.repository
 
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
+import com.burner.app.data.BurnerSupabaseClient
 import com.burner.app.data.models.Tag
-import kotlinx.coroutines.channels.awaitClose
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class TagRepository @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val supabase: BurnerSupabaseClient
 ) {
-    private val tagsCollection = firestore.collection("tags")
-
     // Get all active tags (real-time)
-    val allTags: Flow<List<Tag>> = callbackFlow {
-        val listener = tagsCollection
-            .whereEqualTo("active", true)
-            .orderBy("order", Query.Direction.ASCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    // Fall back to default genres
-                    trySend(Tag.defaultGenres)
-                    return@addSnapshotListener
-                }
-
-                val tags = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Tag::class.java)
-                } ?: emptyList()
-
-                // Use default genres if none found
-                trySend(tags.ifEmpty { Tag.defaultGenres })
-            }
-
-        awaitClose { listener.remove() }
-    }
+    val allTags: Flow<List<Tag>> = supabase.realtime
+        .channel("tags")
+        .postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "tags"
+        }
+        .map {
+            getTagsInternal()
+        }
 
     // Get tags once
     suspend fun getTags(): List<Tag> {
+        return getTagsInternal()
+    }
+
+    private suspend fun getTagsInternal(): List<Tag> {
         return try {
-            tagsCollection
-                .whereEqualTo("active", true)
-                .orderBy("order", Query.Direction.ASCENDING)
-                .get()
-                .await()
-                .documents
-                .mapNotNull { it.toObject(Tag::class.java) }
+            supabase.postgrest.from("tags")
+                .select() {
+                    filter {
+                        eq("active", true)
+                    }
+                    order("order", ascending = true)
+                }
+                .decodeList<Tag>()
                 .ifEmpty { Tag.defaultGenres }
         } catch (e: Exception) {
             Tag.defaultGenres

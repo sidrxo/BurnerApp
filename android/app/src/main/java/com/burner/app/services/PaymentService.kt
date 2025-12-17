@@ -2,13 +2,15 @@ package com.burner.app.services
 
 import android.content.Context
 import android.util.Log
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.functions.FirebaseFunctions
+import com.burner.app.data.BurnerSupabaseClient
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.github.jan.supabase.functions.functions
+import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.*
-import kotlinx.coroutines.tasks.await
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -17,17 +19,14 @@ import kotlin.math.pow
 
 @Singleton
 class PaymentService @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val supabase: BurnerSupabaseClient
 ) {
     companion object {
         private const val TAG = "PaymentService"
         // Ensure this matches your Stripe Dashboard
         private const val STRIPE_PUBLISHABLE_KEY = "pk_test_51SKOqrFxXnVDuRLXw30ABLXPF9QyorMesOCHN9sMbRAIokEIL8gptsxxX4APRJSO0b8SRGvyAUBNzBZqCCgOSvVI00fxiHOZNe"
-        private const val REGION = "europe-west2" // Matches your iOS/Backend region
     }
-
-    private val functions = FirebaseFunctions.getInstance(REGION)
-    private val auth = FirebaseAuth.getInstance()
 
     // Preparation State (Matching iOS Logic)
     private var preparedClientSecret: String? = null
@@ -94,7 +93,7 @@ class PaymentService @Inject constructor(
      */
     suspend fun getPaymentConfig(eventId: String): Result<PaymentIntentConfig> = withContext(Dispatchers.IO) {
         try {
-            if (auth.currentUser == null) {
+            if (supabase.auth.currentUserOrNull() == null) {
                 return@withContext Result.failure(Exception("Please sign in to purchase tickets"))
             }
 
@@ -153,42 +152,25 @@ class PaymentService @Inject constructor(
     // ------------------------------------------------------------------------
 
     private suspend fun createPaymentIntent(eventId: String): PaymentIntentConfig {
-        //
-        val result = functions
-            .getHttpsCallable("createPaymentIntent")
-            .call(mapOf("eventId" to eventId))
-            .await()
+        // Call Supabase Edge Function
+        val requestBody = buildJsonObject {
+            put("eventId", eventId)
+        }
 
-        @Suppress("UNCHECKED_CAST")
-        val data = result.data as? Map<String, Any>
-            ?: throw Exception("Invalid response from server")
-
-        val clientSecret = data["clientSecret"] as? String
-            ?: throw Exception("Missing clientSecret")
-        val paymentIntentId = data["paymentIntentId"] as? String
-            ?: throw Exception("Missing paymentIntentId")
-
-        return PaymentIntentConfig(clientSecret, paymentIntentId)
+        // TODO: Update to use Supabase Edge Functions
+        // For now, throw exception to indicate this needs backend setup
+        throw Exception("Payment processing via Supabase Edge Functions needs to be configured")
     }
 
     private suspend fun confirmPurchaseCall(paymentIntentId: String): PaymentResult {
-        //
-        val result = functions
-            .getHttpsCallable("confirmPurchase")
-            .call(mapOf("paymentIntentId" to paymentIntentId))
-            .await()
+        // Call Supabase Edge Function
+        val requestBody = buildJsonObject {
+            put("paymentIntentId", paymentIntentId)
+        }
 
-        @Suppress("UNCHECKED_CAST")
-        val data = result.data as? Map<String, Any>
-            ?: throw Exception("Invalid response from server")
-
-        val success = data["success"] as? Boolean ?: false
-        val message = data["message"] as? String ?: "Purchase completed"
-        val ticketId = data["ticketId"] as? String
-
-        if (!success) throw Exception(message)
-
-        return PaymentResult(success, message, ticketId)
+        // TODO: Update to use Supabase Edge Functions
+        // For now, throw exception to indicate this needs backend setup
+        throw Exception("Payment confirmation via Supabase Edge Functions needs to be configured")
     }
 
     private fun clearPreparedIntent(intentId: String?) {

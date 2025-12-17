@@ -1,56 +1,59 @@
 package com.burner.app.data.repository
 
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
+import com.burner.app.data.BurnerSupabaseClient
 import com.burner.app.data.models.Ticket
 import com.burner.app.data.models.TicketStatus
 import com.burner.app.data.models.TicketWithEventData
 import com.burner.app.services.AuthService
-import kotlinx.coroutines.channels.awaitClose
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.tasks.await
-import java.util.Date
+import kotlinx.datetime.Clock
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class TicketRepository @Inject constructor(
-    private val firestore: FirebaseFirestore,
+    private val supabase: BurnerSupabaseClient,
     private val authService: AuthService,
     private val eventRepository: EventRepository
 ) {
-    private val ticketsCollection = firestore.collection("tickets")
-
     // Get user's tickets (real-time)
-    fun getUserTickets(): Flow<List<Ticket>> = callbackFlow {
+    fun getUserTickets(): Flow<List<Ticket>> {
         val userId = authService.currentUserId
         if (userId == null) {
-            trySend(emptyList())
-            close()
-            return@callbackFlow
+            return flowOf(emptyList())
         }
 
-        val listener = ticketsCollection
-            .whereEqualTo("userId", userId)
-            .orderBy("purchaseDate", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(emptyList())
-                    return@addSnapshotListener
-                }
-
-                val tickets = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Ticket::class.java)
-                } ?: emptyList()
-
-                trySend(tickets)
+        return supabase.realtime
+            .channel("tickets_$userId")
+            .postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "tickets"
+                filter = "user_id=eq.$userId"
             }
+            .map {
+                getUserTicketsList(userId)
+            }
+    }
 
-        awaitClose { listener.remove() }
+    private suspend fun getUserTicketsList(userId: String): List<Ticket> {
+        return try {
+            supabase.postgrest.from("tickets")
+                .select() {
+                    filter {
+                        eq("user_id", userId)
+                    }
+                    order("purchase_date", ascending = false)
+                }
+                .decodeList<Ticket>()
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     // Get upcoming tickets
@@ -66,11 +69,13 @@ class TicketRepository @Inject constructor(
     // Get single ticket by ID
     suspend fun getTicket(ticketId: String): Ticket? {
         return try {
-            ticketsCollection
-                .document(ticketId)
-                .get()
-                .await()
-                .toObject(Ticket::class.java)
+            supabase.postgrest.from("tickets")
+                .select() {
+                    filter {
+                        eq("id", ticketId)
+                    }
+                }
+                .decodeSingle<Ticket>()
         } catch (e: Exception) {
             null
         }
@@ -84,18 +89,16 @@ class TicketRepository @Inject constructor(
     }
 
     // Get ticket (real-time)
-    fun getTicketFlow(ticketId: String): Flow<Ticket?> = callbackFlow {
-        val listener = ticketsCollection
-            .document(ticketId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(null)
-                    return@addSnapshotListener
-                }
-                trySend(snapshot?.toObject(Ticket::class.java))
+    fun getTicketFlow(ticketId: String): Flow<Ticket?> {
+        return supabase.realtime
+            .channel("ticket_$ticketId")
+            .postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "tickets"
+                filter = "id=eq.$ticketId"
             }
-
-        awaitClose { listener.remove() }
+            .map {
+                getTicket(ticketId)
+            }
     }
 
     // Create ticket after successful payment
@@ -104,7 +107,7 @@ class TicketRepository @Inject constructor(
         eventName: String,
         venue: String,
         venueId: String?,
-        startTime: Timestamp,
+        startTime: String,
         totalPrice: Double,
         eventImageUrl: String? = null
     ): Result<String> {
@@ -115,27 +118,26 @@ class TicketRepository @Inject constructor(
             val ticketId = UUID.randomUUID().toString()
             val ticketNumber = generateTicketNumber()
             val qrCode = generateQRCodeData(ticketId, eventId, userId)
+            val now = Clock.System.now().toString()
 
-            val ticket = Ticket(
-                id = ticketId,
-                eventId = eventId,
-                userId = userId,
-                ticketNumber = ticketNumber,
-                eventName = eventName,
-                venue = venue,
-                venueId = venueId,
-                startTime = startTime,
-                totalPrice = totalPrice,
-                purchaseDate = Timestamp.now(),
-                status = TicketStatus.CONFIRMED,
-                qrCode = qrCode,
-                eventImageUrl = eventImageUrl
+            val ticketData = mapOf(
+                "id" to ticketId,
+                "event_id" to eventId,
+                "user_id" to userId,
+                "ticket_number" to ticketNumber,
+                "event_name" to eventName,
+                "venue" to venue,
+                "venue_id" to venueId,
+                "start_time" to startTime,
+                "total_price" to totalPrice,
+                "purchase_date" to now,
+                "status" to TicketStatus.CONFIRMED.name,
+                "qr_code" to qrCode,
+                "event_image_url" to eventImageUrl
             )
 
-            ticketsCollection
-                .document(ticketId)
-                .set(ticket)
-                .await()
+            supabase.postgrest.from("tickets")
+                .insert(ticketData)
 
             Result.success(ticketId)
         } catch (e: Exception) {
@@ -158,16 +160,17 @@ class TicketRepository @Inject constructor(
     // Cancel ticket
     suspend fun cancelTicket(ticketId: String): Result<Unit> {
         return try {
-            ticketsCollection
-                .document(ticketId)
-                .update(
-                    mapOf(
-                        "status" to TicketStatus.CANCELLED,
-                        "cancelledAt" to Timestamp.now(),
-                        "updatedAt" to Timestamp.now()
-                    )
-                )
-                .await()
+            val now = Clock.System.now().toString()
+            supabase.postgrest.from("tickets")
+                .update({
+                    set("status", TicketStatus.CANCELLED.name)
+                    set("cancelled_at", now)
+                    set("updated_at", now)
+                }) {
+                    filter {
+                        eq("id", ticketId)
+                    }
+                }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

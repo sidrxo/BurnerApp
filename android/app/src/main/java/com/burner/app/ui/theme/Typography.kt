@@ -60,28 +60,28 @@ object BurnerTypography {
     // Section Header - 24sp (iOS: appSectionHeader with regular weight)
     val sectionHeader = TextStyle(
         fontFamily = BurnerFontFamily,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Bold,
         fontSize = 24.sp,
-        lineHeight = 32.sp,
-        letterSpacing = 0.sp
+        lineHeight = 28.sp,
+        letterSpacing = (-0.5).sp
     )
 
     // Page Header - 28sp (iOS: appPageHeader with regular weight and -1.5 kerning)
     val pageHeader = TextStyle(
         fontFamily = BurnerFontFamily,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Bold,
         fontSize = 28.sp,
-        lineHeight = 36.sp,
+        lineHeight = 32.sp,
         letterSpacing = (-1.5).sp
     )
 
-    // Hero - 32sp (iOS: appHero)
+    // Hero - 32sp (iOS: appHero with tight letter spacing)
     val hero = TextStyle(
         fontFamily = BurnerFontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 32.sp,
-        lineHeight = 40.sp,
-        letterSpacing = (-1).sp
+        lineHeight = 36.sp,
+        letterSpacing = (-1.5).sp
     )
 
     // Button - 16sp monospaced (iOS: appButton with appMonospaced)

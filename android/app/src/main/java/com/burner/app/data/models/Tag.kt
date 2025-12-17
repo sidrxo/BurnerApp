@@ -1,13 +1,13 @@
 package com.burner.app.data.models
 
-import com.google.firebase.firestore.DocumentId
-import com.google.firebase.firestore.PropertyName
+import kotlinx.serialization.Serializable
 
 /**
  * Tag/Genre model matching iOS Tag struct
+ * Updated for Supabase
  */
+@Serializable
 data class Tag(
-    @DocumentId
     val id: String? = null,
     val name: String = "",
     val order: Int = 0,
@@ -16,7 +16,7 @@ data class Tag(
     val description: String? = null
 ) {
     companion object {
-        // Default genres to use if none loaded from Firestore
+        // Default genres to use if none loaded from Supabase
         val defaultGenres = listOf(
             Tag(id = "electronic", name = "Electronic", order = 1),
             Tag(id = "house", name = "House", order = 2),

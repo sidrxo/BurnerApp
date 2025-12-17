@@ -1,61 +1,64 @@
 package com.burner.app.data.repository
 
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
+import com.burner.app.data.BurnerSupabaseClient
 import com.burner.app.data.models.Event
-import kotlinx.coroutines.channels.awaitClose
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.tasks.await
-import java.util.Calendar
-import java.util.Date
+import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.days
 
 @Singleton
 class EventRepository @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val supabase: BurnerSupabaseClient
 ) {
-    private val eventsCollection = firestore.collection("events")
-
     // Get all events (real-time) - matching iOS which fetches from 7 days ago
-    val allEvents: Flow<List<Event>> = callbackFlow {
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, -7)
-        val sevenDaysAgo = calendar.time
+    val allEvents: Flow<List<Event>> = supabase.realtime
+        .channel("events")
+        .postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "events"
+        }
+        .map {
+            getAllEvents()
+        }
 
-        val listener = eventsCollection
-            .whereGreaterThanOrEqualTo("startTime", Timestamp(sevenDaysAgo))
-            .orderBy("startTime", Query.Direction.ASCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
+    // Get all events with filter
+    suspend fun getAllEvents(): List<Event> {
+        return try {
+            val sevenDaysAgo = Clock.System.now() - 7.days
+            supabase.postgrest.from("events")
+                .select()
+                .decodeList<Event>()
+                .filter { event ->
+                    event.startTime?.let { Instant.parse(it) >= sevenDaysAgo } ?: false
                 }
-
-                val events = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Event::class.java)
-                } ?: emptyList()
-
-                trySend(events)
-            }
-
-        awaitClose { listener.remove() }
+                .sortedBy { it.startTime }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     // Get featured events
     suspend fun getFeaturedEvents(limit: Int = 5): List<Event> {
         return try {
-            eventsCollection
-                .whereEqualTo("isFeatured", true)
-                .whereGreaterThan("startTime", Timestamp.now())
-                .orderBy("startTime", Query.Direction.ASCENDING)
-                .limit(limit.toLong())
-                .get()
-                .await()
-                .documents
-                .mapNotNull { it.toObject(Event::class.java) }
+            val now = Clock.System.now().toString()
+            supabase.postgrest.from("events")
+                .select() {
+                    filter {
+                        eq("is_featured", true)
+                        gt("start_time", now)
+                    }
+                    order("start_time", ascending = true)
+                    limit(limit.toLong())
+                }
+                .decodeList<Event>()
                 .shuffled() // Shuffle like iOS does
         } catch (e: Exception) {
             emptyList()
@@ -64,21 +67,20 @@ class EventRepository @Inject constructor(
 
     // Get events this week
     suspend fun getThisWeekEvents(limit: Int = 10): List<Event> {
-        val calendar = Calendar.getInstance()
-        val now = calendar.time
-        calendar.add(Calendar.DAY_OF_YEAR, 7)
-        val oneWeekLater = calendar.time
+        val now = Clock.System.now()
+        val oneWeekLater = now + 7.days
 
         return try {
-            eventsCollection
-                .whereGreaterThan("startTime", Timestamp(now))
-                .whereLessThan("startTime", Timestamp(oneWeekLater))
-                .orderBy("startTime", Query.Direction.ASCENDING)
-                .limit(limit.toLong())
-                .get()
-                .await()
-                .documents
-                .mapNotNull { it.toObject(Event::class.java) }
+            supabase.postgrest.from("events")
+                .select() {
+                    filter {
+                        gt("start_time", now.toString())
+                        lt("start_time", oneWeekLater.toString())
+                    }
+                    order("start_time", ascending = true)
+                    limit(limit.toLong())
+                }
+                .decodeList<Event>()
         } catch (e: Exception) {
             emptyList()
         }
@@ -91,16 +93,17 @@ class EventRepository @Inject constructor(
         radiusKm: Double = 50.0,
         limit: Int = 10
     ): List<Event> {
-        // Firestore doesn't support geo queries natively, so we fetch and filter
         return try {
-            val events = eventsCollection
-                .whereGreaterThan("startTime", Timestamp.now())
-                .orderBy("startTime", Query.Direction.ASCENDING)
-                .limit(100) // Fetch more to filter
-                .get()
-                .await()
-                .documents
-                .mapNotNull { it.toObject(Event::class.java) }
+            val now = Clock.System.now().toString()
+            val events = supabase.postgrest.from("events")
+                .select() {
+                    filter {
+                        gt("start_time", now)
+                    }
+                    order("start_time", ascending = true)
+                    limit(100) // Fetch more to filter
+                }
+                .decodeList<Event>()
 
             events.filter { event ->
                 event.distanceFrom(latitude, longitude)?.let { distance ->
@@ -117,15 +120,18 @@ class EventRepository @Inject constructor(
     // Get events by genre/tag
     suspend fun getEventsByGenre(genre: String, limit: Int = 20): List<Event> {
         return try {
-            eventsCollection
-                .whereArrayContains("tags", genre)
-                .whereGreaterThan("startTime", Timestamp.now())
-                .orderBy("startTime", Query.Direction.ASCENDING)
-                .limit(limit.toLong())
-                .get()
-                .await()
-                .documents
-                .mapNotNull { it.toObject(Event::class.java) }
+            val now = Clock.System.now().toString()
+            supabase.postgrest.from("events")
+                .select() {
+                    filter {
+                        // Supabase array contains filter
+                        contains("tags", listOf(genre))
+                        gt("start_time", now)
+                    }
+                    order("start_time", ascending = true)
+                    limit(limit.toLong())
+                }
+                .decodeList<Event>()
         } catch (e: Exception) {
             emptyList()
         }
@@ -139,14 +145,16 @@ class EventRepository @Inject constructor(
         userLon: Double? = null
     ): List<Event> {
         return try {
-            val events = eventsCollection
-                .whereGreaterThan("startTime", Timestamp.now())
-                .orderBy("startTime", Query.Direction.ASCENDING)
-                .limit(100)
-                .get()
-                .await()
-                .documents
-                .mapNotNull { it.toObject(Event::class.java) }
+            val now = Clock.System.now().toString()
+            val events = supabase.postgrest.from("events")
+                .select() {
+                    filter {
+                        gt("start_time", now)
+                    }
+                    order("start_time", ascending = true)
+                    limit(100)
+                }
+                .decodeList<Event>()
 
             // Filter by query (search in name, venue, description, tags)
             val filtered = if (query.isBlank()) {
@@ -155,15 +163,15 @@ class EventRepository @Inject constructor(
                 val lowercaseQuery = query.lowercase()
                 events.filter { event ->
                     event.name.lowercase().contains(lowercaseQuery) ||
-                    event.venue.lowercase().contains(lowercaseQuery) ||
-                    event.description?.lowercase()?.contains(lowercaseQuery) == true ||
-                    event.tags?.any { it.lowercase().contains(lowercaseQuery) } == true
+                            event.venue.lowercase().contains(lowercaseQuery) ||
+                            event.description?.lowercase()?.contains(lowercaseQuery) == true ||
+                            event.tags?.any { it.lowercase().contains(lowercaseQuery) } == true
                 }
             }
 
             // Sort
             when (sortBy) {
-                SearchSortOption.DATE -> filtered.sortedBy { it.startTime?.toDate() }
+                SearchSortOption.DATE -> filtered.sortedBy { it.startDate }
                 SearchSortOption.PRICE -> filtered.sortedBy { it.price }
                 SearchSortOption.NEARBY -> {
                     if (userLat != null && userLon != null) {
@@ -181,29 +189,29 @@ class EventRepository @Inject constructor(
     // Get single event by ID
     suspend fun getEvent(eventId: String): Event? {
         return try {
-            eventsCollection
-                .document(eventId)
-                .get()
-                .await()
-                .toObject(Event::class.java)
+            supabase.postgrest.from("events")
+                .select() {
+                    filter {
+                        eq("id", eventId)
+                    }
+                }
+                .decodeSingle<Event>()
         } catch (e: Exception) {
             null
         }
     }
 
     // Get event (real-time)
-    fun getEventFlow(eventId: String): Flow<Event?> = callbackFlow {
-        val listener = eventsCollection
-            .document(eventId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(null)
-                    return@addSnapshotListener
-                }
-                trySend(snapshot?.toObject(Event::class.java))
+    fun getEventFlow(eventId: String): Flow<Event?> {
+        return supabase.realtime
+            .channel("event_$eventId")
+            .postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "events"
+                filter = "id=eq.$eventId"
             }
-
-        awaitClose { listener.remove() }
+            .map {
+                getEvent(eventId)
+            }
     }
 }
 

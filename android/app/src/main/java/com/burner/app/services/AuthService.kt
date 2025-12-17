@@ -1,62 +1,56 @@
 package com.burner.app.services
 
 import android.content.Context
-import android.content.Intent
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.firebase.Timestamp
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.firestore.FirebaseFirestore
+import com.burner.app.data.BurnerSupabaseClient
 import com.burner.app.data.models.User
-import com.burner.app.data.models.UserPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.channels.awaitClose
+import io.github.jan.supabase.exceptions.RestException
+import io.github.jan.supabase.gotrue.Auth
+import io.github.jan.supabase.gotrue.SessionStatus
+import io.github.jan.supabase.gotrue.providers.builtin.Email
+import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
 
 sealed class AuthResult {
-    data class Success(val user: FirebaseUser) : AuthResult()
+    data class Success(val userId: String) : AuthResult()
     data class Error(val message: String) : AuthResult()
 }
 
 @Singleton
 class AuthService @Inject constructor(
-    private val auth: FirebaseAuth,
-    private val firestore: FirebaseFirestore,
+    private val supabase: BurnerSupabaseClient,
     @ApplicationContext private val context: Context
 ) {
-    private var googleSignInClient: GoogleSignInClient? = null
-
-    val currentUser: FirebaseUser?
-        get() = auth.currentUser
+    private val auth: Auth get() = supabase.auth
 
     val currentUserId: String?
-        get() = auth.currentUser?.uid
+        get() = auth.currentUserOrNull()?.id
 
-    fun isAuthenticated(): Boolean = auth.currentUser != null
+    fun isAuthenticated(): Boolean = auth.currentUserOrNull() != null
 
-    val authStateFlow: Flow<FirebaseUser?> = callbackFlow {
-        val listener = FirebaseAuth.AuthStateListener { auth ->
-            trySend(auth.currentUser)
-        }
-        auth.addAuthStateListener(listener)
-        awaitClose { auth.removeAuthStateListener(listener) }
+    val authStateFlow: Flow<Boolean> = auth.sessionStatus.map { status ->
+        status is SessionStatus.Authenticated
     }
 
     // Email/Password Sign Up
     suspend fun signUpWithEmail(email: String, password: String): AuthResult {
         return try {
-            val result = auth.createUserWithEmailAndPassword(email, password).await()
-            result.user?.let { user ->
-                createUserProfile(user, "email")
-                AuthResult.Success(user)
-            } ?: AuthResult.Error("Failed to create account")
+            auth.signUpWith(Email) {
+                this.email = email
+                this.password = password
+            }
+
+            val userId = auth.currentUserOrNull()?.id
+            if (userId != null) {
+                createUserProfile(userId, email, "email")
+                AuthResult.Success(userId)
+            } else {
+                AuthResult.Error("Failed to create account")
+            }
         } catch (e: Exception) {
             AuthResult.Error(e.message ?: "Sign up failed")
         }
@@ -65,96 +59,94 @@ class AuthService @Inject constructor(
     // Email/Password Sign In
     suspend fun signInWithEmail(email: String, password: String): AuthResult {
         return try {
-            val result = auth.signInWithEmailAndPassword(email, password).await()
-            result.user?.let { user ->
-                updateLastLogin(user.uid)
-                AuthResult.Success(user)
-            } ?: AuthResult.Error("Failed to sign in")
+            auth.signInWith(Email) {
+                this.email = email
+                this.password = password
+            }
+
+            val userId = auth.currentUserOrNull()?.id
+            if (userId != null) {
+                updateLastLogin(userId)
+                AuthResult.Success(userId)
+            } else {
+                AuthResult.Error("Failed to sign in")
+            }
         } catch (e: Exception) {
             AuthResult.Error(e.message ?: "Sign in failed")
         }
     }
 
-    // Google Sign In - Initialize
-    fun getGoogleSignInIntent(): Intent {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("8577865405-5368q7lnrrjalobo3t99j7mlrv8t3ssm.apps.googleusercontent.com") // Replace with actual Web Client ID
-            .requestEmail()
-            .build()
-
-        googleSignInClient = GoogleSignIn.getClient(context, gso)
-        return googleSignInClient!!.signInIntent
-    }
-
-    // Google Sign In - Handle Result
-    suspend fun handleGoogleSignInResult(idToken: String): AuthResult {
-        return try {
-            val credential = GoogleAuthProvider.getCredential(idToken, null)
-            val result = auth.signInWithCredential(credential).await()
-            result.user?.let { user ->
-                val isNewUser = result.additionalUserInfo?.isNewUser == true
-                if (isNewUser) {
-                    createUserProfile(user, "google")
-                } else {
-                    updateLastLogin(user.uid)
-                }
-                AuthResult.Success(user)
-            } ?: AuthResult.Error("Failed to sign in with Google")
-        } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "Google sign in failed")
-        }
-    }
-
     // Sign Out
     suspend fun signOut() {
-        auth.signOut()
-        googleSignInClient?.signOut()?.await()
+        try {
+            auth.signOut()
+        } catch (e: Exception) {
+            // Ignore sign out errors
+        }
     }
 
     // Password Reset
     suspend fun sendPasswordReset(email: String): Result<Unit> {
         return try {
-            auth.sendPasswordResetEmail(email).await()
+            auth.resetPasswordForEmail(email)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    // Create user profile in Firestore
-    private suspend fun createUserProfile(user: FirebaseUser, provider: String) {
-        val userDoc = User(
-            uid = user.uid,
-            email = user.email ?: "",
-            displayName = user.displayName,
-            provider = provider,
-            createdAt = Timestamp.now(),
-            lastLoginAt = Timestamp.now(),
-            preferences = UserPreferences()
-        )
+    // Create user profile in Supabase
+    private suspend fun createUserProfile(userId: String, email: String, provider: String) {
+        try {
+            val now = Clock.System.now().toString()
+            val userDoc = mapOf(
+                "id" to userId,
+                "email" to email,
+                "provider" to provider,
+                "created_at" to now,
+                "last_login_at" to now,
+                "role" to "user"
+            )
 
-        firestore.collection("users")
-            .document(user.uid)
-            .set(userDoc)
-            .await()
+            supabase.postgrest.from("users")
+                .insert(userDoc)
+        } catch (e: Exception) {
+            // Log error but don't fail authentication
+            println("Error creating user profile: ${e.message}")
+        }
     }
 
     // Update last login timestamp
     private suspend fun updateLastLogin(userId: String) {
-        firestore.collection("users")
-            .document(userId)
-            .update("lastLoginAt", Timestamp.now())
-            .await()
+        try {
+            val now = Clock.System.now().toString()
+            supabase.postgrest.from("users")
+                .update({
+                    set("last_login_at", now)
+                }) {
+                    filter {
+                        eq("id", userId)
+                    }
+                }
+        } catch (e: Exception) {
+            // Log error but don't fail authentication
+            println("Error updating last login: ${e.message}")
+        }
     }
 
     // Get user profile
     suspend fun getUserProfile(userId: String): User? {
         return try {
-            firestore.collection("users")
-                .document(userId)
-                .get()
-                .await()
-                .toObject(User::class.java)
+            val response = supabase.postgrest.from("users")
+                .select {
+                    filter {
+                        eq("id", userId)
+                    }
+                }
+                .decodeSingle<User>()
+            response
+        } catch (e: RestException) {
+            null
         } catch (e: Exception) {
             null
         }
@@ -163,22 +155,24 @@ class AuthService @Inject constructor(
     // Update user profile
     suspend fun updateUserProfile(userId: String, updates: Map<String, Any>): Result<Unit> {
         return try {
-            firestore.collection("users")
-                .document(userId)
-                .update(updates)
-                .await()
+            supabase.postgrest.from("users")
+                .update(updates) {
+                    filter {
+                        eq("id", userId)
+                    }
+                }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    // Get user role from custom claims (authoritative source)
+    // Get user role - from Supabase user metadata or database
     suspend fun getUserRole(): String? {
         return try {
-            val user = auth.currentUser ?: return null
-            val tokenResult = user.getIdToken(false).await()
-            tokenResult.claims["role"] as? String
+            val userId = currentUserId ?: return null
+            val user = getUserProfile(userId)
+            user?.role
         } catch (e: Exception) {
             null
         }

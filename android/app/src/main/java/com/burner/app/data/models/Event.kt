@@ -1,60 +1,47 @@
 package com.burner.app.data.models
 
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.DocumentId
-import com.google.firebase.firestore.Exclude
-import com.google.firebase.firestore.GeoPoint
-import com.google.firebase.firestore.PropertyName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import java.util.Calendar
 import java.util.Date
 
 /**
  * Event model matching iOS Event struct
+ * Updated for Supabase
  */
+@Serializable
 data class Event(
-    @DocumentId
     val id: String? = null,
     val name: String = "",
     val venue: String = "",
-    @PropertyName("venueId")
+    @SerialName("venue_id")
     val venueId: String? = null,
-    @PropertyName("startTime")
-    val startTime: Timestamp? = null,
-    @PropertyName("endTime")
-    val endTime: Timestamp? = null,
+    @SerialName("start_time")
+    val startTime: String? = null,
+    @SerialName("end_time")
+    val endTime: String? = null,
     val price: Double = 0.0,
-    @PropertyName("maxTickets")
+    @SerialName("max_tickets")
     val maxTickets: Int = 0,
-    @PropertyName("ticketsSold")
+    @SerialName("tickets_sold")
     val ticketsSold: Int = 0,
-    @PropertyName("imageUrl")
+    @SerialName("image_url")
     val imageUrl: String = "",
-    @PropertyName("isFeatured")
+    @SerialName("is_featured")
     val isFeatured: Boolean = false,
     val description: String? = null,
     val status: String? = null,
     val tags: List<String>? = null,
-    @PropertyName("createdAt")
-    val createdAt: Timestamp? = null,
-    @PropertyName("updatedAt")
-    val updatedAt: Timestamp? = null
+    @SerialName("created_at")
+    val createdAt: String? = null,
+    @SerialName("updated_at")
+    val updatedAt: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 ) {
-    @get:Exclude
-    var coordinates: GeoPoint? = null
-
-    @set:PropertyName("coordinates")
-    var coordinatesMap: HashMap<String, Any>? = null
-        set(value) {
-            field = value
-            if (value != null) {
-                val lat = value["latitude"] as? Double
-                val lon = value["longitude"] as? Double
-                if (lat != null && lon != null) {
-                    coordinates = GeoPoint(lat, lon)
-                }
-            }
-        }
-
     // Computed properties
     val isAvailable: Boolean
         get() = ticketsSold < maxTickets && status != "cancelled"
@@ -66,10 +53,22 @@ data class Event(
         get() = maxOf(0, maxTickets - ticketsSold)
 
     val startDate: Date?
-        get() = startTime?.toDate()
+        get() = startTime?.let {
+            try {
+                Date(Instant.parse(it).toEpochMilliseconds())
+            } catch (e: Exception) {
+                null
+            }
+        }
 
     val endDate: Date?
-        get() = endTime?.toDate()
+        get() = endTime?.let {
+            try {
+                Date(Instant.parse(it).toEpochMilliseconds())
+            } catch (e: Exception) {
+                null
+            }
+        }
 
     val isPast: Boolean
         get() {
@@ -91,12 +90,10 @@ data class Event(
             return Date() > nextDay6AM
         }
 
-    fun distanceFrom(latitude: Double, longitude: Double): Double? {
-        val coords = coordinates ?: return null
-        return haversineDistance(
-            coords.latitude, coords.longitude,
-            latitude, longitude
-        )
+    fun distanceFrom(userLatitude: Double, userLongitude: Double): Double? {
+        val lat = latitude ?: return null
+        val lon = longitude ?: return null
+        return haversineDistance(lat, lon, userLatitude, userLongitude)
     }
 
     private fun haversineDistance(
