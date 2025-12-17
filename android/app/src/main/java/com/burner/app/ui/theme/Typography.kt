@@ -60,7 +60,7 @@ object BurnerTypography {
     // Section Header - 24sp (iOS: appSectionHeader with regular weight)
     val sectionHeader = TextStyle(
         fontFamily = BurnerFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Normal,
         fontSize = 24.sp,
         lineHeight = 28.sp,
         letterSpacing = (-0.5).sp
@@ -69,7 +69,7 @@ object BurnerTypography {
     // Page Header - 28sp (iOS: appPageHeader with regular weight and -1.5 kerning)
     val pageHeader = TextStyle(
         fontFamily = BurnerFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Normal,
         fontSize = 28.sp,
         lineHeight = 32.sp,
         letterSpacing = (-1.5).sp

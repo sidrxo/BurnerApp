@@ -60,7 +60,7 @@ fun FeaturedHeroCard(
             contentScale = ContentScale.Crop
         )
 
-        // Gradient overlay (matching iOS)
+        // Gradient overlay (matching iOS - starts at 30% down)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -71,8 +71,8 @@ fun FeaturedHeroCard(
                             Color.Black.copy(alpha = 0.1f),
                             Color.Black.copy(alpha = 0.6f)
                         ),
-                        startY = 0f,
-                        endY = Float.MAX_VALUE
+                        startY = 420f * 0.3f,  // iOS starts at UnitPoint(x: 0.5, y: 0.3)
+                        endY = 420f
                     )
                 )
         )
