@@ -34,7 +34,10 @@ class BurnerSupabaseClient @Inject constructor() {
         })
 
         install(Auth) {
-            // Match iOS configuration
+            // Match iOS configuration: emitLocalSessionAsInitialSession = true
+            // This enables auto-loading saved sessions for RLS queries
+            autoLoadFromStorage = true
+            autoSaveToStorage = true
         }
         install(Postgrest)
         install(Realtime)

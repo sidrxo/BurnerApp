@@ -125,125 +125,92 @@ fun EventDetailScreen(
                     }
                 }
 
-                // Content
+                // Content - Matching iOS order exactly
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(BurnerDimensions.paddingScreen)
+                        .padding(horizontal = 20.dp)
                 ) {
-                    // Venue
-                    Text(
-                        text = event.venue.uppercase(),
-                        style = BurnerTypography.label,
-                        color = BurnerColors.TextSecondary
-                    )
-
-                    Spacer(modifier = Modifier.height(BurnerDimensions.spacingSm))
-
-                    // Event name
+                    // Event name (matching iOS - no venue label above)
                     Text(
                         text = event.name,
-                        style = BurnerTypography.pageHeader,
+                        style = BurnerTypography.hero,
                         color = BurnerColors.White
                     )
 
-                    Spacer(modifier = Modifier.height(BurnerDimensions.spacingXl))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                    // Date and time
-                    event.startDate?.let { date ->
-                        InfoRow(
-                            icon = Icons.Filled.CalendarToday,
-                            title = formatDate(date),
-                            subtitle = formatTime(date, event.endDate)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
-
-                    // Location
-                    InfoRow(
-                        icon = Icons.Filled.LocationOn,
-                        title = event.venue,
-                        subtitle = "View on map"
-                    )
-
-                    Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
-
-                    // Price (no ticket counter, matching iOS)
-                    InfoRow(
-                        icon = Icons.Filled.ConfirmationNumber,
-                        title = "From £${String.format("%.2f", event.price)}",
-                        subtitle = ""
-                    )
-
-                    // Tags
-                    if (!event.tags.isNullOrEmpty()) {
-                        Spacer(modifier = Modifier.height(BurnerDimensions.spacingXl))
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(BurnerDimensions.spacingSm)
-                        ) {
-                            event.tags.take(3).forEach { tag ->
-                                Text(
-                                    text = tag.uppercase(),
-                                    style = BurnerTypography.caption,
-                                    color = BurnerColors.TextSecondary,
-                                    modifier = Modifier
-                                        .background(
-                                            BurnerColors.CardBackground,
-                                            RoundedCornerShape(BurnerDimensions.radiusSm)
-                                        )
-                                        .padding(
-                                            horizontal = BurnerDimensions.spacingSm,
-                                            vertical = BurnerDimensions.spacingXs
-                                        )
-                                )
-                            }
-                        }
-                    }
-
-                    // Description
+                    // About section (iOS shows this first if it exists)
                     if (!event.description.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(BurnerDimensions.spacingXl))
-
                         Text(
-                            text = "ABOUT",
-                            style = BurnerTypography.label,
-                            color = BurnerColors.TextSecondary
+                            text = "About",
+                            style = BurnerTypography.body,
+                            color = BurnerColors.White
                         )
 
-                        Spacer(modifier = Modifier.height(BurnerDimensions.spacingSm))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
                             text = event.description,
-                            style = BurnerTypography.body,
-                            color = BurnerColors.TextTertiary
+                            style = BurnerTypography.secondary,
+                            color = BurnerColors.TextSecondary
                         )
+
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
 
-                    // Burner Mode placeholder
-                    Spacer(modifier = Modifier.height(BurnerDimensions.spacingXl))
+                    // Event Details section (matching iOS)
+                    Text(
+                        text = "Event Details",
+                        style = BurnerTypography.body,
+                        color = BurnerColors.White
+                    )
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                BurnerColors.CardBackground,
-                                RoundedCornerShape(BurnerDimensions.radiusMd)
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        // Date
+                        event.startDate?.let { date ->
+                            EventDetailRow(
+                                icon = "calendar",
+                                title = "Date",
+                                value = formatDate(date)
                             )
-                            .padding(BurnerDimensions.spacingLg)
-                    ) {
-                        Column {
-                            Text(
-                                text = "BURNER MODE",
-                                style = BurnerTypography.label,
-                                color = BurnerColors.TextSecondary
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+
+                        // Time
+                        event.startDate?.let { date ->
+                            EventDetailRow(
+                                icon = "clock",
+                                title = "Time",
+                                value = formatTime(date, event.endDate)
                             )
-                            Spacer(modifier = Modifier.height(BurnerDimensions.spacingXs))
-                            Text(
-                                text = "Go offline and be present at this event",
-                                style = BurnerTypography.secondary,
-                                color = BurnerColors.TextTertiary
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+
+                        // Venue
+                        EventDetailRow(
+                            icon = "location",
+                            title = "Venue",
+                            value = event.venue
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Price
+                        EventDetailRow(
+                            icon = "creditcard",
+                            title = "Price",
+                            value = "£${String.format("%.2f", event.price)}"
+                        )
+
+                        // Genre (tags) - iOS shows this in Event Details if exists
+                        if (!event.tags.isNullOrEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            EventDetailRow(
+                                icon = "tag",
+                                title = "Genre",
+                                value = event.tags.joinToString(", ")
                             )
                         }
                     }
@@ -276,37 +243,55 @@ fun EventDetailScreen(
     }
 }
 
+/**
+ * Event Detail Row matching iOS EventDetailRow
+ * Shows icon, title (label), and value in a structured row
+ */
 @Composable
-private fun InfoRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+private fun EventDetailRow(
+    icon: String,
     title: String,
-    subtitle: String
+    value: String
 ) {
+    val iconVector = when (icon) {
+        "calendar" -> Icons.Filled.CalendarToday
+        "clock" -> Icons.Filled.AccessTime
+        "location" -> Icons.Filled.LocationOn
+        "creditcard" -> Icons.Filled.CreditCard
+        "tag" -> Icons.Filled.LocalOffer
+        else -> Icons.Filled.Info
+    }
+
     Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                BurnerColors.White.copy(alpha = 0.05f),
+                RoundedCornerShape(8.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = icon,
+            imageVector = iconVector,
             contentDescription = null,
             tint = BurnerColors.White,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(20.dp)
         )
 
-        Spacer(modifier = Modifier.width(BurnerDimensions.spacingMd))
+        Spacer(modifier = Modifier.width(12.dp))
 
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = BurnerTypography.body,
+                style = BurnerTypography.caption,
+                color = BurnerColors.TextSecondary
+            )
+            Text(
+                text = value,
+                style = BurnerTypography.secondary,
                 color = BurnerColors.White
             )
-            if (subtitle.isNotBlank()) {
-                Text(
-                    text = subtitle,
-                    style = BurnerTypography.secondary,
-                    color = BurnerColors.TextSecondary
-                )
-            }
         }
     }
 }
