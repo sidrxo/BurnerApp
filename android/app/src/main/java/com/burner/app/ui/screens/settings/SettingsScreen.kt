@@ -27,6 +27,7 @@ fun SettingsScreen(
     onFAQClick: () -> Unit,
     onTermsClick: () -> Unit,
     onPrivacyClick: () -> Unit,
+    onSignInClick: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -71,6 +72,19 @@ fun SettingsScreen(
                     title = "Notifications",
                     icon = Icons.Filled.Notifications,
                     onClick = onNotificationsClick
+                )
+            } else {
+                // Not authenticated - show sign in option
+                SectionHeader(
+                    title = "ACCOUNT",
+                    modifier = Modifier.padding(top = BurnerDimensions.spacingLg)
+                )
+
+                SettingsRow(
+                    title = "Sign In",
+                    subtitle = "Sign in to access your account",
+                    icon = Icons.Filled.Login,
+                    onClick = onSignInClick
                 )
             }
 

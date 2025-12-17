@@ -4,8 +4,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
@@ -58,11 +61,26 @@ fun SignInScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(Color.Black.copy(alpha = 0.4f))
+            .clickable(
+                onClick = onDismiss,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            )
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .background(
+                    color = Color.White,
+                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                )
+                .clickable(
+                    onClick = {},
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                )
                 .padding(BurnerDimensions.paddingScreen),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -89,7 +107,7 @@ fun SignInScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Sign-in buttons
             Column(
@@ -111,7 +129,7 @@ fun SignInScreen(
                         disabledContainerColor = Color.White.copy(alpha = 0.5f),
                         disabledContentColor = Color.Black.copy(alpha = 0.5f)
                     ),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(25.dp),
+                    shape = RoundedCornerShape(25.dp),
                     border = BorderStroke(1.5.dp, Color.Black),
                     enabled = !uiState.isLoading
                 ) {
@@ -135,7 +153,7 @@ fun SignInScreen(
                         disabledContainerColor = Color.White.copy(alpha = 0.5f),
                         disabledContentColor = Color.Black.copy(alpha = 0.5f)
                     ),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(25.dp),
+                    shape = RoundedCornerShape(25.dp),
                     border = BorderStroke(1.5.dp, Color.Black),
                     enabled = !uiState.isLoading
                 ) {
