@@ -277,7 +277,8 @@ fun BurnerNavHost(
                         onSupportClick = { navController.navigate(Routes.Support.route) },
                         onFAQClick = { navController.navigate(Routes.FAQ.route) },
                         onTermsClick = { navController.navigate(Routes.TermsOfService.route) },
-                        onPrivacyClick = { navController.navigate(Routes.PrivacyPolicy.route) }
+                        onPrivacyClick = { navController.navigate(Routes.PrivacyPolicy.route) },
+                        onSignInClick = { navController.navigate(Routes.SignIn.route) }
                     )
                 }
 

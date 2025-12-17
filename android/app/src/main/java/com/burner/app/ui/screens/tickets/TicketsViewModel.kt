@@ -39,8 +39,7 @@ class TicketsViewModel @Inject constructor(
 
     private fun observeAuthState() {
         viewModelScope.launch {
-            authService.authStateFlow.collect { user ->
-                val isAuthenticated = user != null
+            authService.authStateFlow.collect { isAuthenticated ->
                 _uiState.update { it.copy(isAuthenticated = isAuthenticated) }
 
                 if (isAuthenticated) {
