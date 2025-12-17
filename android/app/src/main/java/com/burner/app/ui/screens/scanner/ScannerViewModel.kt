@@ -2,20 +2,25 @@ package com.burner.app.ui.screens.scanner
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.burner.app.data.BurnerSupabaseClient
 import com.burner.app.data.models.Event
 import com.burner.app.data.models.UserRole
 import com.burner.app.data.repository.EventRepository
 import com.burner.app.services.AuthService
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.functions.FirebaseFunctions
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.jan.supabase.functions.functions
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.json.JSONObject
 import java.util.*
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.days
 
 sealed class ScanResult {
     data class Success(val ticketNumber: String, val eventName: String) : ScanResult()
@@ -34,12 +39,37 @@ data class ScannerUiState(
     val errorMessage: String? = null
 )
 
+@Serializable
+data class ScanTicketRequest(
+    @SerialName("ticket_id")
+    val ticketId: String? = null,
+    @SerialName("ticket_number")
+    val ticketNumber: String? = null,
+    @SerialName("event_id")
+    val eventId: String
+)
+
+@Serializable
+data class ScanTicketResponse(
+    val success: Boolean,
+    val message: String? = null,
+    val ticket: TicketInfo? = null,
+    val errorType: String? = null
+)
+
+@Serializable
+data class TicketInfo(
+    val ticketNumber: String,
+    val eventName: String,
+    val scannedAt: String? = null,
+    val status: String? = null
+)
+
 @HiltViewModel
 class ScannerViewModel @Inject constructor(
     private val authService: AuthService,
     private val eventRepository: EventRepository,
-    private val firestore: FirebaseFirestore,
-    private val functions: FirebaseFunctions
+    private val supabase: BurnerSupabaseClient
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ScannerUiState())
@@ -58,7 +88,7 @@ class ScannerViewModel @Inject constructor(
             }
 
             try {
-                // Fetch role from custom claims (authoritative source)
+                // Fetch role from Supabase
                 val role = authService.getUserRole() ?: UserRole.USER
 
                 // Allow all authenticated users to access scanner
@@ -77,23 +107,27 @@ class ScannerViewModel @Inject constructor(
 
     private suspend fun loadTodayEvents(userRole: String?) {
         try {
-            val calendar = Calendar.getInstance()
-            calendar.set(Calendar.HOUR_OF_DAY, 0)
-            calendar.set(Calendar.MINUTE, 0)
-            calendar.set(Calendar.SECOND, 0)
-            val startOfDay = calendar.time
+            val now = Clock.System.now()
+            val localDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
 
-            calendar.add(Calendar.DAY_OF_YEAR, 1)
-            val endOfDay = calendar.time
+            // Start of today at midnight
+            val todayStr = "${localDateTime.date}T00:00:00Z"
+            val startOfDay = Instant.parse(todayStr)
+            // End of today (start of tomorrow)
+            val endOfDay = startOfDay + 1.days
 
-            val events = firestore.collection("events")
-                .whereGreaterThanOrEqualTo("startTime", Timestamp(startOfDay))
-                .whereLessThan("startTime", Timestamp(endOfDay))
-                .get()
-                .await()
-                .documents
-                .mapNotNull { it.toObject(Event::class.java) }
-                .sortedBy { it.startTime?.toDate() }
+            // Use EventRepository to get events
+            val allEvents = eventRepository.getAllEvents()
+            val events = allEvents.filter { event ->
+                event.startTime?.let { startTimeStr ->
+                    try {
+                        val eventStart = Instant.parse(startTimeStr)
+                        eventStart >= startOfDay && eventStart < endOfDay
+                    } catch (e: Exception) {
+                        false
+                    }
+                } ?: false
+            }.sortedBy { it.startTime }
 
             _uiState.update {
                 it.copy(
@@ -135,16 +169,16 @@ class ScannerViewModel @Inject constructor(
             try {
                 val ticketId = extractTicketId(qrCodeData)
 
-                val data = hashMapOf(
-                    "eventId" to eventId,
-                    "qrCodeData" to qrCodeData
-                )
-
-                // Check if it's a ticket number (TKT format)
-                if (ticketId != null && ticketId.startsWith("TKT")) {
-                    data["ticketNumber"] = ticketId
+                val request = if (ticketId != null && ticketId.startsWith("TKT")) {
+                    ScanTicketRequest(
+                        eventId = eventId,
+                        ticketNumber = ticketId
+                    )
                 } else if (ticketId != null) {
-                    data["ticketId"] = ticketId
+                    ScanTicketRequest(
+                        eventId = eventId,
+                        ticketId = ticketId
+                    )
                 } else {
                     _uiState.update {
                         it.copy(
@@ -155,13 +189,12 @@ class ScannerViewModel @Inject constructor(
                     return@launch
                 }
 
-                val result = functions
-                    .getHttpsCallable("scanTicket")
-                    .call(data)
-                    .await()
+                val response = supabase.functions.invoke<ScanTicketResponse>(
+                    function = "scan-ticket",
+                    body = request
+                )
 
-                val resultData = result.data as? Map<*, *>
-                handleScanResult(resultData)
+                handleScanResult(response)
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -190,22 +223,22 @@ class ScannerViewModel @Inject constructor(
             _uiState.update { it.copy(isProcessing = true, scanResult = null, errorMessage = null) }
 
             try {
-                val data = hashMapOf(
-                    "eventId" to eventId,
-                    "ticketNumber" to ticketNumber,
-                    "qrCodeData" to ticketNumber
+                val request = ScanTicketRequest(
+                    eventId = eventId,
+                    ticketNumber = ticketNumber
                 )
 
-                val result = functions
-                    .getHttpsCallable("scanTicket")
-                    .call(data)
-                    .await()
+                val response = supabase.functions.invoke<ScanTicketResponse>(
+                    function = "scan-ticket",
+                    body = request
+                )
 
-                val resultData = result.data as? Map<*, *>
-                handleScanResult(resultData)
+                handleScanResult(response)
 
                 // Clear manual entry on success
-                _uiState.update { it.copy(manualEntry = "") }
+                if (response.success) {
+                    _uiState.update { it.copy(manualEntry = "") }
+                }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -217,29 +250,18 @@ class ScannerViewModel @Inject constructor(
         }
     }
 
-    private fun handleScanResult(resultData: Map<*, *>?) {
-        if (resultData == null) {
-            _uiState.update {
-                it.copy(
-                    isProcessing = false,
-                    scanResult = ScanResult.Error("Invalid response from server")
-                )
-            }
-            return
-        }
+    private fun handleScanResult(response: ScanTicketResponse) {
+        val ticket = response.ticket
 
-        val success = resultData["success"] as? Boolean ?: false
-        val message = resultData["message"] as? String ?: ""
-        val ticket = resultData["ticket"] as? Map<*, *>
+        if (response.success && ticket != null) {
+            val ticketNumber = ticket.ticketNumber
+            val eventName = ticket.eventName
 
-        if (success && ticket != null) {
-            val ticketNumber = ticket["ticketNumber"] as? String ?: "Unknown"
-            val eventName = ticket["eventName"] as? String ?: "Unknown Event"
-            val wasAlreadyUsed = resultData["wasAlreadyUsed"] as? Boolean ?: false
+            // Check if ticket was already used based on error type
+            val wasAlreadyUsed = response.errorType == "ALREADY_USED"
 
             if (wasAlreadyUsed) {
-                val usedAt = ticket["usedAt"] as? Map<*, *>
-                val scannedAt = formatTimestamp(usedAt)
+                val scannedAt = formatTimestamp(ticket.scannedAt)
                 _uiState.update {
                     it.copy(
                         isProcessing = false,
@@ -258,16 +280,16 @@ class ScannerViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isProcessing = false,
-                    scanResult = ScanResult.Error(message.ifEmpty { "Scan failed" })
+                    scanResult = ScanResult.Error(response.message ?: "Scan failed")
                 )
             }
         }
     }
 
     private fun extractTicketId(qrCodeData: String): String? {
-        // 1. Try URL extraction (partypass.com/ticket/{ID})
+        // 1. Try URL extraction (burnerapp.com/ticket/{ID})
         try {
-            if (qrCodeData.contains("partypass.com") && qrCodeData.contains("/ticket/")) {
+            if (qrCodeData.contains("burnerapp.com") && qrCodeData.contains("/ticket/")) {
                 val parts = qrCodeData.split("/")
                 val ticketIndex = parts.indexOf("ticket")
                 if (ticketIndex != -1 && ticketIndex < parts.size - 1) {
@@ -285,7 +307,7 @@ class ScannerViewModel @Inject constructor(
         try {
             val json = JSONObject(qrCodeData)
             if (json.optString("type") == "EVENT_TICKET") {
-                return json.optString("ticketId")
+                return json.optString("ticket_id") ?: json.optString("ticketId")
             }
         } catch (e: Exception) {
             // Continue to next extraction method
@@ -299,19 +321,20 @@ class ScannerViewModel @Inject constructor(
         return null
     }
 
-    private fun formatTimestamp(timestamp: Map<*, *>?): String {
+    private fun formatTimestamp(timestamp: String?): String {
         if (timestamp == null) return "Unknown time"
 
-        val seconds = (timestamp["_seconds"] as? Number)?.toLong() ?: return "Unknown time"
-        val date = Date(seconds * 1000)
-        val calendar = Calendar.getInstance()
-        calendar.time = date
-
-        return String.format(
-            "%02d:%02d",
-            calendar.get(Calendar.HOUR_OF_DAY),
-            calendar.get(Calendar.MINUTE)
-        )
+        return try {
+            val instant = Instant.parse(timestamp)
+            val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+            String.format(
+                "%02d:%02d",
+                localDateTime.hour,
+                localDateTime.minute
+            )
+        } catch (e: Exception) {
+            "Unknown time"
+        }
     }
 
     fun clearScanResult() {
