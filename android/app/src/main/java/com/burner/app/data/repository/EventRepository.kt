@@ -1,5 +1,6 @@
 package com.burner.app.data.repository
 
+import android.util.Log
 import com.burner.app.data.BurnerSupabaseClient
 import com.burner.app.data.models.Event
 import io.github.jan.supabase.postgrest.from
@@ -10,6 +11,7 @@ import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import javax.inject.Inject
@@ -20,28 +22,42 @@ import kotlin.time.Duration.Companion.days
 class EventRepository @Inject constructor(
     private val supabase: BurnerSupabaseClient
 ) {
-    // Get all events (real-time) - matching iOS which fetches from 7 days ago
+    // Get all events (real-time)
     val allEvents: Flow<List<Event>> = supabase.realtime
         .channel("events")
         .postgresChangeFlow<PostgresAction>(schema = "public") {
             table = "events"
         }
         .map {
+            // When a change happens (Insert/Update/Delete), re-fetch the list
             getAllEvents()
+        }
+        .onStart {
+            // CRITICAL FIX: Fetch the initial data immediately when the flow starts
+            emit(getAllEvents())
         }
 
     // Get all events with filter
     suspend fun getAllEvents(): List<Event> {
         return try {
             val sevenDaysAgo = Clock.System.now() - 7.days
+
             supabase.postgrest.from("events")
-                .select(columns = Columns.ALL)
+                .select()
                 .decodeList<Event>()
                 .filter { event ->
-                    event.startTime?.let { Instant.parse(it) >= sevenDaysAgo } ?: false
+                    // Safely parse date, defaulting to false if parsing fails
+                    event.startTime?.let {
+                        try {
+                            Instant.parse(it) >= sevenDaysAgo
+                        } catch (e: Exception) {
+                            false
+                        }
+                    } ?: false
                 }
                 .sortedBy { it.startTime }
         } catch (e: Exception) {
+            Log.e("EventRepository", "Error fetching all events", e)
             emptyList()
         }
     }
@@ -51,7 +67,7 @@ class EventRepository @Inject constructor(
         return try {
             val now = Clock.System.now().toString()
             supabase.postgrest.from("events")
-                .select(columns = Columns.ALL) {
+                .select() {
                     filter {
                         eq("is_featured", true)
                         gt("start_time", now)
@@ -60,8 +76,9 @@ class EventRepository @Inject constructor(
                     limit(limit.toLong())
                 }
                 .decodeList<Event>()
-                .shuffled() // Shuffle like iOS does
+                .shuffled()
         } catch (e: Exception) {
+            Log.e("EventRepository", "Error fetching featured events", e)
             emptyList()
         }
     }
@@ -73,7 +90,7 @@ class EventRepository @Inject constructor(
 
         return try {
             supabase.postgrest.from("events")
-                .select(columns = Columns.ALL) {
+                .select() {
                     filter {
                         gt("start_time", now.toString())
                         lt("start_time", oneWeekLater.toString())
@@ -83,11 +100,12 @@ class EventRepository @Inject constructor(
                 }
                 .decodeList<Event>()
         } catch (e: Exception) {
+            Log.e("EventRepository", "Error fetching this week events", e)
             emptyList()
         }
     }
 
-    // Get nearby events (within radius in km)
+    // Get nearby events
     suspend fun getNearbyEvents(
         latitude: Double,
         longitude: Double,
@@ -97,12 +115,12 @@ class EventRepository @Inject constructor(
         return try {
             val now = Clock.System.now().toString()
             val events = supabase.postgrest.from("events")
-                .select(columns = Columns.ALL) {
+                .select() {
                     filter {
                         gt("start_time", now)
                     }
                     order("start_time", Order.ASCENDING)
-                    limit(100) // Fetch more to filter
+                    limit(100)
                 }
                 .decodeList<Event>()
 
@@ -114,6 +132,7 @@ class EventRepository @Inject constructor(
                 .sortedBy { it.distanceFrom(latitude, longitude) }
                 .take(limit)
         } catch (e: Exception) {
+            Log.e("EventRepository", "Error fetching nearby events", e)
             emptyList()
         }
     }
@@ -123,9 +142,8 @@ class EventRepository @Inject constructor(
         return try {
             val now = Clock.System.now().toString()
             supabase.postgrest.from("events")
-                .select(columns = Columns.ALL) {
+                .select() {
                     filter {
-                        // Supabase array contains filter
                         contains("tags", listOf(genre))
                         gt("start_time", now)
                     }
@@ -134,6 +152,7 @@ class EventRepository @Inject constructor(
                 }
                 .decodeList<Event>()
         } catch (e: Exception) {
+            Log.e("EventRepository", "Error fetching events by genre", e)
             emptyList()
         }
     }
@@ -148,7 +167,7 @@ class EventRepository @Inject constructor(
         return try {
             val now = Clock.System.now().toString()
             val events = supabase.postgrest.from("events")
-                .select(columns = Columns.ALL) {
+                .select() {
                     filter {
                         gt("start_time", now)
                     }
@@ -157,7 +176,6 @@ class EventRepository @Inject constructor(
                 }
                 .decodeList<Event>()
 
-            // Filter by query (search in name, venue, description, tags)
             val filtered = if (query.isBlank()) {
                 events
             } else {
@@ -170,7 +188,6 @@ class EventRepository @Inject constructor(
                 }
             }
 
-            // Sort
             when (sortBy) {
                 SearchSortOption.DATE -> filtered.sortedBy { it.startDate }
                 SearchSortOption.PRICE -> filtered.sortedBy { it.price }
@@ -183,6 +200,7 @@ class EventRepository @Inject constructor(
                 }
             }.take(10)
         } catch (e: Exception) {
+            Log.e("EventRepository", "Error searching events", e)
             emptyList()
         }
     }
@@ -191,13 +209,14 @@ class EventRepository @Inject constructor(
     suspend fun getEvent(eventId: String): Event? {
         return try {
             supabase.postgrest.from("events")
-                .select(columns = Columns.ALL) {
+                .select() {
                     filter {
                         eq("id", eventId)
                     }
                 }
                 .decodeSingle<Event>()
         } catch (e: Exception) {
+            Log.e("EventRepository", "Error fetching event $eventId", e)
             null
         }
     }
@@ -212,6 +231,9 @@ class EventRepository @Inject constructor(
             }
             .map {
                 getEvent(eventId)
+            }
+            .onStart {
+                emit(getEvent(eventId))
             }
     }
 }

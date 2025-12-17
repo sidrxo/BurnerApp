@@ -10,8 +10,10 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.realtime.realtime
+import io.github.jan.supabase.serializer.KotlinXSerializer
 import io.github.jan.supabase.storage.Storage
 import io.github.jan.supabase.storage.storage
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,8 +25,14 @@ import javax.inject.Singleton
 class BurnerSupabaseClient @Inject constructor() {
     val client: SupabaseClient = createSupabaseClient(
         supabaseUrl = "https://lsqlgyyugysvhvxtssik.supabase.co",
-        supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzcWxneXl1Z3lzdmh2eHRzc2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA1NTI2MzEsImV4cCI6MjA0NjEyODYzMX0.I_cePEP-U-ODzIU8R2uGT56WYXFwYnSwNuR46Zq48nU"
+        supabaseKey = "sb_publishable_gSNN1pd-OujICXo_6_WmUg_5rhwRw3L"
     ) {
+        // Fix: Configure JSON to ignore fields not present in our data classes
+        defaultSerializer = KotlinXSerializer(Json {
+            ignoreUnknownKeys = true
+            coerceInputValues = true
+        })
+
         install(Auth) {
             // Match iOS configuration
         }
