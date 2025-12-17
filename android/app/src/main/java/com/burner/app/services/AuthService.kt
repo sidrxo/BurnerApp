@@ -33,7 +33,7 @@ class AuthService @Inject constructor(
     companion object {
         // TODO: Replace with your actual Web Client ID from Google Cloud Console
         // This must be the "Web client" ID, not the Android client ID
-        private const val WEB_CLIENT_ID = "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com"
+        private const val WEB_CLIENT_ID = "8577865405-sbo8kkgat2ngipsrrjr1uh5nhavf9pdq.apps.googleusercontent.com"
     }
 
     private val auth: Auth get() = supabase.auth
