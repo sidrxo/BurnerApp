@@ -446,6 +446,9 @@ struct SearchView: View {
             .id(sortBy?.rawValue ?? "default" + debouncedSearchText)
             .refreshable {
                 await eventViewModel.refreshEvents()
+
+                // Small delay to ensure UI updates are rendered before dismissal
+                try? await Task.sleep(nanoseconds: 50_000_000)
             }
             .scrollDismissesKeyboard(.interactively)
         }
