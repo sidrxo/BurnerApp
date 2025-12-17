@@ -9,8 +9,10 @@ import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
+import android.util.Log
 import kotlinx.datetime.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -21,27 +23,47 @@ class EventRepository @Inject constructor(
     private val supabase: BurnerSupabaseClient
 ) {
     // Get all events (real-time) - matching iOS which fetches from 7 days ago
-    val allEvents: Flow<List<Event>> = supabase.realtime
-        .channel("events")
-        .postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "events"
-        }
-        .map {
-            getAllEvents()
-        }
+    val allEvents: Flow<List<Event>> = flow {
+        Log.d("EventRepository", "allEvents Flow: Starting initial fetch")
+        // Emit initial events immediately (fixes infinite loading issue)
+        val initialEvents = getAllEvents()
+        Log.d("EventRepository", "allEvents Flow: Initial fetch returned ${initialEvents.size} events")
+        emit(initialEvents)
+
+        // Then listen for realtime updates
+        Log.d("EventRepository", "allEvents Flow: Setting up realtime subscription")
+        supabase.realtime
+            .channel("events")
+            .postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "events"
+            }
+            .collect {
+                Log.d("EventRepository", "allEvents Flow: Realtime update received, fetching fresh data")
+                emit(getAllEvents())
+            }
+    }
 
     // Get all events with filter
     suspend fun getAllEvents(): List<Event> {
         return try {
+            Log.d("EventRepository", "getAllEvents: Fetching events from Supabase")
             val sevenDaysAgo = Clock.System.now() - 7.days
-            supabase.postgrest.from("events")
+            val allEvents = supabase.postgrest.from("events")
                 .select(columns = Columns.ALL)
                 .decodeList<Event>()
+
+            Log.d("EventRepository", "getAllEvents: Fetched ${allEvents.size} total events from database")
+
+            val filteredEvents = allEvents
                 .filter { event ->
                     event.startTime?.let { Instant.parse(it) >= sevenDaysAgo } ?: false
                 }
                 .sortedBy { it.startTime }
+
+            Log.d("EventRepository", "getAllEvents: After filtering (>= 7 days ago): ${filteredEvents.size} events")
+            filteredEvents
         } catch (e: Exception) {
+            Log.e("EventRepository", "getAllEvents: Error fetching events", e)
             emptyList()
         }
     }
@@ -203,15 +225,24 @@ class EventRepository @Inject constructor(
     }
 
     // Get event (real-time)
-    fun getEventFlow(eventId: String): Flow<Event?> {
-        return supabase.realtime
+    fun getEventFlow(eventId: String): Flow<Event?> = flow {
+        Log.d("EventRepository", "getEventFlow: Starting initial fetch for event $eventId")
+        // Emit initial event immediately (fixes infinite loading issue)
+        val initialEvent = getEvent(eventId)
+        Log.d("EventRepository", "getEventFlow: Initial fetch returned event: ${initialEvent?.name ?: "null"}")
+        emit(initialEvent)
+
+        // Then listen for realtime updates
+        Log.d("EventRepository", "getEventFlow: Setting up realtime subscription for event $eventId")
+        supabase.realtime
             .channel("event_$eventId")
             .postgresChangeFlow<PostgresAction>(schema = "public") {
                 table = "events"
                 filter = "id=eq.$eventId"
             }
-            .map {
-                getEvent(eventId)
+            .collect {
+                Log.d("EventRepository", "getEventFlow: Realtime update received for event $eventId")
+                emit(getEvent(eventId))
             }
     }
 }
