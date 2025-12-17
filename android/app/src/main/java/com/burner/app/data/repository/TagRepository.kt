@@ -3,6 +3,8 @@ package com.burner.app.data.repository
 import com.burner.app.data.BurnerSupabaseClient
 import com.burner.app.data.models.Tag
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
@@ -33,11 +35,11 @@ class TagRepository @Inject constructor(
     private suspend fun getTagsInternal(): List<Tag> {
         return try {
             supabase.postgrest.from("tags")
-                .select() {
+                .select(columns = Columns.ALL) {
                     filter {
                         eq("active", true)
                     }
-                    order("order", ascending = true)
+                    order("order", Order.ASCENDING)
                 }
                 .decodeList<Tag>()
                 .ifEmpty { Tag.defaultGenres }

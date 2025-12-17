@@ -3,10 +3,15 @@ package com.burner.app.data
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.functions.Functions
+import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.gotrue.Auth
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.realtime.realtime
 import io.github.jan.supabase.storage.Storage
+import io.github.jan.supabase.storage.storage
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,7 +27,6 @@ class BurnerSupabaseClient @Inject constructor() {
     ) {
         install(Auth) {
             // Match iOS configuration
-            emitLocalSessionAsInitialSession = true
         }
         install(Postgrest)
         install(Realtime)

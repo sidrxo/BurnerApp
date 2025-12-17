@@ -4,6 +4,7 @@ import com.burner.app.data.BurnerSupabaseClient
 import com.burner.app.data.models.Event
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
@@ -34,7 +35,7 @@ class EventRepository @Inject constructor(
         return try {
             val sevenDaysAgo = Clock.System.now() - 7.days
             supabase.postgrest.from("events")
-                .select()
+                .select(columns = Columns.ALL)
                 .decodeList<Event>()
                 .filter { event ->
                     event.startTime?.let { Instant.parse(it) >= sevenDaysAgo } ?: false
@@ -50,12 +51,12 @@ class EventRepository @Inject constructor(
         return try {
             val now = Clock.System.now().toString()
             supabase.postgrest.from("events")
-                .select() {
+                .select(columns = Columns.ALL) {
                     filter {
                         eq("is_featured", true)
                         gt("start_time", now)
                     }
-                    order("start_time", ascending = true)
+                    order("start_time", Order.ASCENDING)
                     limit(limit.toLong())
                 }
                 .decodeList<Event>()
@@ -72,12 +73,12 @@ class EventRepository @Inject constructor(
 
         return try {
             supabase.postgrest.from("events")
-                .select() {
+                .select(columns = Columns.ALL) {
                     filter {
                         gt("start_time", now.toString())
                         lt("start_time", oneWeekLater.toString())
                     }
-                    order("start_time", ascending = true)
+                    order("start_time", Order.ASCENDING)
                     limit(limit.toLong())
                 }
                 .decodeList<Event>()
@@ -96,11 +97,11 @@ class EventRepository @Inject constructor(
         return try {
             val now = Clock.System.now().toString()
             val events = supabase.postgrest.from("events")
-                .select() {
+                .select(columns = Columns.ALL) {
                     filter {
                         gt("start_time", now)
                     }
-                    order("start_time", ascending = true)
+                    order("start_time", Order.ASCENDING)
                     limit(100) // Fetch more to filter
                 }
                 .decodeList<Event>()
@@ -122,13 +123,13 @@ class EventRepository @Inject constructor(
         return try {
             val now = Clock.System.now().toString()
             supabase.postgrest.from("events")
-                .select() {
+                .select(columns = Columns.ALL) {
                     filter {
                         // Supabase array contains filter
                         contains("tags", listOf(genre))
                         gt("start_time", now)
                     }
-                    order("start_time", ascending = true)
+                    order("start_time", Order.ASCENDING)
                     limit(limit.toLong())
                 }
                 .decodeList<Event>()
@@ -147,11 +148,11 @@ class EventRepository @Inject constructor(
         return try {
             val now = Clock.System.now().toString()
             val events = supabase.postgrest.from("events")
-                .select() {
+                .select(columns = Columns.ALL) {
                     filter {
                         gt("start_time", now)
                     }
-                    order("start_time", ascending = true)
+                    order("start_time", Order.ASCENDING)
                     limit(100)
                 }
                 .decodeList<Event>()
@@ -190,7 +191,7 @@ class EventRepository @Inject constructor(
     suspend fun getEvent(eventId: String): Event? {
         return try {
             supabase.postgrest.from("events")
-                .select() {
+                .select(columns = Columns.ALL) {
                     filter {
                         eq("id", eventId)
                     }

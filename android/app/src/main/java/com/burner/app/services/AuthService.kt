@@ -1,13 +1,18 @@
 package com.burner.app.services
 
 import android.content.Context
+import android.content.Intent
 import com.burner.app.data.BurnerSupabaseClient
 import com.burner.app.data.models.User
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.gotrue.Auth
 import io.github.jan.supabase.gotrue.SessionStatus
+import io.github.jan.supabase.gotrue.providers.Google
 import io.github.jan.supabase.gotrue.providers.builtin.Email
+import io.github.jan.supabase.gotrue.providers.builtin.IDToken
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -25,6 +30,12 @@ class AuthService @Inject constructor(
     private val supabase: BurnerSupabaseClient,
     @ApplicationContext private val context: Context
 ) {
+    companion object {
+        // TODO: Replace with your actual Web Client ID from Google Cloud Console
+        // This must be the "Web client" ID, not the Android client ID
+        private const val WEB_CLIENT_ID = "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com"
+    }
+
     private val auth: Auth get() = supabase.auth
 
     val currentUserId: String?
@@ -35,6 +46,48 @@ class AuthService @Inject constructor(
     val authStateFlow: Flow<Boolean> = auth.sessionStatus.map { status ->
         status is SessionStatus.Authenticated
     }
+
+    // --- Google Sign In Implementation ---
+
+    // 1. Get the Intent to launch the Google Sign-In flow
+    fun getGoogleSignInIntent(): Intent {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(WEB_CLIENT_ID)
+            .requestEmail()
+            .build()
+
+        return GoogleSignIn.getClient(context, gso).signInIntent
+    }
+
+    // 2. Handle the result (Exchange Google ID Token for Supabase Session)
+    suspend fun handleGoogleSignInResult(idToken: String): AuthResult {
+        return try {
+            // Sign in to Supabase using the Google ID Token
+            auth.signInWith(IDToken) {
+                this.idToken = idToken
+                this.provider = Google
+            }
+
+            val userId = auth.currentUserOrNull()?.id
+            if (userId != null) {
+                // Check if we need to create a profile, or just update login time
+                val existingProfile = getUserProfile(userId)
+                if (existingProfile == null) {
+                    val email = auth.currentUserOrNull()?.email ?: ""
+                    createUserProfile(userId, email, "google")
+                } else {
+                    updateLastLogin(userId)
+                }
+                AuthResult.Success(userId)
+            } else {
+                AuthResult.Error("Google sign in failed: No user ID returned")
+            }
+        } catch (e: Exception) {
+            AuthResult.Error(e.message ?: "Google sign in failed")
+        }
+    }
+
+    // --- Existing Methods ---
 
     // Email/Password Sign Up
     suspend fun signUpWithEmail(email: String, password: String): AuthResult {
@@ -79,9 +132,11 @@ class AuthService @Inject constructor(
     // Sign Out
     suspend fun signOut() {
         try {
+            // Also sign out of Google to allow account switching
+            GoogleSignIn.getClient(context, GoogleSignInOptions.DEFAULT_SIGN_IN).signOut()
             auth.signOut()
         } catch (e: Exception) {
-            // Ignore sign out errors
+            // Ignore errors
         }
     }
 
@@ -111,7 +166,6 @@ class AuthService @Inject constructor(
             supabase.postgrest.from("users")
                 .insert(userDoc)
         } catch (e: Exception) {
-            // Log error but don't fail authentication
             println("Error creating user profile: ${e.message}")
         }
     }
@@ -129,7 +183,6 @@ class AuthService @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            // Log error but don't fail authentication
             println("Error updating last login: ${e.message}")
         }
     }
@@ -137,16 +190,13 @@ class AuthService @Inject constructor(
     // Get user profile
     suspend fun getUserProfile(userId: String): User? {
         return try {
-            val response = supabase.postgrest.from("users")
+            supabase.postgrest.from("users")
                 .select {
                     filter {
                         eq("id", userId)
                     }
                 }
                 .decodeSingle<User>()
-            response
-        } catch (e: RestException) {
-            null
         } catch (e: Exception) {
             null
         }
@@ -167,7 +217,7 @@ class AuthService @Inject constructor(
         }
     }
 
-    // Get user role - from Supabase user metadata or database
+    // Get user role
     suspend fun getUserRole(): String? {
         return try {
             val userId = currentUserId ?: return null

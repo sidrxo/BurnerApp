@@ -1,17 +1,17 @@
 package com.burner.app.services
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import com.burner.app.data.BurnerSupabaseClient
 import com.stripe.android.PaymentConfiguration
-import com.stripe.android.paymentsheet.PaymentSheet
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.functions.functions
+import io.ktor.client.call.body
+import io.ktor.client.request.setBody
 import kotlinx.coroutines.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -40,11 +40,12 @@ class PaymentService @Inject constructor(
         PaymentConfiguration.init(context, STRIPE_PUBLISHABLE_KEY)
     }
 
+    @SuppressLint("UnsafeOptInUsageError")
     @Serializable
     data class CreateIntentRequest(
         val eventId: String
     )
-
+    @SuppressLint("UnsafeOptInUsageError")
     @Serializable
     data class CreateIntentResponse(
         val clientSecret: String,
@@ -53,13 +54,14 @@ class PaymentService @Inject constructor(
         val eventName: String,
         val currency: String
     )
-
+    @SuppressLint("UnsafeOptInUsageError")
     @Serializable
     data class ConfirmPurchaseRequest(
         @SerialName("payment_intent_id")
         val paymentIntentId: String
     )
 
+    @SuppressLint("UnsafeOptInUsageError")
     @Serializable
     data class ConfirmPurchaseResponse(
         val success: Boolean,
@@ -184,30 +186,32 @@ class PaymentService @Inject constructor(
     private suspend fun createPaymentIntent(eventId: String): PaymentIntentConfig {
         val requestBody = CreateIntentRequest(eventId = eventId)
 
-        val response = supabase.functions.invoke<CreateIntentResponse>(
-            function = "create-payment-intent",
-            body = requestBody
-        )
+        // Fixed: Use invoke without generics, setBody in lambda, and decode response
+        val response = supabase.functions.invoke("create-payment-intent") {
+            setBody(requestBody)
+        }
+        val data = response.body<CreateIntentResponse>()
 
         return PaymentIntentConfig(
-            clientSecret = response.clientSecret,
-            paymentIntentId = response.paymentIntentId
+            clientSecret = data.clientSecret,
+            paymentIntentId = data.paymentIntentId
         )
     }
 
     private suspend fun confirmPurchaseCall(paymentIntentId: String): PaymentResult {
         val requestBody = ConfirmPurchaseRequest(paymentIntentId = paymentIntentId)
 
-        val response = supabase.functions.invoke<ConfirmPurchaseResponse>(
-            function = "confirm-purchase",
-            body = requestBody
-        )
+        // Fixed: Use invoke without generics, setBody in lambda, and decode response
+        val response = supabase.functions.invoke("confirm-purchase") {
+            setBody(requestBody)
+        }
+        val data = response.body<ConfirmPurchaseResponse>()
 
         return PaymentResult(
-            success = response.success,
-            message = response.message ?: "Purchase completed",
-            ticketId = response.ticketId,
-            ticketNumber = response.ticketNumber
+            success = data.success,
+            message = data.message ?: "Purchase completed",
+            ticketId = data.ticketId,
+            ticketNumber = data.ticketNumber
         )
     }
 

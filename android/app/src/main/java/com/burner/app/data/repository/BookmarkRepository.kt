@@ -5,10 +5,13 @@ import com.burner.app.data.models.Bookmark
 import com.burner.app.data.models.Event
 import com.burner.app.services.AuthService
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,7 +25,7 @@ class BookmarkRepository @Inject constructor(
     fun getUserBookmarks(): Flow<List<Bookmark>> {
         val userId = authService.currentUserId
         if (userId == null) {
-            return kotlinx.coroutines.flow.flowOf(emptyList())
+            return flowOf(emptyList())
         }
 
         return supabase.realtime
@@ -39,11 +42,11 @@ class BookmarkRepository @Inject constructor(
     private suspend fun getUserBookmarksList(userId: String): List<Bookmark> {
         return try {
             supabase.postgrest.from("bookmarks")
-                .select() {
+                .select(columns = Columns.ALL) {
                     filter {
                         eq("user_id", userId)
                     }
-                    order("bookmarked_at", ascending = false)
+                    order("bookmarked_at", Order.DESCENDING)
                 }
                 .decodeList<Bookmark>()
         } catch (e: Exception) {
@@ -55,7 +58,7 @@ class BookmarkRepository @Inject constructor(
     fun getBookmarkedEventIds(): Flow<Set<String>> {
         val userId = authService.currentUserId
         if (userId == null) {
-            return kotlinx.coroutines.flow.flowOf(emptySet())
+            return flowOf(emptySet())
         }
 
         return getUserBookmarks().map { bookmarks ->
@@ -69,7 +72,7 @@ class BookmarkRepository @Inject constructor(
 
         return try {
             val result = supabase.postgrest.from("bookmarks")
-                .select() {
+                .select(columns = Columns.ALL) {
                     filter {
                         eq("user_id", userId)
                         eq("event_id", eventId)

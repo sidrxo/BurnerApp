@@ -6,6 +6,8 @@ import com.burner.app.data.models.TicketStatus
 import com.burner.app.data.models.TicketWithEventData
 import com.burner.app.services.AuthService
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
@@ -44,11 +46,11 @@ class TicketRepository @Inject constructor(
     private suspend fun getUserTicketsList(userId: String): List<Ticket> {
         return try {
             supabase.postgrest.from("tickets")
-                .select() {
+                .select(columns = Columns.ALL) {
                     filter {
                         eq("user_id", userId)
                     }
-                    order("purchase_date", ascending = false)
+                    order("purchase_date", Order.DESCENDING)
                 }
                 .decodeList<Ticket>()
         } catch (e: Exception) {
@@ -70,7 +72,7 @@ class TicketRepository @Inject constructor(
     suspend fun getTicket(ticketId: String): Ticket? {
         return try {
             supabase.postgrest.from("tickets")
-                .select() {
+                .select(columns = Columns.ALL) {
                     filter {
                         eq("id", ticketId)
                     }
@@ -131,7 +133,7 @@ class TicketRepository @Inject constructor(
                 "start_time" to startTime,
                 "total_price" to totalPrice,
                 "purchase_date" to now,
-                "status" to TicketStatus.CONFIRMED.name,
+                "status" to TicketStatus.CONFIRMED, // Fixed: Removed .name
                 "qr_code" to qrCode,
                 "event_image_url" to eventImageUrl
             )
@@ -161,12 +163,14 @@ class TicketRepository @Inject constructor(
     suspend fun cancelTicket(ticketId: String): Result<Unit> {
         return try {
             val now = Clock.System.now().toString()
+            val updateData = mapOf(
+                "status" to TicketStatus.CANCELLED, // Fixed: Removed .name
+                "cancelled_at" to now,
+                "updated_at" to now
+            )
+
             supabase.postgrest.from("tickets")
-                .update({
-                    set("status", TicketStatus.CANCELLED.name)
-                    set("cancelled_at", now)
-                    set("updated_at", now)
-                }) {
+                .update(updateData) {
                     filter {
                         eq("id", ticketId)
                     }
