@@ -8,7 +8,8 @@ import com.burner.app.data.models.UserRole
 import com.burner.app.data.repository.EventRepository
 import com.burner.app.services.AuthService
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.jan.supabase.functions.functions
+import io.github.jan.supabase.functions.FunctionResponse
+import io.ktor.client.call.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -189,12 +190,13 @@ class ScannerViewModel @Inject constructor(
                     return@launch
                 }
 
-                val response = supabase.functions.invoke<ScanTicketResponse>(
+                val response = supabase.client.functions.invoke(
                     function = "scan-ticket",
                     body = request
                 )
 
-                handleScanResult(response)
+                val result = response.body<ScanTicketResponse>()
+                handleScanResult(result)
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -228,15 +230,16 @@ class ScannerViewModel @Inject constructor(
                     ticketNumber = ticketNumber
                 )
 
-                val response = supabase.functions.invoke<ScanTicketResponse>(
+                val response = supabase.client.functions.invoke(
                     function = "scan-ticket",
                     body = request
                 )
 
-                handleScanResult(response)
+                val result = response.body<ScanTicketResponse>()
+                handleScanResult(result)
 
                 // Clear manual entry on success
-                if (response.success) {
+                if (result.success) {
                     _uiState.update { it.copy(manualEntry = "") }
                 }
             } catch (e: Exception) {

@@ -6,12 +6,10 @@ import com.burner.app.data.BurnerSupabaseClient
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.github.jan.supabase.functions.functions
+import io.ktor.client.call.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -184,30 +182,34 @@ class PaymentService @Inject constructor(
     private suspend fun createPaymentIntent(eventId: String): PaymentIntentConfig {
         val requestBody = CreateIntentRequest(eventId = eventId)
 
-        val response = supabase.functions.invoke<CreateIntentResponse>(
+        val response = supabase.client.functions.invoke(
             function = "create-payment-intent",
             body = requestBody
         )
 
+        val result = response.body<CreateIntentResponse>()
+
         return PaymentIntentConfig(
-            clientSecret = response.clientSecret,
-            paymentIntentId = response.paymentIntentId
+            clientSecret = result.clientSecret,
+            paymentIntentId = result.paymentIntentId
         )
     }
 
     private suspend fun confirmPurchaseCall(paymentIntentId: String): PaymentResult {
         val requestBody = ConfirmPurchaseRequest(paymentIntentId = paymentIntentId)
 
-        val response = supabase.functions.invoke<ConfirmPurchaseResponse>(
+        val response = supabase.client.functions.invoke(
             function = "confirm-purchase",
             body = requestBody
         )
 
+        val result = response.body<ConfirmPurchaseResponse>()
+
         return PaymentResult(
-            success = response.success,
-            message = response.message ?: "Purchase completed",
-            ticketId = response.ticketId,
-            ticketNumber = response.ticketNumber
+            success = result.success,
+            message = result.message ?: "Purchase completed",
+            ticketId = result.ticketId,
+            ticketNumber = result.ticketNumber
         )
     }
 
