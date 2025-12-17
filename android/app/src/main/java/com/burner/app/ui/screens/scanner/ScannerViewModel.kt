@@ -1,5 +1,6 @@
 package com.burner.app.ui.screens.scanner
 
+import android.annotation.SuppressLint
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.burner.app.data.BurnerSupabaseClient
@@ -9,6 +10,8 @@ import com.burner.app.data.repository.EventRepository
 import com.burner.app.services.AuthService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.functions.functions
+import io.ktor.client.call.body
+import io.ktor.client.request.setBody
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -39,6 +42,7 @@ data class ScannerUiState(
     val errorMessage: String? = null
 )
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class ScanTicketRequest(
     @SerialName("ticket_id")
@@ -49,6 +53,7 @@ data class ScanTicketRequest(
     val eventId: String
 )
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class ScanTicketResponse(
     val success: Boolean,
@@ -57,6 +62,7 @@ data class ScanTicketResponse(
     val errorType: String? = null
 )
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class TicketInfo(
     val ticketNumber: String,
@@ -189,12 +195,13 @@ class ScannerViewModel @Inject constructor(
                     return@launch
                 }
 
-                val response = supabase.functions.invoke<ScanTicketResponse>(
-                    function = "scan-ticket",
-                    body = request
-                )
+                // FIXED: Use correct invoke syntax + response.body()
+                val response = supabase.functions.invoke("scan-ticket") {
+                    setBody(request)
+                }
+                val scanResponse = response.body<ScanTicketResponse>()
 
-                handleScanResult(response)
+                handleScanResult(scanResponse)
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -228,15 +235,16 @@ class ScannerViewModel @Inject constructor(
                     ticketNumber = ticketNumber
                 )
 
-                val response = supabase.functions.invoke<ScanTicketResponse>(
-                    function = "scan-ticket",
-                    body = request
-                )
+                // FIXED: Use correct invoke syntax + response.body()
+                val response = supabase.functions.invoke("scan-ticket") {
+                    setBody(request)
+                }
+                val scanResponse = response.body<ScanTicketResponse>()
 
-                handleScanResult(response)
+                handleScanResult(scanResponse)
 
                 // Clear manual entry on success
-                if (response.success) {
+                if (scanResponse.success) {
                     _uiState.update { it.copy(manualEntry = "") }
                 }
             } catch (e: Exception) {
