@@ -1,33 +1,48 @@
 package com.burner.app.data.models
 
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.PropertyName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.datetime.Instant
 import java.util.Date
 
 /**
  * Bookmark model matching iOS BookmarkData struct
+ * Updated for Supabase
  */
+@Serializable
 data class Bookmark(
-    @PropertyName("eventId")
+    @SerialName("event_id")
     val eventId: String = "",
-    @PropertyName("eventName")
+    @SerialName("event_name")
     val eventName: String = "",
-    @PropertyName("eventVenue")
+    @SerialName("event_venue")
     val eventVenue: String = "",
-    @PropertyName("startTime")
-    val startTime: Timestamp? = null,
-    @PropertyName("eventPrice")
+    @SerialName("start_time")
+    val startTime: String? = null,
+    @SerialName("event_price")
     val eventPrice: Double = 0.0,
-    @PropertyName("eventImageUrl")
+    @SerialName("event_image_url")
     val eventImageUrl: String = "",
-    @PropertyName("bookmarkedAt")
-    val bookmarkedAt: Timestamp? = null
+    @SerialName("bookmarked_at")
+    val bookmarkedAt: String? = null
 ) {
     val startDate: Date?
-        get() = startTime?.toDate()
+        get() = startTime?.let {
+            try {
+                Date(Instant.parse(it).toEpochMilliseconds())
+            } catch (e: Exception) {
+                null
+            }
+        }
 
     val bookmarkedDate: Date?
-        get() = bookmarkedAt?.toDate()
+        get() = bookmarkedAt?.let {
+            try {
+                Date(Instant.parse(it).toEpochMilliseconds())
+            } catch (e: Exception) {
+                null
+            }
+        }
 
     companion object {
         fun fromEvent(event: Event): Bookmark {
@@ -38,7 +53,7 @@ data class Bookmark(
                 startTime = event.startTime,
                 eventPrice = event.price,
                 eventImageUrl = event.imageUrl,
-                bookmarkedAt = Timestamp.now()
+                bookmarkedAt = Instant.fromEpochMilliseconds(System.currentTimeMillis()).toString()
             )
         }
     }

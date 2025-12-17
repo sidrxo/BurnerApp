@@ -1,58 +1,71 @@
 package com.burner.app.data.models
 
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.DocumentId
-import com.google.firebase.firestore.PropertyName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.datetime.Instant
 import java.util.Date
 
 /**
  * Ticket model matching iOS Ticket struct
+ * Updated for Supabase
  */
+@Serializable
 data class Ticket(
-    @DocumentId
     val id: String? = null,
-    @PropertyName("eventId")
+    @SerialName("event_id")
     val eventId: String = "",
-    @PropertyName("userId")
+    @SerialName("user_id")
     val userId: String = "",
-    @PropertyName("ticketNumber")
+    @SerialName("ticket_number")
     val ticketNumber: String? = null,
-    @PropertyName("eventName")
+    @SerialName("event_name")
     val eventName: String = "",
     val venue: String = "",
-    @PropertyName("startTime")
-    val startTime: Timestamp? = null,
-    @PropertyName("totalPrice")
+    @SerialName("start_time")
+    val startTime: String? = null,
+    @SerialName("total_price")
     val totalPrice: Double = 0.0,
-    @PropertyName("purchaseDate")
-    val purchaseDate: Timestamp? = null,
+    @SerialName("purchase_date")
+    val purchaseDate: String? = null,
     val status: String = TicketStatus.CONFIRMED,
-    @PropertyName("qrCode")
+    @SerialName("qr_code")
     val qrCode: String? = null,
-    @PropertyName("venueId")
+    @SerialName("venue_id")
     val venueId: String? = null,
-    @PropertyName("usedAt")
-    val usedAt: Timestamp? = null,
-    @PropertyName("scannedBy")
+    @SerialName("used_at")
+    val usedAt: String? = null,
+    @SerialName("scanned_by")
     val scannedBy: String? = null,
-    @PropertyName("cancelledAt")
-    val cancelledAt: Timestamp? = null,
-    @PropertyName("refundedAt")
-    val refundedAt: Timestamp? = null,
-    @PropertyName("transferredFrom")
+    @SerialName("cancelled_at")
+    val cancelledAt: String? = null,
+    @SerialName("refunded_at")
+    val refundedAt: String? = null,
+    @SerialName("transferred_from")
     val transferredFrom: String? = null,
-    @PropertyName("transferredAt")
-    val transferredAt: Timestamp? = null,
-    @PropertyName("updatedAt")
-    val updatedAt: Timestamp? = null,
-    @PropertyName("eventImageUrl")
+    @SerialName("transferred_at")
+    val transferredAt: String? = null,
+    @SerialName("updated_at")
+    val updatedAt: String? = null,
+    @SerialName("event_image_url")
     val eventImageUrl: String? = null
 ) {
     val startDate: Date?
-        get() = startTime?.toDate()
+        get() = startTime?.let {
+            try {
+                Date(Instant.parse(it).toEpochMilliseconds())
+            } catch (e: Exception) {
+                null
+            }
+        }
 
     val purchaseDateValue: Date?
-        get() = purchaseDate?.toDate()
+        get() = purchaseDate?.let {
+            try {
+                Date(Instant.parse(it).toEpochMilliseconds())
+            } catch (e: Exception) {
+                null
+            }
+        }
 
     val isUpcoming: Boolean
         get() {

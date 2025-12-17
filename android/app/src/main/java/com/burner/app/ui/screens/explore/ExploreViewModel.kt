@@ -157,7 +157,7 @@ class ExploreViewModel @Inject constructor(
                 !event.isFeatured &&
                 startTime != null &&
                 startTime.after(now) &&
-                event.coordinates != null
+                event.latitude != null && event.longitude != null
             }
             .mapNotNull { event ->
                 val distance = event.distanceFrom(userLat, userLon)

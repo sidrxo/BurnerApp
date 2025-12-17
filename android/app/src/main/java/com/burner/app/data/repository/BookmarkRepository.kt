@@ -1,78 +1,66 @@
 package com.burner.app.data.repository
 
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
+import com.burner.app.data.BurnerSupabaseClient
 import com.burner.app.data.models.Bookmark
 import com.burner.app.data.models.Event
 import com.burner.app.services.AuthService
-import kotlinx.coroutines.channels.awaitClose
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class BookmarkRepository @Inject constructor(
-    private val firestore: FirebaseFirestore,
+    private val supabase: BurnerSupabaseClient,
     private val authService: AuthService
 ) {
-    // Get user's bookmarks subcollection path
-    private fun getBookmarksCollection(userId: String) =
-        firestore.collection("users").document(userId).collection("bookmarks")
-
     // Get user's bookmarks (real-time)
-    fun getUserBookmarks(): Flow<List<Bookmark>> = callbackFlow {
+    fun getUserBookmarks(): Flow<List<Bookmark>> {
         val userId = authService.currentUserId
         if (userId == null) {
-            trySend(emptyList())
-            close()
-            return@callbackFlow
+            return kotlinx.coroutines.flow.flowOf(emptyList())
         }
 
-        val listener = getBookmarksCollection(userId)
-            .orderBy("bookmarkedAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(emptyList())
-                    return@addSnapshotListener
-                }
-
-                val bookmarks = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Bookmark::class.java)
-                } ?: emptyList()
-
-                trySend(bookmarks)
+        return supabase.realtime
+            .channel("bookmarks_$userId")
+            .postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "bookmarks"
+                filter = "user_id=eq.$userId"
             }
+            .map {
+                getUserBookmarksList(userId)
+            }
+    }
 
-        awaitClose { listener.remove() }
+    private suspend fun getUserBookmarksList(userId: String): List<Bookmark> {
+        return try {
+            supabase.postgrest.from("bookmarks")
+                .select() {
+                    filter {
+                        eq("user_id", userId)
+                    }
+                    order("bookmarked_at", ascending = false)
+                }
+                .decodeList<Bookmark>()
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     // Get bookmarked event IDs (for quick lookup)
-    fun getBookmarkedEventIds(): Flow<Set<String>> = callbackFlow {
+    fun getBookmarkedEventIds(): Flow<Set<String>> {
         val userId = authService.currentUserId
         if (userId == null) {
-            trySend(emptySet())
-            close()
-            return@callbackFlow
+            return kotlinx.coroutines.flow.flowOf(emptySet())
         }
 
-        val listener = getBookmarksCollection(userId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(emptySet())
-                    return@addSnapshotListener
-                }
-
-                val ids = snapshot?.documents?.mapNotNull { doc ->
-                    doc.id
-                }?.toSet() ?: emptySet()
-
-                trySend(ids)
-            }
-
-        awaitClose { listener.remove() }
+        return getUserBookmarks().map { bookmarks ->
+            bookmarks.map { it.eventId }.toSet()
+        }
     }
 
     // Check if event is bookmarked
@@ -80,11 +68,16 @@ class BookmarkRepository @Inject constructor(
         val userId = authService.currentUserId ?: return false
 
         return try {
-            getBookmarksCollection(userId)
-                .document(eventId)
-                .get()
-                .await()
-                .exists()
+            val result = supabase.postgrest.from("bookmarks")
+                .select() {
+                    filter {
+                        eq("user_id", userId)
+                        eq("event_id", eventId)
+                    }
+                    limit(1)
+                }
+                .decodeList<Bookmark>()
+            result.isNotEmpty()
         } catch (e: Exception) {
             false
         }
@@ -100,11 +93,19 @@ class BookmarkRepository @Inject constructor(
 
         return try {
             val bookmark = Bookmark.fromEvent(event)
+            val bookmarkData = mapOf(
+                "user_id" to userId,
+                "event_id" to bookmark.eventId,
+                "event_name" to bookmark.eventName,
+                "event_venue" to bookmark.eventVenue,
+                "start_time" to bookmark.startTime,
+                "event_price" to bookmark.eventPrice,
+                "event_image_url" to bookmark.eventImageUrl,
+                "bookmarked_at" to bookmark.bookmarkedAt
+            )
 
-            getBookmarksCollection(userId)
-                .document(eventId)
-                .set(bookmark)
-                .await()
+            supabase.postgrest.from("bookmarks")
+                .insert(bookmarkData)
 
             Result.success(Unit)
         } catch (e: Exception) {
@@ -118,10 +119,13 @@ class BookmarkRepository @Inject constructor(
             ?: return Result.failure(Exception("User not authenticated"))
 
         return try {
-            getBookmarksCollection(userId)
-                .document(eventId)
-                .delete()
-                .await()
+            supabase.postgrest.from("bookmarks")
+                .delete {
+                    filter {
+                        eq("user_id", userId)
+                        eq("event_id", eventId)
+                    }
+                }
 
             Result.success(Unit)
         } catch (e: Exception) {

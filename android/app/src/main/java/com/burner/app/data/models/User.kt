@@ -1,24 +1,23 @@
 package com.burner.app.data.models
 
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.DocumentId
-import com.google.firebase.firestore.PropertyName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
- * User profile model
+ * User profile model for Supabase
  */
+@Serializable
 data class User(
-    @DocumentId
-    val uid: String? = null,
+    val id: String? = null,
     val email: String = "",
-    @PropertyName("displayName")
+    @SerialName("display_name")
     val displayName: String? = null,
     val role: String = UserRole.USER,
     val provider: String = "",
-    @PropertyName("createdAt")
-    val createdAt: Timestamp? = null,
-    @PropertyName("lastLoginAt")
-    val lastLoginAt: Timestamp? = null,
+    @SerialName("created_at")
+    val createdAt: String? = null,
+    @SerialName("last_login_at")
+    val lastLoginAt: String? = null,
     val preferences: UserPreferences? = null
 )
 
@@ -31,20 +30,21 @@ object UserRole {
 }
 
 /**
- * User preferences stored in Firestore
+ * User preferences stored in Supabase
  */
+@Serializable
 data class UserPreferences(
-    @PropertyName("selectedGenres")
+    @SerialName("selected_genres")
     val selectedGenres: List<String> = emptyList(),
-    @PropertyName("locationName")
+    @SerialName("location_name")
     val locationName: String? = null,
-    @PropertyName("locationLat")
+    @SerialName("location_lat")
     val locationLat: Double? = null,
-    @PropertyName("locationLon")
+    @SerialName("location_lon")
     val locationLon: Double? = null,
-    @PropertyName("hasEnabledNotifications")
+    @SerialName("has_enabled_notifications")
     val hasEnabledNotifications: Boolean = false,
-    @PropertyName("hasCompletedOnboarding")
+    @SerialName("has_completed_onboarding")
     val hasCompletedOnboarding: Boolean = false
 )
 

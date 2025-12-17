@@ -2,13 +2,16 @@ package com.burner.app.services
 
 import android.content.Context
 import android.util.Log
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.functions.FirebaseFunctions
+import com.burner.app.data.BurnerSupabaseClient
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.github.jan.supabase.functions.functions
 import kotlinx.coroutines.*
-import kotlinx.coroutines.tasks.await
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -17,17 +20,14 @@ import kotlin.math.pow
 
 @Singleton
 class PaymentService @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val supabase: BurnerSupabaseClient
 ) {
     companion object {
         private const val TAG = "PaymentService"
         // Ensure this matches your Stripe Dashboard
         private const val STRIPE_PUBLISHABLE_KEY = "pk_test_51SKOqrFxXnVDuRLXw30ABLXPF9QyorMesOCHN9sMbRAIokEIL8gptsxxX4APRJSO0b8SRGvyAUBNzBZqCCgOSvVI00fxiHOZNe"
-        private const val REGION = "europe-west2" // Matches your iOS/Backend region
     }
-
-    private val functions = FirebaseFunctions.getInstance(REGION)
-    private val auth = FirebaseAuth.getInstance()
 
     // Preparation State (Matching iOS Logic)
     private var preparedClientSecret: String? = null
@@ -40,6 +40,34 @@ class PaymentService @Inject constructor(
         PaymentConfiguration.init(context, STRIPE_PUBLISHABLE_KEY)
     }
 
+    @Serializable
+    data class CreateIntentRequest(
+        val eventId: String
+    )
+
+    @Serializable
+    data class CreateIntentResponse(
+        val clientSecret: String,
+        val paymentIntentId: String,
+        val amount: Double,
+        val eventName: String,
+        val currency: String
+    )
+
+    @Serializable
+    data class ConfirmPurchaseRequest(
+        @SerialName("payment_intent_id")
+        val paymentIntentId: String
+    )
+
+    @Serializable
+    data class ConfirmPurchaseResponse(
+        val success: Boolean,
+        val ticketId: String?,
+        val ticketNumber: String?,
+        val message: String?
+    )
+
     data class PaymentIntentConfig(
         val clientSecret: String,
         val paymentIntentId: String
@@ -48,7 +76,8 @@ class PaymentService @Inject constructor(
     data class PaymentResult(
         val success: Boolean,
         val message: String,
-        val ticketId: String?
+        val ticketId: String?,
+        val ticketNumber: String? = null
     )
 
     // ------------------------------------------------------------------------
@@ -94,7 +123,7 @@ class PaymentService @Inject constructor(
      */
     suspend fun getPaymentConfig(eventId: String): Result<PaymentIntentConfig> = withContext(Dispatchers.IO) {
         try {
-            if (auth.currentUser == null) {
+            if (supabase.auth.currentUserOrNull() == null) {
                 return@withContext Result.failure(Exception("Please sign in to purchase tickets"))
             }
 
@@ -153,42 +182,33 @@ class PaymentService @Inject constructor(
     // ------------------------------------------------------------------------
 
     private suspend fun createPaymentIntent(eventId: String): PaymentIntentConfig {
-        //
-        val result = functions
-            .getHttpsCallable("createPaymentIntent")
-            .call(mapOf("eventId" to eventId))
-            .await()
+        val requestBody = CreateIntentRequest(eventId = eventId)
 
-        @Suppress("UNCHECKED_CAST")
-        val data = result.data as? Map<String, Any>
-            ?: throw Exception("Invalid response from server")
+        val response = supabase.functions.invoke<CreateIntentResponse>(
+            function = "create-payment-intent",
+            body = requestBody
+        )
 
-        val clientSecret = data["clientSecret"] as? String
-            ?: throw Exception("Missing clientSecret")
-        val paymentIntentId = data["paymentIntentId"] as? String
-            ?: throw Exception("Missing paymentIntentId")
-
-        return PaymentIntentConfig(clientSecret, paymentIntentId)
+        return PaymentIntentConfig(
+            clientSecret = response.clientSecret,
+            paymentIntentId = response.paymentIntentId
+        )
     }
 
     private suspend fun confirmPurchaseCall(paymentIntentId: String): PaymentResult {
-        //
-        val result = functions
-            .getHttpsCallable("confirmPurchase")
-            .call(mapOf("paymentIntentId" to paymentIntentId))
-            .await()
+        val requestBody = ConfirmPurchaseRequest(paymentIntentId = paymentIntentId)
 
-        @Suppress("UNCHECKED_CAST")
-        val data = result.data as? Map<String, Any>
-            ?: throw Exception("Invalid response from server")
+        val response = supabase.functions.invoke<ConfirmPurchaseResponse>(
+            function = "confirm-purchase",
+            body = requestBody
+        )
 
-        val success = data["success"] as? Boolean ?: false
-        val message = data["message"] as? String ?: "Purchase completed"
-        val ticketId = data["ticketId"] as? String
-
-        if (!success) throw Exception(message)
-
-        return PaymentResult(success, message, ticketId)
+        return PaymentResult(
+            success = response.success,
+            message = response.message ?: "Purchase completed",
+            ticketId = response.ticketId,
+            ticketNumber = response.ticketNumber
+        )
     }
 
     private fun clearPreparedIntent(intentId: String?) {
