@@ -85,6 +85,7 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:realtime-kt")
     implementation("io.github.jan-tennert.supabase:gotrue-kt")
     implementation("io.github.jan-tennert.supabase:storage-kt")
+    implementation("io.github.jan-tennert.supabase:functions-kt")
 
     // Ktor Client for Supabase
     implementation("io.ktor:ktor-client-android:2.3.7")
@@ -102,6 +103,9 @@ dependencies {
 
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+
+    // Kotlinx DateTime for Supabase
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
 
     // DataStore Preferences
     implementation("androidx.datastore:datastore-preferences:1.0.0")

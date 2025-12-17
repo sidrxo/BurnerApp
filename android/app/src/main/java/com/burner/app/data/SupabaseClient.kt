@@ -2,6 +2,7 @@ package com.burner.app.data
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.gotrue.Auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
@@ -26,10 +27,12 @@ class BurnerSupabaseClient @Inject constructor() {
         install(Postgrest)
         install(Realtime)
         install(Storage)
+        install(Functions)
     }
 
     val auth get() = client.auth
     val postgrest get() = client.postgrest
     val realtime get() = client.realtime
     val storage get() = client.storage
+    val functions get() = client.functions
 }

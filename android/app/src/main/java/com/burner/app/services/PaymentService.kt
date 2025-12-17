@@ -7,8 +7,9 @@ import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.functions.functions
-import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.*
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.io.IOException
@@ -39,6 +40,34 @@ class PaymentService @Inject constructor(
         PaymentConfiguration.init(context, STRIPE_PUBLISHABLE_KEY)
     }
 
+    @Serializable
+    data class CreateIntentRequest(
+        val eventId: String
+    )
+
+    @Serializable
+    data class CreateIntentResponse(
+        val clientSecret: String,
+        val paymentIntentId: String,
+        val amount: Double,
+        val eventName: String,
+        val currency: String
+    )
+
+    @Serializable
+    data class ConfirmPurchaseRequest(
+        @SerialName("payment_intent_id")
+        val paymentIntentId: String
+    )
+
+    @Serializable
+    data class ConfirmPurchaseResponse(
+        val success: Boolean,
+        val ticketId: String?,
+        val ticketNumber: String?,
+        val message: String?
+    )
+
     data class PaymentIntentConfig(
         val clientSecret: String,
         val paymentIntentId: String
@@ -47,7 +76,8 @@ class PaymentService @Inject constructor(
     data class PaymentResult(
         val success: Boolean,
         val message: String,
-        val ticketId: String?
+        val ticketId: String?,
+        val ticketNumber: String? = null
     )
 
     // ------------------------------------------------------------------------
@@ -152,25 +182,33 @@ class PaymentService @Inject constructor(
     // ------------------------------------------------------------------------
 
     private suspend fun createPaymentIntent(eventId: String): PaymentIntentConfig {
-        // Call Supabase Edge Function
-        val requestBody = buildJsonObject {
-            put("eventId", eventId)
-        }
+        val requestBody = CreateIntentRequest(eventId = eventId)
 
-        // TODO: Update to use Supabase Edge Functions
-        // For now, throw exception to indicate this needs backend setup
-        throw Exception("Payment processing via Supabase Edge Functions needs to be configured")
+        val response = supabase.functions.invoke<CreateIntentResponse>(
+            function = "create-payment-intent",
+            body = requestBody
+        )
+
+        return PaymentIntentConfig(
+            clientSecret = response.clientSecret,
+            paymentIntentId = response.paymentIntentId
+        )
     }
 
     private suspend fun confirmPurchaseCall(paymentIntentId: String): PaymentResult {
-        // Call Supabase Edge Function
-        val requestBody = buildJsonObject {
-            put("paymentIntentId", paymentIntentId)
-        }
+        val requestBody = ConfirmPurchaseRequest(paymentIntentId = paymentIntentId)
 
-        // TODO: Update to use Supabase Edge Functions
-        // For now, throw exception to indicate this needs backend setup
-        throw Exception("Payment confirmation via Supabase Edge Functions needs to be configured")
+        val response = supabase.functions.invoke<ConfirmPurchaseResponse>(
+            function = "confirm-purchase",
+            body = requestBody
+        )
+
+        return PaymentResult(
+            success = response.success,
+            message = response.message ?: "Purchase completed",
+            ticketId = response.ticketId,
+            ticketNumber = response.ticketNumber
+        )
     }
 
     private fun clearPreparedIntent(intentId: String?) {
