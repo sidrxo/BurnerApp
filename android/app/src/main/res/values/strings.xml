@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Burner</string>
+
+    <!-- Navigation -->
+    <string name="nav_explore">Explore</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_bookmarks">Saves</string>
+    <string name="nav_tickets">Tickets</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title">MEET ME IN THE MOMENT</string>
+    <string name="onboarding_welcome_subtitle">Discover events. Go offline. Be present.</string>
+    <string name="onboarding_sign_up">SIGN UP</string>
+    <string name="onboarding_sign_in">SIGN IN</string>
+    <string name="onboarding_explore">EXPLORE</string>
+    <string name="onboarding_location_title">WHERE ARE YOU?</string>
+    <string name="onboarding_location_subtitle">Find events near you</string>
+    <string name="onboarding_use_current_location">USE CURRENT LOCATION</string>
+    <string name="onboarding_enter_manually">ENTER MANUALLY</string>
+    <string name="onboarding_genres_title">WHAT\'S YOUR VIBE?</string>
+    <string name="onboarding_genres_subtitle">Select your favourite genres</string>
+    <string name="onboarding_notifications_title">STAY IN THE LOOP</string>
+    <string name="onboarding_notifications_subtitle">Get notified about events you\'ll love</string>
+    <string name="onboarding_enable_notifications">ENABLE NOTIFICATIONS</string>
+    <string name="onboarding_maybe_later">MAYBE LATER</string>
+    <string name="onboarding_complete_title">YOU\'RE IN!</string>
+    <string name="onboarding_im_in">I\'M IN</string>
+
+    <!-- Auth -->
+    <string name="auth_email">Email</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_continue_with_google">CONTINUE WITH GOOGLE</string>
+    <string name="auth_continue_with_email">CONTINUE WITH EMAIL</string>
+    <string name="auth_sign_out">Sign Out</string>
+    <string name="auth_forgot_password">Forgot password?</string>
+
+    <!-- Events -->
+    <string name="events_featured">FEATURED</string>
+    <string name="events_this_week">THIS WEEK</string>
+    <string name="events_nearby">NEARBY</string>
+    <string name="events_all">ALL EVENTS</string>
+    <string name="events_empty">No events found</string>
+    <string name="event_from">From</string>
+    <string name="event_sold_out">SOLD OUT</string>
+    <string name="event_get_tickets">GET TICKETS</string>
+
+    <!-- Search -->
+    <string name="search_placeholder">Search events, venues...</string>
+    <string name="search_sort_date">Date</string>
+    <string name="search_sort_price">Price</string>
+    <string name="search_sort_nearby">Nearby</string>
+
+    <!-- Bookmarks -->
+    <string name="bookmarks_empty_title">SAVE FOR LATER</string>
+    <string name="bookmarks_empty_subtitle">Tap the heart icon on events you love</string>
+    <string name="bookmarks_sign_in_required">Sign in to save events</string>
+
+    <!-- Tickets -->
+    <string name="tickets_empty_title">NO TICKETS YET</string>
+    <string name="tickets_empty_subtitle">Your purchased tickets will appear here</string>
+    <string name="tickets_upcoming">UPCOMING</string>
+    <string name="tickets_past">PAST</string>
+    <string name="ticket_status_confirmed">Confirmed</string>
+    <string name="ticket_status_used">Used</string>
+    <string name="ticket_status_cancelled">Cancelled</string>
+    <string name="ticket_status_refunded">Refunded</string>
+
+    <!-- Purchase -->
+    <string name="purchase_title">GET TICKETS</string>
+    <string name="purchase_subtotal">Subtotal</string>
+    <string name="purchase_total">Total</string>
+    <string name="purchase_pay">PAY</string>
+    <string name="purchase_processing">Processing...</string>
+    <string name="purchase_success">Ticket purchased!</string>
+    <string name="purchase_terms">By purchasing, you agree to our Terms of Service</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_payment">Payment Methods</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_support">Support</string>
+    <string name="settings_faq">FAQ</string>
+    <string name="settings_terms">Terms of Service</string>
+    <string name="settings_privacy">Privacy Policy</string>
+    <string name="settings_version">Version</string>
+
+    <!-- Common -->
+    <string name="loading">Loading...</string>
+    <string name="error">Something went wrong</string>
+    <string name="retry">Retry</string>
+    <string name="cancel">Cancel</string>
+    <string name="done">Done</string>
+    <string name="save">Save</string>
+    <string name="continue_text">Continue</string>
+    <string name="back">Back</string>
+</resources>
