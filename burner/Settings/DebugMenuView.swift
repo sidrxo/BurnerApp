@@ -201,7 +201,7 @@ struct DebugMenuView: View {
                 appState.onboardingManager.resetOnboarding()
 
                 // Clear location
-                appState.userLocationManager.clearSavedLocation()
+                appState.userLocationManager.clearLocation()
 
                 // Disable burner mode if active
                 burnerManager.disable()

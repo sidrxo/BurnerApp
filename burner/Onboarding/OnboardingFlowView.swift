@@ -294,8 +294,7 @@ struct AuthWelcomeSlide: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
             showingSignIn = false
-            // Auto-complete onboarding when user signs in
-            completeOnboarding()
+            onLogin()
         }
     }
 }
