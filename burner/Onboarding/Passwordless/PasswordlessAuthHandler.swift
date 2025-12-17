@@ -8,62 +8,102 @@ class PasswordlessAuthHandler: ObservableObject {
     @Published var error: String?
     
     private let supabase = SupabaseManager.shared.client
-    private let userRepository = UserRepository() // Assumes UserRepositoryProtocol conformance
+    private let userRepository = UserRepository()
     
     func handleSignInLink(url: URL) -> Bool {
-        // Check if this URL contains the access_token parameter (Supabase magic link)
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-              let queryItems = components.queryItems,
-              queryItems.contains(where: { $0.name == "access_token" || $0.name == "token_type" }) else {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
             return false
         }
         
-        // Retrieve the email from storage
-        guard let email = UserDefaults.standard.string(forKey: "pendingEmailForSignIn") else {
-            self.error = "Email not found. Please try signing in again."
-            return false
+        // 1. Check for Fragment (Redirect Flow - most common for Magic Links)
+        // URL looks like: burner://signin#access_token=...&refresh_token=...
+        if let fragment = components.fragment, fragment.contains("access_token") {
+            isProcessing = true
+            handleSessionFromURL(url)
+            return true
         }
         
-        isProcessing = true
+        // 2. Check for Query Items (Manual OTP Token Flow)
+        // URL looks like: burner://signin?token=...&type=magiclink
+        if let queryItems = components.queryItems,
+           let token = queryItems.first(where: { $0.name == "token" || $0.name == "token_hash" })?.value {
+            
+            // For manual verification, we need the email we stored earlier
+            guard let email = UserDefaults.standard.string(forKey: "pendingEmailForSignIn") else {
+                self.error = "Email not found. Please try signing in again."
+                return false
+            }
+            
+            isProcessing = true
+            handleManualVerification(email: email, token: token)
+            return true
+        }
         
+        return false
+    }
+    
+    /// Handles the implicit/redirect flow where Supabase provides the session directly in the URL
+    private func handleSessionFromURL(_ url: URL) {
         Task {
             do {
-                // Verify the OTP from the URL
-                // Extract the token from URL
-                let token = queryItems.first(where: { $0.name == "access_token" })?.value ?? ""
-                let tokenType = queryItems.first(where: { $0.name == "token_type" })?.value ?? "magiclink"
-                
-                // Verify the OTP token
-                let session = try await supabase.auth.verifyOTP(
-                    email: email,
-                    token: token,
-                    type: .magiclink
-                )
-                
-                await MainActor.run {
-                    self.isProcessing = false
-                }
-                
-                // Clear the stored email
-                UserDefaults.standard.removeObject(forKey: "pendingEmailForSignIn")
-                
-                // Create or update user profile
-                await createUserProfile(for: session.user)
-                
-                // Post notification for successful sign in
-                await MainActor.run {
-                    NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
-                }
-                
+                // This parses the URL fragment and sets the session automatically
+                let session = try await supabase.auth.session(from: url)
+                await finalizeSignIn(session: session)
             } catch {
                 await MainActor.run {
                     self.isProcessing = false
-                    self.error = "Sign in failed: \(error.localizedDescription)"
+                    self.error = "Failed to parse session: \(error.localizedDescription)"
                 }
             }
         }
+    }
+    
+    /// Handles the manual flow where we exchange a token/code for a session
+        private func handleManualVerification(email: String, token: String) {
+            Task {
+                do {
+                    // FIX: verifyOTP returns AuthResponse, so we must extract the session
+                    let response = try await supabase.auth.verifyOTP(
+                        email: email,
+                        token: token,
+                        type: .magiclink
+                    )
+                    
+                    // Safely unwrap the session
+                    guard let session = response.session else {
+                        await MainActor.run {
+                            self.isProcessing = false
+                            self.error = "Sign in failed: No session returned."
+                        }
+                        return
+                    }
+                    
+                    await finalizeSignIn(session: session)
+                } catch {
+                    await MainActor.run {
+                        self.isProcessing = false
+                        self.error = "Sign in failed: \(error.localizedDescription)"
+                    }
+                }
+            }
+        }
+    
+    /// Shared logic to run after a successful sign-in
+    private func finalizeSignIn(session: Session) async {
+        await MainActor.run {
+            self.isProcessing = false
+        }
         
-        return true
+        // Clear the stored email as it's no longer needed
+        UserDefaults.standard.removeObject(forKey: "pendingEmailForSignIn")
+        
+        // Create or update user profile
+        await createUserProfile(for: session.user)
+        
+        // Post notification to dismiss the view
+        await MainActor.run {
+            NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
+        }
     }
     
     /// Create or update user profile in Supabase
@@ -76,7 +116,6 @@ class PasswordlessAuthHandler: ObservableObject {
                 // New user - create full profile
                 let displayName = user.email?.components(separatedBy: "@").first ?? "User"
                 
-                // FIX: Now using the explicit memberwise initializer
                 let profile = UserProfile(
                     id: user.id.uuidString,
                     email: user.email ?? "",
@@ -109,21 +148,6 @@ class PasswordlessAuthHandler: ObservableObject {
 // MARK: - App Integration Extension
 
 extension PasswordlessAuthHandler {
-    /// Call this from your App's onOpenURL modifier
-    /// Example usage in your App struct:
-    ///
-    /// ```swift
-    /// @StateObject private var passwordlessHandler = PasswordlessAuthHandler()
-    ///
-    /// var body: some Scene {
-    ///     WindowGroup {
-    ///         ContentView()
-    ///             .onOpenURL { url in
-    ///                 _ = passwordlessHandler.handleSignInLink(url: url)
-    ///             }
-    ///     }
-    /// }
-    /// ```
     static func configureDeepLinking(for app: some Scene) -> some Scene {
         return app
     }

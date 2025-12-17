@@ -3,6 +3,7 @@ import Supabase
 
 struct PasswordlessAuthView: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appState: AppState // <--- Added AppState
     @Binding var showingSignIn: Bool
     
     @State private var email = ""
@@ -192,9 +193,18 @@ struct PasswordlessAuthView: View {
         .onDisappear {
             stopCountdown()
         }
+        // Listener 1: Notification (Backup)
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
             dismiss()
             showingSignIn = false
+        }
+        // Listener 2: State Change (Robust Fix)
+        // If the AppState detects a user, close this view immediately.
+        .onChange(of: appState.authService.currentUser) { _, newUser in
+            if newUser != nil {
+                dismiss()
+                showingSignIn = false
+            }
         }
     }
     

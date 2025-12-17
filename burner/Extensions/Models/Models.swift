@@ -1,7 +1,8 @@
 import Foundation
 
 // MARK: - Shared Types
-struct Coordinate: Codable, Sendable {
+// ADDED: Hashable
+struct Coordinate: Codable, Sendable, Hashable {
     let latitude: Double
     let longitude: Double
 
@@ -44,7 +45,8 @@ struct Coordinate: Codable, Sendable {
 }
 
 // MARK: - Event Model
-struct Event: Identifiable, Codable, Sendable {
+// ADDED: Hashable
+struct Event: Identifiable, Codable, Sendable, Hashable {
     var id: String?
     var name: String
     var venue: String

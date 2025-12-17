@@ -211,6 +211,7 @@ struct AuthWelcomeSlide: View {
     let isFirstLaunch: Bool
 
     @State private var showingSignIn = false
+    @State private var hasAdvanced = false // FIX: Prevent double-triggering
     @EnvironmentObject var appState: AppState
 
     // Build event image URLs, ensuring the top featured event is at the center position (index 4)
@@ -292,10 +293,24 @@ struct AuthWelcomeSlide: View {
         .sheet(isPresented: $showingSignIn) {
             SignInSheetView(showingSignIn: $showingSignIn, isOnboarding: true)
         }
+        // Listener 1: Notification (Legacy/Backup)
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserSignedIn"))) { _ in
-            showingSignIn = false
-            onLogin()
+            advanceToNextStep()
         }
+        // Listener 2: State Change (Robust Fix)
+        .onChange(of: appState.authService.currentUser) { _, newUser in
+            if newUser != nil {
+                advanceToNextStep()
+            }
+        }
+    }
+    
+    // Helper to safely advance only once
+    private func advanceToNextStep() {
+        guard !hasAdvanced else { return }
+        hasAdvanced = true
+        showingSignIn = false
+        onLogin()
     }
 }
 

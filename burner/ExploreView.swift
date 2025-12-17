@@ -130,11 +130,13 @@ struct ExploreView: View {
             }
             .onChange(of: eventViewModel.errorMessage) { _, newError in
                 // Removed redundant !isRefreshing check
-                if newError != nil && !eventViewModel.events.isEmpty {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        eventViewModel.clearMessages()
+                /*
+                    if newError != nil && !eventViewModel.events.isEmpty {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            eventViewModel.clearMessages()
+                        }
                     }
-                }
+                    */
             }
             .onAppear {
                 if isComputingInitialData && !eventViewModel.events.isEmpty {
@@ -543,6 +545,7 @@ struct ExploreView: View {
             .padding(.bottom, 40)
         }
         .buttonStyle(.noHighlight)
+        .id(event) // <--- ADD THIS. Forces redraw when data changes.
     }
 
     private var nearbySection: some View {
@@ -567,6 +570,7 @@ struct ExploreView: View {
                         )
                     }
                     .buttonStyle(.noHighlight)
+                    .id(item.event) // <--- ADD THIS
                 }
             }
         }
@@ -706,6 +710,7 @@ struct EventSection: View {
                         )
                     }
                     .buttonStyle(.noHighlight)
+                    .id(event) // <--- ADD THIS. Forces redraw when data changes.
                 }
             }
         }
@@ -761,15 +766,6 @@ struct GenreCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.white.opacity(0.15), lineWidth: 1)
         )
-    }
-}
-
-extension Event: Hashable {
-    public static func == (lhs: Event, rhs: Event) -> Bool {
-        lhs.id == rhs.id
-    }
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
     }
 }
 

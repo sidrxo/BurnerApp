@@ -156,7 +156,7 @@ struct BookmarksView: View {
                     // IMPORTANT: Apply the transition/animation to the row itself.
                     // When the item is removed from the array, this transition is used.
                     // We use .move(edge: .leading) to slide it out/up and .opacity to fade it.
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                    .transition(.opacity)
                     
                     // Essential for tracking which row is being removed
                     .id(event.id)

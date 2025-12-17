@@ -162,7 +162,7 @@ struct SearchView: View {
             cancelActionTitle: "Cancel",
             primaryAction: {
                 showingSignInAlert = false
-                appState.isSignInSheetPresented = true
+                coordinator.showSignIn()
             },
             primaryActionTitle: "Sign In",
             customContent: EmptyView()
@@ -434,6 +434,7 @@ struct SearchView: View {
                                 )
                             }
                             .buttonStyle(.noHighlight)
+                            .id(event) // <--- ADD THIS HERE
                         }
                     }
                 }
