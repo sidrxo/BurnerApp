@@ -35,7 +35,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep linking -->
+            <!-- Deep linking - Main app -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -43,6 +43,27 @@
                 <data
                     android:scheme="burner"
                     android:host="app" />
+            </intent-filter>
+
+            <!-- Deep linking - Auth callback (custom scheme) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="burner"
+                    android:host="auth" />
+            </intent-filter>
+
+            <!-- App Links - Web redirect for passwordless auth (matches iOS) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="manageburner.online"
+                    android:pathPrefix="/signin" />
             </intent-filter>
         </activity>
 

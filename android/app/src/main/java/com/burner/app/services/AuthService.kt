@@ -98,7 +98,9 @@ class AuthService @Inject constructor(
             auth.signInWith(OTP) {
                 this.email = email
                 this.createUser = true
-                // TODO: Add redirect URL for deep linking: redirectTo = "burner://auth"
+                // Redirect URL for deep linking - matches iOS
+                // Supports both custom scheme (burner://auth) and web URL for App Links
+                this.redirectTo = java.net.URL("https://manageburner.online/signin")
             }
             AuthResult.Success("OTP sent")
         } catch (e: Exception) {
