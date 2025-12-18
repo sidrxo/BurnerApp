@@ -91,47 +91,18 @@ class AuthService @Inject constructor(
     // --- Passwordless Auth (OTP) Implementation ---
 
     // Send OTP magic link to email
+    // Authentication happens automatically when user clicks the link (via deep linking)
+    // No manual verification needed - Supabase handles it automatically
     suspend fun sendMagicLink(email: String): AuthResult {
         return try {
             auth.signInWith(OTP) {
                 this.email = email
-                // Use the same redirect URL as iOS
                 this.createUser = true
+                // TODO: Add redirect URL for deep linking: redirectTo = "burner://auth"
             }
             AuthResult.Success("OTP sent")
         } catch (e: Exception) {
             AuthResult.Error(e.message ?: "Failed to send magic link")
-        }
-    }
-
-    // Verify OTP token (called when user clicks the magic link)
-    // Note: In production, this is typically handled automatically via deep linking
-    // when the user clicks the magic link in their email
-    suspend fun verifyOTP(email: String, token: String): AuthResult {
-        return try {
-            // For magic link OTP, we use the email and token
-            // The type is implicitly "magiclink" for passwordless auth
-            auth.verifyEmailOtp(
-                type = io.github.jan.supabase.gotrue.providers.builtin.OTP.Type.EMAIL,
-                email = email,
-                token = token
-            )
-
-            val userId = auth.currentUserOrNull()?.id
-            if (userId != null) {
-                // Check if we need to create a profile, or just update login time
-                val existingProfile = getUserProfile(userId)
-                if (existingProfile == null) {
-                    createUserProfile(userId, email, "otp")
-                } else {
-                    updateLastLogin(userId)
-                }
-                AuthResult.Success(userId)
-            } else {
-                AuthResult.Error("OTP verification failed: No user ID returned")
-            }
-        } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "OTP verification failed")
         }
     }
 
