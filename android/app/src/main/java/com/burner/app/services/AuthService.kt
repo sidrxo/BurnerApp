@@ -13,6 +13,7 @@ import io.github.jan.supabase.gotrue.SessionStatus
 import io.github.jan.supabase.gotrue.providers.Google
 import io.github.jan.supabase.gotrue.providers.builtin.Email
 import io.github.jan.supabase.gotrue.providers.builtin.IDToken
+import io.github.jan.supabase.gotrue.providers.builtin.OTP
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -84,6 +85,48 @@ class AuthService @Inject constructor(
             }
         } catch (e: Exception) {
             AuthResult.Error(e.message ?: "Google sign in failed")
+        }
+    }
+
+    // --- Passwordless Auth (OTP) Implementation ---
+
+    // Send OTP magic link to email
+    suspend fun sendMagicLink(email: String): AuthResult {
+        return try {
+            auth.signInWith(OTP) {
+                this.email = email
+                // Use the same redirect URL as iOS
+                this.createUser = true
+            }
+            AuthResult.Success("OTP sent")
+        } catch (e: Exception) {
+            AuthResult.Error(e.message ?: "Failed to send magic link")
+        }
+    }
+
+    // Verify OTP token (called when user clicks the magic link)
+    suspend fun verifyOTP(email: String, token: String): AuthResult {
+        return try {
+            auth.verifyEmailOTP(
+                email = email,
+                token = token
+            )
+
+            val userId = auth.currentUserOrNull()?.id
+            if (userId != null) {
+                // Check if we need to create a profile, or just update login time
+                val existingProfile = getUserProfile(userId)
+                if (existingProfile == null) {
+                    createUserProfile(userId, email, "otp")
+                } else {
+                    updateLastLogin(userId)
+                }
+                AuthResult.Success(userId)
+            } else {
+                AuthResult.Error("OTP verification failed: No user ID returned")
+            }
+        } catch (e: Exception) {
+            AuthResult.Error(e.message ?: "OTP verification failed")
         }
     }
 

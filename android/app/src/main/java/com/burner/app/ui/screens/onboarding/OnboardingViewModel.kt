@@ -136,6 +136,13 @@ class OnboardingViewModel @Inject constructor(
         nextStep()
     }
 
+    fun skipToComplete() {
+        _uiState.update { state ->
+            state.copy(currentStep = OnboardingStep.COMPLETE)
+        }
+        savePreferences()
+    }
+
     @SuppressLint("MissingPermission")
     fun detectCurrentLocation() {
         viewModelScope.launch {

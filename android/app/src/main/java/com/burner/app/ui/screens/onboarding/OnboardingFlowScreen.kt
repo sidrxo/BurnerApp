@@ -87,7 +87,11 @@ private fun OnboardingAnimatedContent(uiState: OnboardingUiState, viewModel: Onb
         )
     }) { step ->
         when (step) {
-            OnboardingStep.WELCOME -> AuthWelcomeStep(imageUrls = uiState.eventImageUrls, onContinue = { viewModel.nextStep() })
+            OnboardingStep.WELCOME -> AuthWelcomeStep(
+                imageUrls = uiState.eventImageUrls,
+                onSignIn = { viewModel.nextStep() },
+                onExplore = { viewModel.skipToComplete() }
+            )
             OnboardingStep.LOCATION -> LocationStep(
                 locationName = uiState.locationName,
                 isLoading = uiState.isLoadingLocation,
@@ -170,7 +174,13 @@ private fun OnboardingTopBar(
 }
 
 @Composable
-private fun AuthWelcomeStep(imageUrls: List<String>, onContinue: () -> Unit) {
+private fun AuthWelcomeStep(
+    imageUrls: List<String>,
+    onSignIn: () -> Unit,
+    onExplore: () -> Unit
+) {
+    var showSignIn by remember { mutableStateOf(false) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         // Rotated mosaic background
         Column(
@@ -199,19 +209,28 @@ private fun AuthWelcomeStep(imageUrls: List<String>, onContinue: () -> Unit) {
             verticalArrangement = Arrangement.Bottom
         ) {
             TightHeaderText(
-                line1 = "MEET ME IN THE",
-                line2 = "MOMENT"
+                line1 = "JOIN THE",
+                line2 = "MOVEMENT"
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Sign Up/In Button
             CapsuleButton(
-                text = "GET STARTED",
+                text = "SIGN UP/IN",
                 isPrimary = true,
-                onClick = onContinue,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
+                onClick = { showSignIn = true },
+                modifier = Modifier.width(200.dp)
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Explore Button
+            CapsuleButton(
+                text = "EXPLORE",
+                isPrimary = false,
+                onClick = onExplore,
+                modifier = Modifier.width(160.dp)
             )
 
             Spacer(modifier = Modifier.height(80.dp))
@@ -229,6 +248,17 @@ private fun AuthWelcomeStep(imageUrls: List<String>, onContinue: () -> Unit) {
                     )
                 )
         )
+
+        // Sign In Sheet
+        if (showSignIn) {
+            SignInScreen(
+                onDismiss = { showSignIn = false },
+                onSignInSuccess = {
+                    showSignIn = false
+                    onSignIn()
+                }
+            )
+        }
     }
 }
 
