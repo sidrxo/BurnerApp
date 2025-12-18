@@ -107,10 +107,12 @@ class AuthService @Inject constructor(
     // Verify OTP token (called when user clicks the magic link)
     // Note: In production, this is typically handled automatically via deep linking
     // when the user clicks the magic link in their email
-    suspend fun verifyOTP(type: io.github.jan.supabase.gotrue.providers.builtin.OTP.Type, email: String, token: String): AuthResult {
+    suspend fun verifyOTP(email: String, token: String): AuthResult {
         return try {
+            // For magic link OTP, we use the email and token
+            // The type is implicitly "magiclink" for passwordless auth
             auth.verifyEmailOtp(
-                type = type,
+                type = io.github.jan.supabase.gotrue.providers.builtin.OTP.Type.EMAIL,
                 email = email,
                 token = token
             )
