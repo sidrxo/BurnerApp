@@ -52,9 +52,8 @@ fun BurnerNavHost(
     )
 
     // Determine start destination based on onboarding completion
-    // Wait for loading to complete before determining start destination
     val startDestination = when {
-        uiState.isLoading -> Routes.Main.route // Temporary, will be redirected once loaded
+        uiState.isLoading -> Routes.Main.route
         uiState.hasCompletedOnboarding == true -> Routes.Main.route
         else -> Routes.Onboarding.route
     }
@@ -68,9 +67,7 @@ fun BurnerNavHost(
                     onTabSelected = { tab ->
                         if (currentRoute != tab.route) {
                             navController.navigate(tab.route) {
-                                // CHANGE THIS LINE:
-                                // Old: popUpTo(Routes.Main.route) {
-                                popUpTo(Routes.Explore.route) { // <--- FIXED
+                                popUpTo(Routes.Explore.route) {
                                     saveState = true
                                 }
                                 launchSingleTop = true
@@ -99,250 +96,255 @@ fun BurnerNavHost(
                         fadeOut(animationSpec = tween(300))
                     }
                 ) {
-                // Onboarding
-                composable(Routes.Onboarding.route) {
-                    OnboardingFlowScreen(
-                        onComplete = {
-                            viewModel.completeOnboarding()
-                            navController.navigate(Routes.Main.route) {
-                                popUpTo(Routes.Onboarding.route) { inclusive = true }
+                    // Onboarding
+                    composable(Routes.Onboarding.route) {
+                        OnboardingFlowScreen(
+                            onComplete = {
+                                viewModel.completeOnboarding()
+                                navController.navigate(Routes.Main.route) {
+                                    popUpTo(Routes.Onboarding.route) { inclusive = true }
+                                }
                             }
-                        }
-                    )
-                }
-
-                // Auth
-                composable(
-                    Routes.SignIn.route,
-                    enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Up,
-                            animationSpec = tween(300)
-                        )
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Down,
-                            animationSpec = tween(300)
                         )
                     }
-                ) {
-                    SignInScreen(
-                        onDismiss = { navController.popBackStack() },
-                        onSignInSuccess = {
-                            navController.popBackStack()
-                        }
-                    )
-                }
 
-                // Main tabs container
-                composable(Routes.Main.route) {
-                    // Redirect to explore
-                    navController.navigate(Routes.Explore.route) {
-                        popUpTo(Routes.Main.route) { inclusive = true }
-                    }
-                }
-
-                // Explore
-                composable(Routes.Explore.route) {
-                    ExploreScreen(
-                        onEventClick = { eventId ->
-                            navController.navigate(Routes.EventDetail.createRoute(eventId))
-                        }
-                    )
-                }
-
-                // Search
-                composable(Routes.Search.route) {
-                    SearchScreen(
-                        onEventClick = { eventId ->
-                            navController.navigate(Routes.EventDetail.createRoute(eventId))
-                        }
-                    )
-                }
-
-                // Bookmarks
-                composable(Routes.Bookmarks.route) {
-                    BookmarksScreen(
-                        onEventClick = { eventId ->
-                            navController.navigate(Routes.EventDetail.createRoute(eventId))
+                    // Auth
+                    composable(
+                        Routes.SignIn.route,
+                        enterTransition = {
+                            slideIntoContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Up,
+                                animationSpec = tween(300)
+                            )
                         },
-                        onSignInClick = {
-                            navController.navigate(Routes.SignIn.route)
+                        exitTransition = {
+                            slideOutOfContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Down,
+                                animationSpec = tween(300)
+                            )
                         }
-                    )
-                }
-
-                // Tickets
-                composable(Routes.Tickets.route) {
-                    TicketsScreen(
-                        onTicketClick = { ticketId ->
-                            navController.navigate(Routes.TicketDetail.createRoute(ticketId))
-                        },
-                        onSignInClick = {
-                            navController.navigate(Routes.SignIn.route)
-                        },
-                        onSettingsClick = {
-                            navController.navigate(Routes.Settings.route)
-                        }
-                    )
-                }
-
-                // Event Detail
-                composable(
-                    route = Routes.EventDetail.route,
-                    arguments = listOf(
-                        navArgument(Routes.EVENT_ID_KEY) { type = NavType.StringType }
-                    ),
-                    enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(300)
-                        )
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(300)
-                        )
-                    }
-                ) { backStackEntry ->
-                    val eventId = backStackEntry.arguments?.getString(Routes.EVENT_ID_KEY) ?: ""
-                    EventDetailScreen(
-                        eventId = eventId,
-                        onBackClick = { navController.popBackStack() },
-                        onGetTicketsClick = { eventId ->
-                            navController.navigate(Routes.TicketPurchase.createRoute(eventId))
-                        }
-                    )
-                }
-
-                // Ticket Detail
-                composable(
-                    route = Routes.TicketDetail.route,
-                    arguments = listOf(
-                        navArgument(Routes.TICKET_ID_KEY) { type = NavType.StringType }
-                    )
-                ) { backStackEntry ->
-                    val ticketId = backStackEntry.arguments?.getString(Routes.TICKET_ID_KEY) ?: ""
-                    TicketDetailScreen(
-                        ticketId = ticketId,
-                        onBackClick = { navController.popBackStack() }
-                    )
-                }
-
-                // Ticket Purchase
-                composable(
-                    route = Routes.TicketPurchase.route,
-                    arguments = listOf(
-                        navArgument(Routes.EVENT_ID_KEY) { type = NavType.StringType }
-                    ),
-                    enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Up,
-                            animationSpec = tween(300)
-                        )
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Down,
-                            animationSpec = tween(300)
-                        )
-                    }
-                ) { backStackEntry ->
-                    val eventId = backStackEntry.arguments?.getString(Routes.EVENT_ID_KEY) ?: ""
-                    TicketPurchaseScreen(
-                        eventId = eventId,
-                        onDismiss = { navController.popBackStack() },
-                        onPurchaseComplete = {
-                            navController.popBackStack()
-                            navController.navigate(Routes.Tickets.route) {
-                                popUpTo(Routes.Explore.route)
+                    ) {
+                        SignInScreen(
+                            onDismiss = { navController.popBackStack() },
+                            onSignInSuccess = {
+                                navController.popBackStack()
                             }
-                        }
-                    )
-                }
-
-                // Settings
-                composable(
-                    Routes.Settings.route,
-                    enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(300)
                         )
                     }
-                ) {
-                    SettingsScreen(
-                        onBackClick = { navController.popBackStack() },
-                        onAccountClick = { navController.navigate(Routes.AccountDetails.route) },
-                        onPaymentClick = { navController.navigate(Routes.PaymentSettings.route) },
-                        onNotificationsClick = { navController.navigate(Routes.NotificationSettings.route) },
-                        onScannerClick = { navController.navigate(Routes.Scanner.route) },
-                        onSupportClick = { navController.navigate(Routes.Support.route) },
-                        onFAQClick = { navController.navigate(Routes.FAQ.route) },
-                        onTermsClick = { navController.navigate(Routes.TermsOfService.route) },
-                        onPrivacyClick = { navController.navigate(Routes.PrivacyPolicy.route) },
-                        onSignInClick = { navController.navigate(Routes.SignIn.route) }
-                    )
-                }
 
-                // Settings sub-screens
-                composable(Routes.AccountDetails.route) {
-                    AccountDetailsScreen(
-                        onBackClick = { navController.popBackStack() },
-                        onSignOut = {
-                            navController.navigate(Routes.Onboarding.route) {
-                                popUpTo(0) { inclusive = true }
+                    // Main tabs container
+                    composable(Routes.Main.route) {
+                        // Redirect to explore
+                        navController.navigate(Routes.Explore.route) {
+                            popUpTo(Routes.Main.route) { inclusive = true }
+                        }
+                    }
+
+                    // Explore
+                    composable(Routes.Explore.route) {
+                        ExploreScreen(
+                            onEventClick = { eventId ->
+                                navController.navigate(Routes.EventDetail.createRoute(eventId))
                             }
-                        }
-                    )
-                }
-
-                composable(Routes.PaymentSettings.route) {
-                    PaymentSettingsScreen(onBackClick = { navController.popBackStack() })
-                }
-
-                composable(Routes.NotificationSettings.route) {
-                    NotificationSettingsScreen(onBackClick = { navController.popBackStack() })
-                }
-
-                composable(Routes.Support.route) {
-                    SupportScreen(onBackClick = { navController.popBackStack() })
-                }
-
-                composable(Routes.FAQ.route) {
-                    FAQScreen(onBackClick = { navController.popBackStack() })
-                }
-
-                composable(Routes.TermsOfService.route) {
-                    TermsOfServiceScreen(onBackClick = { navController.popBackStack() })
-                }
-
-                composable(Routes.PrivacyPolicy.route) {
-                    PrivacyPolicyScreen(onBackClick = { navController.popBackStack() })
-                }
-
-                // Scanner
-                composable(
-                    Routes.Scanner.route,
-                    enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(300)
-                        )
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(300)
                         )
                     }
-                ) {
-                    ScannerScreen(onBackClick = { navController.popBackStack() })
+
+                    // Search
+                    composable(Routes.Search.route) {
+                        SearchScreen(
+                            onEventClick = { eventId ->
+                                navController.navigate(Routes.EventDetail.createRoute(eventId))
+                            }
+                        )
+                    }
+
+                    // Bookmarks - FIXED: Added onExploreClick parameter
+                    composable(Routes.Bookmarks.route) {
+                        BookmarksScreen(
+                            onEventClick = { eventId ->
+                                navController.navigate(Routes.EventDetail.createRoute(eventId))
+                            },
+                            onExploreClick = {
+                                navController.navigate(Routes.Explore.route) {
+                                    popUpTo(Routes.Explore.route) { inclusive = true }
+                                }
+                            },
+                            onSignInClick = {
+                                navController.navigate(Routes.SignIn.route)
+                            }
+                        )
+                    }
+
+                    // Tickets
+                    composable(Routes.Tickets.route) {
+                        TicketsScreen(
+                            onTicketClick = { ticketId ->
+                                navController.navigate(Routes.TicketDetail.createRoute(ticketId))
+                            },
+                            onSignInClick = {
+                                navController.navigate(Routes.SignIn.route)
+                            },
+                            onSettingsClick = {
+                                navController.navigate(Routes.Settings.route)
+                            }
+                        )
+                    }
+
+                    // Event Detail
+                    composable(
+                        route = Routes.EventDetail.route,
+                        arguments = listOf(
+                            navArgument(Routes.EVENT_ID_KEY) { type = NavType.StringType }
+                        ),
+                        enterTransition = {
+                            slideIntoContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Left,
+                                animationSpec = tween(300)
+                            )
+                        },
+                        exitTransition = {
+                            slideOutOfContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Right,
+                                animationSpec = tween(300)
+                            )
+                        }
+                    ) { backStackEntry ->
+                        val eventId = backStackEntry.arguments?.getString(Routes.EVENT_ID_KEY) ?: ""
+                        EventDetailScreen(
+                            eventId = eventId,
+                            onBackClick = { navController.popBackStack() },
+                            onGetTicketsClick = { eventId ->
+                                navController.navigate(Routes.TicketPurchase.createRoute(eventId))
+                            }
+                        )
+                    }
+
+                    // Ticket Detail
+                    composable(
+                        route = Routes.TicketDetail.route,
+                        arguments = listOf(
+                            navArgument(Routes.TICKET_ID_KEY) { type = NavType.StringType }
+                        )
+                    ) { backStackEntry ->
+                        val ticketId = backStackEntry.arguments?.getString(Routes.TICKET_ID_KEY) ?: ""
+                        TicketDetailScreen(
+                            ticketId = ticketId,
+                            onBackClick = { navController.popBackStack() }
+                        )
+                    }
+
+                    // Ticket Purchase
+                    composable(
+                        route = Routes.TicketPurchase.route,
+                        arguments = listOf(
+                            navArgument(Routes.EVENT_ID_KEY) { type = NavType.StringType }
+                        ),
+                        enterTransition = {
+                            slideIntoContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Up,
+                                animationSpec = tween(300)
+                            )
+                        },
+                        exitTransition = {
+                            slideOutOfContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Down,
+                                animationSpec = tween(300)
+                            )
+                        }
+                    ) { backStackEntry ->
+                        val eventId = backStackEntry.arguments?.getString(Routes.EVENT_ID_KEY) ?: ""
+                        TicketPurchaseScreen(
+                            eventId = eventId,
+                            onDismiss = { navController.popBackStack() },
+                            onPurchaseComplete = {
+                                navController.popBackStack()
+                                navController.navigate(Routes.Tickets.route) {
+                                    popUpTo(Routes.Explore.route)
+                                }
+                            }
+                        )
+                    }
+
+                    // Settings
+                    composable(
+                        Routes.Settings.route,
+                        enterTransition = {
+                            slideIntoContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Left,
+                                animationSpec = tween(300)
+                            )
+                        }
+                    ) {
+                        SettingsScreen(
+                            onBackClick = { navController.popBackStack() },
+                            onAccountClick = { navController.navigate(Routes.AccountDetails.route) },
+                            onPaymentClick = { navController.navigate(Routes.PaymentSettings.route) },
+                            onNotificationsClick = { navController.navigate(Routes.NotificationSettings.route) },
+                            onScannerClick = { navController.navigate(Routes.Scanner.route) },
+                            onSupportClick = { navController.navigate(Routes.Support.route) },
+                            onFAQClick = { navController.navigate(Routes.FAQ.route) },
+                            onTermsClick = { navController.navigate(Routes.TermsOfService.route) },
+                            onPrivacyClick = { navController.navigate(Routes.PrivacyPolicy.route) },
+                            onSignInClick = { navController.navigate(Routes.SignIn.route) }
+                        )
+                    }
+
+                    // Settings sub-screens
+                    composable(Routes.AccountDetails.route) {
+                        AccountDetailsScreen(
+                            onBackClick = { navController.popBackStack() },
+                            onSignOut = {
+                                navController.navigate(Routes.Onboarding.route) {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+
+                    composable(Routes.PaymentSettings.route) {
+                        PaymentSettingsScreen(onBackClick = { navController.popBackStack() })
+                    }
+
+                    composable(Routes.NotificationSettings.route) {
+                        NotificationSettingsScreen(onBackClick = { navController.popBackStack() })
+                    }
+
+                    composable(Routes.Support.route) {
+                        SupportScreen(onBackClick = { navController.popBackStack() })
+                    }
+
+                    composable(Routes.FAQ.route) {
+                        FAQScreen(onBackClick = { navController.popBackStack() })
+                    }
+
+                    composable(Routes.TermsOfService.route) {
+                        TermsOfServiceScreen(onBackClick = { navController.popBackStack() })
+                    }
+
+                    composable(Routes.PrivacyPolicy.route) {
+                        PrivacyPolicyScreen(onBackClick = { navController.popBackStack() })
+                    }
+
+                    // Scanner
+                    composable(
+                        Routes.Scanner.route,
+                        enterTransition = {
+                            slideIntoContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Left,
+                                animationSpec = tween(300)
+                            )
+                        },
+                        exitTransition = {
+                            slideOutOfContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Right,
+                                animationSpec = tween(300)
+                            )
+                        }
+                    ) {
+                        ScannerScreen(onBackClick = { navController.popBackStack() })
+                    }
                 }
             }
         }
-    }
     }
 }

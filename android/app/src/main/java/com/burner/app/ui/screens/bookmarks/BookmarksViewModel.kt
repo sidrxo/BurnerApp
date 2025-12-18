@@ -65,7 +65,6 @@ class BookmarksViewModel @Inject constructor(
         }
     }
 
-    // FIX: Changed from private to public so UI can trigger it
     fun loadBookmarks() {
         // Cancel any existing connection to prevent duplicates
         bookmarksJob?.cancel()
@@ -104,15 +103,23 @@ class BookmarksViewModel @Inject constructor(
         )
     }
 
-    fun removeBookmark(eventId: String) {
+    // FIX: Renamed parameter to 'event' and extracted 'id' for correct filtering
+    fun removeBookmark(event: Event) {
+        val id = event.id ?: return
         val originalList = _uiState.value.bookmarkedEvents
+
+        // Optimistic Update: Remove from UI immediately
         _uiState.update { state ->
-            state.copy(bookmarkedEvents = state.bookmarkedEvents.filter { it.id != eventId })
+            state.copy(bookmarkedEvents = state.bookmarkedEvents.filter { it.id != id })
         }
 
         viewModelScope.launch {
-            val result = bookmarkRepository.removeBookmark(eventId)
+            // FIX: Passing the String ID to the repo, not the whole Event object
+            // (Assuming your Repo expects a String ID. If it expects Event, pass 'event')
+            val result = bookmarkRepository.removeBookmark(id)
+
             if (result.isFailure) {
+                // Revert if API fails
                 _uiState.update { it.copy(bookmarkedEvents = originalList) }
             }
         }
