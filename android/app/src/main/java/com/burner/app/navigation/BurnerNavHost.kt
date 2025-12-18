@@ -52,10 +52,11 @@ fun BurnerNavHost(
     )
 
     // Determine start destination based on onboarding completion
-    val startDestination = if (uiState.hasCompletedOnboarding) {
-        Routes.Main.route
-    } else {
-        Routes.Onboarding.route
+    // Wait for loading to complete before determining start destination
+    val startDestination = when {
+        uiState.isLoading -> Routes.Main.route // Temporary, will be redirected once loaded
+        uiState.hasCompletedOnboarding == true -> Routes.Main.route
+        else -> Routes.Onboarding.route
     }
 
     Scaffold(
@@ -86,16 +87,18 @@ fun BurnerNavHost(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            NavHost(
-                navController = navController,
-                startDestination = startDestination,
-                enterTransition = {
-                    fadeIn(animationSpec = tween(300))
-                },
-                exitTransition = {
-                    fadeOut(animationSpec = tween(300))
-                }
-            ) {
+            // Only show navigation once loading is complete
+            if (!uiState.isLoading) {
+                NavHost(
+                    navController = navController,
+                    startDestination = startDestination,
+                    enterTransition = {
+                        fadeIn(animationSpec = tween(300))
+                    },
+                    exitTransition = {
+                        fadeOut(animationSpec = tween(300))
+                    }
+                ) {
                 // Onboarding
                 composable(Routes.Onboarding.route) {
                     OnboardingFlowScreen(
@@ -340,5 +343,6 @@ fun BurnerNavHost(
                 }
             }
         }
+    }
     }
 }
