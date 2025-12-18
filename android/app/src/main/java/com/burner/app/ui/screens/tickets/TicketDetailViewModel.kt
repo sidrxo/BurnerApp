@@ -6,7 +6,10 @@ import com.burner.app.data.models.Ticket
 import com.burner.app.data.repository.EventRepository
 import com.burner.app.data.repository.TicketRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -29,12 +32,18 @@ class TicketDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            ticketRepository.getTicketFlow(ticketId).collect { ticket ->
+            // Collect the Flow from the repository
+            ticketRepository.getTicketFlow(ticketId).collect { ticket: Ticket? ->
                 if (ticket != null) {
-                    // Enrich ticket with event's start_time
+                    // Fetch event details to get the start time / image
+                    // Note: getEvent is a suspend function, which is allowed here
                     val event = eventRepository.getEvent(ticket.eventId)
+
                     val enrichedTicket = if (event != null) {
-                        ticket.copy(startTime = event.startTime)
+                        ticket.copy(
+                            startTime = event.startTime,
+                            eventImageUrl = event.imageUrl
+                        )
                     } else {
                         ticket
                     }
@@ -44,7 +53,7 @@ class TicketDetailViewModel @Inject constructor(
                     }
                 } else {
                     _uiState.update {
-                        it.copy(ticket = null, isLoading = false)
+                        it.copy(ticket = null, isLoading = false, error = "Ticket not found")
                     }
                 }
             }

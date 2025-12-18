@@ -23,16 +23,17 @@ class TicketRepository @Inject constructor(
     private val supabase: BurnerSupabaseClient,
     private val authService: AuthService
 ) {
-    // Get user's tickets (real-time list)
+    private val TAG = "TicketRepo"
+
+    // 1. Get user's tickets (List View)
     fun getUserTickets(): Flow<List<Ticket>> {
         val userId = authService.currentUserId
         if (userId == null) {
             return flowOf(emptyList())
         }
 
-        // Unique channel for the list view
         val uniqueChannelId = "tickets_${userId}_${UUID.randomUUID()}"
-        Log.d("TicketRepo", "Subscribing to tickets list: $uniqueChannelId")
+        Log.d(TAG, "Subscribing to tickets list: $uniqueChannelId")
 
         return supabase.realtime
             .channel(uniqueChannelId)
@@ -48,25 +49,22 @@ class TicketRepository @Inject constructor(
             }
     }
 
-    // ADDED THIS FUNCTION (Fixes 'Unresolved reference: getTicketFlow')
+    // 2. Get single ticket (Detail View)
     fun getTicketFlow(ticketId: String): Flow<Ticket?> {
         val userId = authService.currentUserId ?: return flowOf(null)
 
-        // Unique channel for this specific ticket detail view
         val uniqueChannelId = "ticket_detail_${ticketId}_${UUID.randomUUID()}"
-        Log.d("TicketRepo", "Subscribing to single ticket: $uniqueChannelId")
 
         return supabase.realtime.channel(uniqueChannelId)
             .postgresChangeFlow<PostgresAction>(schema = "public") {
                 table = "tickets"
-                filter = "id=eq.$ticketId"
+                // FIX: Changed 'id' to 'ticket_id' to match your DB schema
+                filter = "ticket_id=eq.$ticketId"
             }
             .map {
-                // When the ticket changes (e.g. status updates), fetch fresh data
                 getTicket(ticketId)
             }
             .onStart {
-                // Load immediately
                 emit(getTicket(ticketId))
             }
     }
@@ -78,23 +76,23 @@ class TicketRepository @Inject constructor(
                     filter {
                         eq("user_id", userId)
                     }
-                    order("created_at", Order.DESCENDING)
+                    order("purchase_date", Order.DESCENDING)
                 }
                 .decodeList<Ticket>()
         } catch (e: Exception) {
-            Log.e("TicketRepo", "Error fetching tickets", e)
+            Log.e(TAG, "Error fetching tickets list", e)
             emptyList()
         }
     }
 
-    // Single fetch (helper used by getTicketFlow)
     suspend fun getTicket(ticketId: String): Ticket? {
         val userId = authService.currentUserId ?: return null
         return try {
             val result = supabase.postgrest.from("tickets")
                 .select(columns = Columns.ALL) {
                     filter {
-                        eq("id", ticketId)
+                        // FIX: Removed 'id' check completely. Only use 'ticket_id'.
+                        eq("ticket_id", ticketId)
                         eq("user_id", userId)
                     }
                     limit(1)
@@ -102,7 +100,7 @@ class TicketRepository @Inject constructor(
                 .decodeList<Ticket>()
             result.firstOrNull()
         } catch (e: Exception) {
-            Log.e("TicketRepo", "Error fetching ticket details", e)
+            Log.e(TAG, "Error fetching single ticket", e)
             null
         }
     }

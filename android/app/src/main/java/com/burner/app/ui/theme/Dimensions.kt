@@ -66,7 +66,7 @@ object BurnerDimensions {
     val imageLg: Dp = 200.dp
 
     // Navigation
-    val bottomNavHeight: Dp = 64.dp
+    val bottomNavHeight: Dp = 50.dp
     val topBarHeight: Dp = 56.dp
 
     // Other

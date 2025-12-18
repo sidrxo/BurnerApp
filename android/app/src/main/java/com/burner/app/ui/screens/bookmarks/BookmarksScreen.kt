@@ -24,6 +24,12 @@ fun BookmarksScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // FIX: Force a refresh when the screen appears.
+    // This ensures that new bookmarks added from Explore/Detail screens appear immediately.
+    LaunchedEffect(Unit) {
+        viewModel.loadBookmarks()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()

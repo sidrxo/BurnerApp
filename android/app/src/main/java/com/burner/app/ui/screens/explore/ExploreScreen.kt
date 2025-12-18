@@ -41,9 +41,16 @@ fun ExploreScreen(
     val uiState by viewModel.uiState.collectAsState()
     val pullToRefreshState = rememberPullToRefreshState()
 
+    // FIX: Force bookmark refresh when returning to this screen
+    LaunchedEffect(Unit) {
+        viewModel.loadBookmarks()
+    }
+
     LaunchedEffect(pullToRefreshState.isRefreshing) {
         if (pullToRefreshState.isRefreshing) {
             viewModel.refresh()
+            // Also refresh bookmarks on pull-to-refresh
+            viewModel.loadBookmarks()
             delay(1000)
             pullToRefreshState.endRefresh()
         }
@@ -62,7 +69,7 @@ fun ExploreScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
-                // Header - matching iOS "Explore" header
+                // Header
                 item {
                     ExploreHeader(
                         hasLocation = uiState.userLat != null && uiState.userLon != null,
@@ -70,7 +77,7 @@ fun ExploreScreen(
                     )
                 }
 
-                // First Featured Hero Card (like iOS)
+                // First Featured Hero Card
                 if (uiState.featuredEvents.isNotEmpty()) {
                     item {
                         FeaturedHeroCard(
@@ -85,7 +92,7 @@ fun ExploreScreen(
                     }
                 }
 
-                // Popular Events Section (like iOS)
+                // Popular Events
                 if (uiState.popularEvents.isNotEmpty()) {
                     item {
                         EventSectionHeader(title = "Popular")
@@ -105,7 +112,7 @@ fun ExploreScreen(
                     }
                 }
 
-                // This Week Section
+                // This Week
                 if (uiState.thisWeekEvents.isNotEmpty()) {
                     item {
                         EventSectionHeader(title = "This Week")
@@ -125,7 +132,7 @@ fun ExploreScreen(
                     }
                 }
 
-                // Second Featured Hero Card (if available, like iOS pattern)
+                // Second Featured Hero Card
                 if (uiState.featuredEvents.size > 1) {
                     item {
                         FeaturedHeroCard(
@@ -140,7 +147,7 @@ fun ExploreScreen(
                     }
                 }
 
-                // Nearby Section (with distance like iOS)
+                // Nearby Section
                 if (uiState.nearbyEvents.isNotEmpty() && uiState.userLat != null && uiState.userLon != null) {
                     item {
                         EventSectionHeader(title = "Nearby")
@@ -162,14 +169,14 @@ fun ExploreScreen(
                     }
                 }
 
-                // Genre Cards (matching iOS)
+                // Genres
                 if (uiState.genres.isNotEmpty()) {
                     item {
-                        GenreCardsRow(genres = uiState.genres, onGenreClick = { /* TODO: Navigate to filtered events */ })
+                        GenreCardsRow(genres = uiState.genres, onGenreClick = { /* Navigate */ })
                     }
                 }
 
-                // Third Featured Hero Card (if available)
+                // Third Featured Hero Card
                 if (uiState.featuredEvents.size > 2) {
                     item {
                         FeaturedHeroCard(
@@ -206,9 +213,6 @@ fun ExploreScreen(
     }
 }
 
-/**
- * Explore Header matching iOS ExploreView header
- */
 @Composable
 private fun ExploreHeader(
     hasLocation: Boolean,
@@ -223,7 +227,6 @@ private fun ExploreHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // "Explore" title - matching iOS appPageHeader style
         Text(
             text = "Explore",
             style = BurnerTypography.pageHeader.copy(
@@ -232,7 +235,6 @@ private fun ExploreHeader(
             color = BurnerColors.White
         )
 
-        // Location button (like iOS map icon) - no settings gear
         if (onLocationClick != null) {
             IconButton(
                 onClick = onLocationClick,
@@ -251,9 +253,6 @@ private fun ExploreHeader(
     }
 }
 
-/**
- * Event Section Header matching iOS style
- */
 @Composable
 private fun EventSectionHeader(
     title: String,
@@ -295,16 +294,13 @@ private fun EventSectionHeader(
     }
 }
 
-/**
- * Genre Cards Row matching iOS GenreCardsScrollRow
- */
 @Composable
 private fun GenreCardsRow(
     genres: List<String>,
     onGenreClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    androidx.compose.foundation.lazy.LazyRow(
+    LazyRow(
         modifier = modifier
             .fillMaxWidth()
             .padding(bottom = 40.dp),
@@ -320,9 +316,6 @@ private fun GenreCardsRow(
     }
 }
 
-/**
- * Genre Card matching iOS GenreCard
- */
 @Composable
 private fun GenreCard(
     genreName: String,
@@ -339,7 +332,6 @@ private fun GenreCard(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.BottomStart
     ) {
-        // Gradient overlay
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -354,7 +346,6 @@ private fun GenreCard(
                 )
         )
 
-        // Border
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -363,7 +354,7 @@ private fun GenreCard(
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
                 )
         ) {
-            androidx.compose.foundation.Canvas(modifier = Modifier.matchParentSize()) {
+            Canvas(modifier = Modifier.matchParentSize()) {
                 drawRoundRect(
                     color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.15f),
                     style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()),
@@ -372,7 +363,6 @@ private fun GenreCard(
             }
         }
 
-        // Text
         Text(
             text = genreName,
             style = BurnerTypography.card,

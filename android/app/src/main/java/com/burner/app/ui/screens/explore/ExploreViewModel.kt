@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.burner.app.data.models.Event
-import com.burner.app.data.models.Tag
 import com.burner.app.data.repository.BookmarkRepository
 import com.burner.app.data.repository.EventRepository
 import com.burner.app.data.repository.PreferencesRepository
@@ -39,7 +38,7 @@ class ExploreViewModel @Inject constructor(
     private val bookmarkRepository: BookmarkRepository,
     private val preferencesRepository: PreferencesRepository,
     private val tagRepository: TagRepository,
-    private val authService: AuthService // <--- 1. Inject AuthService
+    private val authService: AuthService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExploreUiState())
@@ -49,21 +48,18 @@ class ExploreViewModel @Inject constructor(
 
     init {
         observeEvents()
-        // observeBookmarks() <--- REMOVED (Called in observeAuthState instead)
         observeTags()
         loadUserLocation()
-        observeAuthState() // <--- 2. Listen for login status
+        observeAuthState()
     }
 
-    // 3. New function to manage bookmark subscription based on login
     private fun observeAuthState() {
         viewModelScope.launch {
             authService.authStateFlow.collect { user ->
                 if (user != null) {
-                    // User is logged in: Start listening to THEIR bookmarks
-                    observeBookmarks()
+                    // FIX: Call the new public function
+                    loadBookmarks()
                 } else {
-                    // User logged out: Stop listening and clear bookmarks
                     bookmarksJob?.cancel()
                     _uiState.update { it.copy(bookmarkedEventIds = emptySet()) }
                 }
@@ -71,7 +67,6 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
-    // Observe real-time events like iOS does
     private fun observeEvents() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -85,17 +80,14 @@ class ExploreViewModel @Inject constructor(
                 calendar.set(Calendar.HOUR_OF_DAY, 0)
                 calendar.set(Calendar.MINUTE, 0)
                 calendar.set(Calendar.SECOND, 0)
-                val startOfToday = calendar.time
                 calendar.add(Calendar.DAY_OF_YEAR, 7)
                 val endOfWeek = calendar.time
 
-                // Featured events - shuffle with day-based seed like iOS
                 val dayOfYear = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
                 val featured = events
                     .filter { it.isFeatured && (it.startDate?.after(now) == true) }
                     .shuffled(Random(dayOfYear.toLong()))
 
-                // This week events (non-featured, starts within 7 days)
                 val thisWeekEventIds = mutableSetOf<String>()
                 val thisWeek = events
                     .filter { event ->
@@ -109,7 +101,6 @@ class ExploreViewModel @Inject constructor(
                     .take(5)
                     .also { list -> list.forEach { it.id?.let { id -> thisWeekEventIds.add(id) } } }
 
-                // Popular events (sorted by sell-through rate, excluding featured and this week)
                 val popular = events
                     .filter { event ->
                         val startTime = event.startDate
@@ -124,7 +115,6 @@ class ExploreViewModel @Inject constructor(
                     }
                     .take(5)
 
-                // Nearby events - computed when we have user location
                 val currentState = _uiState.value
                 val nearby = if (currentState.userLat != null && currentState.userLon != null) {
                     computeNearbyEvents(events, currentState.userLat, currentState.userLon, now)
@@ -171,7 +161,7 @@ class ExploreViewModel @Inject constructor(
         userLat: Double,
         userLon: Double,
         now: Date,
-        maxDistanceKm: Double = 80.0 // ~50 miles like iOS
+        maxDistanceKm: Double = 80.0
     ): List<Event> {
         return events
             .filter { event ->
@@ -194,11 +184,13 @@ class ExploreViewModel @Inject constructor(
             .map { it.first }
     }
 
-    private fun observeBookmarks() {
-        // Cancel existing job to avoid duplicate listeners
+    // FIX: Changed from private 'observeBookmarks' to public 'loadBookmarks'
+    fun loadBookmarks() {
+        // Cancel existing job to avoid duplicate listeners or stale states
         bookmarksJob?.cancel()
 
         bookmarksJob = viewModelScope.launch {
+            // This triggers the repository to emit the current list immediately
             bookmarkRepository.getBookmarkedEventIds().collect { ids ->
                 _uiState.update { it.copy(bookmarkedEventIds = ids) }
             }
@@ -208,23 +200,18 @@ class ExploreViewModel @Inject constructor(
     private fun observeTags() {
         viewModelScope.launch {
             tagRepository.allTags.collect { tags ->
-                // Convert to list of tag names, matching iOS behavior
                 val genreNames = tags.map { it.name }
                 _uiState.update { it.copy(genres = genreNames) }
             }
         }
     }
 
-// In ExploreViewModel.kt
-
     fun toggleBookmark(event: Event) {
         val eventId = event.id ?: return
-
-        // 1. Snapshot current state
         val currentBookmarks = _uiState.value.bookmarkedEventIds
         val isCurrentlyBookmarked = currentBookmarks.contains(eventId)
 
-        // 2. Optimistic Update: Update UI INSTANTLY
+        // Optimistic Update
         val newBookmarks = if (isCurrentlyBookmarked) {
             currentBookmarks - eventId
         } else {
@@ -233,11 +220,8 @@ class ExploreViewModel @Inject constructor(
 
         _uiState.update { it.copy(bookmarkedEventIds = newBookmarks) }
 
-        // 3. Perform network request in background
         viewModelScope.launch {
             val result = bookmarkRepository.toggleBookmark(event)
-
-            // 4. Revert ONLY if the server failed
             if (result.isFailure) {
                 _uiState.update { it.copy(bookmarkedEventIds = currentBookmarks) }
                 Log.e("ExploreViewModel", "Failed to toggle bookmark", result.exceptionOrNull())
@@ -246,14 +230,12 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun refresh() {
-        // The flow will automatically refresh, but we can trigger a manual refresh
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            // The flow handles the refresh automatically
+            // Note: Flows handle data refresh automatically, but this loading state gives visual feedback
         }
     }
 
-    // Helper to format distance like iOS
     fun formatDistance(distanceKm: Double): String {
         val miles = distanceKm * 0.621371
         return if (miles < 0.1) {

@@ -70,7 +70,7 @@ object BurnerTypography {
     val pageHeader = TextStyle(
         fontFamily = BurnerFontFamily,
         fontWeight = FontWeight.Normal,
-        fontSize = 28.sp,
+        fontSize = 25.sp,
         lineHeight = 32.sp,
         letterSpacing = (-1.5).sp
     )

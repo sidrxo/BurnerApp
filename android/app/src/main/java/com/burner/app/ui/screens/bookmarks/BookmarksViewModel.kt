@@ -8,6 +8,7 @@ import com.burner.app.data.repository.BookmarkRepository
 import com.burner.app.data.repository.EventRepository
 import com.burner.app.services.AuthService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -31,6 +32,9 @@ class BookmarksViewModel @Inject constructor(
 
     private var eventsCache: Map<String, Event> = emptyMap()
     private var currentBookmarks: List<Bookmark> = emptyList()
+
+    // Track the active job so we can cancel it on refresh
+    private var bookmarksJob: Job? = null
 
     init {
         observeAuthState()
@@ -61,11 +65,14 @@ class BookmarksViewModel @Inject constructor(
         }
     }
 
-    private fun loadBookmarks() {
-        viewModelScope.launch {
+    // FIX: Changed from private to public so UI can trigger it
+    fun loadBookmarks() {
+        // Cancel any existing connection to prevent duplicates
+        bookmarksJob?.cancel()
+
+        bookmarksJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            // Note: Ensure your Repository does NOT have .subscribe() in the flow chain
             bookmarkRepository.getUserBookmarks().collect { bookmarks ->
                 currentBookmarks = bookmarks
                 updateBookmarkedEvents()
@@ -97,11 +104,8 @@ class BookmarksViewModel @Inject constructor(
         )
     }
 
-    // UPDATED: Optimistic removal
     fun removeBookmark(eventId: String) {
         val originalList = _uiState.value.bookmarkedEvents
-
-        // Optimistic Update: Remove immediately from the screen
         _uiState.update { state ->
             state.copy(bookmarkedEvents = state.bookmarkedEvents.filter { it.id != eventId })
         }
@@ -109,27 +113,22 @@ class BookmarksViewModel @Inject constructor(
         viewModelScope.launch {
             val result = bookmarkRepository.removeBookmark(eventId)
             if (result.isFailure) {
-                // Revert if failed (e.g., network error)
                 _uiState.update { it.copy(bookmarkedEvents = originalList) }
             }
         }
     }
 
-    // UPDATED: Optimistic toggle
     fun toggleBookmark(event: Event) {
         val eventId = event.id ?: return
         val originalList = _uiState.value.bookmarkedEvents
 
-        // Optimistic Update: Remove immediately (since we are on the bookmarks screen)
         _uiState.update { state ->
             state.copy(bookmarkedEvents = state.bookmarkedEvents.filter { it.id != eventId })
         }
 
         viewModelScope.launch {
             val result = bookmarkRepository.toggleBookmark(event)
-
             if (result.isFailure) {
-                // Revert if failed
                 _uiState.update { it.copy(bookmarkedEvents = originalList) }
             }
         }
