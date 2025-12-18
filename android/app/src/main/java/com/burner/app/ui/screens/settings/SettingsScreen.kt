@@ -58,19 +58,16 @@ fun SettingsScreen(
                 SettingsRow(
                     title = "Account Details",
                     subtitle = uiState.userEmail,
-                    icon = Icons.Filled.Person,
                     onClick = onAccountClick
                 )
 
                 SettingsRow(
                     title = "Payment Methods",
-                    icon = Icons.Filled.CreditCard,
                     onClick = onPaymentClick
                 )
 
                 SettingsRow(
                     title = "Notifications",
-                    icon = Icons.Filled.Notifications,
                     onClick = onNotificationsClick
                 )
             } else {
@@ -83,7 +80,6 @@ fun SettingsScreen(
                 SettingsRow(
                     title = "Sign In",
                     subtitle = "Sign in to access your account",
-                    icon = Icons.Filled.Login,
                     onClick = onSignInClick
                 )
             }
@@ -98,7 +94,6 @@ fun SettingsScreen(
                 SettingsRow(
                     title = "Scan Tickets",
                     subtitle = "Scan QR codes on tickets",
-                    icon = Icons.Filled.QrCodeScanner,
                     onClick = onScannerClick
                 )
             }
@@ -112,7 +107,6 @@ fun SettingsScreen(
             SettingsRow(
                 title = "Burner Mode Settings",
                 subtitle = "Configure your offline experience",
-                icon = Icons.Filled.PhonelinkLock,
                 onClick = { /* Placeholder */ }
             )
 
@@ -124,13 +118,11 @@ fun SettingsScreen(
 
             SettingsRow(
                 title = "Help & Support",
-                icon = Icons.Filled.Help,
                 onClick = onSupportClick
             )
 
             SettingsRow(
                 title = "FAQ",
-                icon = Icons.Filled.QuestionAnswer,
                 onClick = onFAQClick
             )
 
@@ -142,13 +134,11 @@ fun SettingsScreen(
 
             SettingsRow(
                 title = "Terms of Service",
-                icon = Icons.Filled.Description,
                 onClick = onTermsClick
             )
 
             SettingsRow(
                 title = "Privacy Policy",
-                icon = Icons.Filled.PrivacyTip,
                 onClick = onPrivacyClick
             )
 

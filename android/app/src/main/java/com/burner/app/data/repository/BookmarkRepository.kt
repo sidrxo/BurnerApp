@@ -29,8 +29,9 @@ class BookmarkRepository @Inject constructor(
             return flowOf(emptyList())
         }
 
-        return supabase.realtime
-            .channel("bookmarks_$userId")
+        val channel = supabase.realtime.channel("bookmarks_$userId")
+
+        return channel
             .postgresChangeFlow<PostgresAction>(schema = "public") {
                 table = "bookmarks"
                 filter = "user_id=eq.$userId"
@@ -38,7 +39,9 @@ class BookmarkRepository @Inject constructor(
             .map {
                 getUserBookmarksList(userId)
             }
-            .onStart { // <--- ADD THIS BLOCK
+            .onStart {
+                // Subscribe to the channel and emit initial data
+                channel.subscribe()
                 emit(getUserBookmarksList(userId))
             }
     }
@@ -104,7 +107,7 @@ class BookmarkRepository @Inject constructor(
                 "user_id" to userId,
                 "event_id" to bookmark.eventId,
                 "event_name" to bookmark.eventName,
-                "event_venue" to bookmark.eventVenue,
+                "venue" to bookmark.eventVenue,
                 "start_time" to bookmark.startTime,
                 "event_price" to bookmark.eventPrice,
                 "event_image_url" to bookmark.eventImageUrl,

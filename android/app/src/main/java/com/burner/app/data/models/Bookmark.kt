@@ -15,7 +15,7 @@ data class Bookmark(
     val eventId: String = "",
     @SerialName("event_name")
     val eventName: String = "",
-    @SerialName("event_venue")
+    @SerialName("venue")
     val eventVenue: String = "",
     @SerialName("start_time")
     val startTime: String? = null,

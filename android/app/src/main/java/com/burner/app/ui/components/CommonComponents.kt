@@ -141,7 +141,6 @@ fun SettingsRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
-    icon: ImageVector? = null,
     trailing: @Composable (() -> Unit)? = null
 ) {
     Row(
@@ -154,16 +153,6 @@ fun SettingsRow(
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = BurnerColors.White,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(BurnerDimensions.spacingLg))
-        }
-
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,

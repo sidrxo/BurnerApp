@@ -64,18 +64,21 @@ class TicketsViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
 
             ticketRepository.getUserTickets().collect { tickets ->
-                // Enrich tickets with event image URLs from cache
+                // Enrich tickets with event data from cache (image URL and start_time)
                 val enrichedTickets = tickets.map { ticket ->
-                    if (ticket.eventImageUrl.isNullOrEmpty()) {
-                        // Get image from event cache
-                        val event = eventsCache[ticket.eventId]
-                        ticket.copy(eventImageUrl = event?.imageUrl)
+                    val event = eventsCache[ticket.eventId]
+                    if (event != null) {
+                        // Use event's start_time and image URL
+                        ticket.copy(
+                            eventImageUrl = event.imageUrl,
+                            startTime = event.startTime
+                        )
                     } else {
                         ticket
                     }
                 }
 
-                // Filter based on ticket's own startTime, matching iOS behavior
+                // Filter based on ticket's startTime (now from event), matching iOS behavior
                 val upcoming = enrichedTickets.filter { it.isUpcoming }
                 val past = enrichedTickets.filter { it.isPast }
 

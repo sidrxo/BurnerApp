@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class NavigationUiState(
-    val hasCompletedOnboarding: Boolean = false,
+    val hasCompletedOnboarding: Boolean? = null,
     val isAuthenticated: Boolean = false,
     val isLoading: Boolean = true
 )
