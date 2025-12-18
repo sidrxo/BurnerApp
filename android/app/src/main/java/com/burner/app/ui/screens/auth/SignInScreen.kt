@@ -34,6 +34,7 @@ fun SignInScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showPasswordlessAuth by remember { mutableStateOf(false) }
 
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -139,10 +140,10 @@ fun SignInScreen(
                     )
                 }
 
-                // Email Sign In Button (Passwordless - stub for now)
+                // Email Sign In Button (Passwordless)
                 Button(
                     onClick = {
-                        viewModel.setError("Passwordless email sign-in coming soon!")
+                        showPasswordlessAuth = true
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -206,6 +207,14 @@ fun SignInScreen(
             }
 
             Spacer(modifier = Modifier.height(BurnerDimensions.spacingMd))
+        }
+
+        // Passwordless auth full screen
+        if (showPasswordlessAuth) {
+            PasswordlessAuthScreen(
+                onDismiss = { showPasswordlessAuth = false },
+                onSuccess = onSignInSuccess
+            )
         }
 
         // Loading overlay

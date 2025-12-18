@@ -119,6 +119,53 @@ object BurnerTypography {
         lineHeight = 14.sp,
         letterSpacing = 0.sp
     )
+
+    // BOLD VARIANTS FOR HEADERS AND EMPTY STATES
+
+    // Bold Page Header - for onboarding headers (48sp bold, tight spacing)
+    val boldPageHeader = TextStyle(
+        fontFamily = BurnerFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 48.sp,
+        lineHeight = 52.sp,
+        letterSpacing = (-1.5).sp
+    )
+
+    // Bold Section Header - for section titles and empty states (24sp bold)
+    val boldSectionHeader = TextStyle(
+        fontFamily = BurnerFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp,
+        lineHeight = 28.sp,
+        letterSpacing = (-0.5).sp
+    )
+
+    // Bold Hero - for featured card titles (32sp bold, tight spacing)
+    val boldHero = TextStyle(
+        fontFamily = BurnerFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 32.sp,
+        lineHeight = 36.sp,
+        letterSpacing = (-1.5).sp
+    )
+
+    // Bold Body - for emphasized text and empty state subtitles (16sp bold)
+    val boldBody = TextStyle(
+        fontFamily = BurnerFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = (-0.3).sp
+    )
+
+    // Empty State Header - large bold for empty state screens
+    val emptyStateHeader = TextStyle(
+        fontFamily = BurnerFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp,
+        lineHeight = 32.sp,
+        letterSpacing = (-1.0).sp
+    )
 }
 
 /**
