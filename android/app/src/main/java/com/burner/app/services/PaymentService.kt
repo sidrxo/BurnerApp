@@ -17,6 +17,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.pow
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 
 @Singleton
 class PaymentService @Inject constructor(
@@ -186,8 +188,9 @@ class PaymentService @Inject constructor(
     private suspend fun createPaymentIntent(eventId: String): PaymentIntentConfig {
         val requestBody = CreateIntentRequest(eventId = eventId)
 
-        // Fixed: Use invoke without generics, setBody in lambda, and decode response
         val response = supabase.functions.invoke("create-payment-intent") {
+            // FIX: Explicitly set JSON content type
+            contentType(ContentType.Application.Json)
             setBody(requestBody)
         }
         val data = response.body<CreateIntentResponse>()
@@ -201,8 +204,9 @@ class PaymentService @Inject constructor(
     private suspend fun confirmPurchaseCall(paymentIntentId: String): PaymentResult {
         val requestBody = ConfirmPurchaseRequest(paymentIntentId = paymentIntentId)
 
-        // Fixed: Use invoke without generics, setBody in lambda, and decode response
         val response = supabase.functions.invoke("confirm-purchase") {
+            // FIX: Explicitly set JSON content type
+            contentType(ContentType.Application.Json)
             setBody(requestBody)
         }
         val data = response.body<ConfirmPurchaseResponse>()

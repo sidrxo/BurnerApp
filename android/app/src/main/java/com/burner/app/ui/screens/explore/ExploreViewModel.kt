@@ -215,31 +215,32 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
-    // 4. Fixed Toggle Logic (Optimistic Update)
+// In ExploreViewModel.kt
+
     fun toggleBookmark(event: Event) {
         val eventId = event.id ?: return
 
-        // Snapshot current state
+        // 1. Snapshot current state
         val currentBookmarks = _uiState.value.bookmarkedEventIds
         val isCurrentlyBookmarked = currentBookmarks.contains(eventId)
 
-        // Optimistically calculate new state
+        // 2. Optimistic Update: Update UI INSTANTLY
         val newBookmarks = if (isCurrentlyBookmarked) {
             currentBookmarks - eventId
         } else {
             currentBookmarks + eventId
         }
 
-        // Update UI immediately
         _uiState.update { it.copy(bookmarkedEventIds = newBookmarks) }
 
-        // Perform network request
+        // 3. Perform network request in background
         viewModelScope.launch {
             val result = bookmarkRepository.toggleBookmark(event)
 
-            // Revert if network request failed
+            // 4. Revert ONLY if the server failed
             if (result.isFailure) {
                 _uiState.update { it.copy(bookmarkedEventIds = currentBookmarks) }
+                Log.e("ExploreViewModel", "Failed to toggle bookmark", result.exceptionOrNull())
             }
         }
     }

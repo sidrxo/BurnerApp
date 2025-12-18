@@ -1,5 +1,6 @@
 package com.burner.app.data.repository
 
+import android.util.Log
 import com.burner.app.data.BurnerSupabaseClient
 import com.burner.app.data.models.Bookmark
 import com.burner.app.data.models.Event
@@ -13,7 +14,11 @@ import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,28 +31,42 @@ class BookmarkRepository @Inject constructor(
     fun getUserBookmarks(): Flow<List<Bookmark>> {
         val userId = authService.currentUserId
         if (userId == null) {
+            Log.w("BookmarkRepo", "User not logged in, returning empty flow")
             return flowOf(emptyList())
         }
 
-        val channel = supabase.realtime.channel("bookmarks_$userId")
+        // Unique ID prevents channel conflicts
+        val uniqueChannelId = "bookmarks_${userId}_${UUID.randomUUID()}"
+        Log.d("BookmarkRepo", "🔌 Connecting to Realtime Channel: $uniqueChannelId")
 
-        return channel
+        return supabase.realtime.channel(uniqueChannelId)
             .postgresChangeFlow<PostgresAction>(schema = "public") {
                 table = "bookmarks"
                 filter = "user_id=eq.$userId"
             }
+            .onEach { action ->
+                // THIS IS THE KEY DEBUGGING PART
+                Log.d("BookmarkRepo", "🔥 REALTIME EVENT RECEIVED! Action: $action")
+                when (action) {
+                    is PostgresAction.Insert -> Log.d("BookmarkRepo", "➕ Insert Detected: ${action.record}")
+                    is PostgresAction.Delete -> Log.d("BookmarkRepo", "➖ Delete Detected: ${action.oldRecord}")
+                    is PostgresAction.Update -> Log.d("BookmarkRepo", "🔄 Update Detected")
+                    else -> Log.d("BookmarkRepo", "❓ Unknown Action")
+                }
+            }
             .map {
+                Log.d("BookmarkRepo", "📥 Fetching fresh list from database...")
                 getUserBookmarksList(userId)
             }
             .onStart {
-                // Subscribe to the channel and emit initial data
+                Log.d("BookmarkRepo", "🚀 Flow started - Initial Fetch")
                 emit(getUserBookmarksList(userId))
             }
     }
 
     private suspend fun getUserBookmarksList(userId: String): List<Bookmark> {
         return try {
-            supabase.postgrest.from("bookmarks")
+            val result = supabase.postgrest.from("bookmarks")
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("user_id", userId)
@@ -55,27 +74,24 @@ class BookmarkRepository @Inject constructor(
                     order("bookmarked_at", Order.DESCENDING)
                 }
                 .decodeList<Bookmark>()
+
+            Log.d("BookmarkRepo", "✅ Successfully fetched ${result.size} bookmarks")
+            result
         } catch (e: Exception) {
+            Log.e("BookmarkRepo", "❌ FAILED to fetch bookmarks list", e)
             emptyList()
         }
     }
 
     // Get bookmarked event IDs (for quick lookup)
     fun getBookmarkedEventIds(): Flow<Set<String>> {
-        val userId = authService.currentUserId
-        if (userId == null) {
-            return flowOf(emptySet())
-        }
-
         return getUserBookmarks().map { bookmarks ->
             bookmarks.map { it.eventId }.toSet()
         }
     }
 
-    // Check if event is bookmarked
     suspend fun isBookmarked(eventId: String): Boolean {
         val userId = authService.currentUserId ?: return false
-
         return try {
             val result = supabase.postgrest.from("bookmarks")
                 .select(columns = Columns.ALL) {
@@ -92,72 +108,75 @@ class BookmarkRepository @Inject constructor(
         }
     }
 
-    // Add bookmark
     suspend fun addBookmark(event: Event): Result<Unit> {
-        val userId = authService.currentUserId
-            ?: return Result.failure(Exception("User not authenticated"))
-
-        val eventId = event.id
-            ?: return Result.failure(Exception("Event ID is null"))
+        val userId = authService.currentUserId ?: return Result.failure(Exception("No user"))
+        val eventId = event.id ?: return Result.failure(Exception("No ID"))
 
         return try {
-            val bookmark = Bookmark.fromEvent(event)
-            val bookmarkData = mapOf(
-                "user_id" to userId,
-                "event_id" to bookmark.eventId,
-                "event_name" to bookmark.eventName,
-                "venue" to bookmark.eventVenue,
-                "start_time" to bookmark.startTime,
-                "event_price" to bookmark.eventPrice,
-                "event_image_url" to bookmark.eventImageUrl,
-                "bookmarked_at" to bookmark.bookmarkedAt
+            val insertData = BookmarkInsert(
+                userId = userId,
+                eventId = eventId,
+                eventName = event.name,
+                venue = event.venue,
+                startTime = event.startTime,
+                eventPrice = event.price,
+                eventImageUrl = event.imageUrl,
+                bookmarkedAt = java.time.Instant.now().toString()
             )
 
-            supabase.postgrest.from("bookmarks")
-                .insert(bookmarkData)
+            Log.d("BookmarkRepo", "📤 Attempting to INSERT bookmark for event: ${event.name}")
+            supabase.postgrest.from("bookmarks").insert(insertData)
+            Log.d("BookmarkRepo", "✅ INSERT Success")
 
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e("BookmarkRepo", "❌ INSERT Failed", e)
             Result.failure(e)
         }
     }
 
-    // Remove bookmark
     suspend fun removeBookmark(eventId: String): Result<Unit> {
-        val userId = authService.currentUserId
-            ?: return Result.failure(Exception("User not authenticated"))
-
+        val userId = authService.currentUserId ?: return Result.failure(Exception("No user"))
         return try {
-            supabase.postgrest.from("bookmarks")
-                .delete {
-                    filter {
-                        eq("user_id", userId)
-                        eq("event_id", eventId)
-                    }
+            Log.d("BookmarkRepo", "🗑️ Attempting to DELETE bookmark: $eventId")
+            supabase.postgrest.from("bookmarks").delete {
+                filter {
+                    eq("user_id", userId)
+                    eq("event_id", eventId)
                 }
-
+            }
+            Log.d("BookmarkRepo", "✅ DELETE Success")
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e("BookmarkRepo", "❌ DELETE Failed", e)
             Result.failure(e)
         }
     }
 
-    // Toggle bookmark
     suspend fun toggleBookmark(event: Event): Result<Boolean> {
-        val eventId = event.id ?: return Result.failure(Exception("Event ID is null"))
-
+        val eventId = event.id ?: return Result.failure(Exception("No ID"))
         return try {
-            val isCurrentlyBookmarked = isBookmarked(eventId)
-
-            if (isCurrentlyBookmarked) {
+            if (isBookmarked(eventId)) {
                 removeBookmark(eventId)
-                Result.success(false) // Now not bookmarked
+                Result.success(false)
             } else {
                 addBookmark(event)
-                Result.success(true) // Now bookmarked
+                Result.success(true)
             }
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 }
+
+@Serializable
+private data class BookmarkInsert(
+    @SerialName("user_id") val userId: String,
+    @SerialName("event_id") val eventId: String,
+    @SerialName("event_name") val eventName: String,
+    @SerialName("venue") val venue: String,
+    @SerialName("start_time") val startTime: String?,
+    @SerialName("event_price") val eventPrice: Double,
+    @SerialName("event_image_url") val eventImageUrl: String,
+    @SerialName("bookmarked_at") val bookmarkedAt: String?
+)
