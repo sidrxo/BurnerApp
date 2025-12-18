@@ -41,7 +41,6 @@ class BookmarkRepository @Inject constructor(
             }
             .onStart {
                 // Subscribe to the channel and emit initial data
-                channel.subscribe()
                 emit(getUserBookmarksList(userId))
             }
     }

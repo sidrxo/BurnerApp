@@ -65,6 +65,7 @@ class BookmarksViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
+            // Note: Ensure your Repository does NOT have .subscribe() in the flow chain
             bookmarkRepository.getUserBookmarks().collect { bookmarks ->
                 currentBookmarks = bookmarks
                 updateBookmarkedEvents()
@@ -96,15 +97,41 @@ class BookmarksViewModel @Inject constructor(
         )
     }
 
+    // UPDATED: Optimistic removal
     fun removeBookmark(eventId: String) {
+        val originalList = _uiState.value.bookmarkedEvents
+
+        // Optimistic Update: Remove immediately from the screen
+        _uiState.update { state ->
+            state.copy(bookmarkedEvents = state.bookmarkedEvents.filter { it.id != eventId })
+        }
+
         viewModelScope.launch {
-            bookmarkRepository.removeBookmark(eventId)
+            val result = bookmarkRepository.removeBookmark(eventId)
+            if (result.isFailure) {
+                // Revert if failed (e.g., network error)
+                _uiState.update { it.copy(bookmarkedEvents = originalList) }
+            }
         }
     }
 
+    // UPDATED: Optimistic toggle
     fun toggleBookmark(event: Event) {
+        val eventId = event.id ?: return
+        val originalList = _uiState.value.bookmarkedEvents
+
+        // Optimistic Update: Remove immediately (since we are on the bookmarks screen)
+        _uiState.update { state ->
+            state.copy(bookmarkedEvents = state.bookmarkedEvents.filter { it.id != eventId })
+        }
+
         viewModelScope.launch {
-            bookmarkRepository.toggleBookmark(event)
+            val result = bookmarkRepository.toggleBookmark(event)
+
+            if (result.isFailure) {
+                // Revert if failed
+                _uiState.update { it.copy(bookmarkedEvents = originalList) }
+            }
         }
     }
 }

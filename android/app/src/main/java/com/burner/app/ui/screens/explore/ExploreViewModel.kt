@@ -9,7 +9,9 @@ import com.burner.app.data.repository.BookmarkRepository
 import com.burner.app.data.repository.EventRepository
 import com.burner.app.data.repository.PreferencesRepository
 import com.burner.app.data.repository.TagRepository
+import com.burner.app.services.AuthService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -36,17 +38,37 @@ class ExploreViewModel @Inject constructor(
     private val eventRepository: EventRepository,
     private val bookmarkRepository: BookmarkRepository,
     private val preferencesRepository: PreferencesRepository,
-    private val tagRepository: TagRepository
+    private val tagRepository: TagRepository,
+    private val authService: AuthService // <--- 1. Inject AuthService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExploreUiState())
     val uiState: StateFlow<ExploreUiState> = _uiState.asStateFlow()
 
+    private var bookmarksJob: Job? = null
+
     init {
         observeEvents()
-        observeBookmarks()
+        // observeBookmarks() <--- REMOVED (Called in observeAuthState instead)
         observeTags()
         loadUserLocation()
+        observeAuthState() // <--- 2. Listen for login status
+    }
+
+    // 3. New function to manage bookmark subscription based on login
+    private fun observeAuthState() {
+        viewModelScope.launch {
+            authService.authStateFlow.collect { user ->
+                if (user != null) {
+                    // User is logged in: Start listening to THEIR bookmarks
+                    observeBookmarks()
+                } else {
+                    // User logged out: Stop listening and clear bookmarks
+                    bookmarksJob?.cancel()
+                    _uiState.update { it.copy(bookmarkedEventIds = emptySet()) }
+                }
+            }
+        }
     }
 
     // Observe real-time events like iOS does
@@ -79,9 +101,9 @@ class ExploreViewModel @Inject constructor(
                     .filter { event ->
                         val startTime = event.startDate
                         !event.isFeatured &&
-                        startTime != null &&
-                        startTime.after(now) &&
-                        startTime.before(endOfWeek)
+                                startTime != null &&
+                                startTime.after(now) &&
+                                startTime.before(endOfWeek)
                     }
                     .sortedBy { it.startDate }
                     .take(5)
@@ -92,9 +114,9 @@ class ExploreViewModel @Inject constructor(
                     .filter { event ->
                         val startTime = event.startDate
                         !event.isFeatured &&
-                        startTime != null &&
-                        startTime.after(now) &&
-                        !thisWeekEventIds.contains(event.id)
+                                startTime != null &&
+                                startTime.after(now) &&
+                                !thisWeekEventIds.contains(event.id)
                     }
                     .sortedByDescending { event ->
                         val maxTickets = event.maxTickets.coerceAtLeast(1)
@@ -155,9 +177,9 @@ class ExploreViewModel @Inject constructor(
             .filter { event ->
                 val startTime = event.startDate
                 !event.isFeatured &&
-                startTime != null &&
-                startTime.after(now) &&
-                event.latitude != null && event.longitude != null
+                        startTime != null &&
+                        startTime.after(now) &&
+                        event.latitude != null && event.longitude != null
             }
             .mapNotNull { event ->
                 val distance = event.distanceFrom(userLat, userLon)
@@ -173,7 +195,10 @@ class ExploreViewModel @Inject constructor(
     }
 
     private fun observeBookmarks() {
-        viewModelScope.launch {
+        // Cancel existing job to avoid duplicate listeners
+        bookmarksJob?.cancel()
+
+        bookmarksJob = viewModelScope.launch {
             bookmarkRepository.getBookmarkedEventIds().collect { ids ->
                 _uiState.update { it.copy(bookmarkedEventIds = ids) }
             }
@@ -190,9 +215,32 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
+    // 4. Fixed Toggle Logic (Optimistic Update)
     fun toggleBookmark(event: Event) {
+        val eventId = event.id ?: return
+
+        // Snapshot current state
+        val currentBookmarks = _uiState.value.bookmarkedEventIds
+        val isCurrentlyBookmarked = currentBookmarks.contains(eventId)
+
+        // Optimistically calculate new state
+        val newBookmarks = if (isCurrentlyBookmarked) {
+            currentBookmarks - eventId
+        } else {
+            currentBookmarks + eventId
+        }
+
+        // Update UI immediately
+        _uiState.update { it.copy(bookmarkedEventIds = newBookmarks) }
+
+        // Perform network request
         viewModelScope.launch {
-            bookmarkRepository.toggleBookmark(event)
+            val result = bookmarkRepository.toggleBookmark(event)
+
+            // Revert if network request failed
+            if (result.isFailure) {
+                _uiState.update { it.copy(bookmarkedEventIds = currentBookmarks) }
+            }
         }
     }
 
