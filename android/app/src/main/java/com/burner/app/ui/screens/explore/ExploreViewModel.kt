@@ -191,8 +191,29 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun toggleBookmark(event: Event) {
+        val eventId = event.id ?: return
+
+        // 1. Optimistic Update: Update the UI immediately
+        val currentBookmarks = _uiState.value.bookmarkedEventIds
+        val isCurrentlyBookmarked = currentBookmarks.contains(eventId)
+
+        val newBookmarks = if (isCurrentlyBookmarked) {
+            currentBookmarks - eventId
+        } else {
+            currentBookmarks + eventId
+        }
+
+        _uiState.update { it.copy(bookmarkedEventIds = newBookmarks) }
+
+        // 2. Perform the actual network request
         viewModelScope.launch {
-            bookmarkRepository.toggleBookmark(event)
+            val result = bookmarkRepository.toggleBookmark(event)
+
+            // 3. Revert if the server request failed
+            if (result.isFailure) {
+                _uiState.update { it.copy(bookmarkedEventIds = currentBookmarks) }
+                // Optional: Show an error message here
+            }
         }
     }
 

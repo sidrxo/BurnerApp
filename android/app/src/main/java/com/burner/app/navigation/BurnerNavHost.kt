@@ -67,7 +67,9 @@ fun BurnerNavHost(
                     onTabSelected = { tab ->
                         if (currentRoute != tab.route) {
                             navController.navigate(tab.route) {
-                                popUpTo(Routes.Main.route) {
+                                // CHANGE THIS LINE:
+                                // Old: popUpTo(Routes.Main.route) {
+                                popUpTo(Routes.Explore.route) { // <--- FIXED
                                     saveState = true
                                 }
                                 launchSingleTop = true

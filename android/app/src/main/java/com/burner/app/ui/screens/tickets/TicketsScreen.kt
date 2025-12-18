@@ -335,7 +335,7 @@ private fun TicketsGrid(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(tickets, key = { it.id ?: "" }) { ticket ->
+        items(tickets) { ticket ->
             TicketGridItem(
                 ticket = ticket,
                 onClick = { ticket.id?.let { onTicketClick(it) } }

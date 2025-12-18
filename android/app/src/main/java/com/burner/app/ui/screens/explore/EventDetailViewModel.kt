@@ -66,13 +66,25 @@ class EventDetailViewModel @Inject constructor(
         }
     }
 
+// In EventDetailViewModel.kt
+
     fun toggleBookmark() {
         val event = _uiState.value.event ?: return
 
+        // 1. Optimistic Update: Flip the boolean immediately
+        val previousState = _uiState.value.isBookmarked
+        val newState = !previousState
+
+        _uiState.update { it.copy(isBookmarked = newState) }
+
+        // 2. Perform the network request
         viewModelScope.launch {
+            // We ignore the result boolean because we already set the state
             val result = bookmarkRepository.toggleBookmark(event)
-            result.onSuccess { isNowBookmarked ->
-                _uiState.update { it.copy(isBookmarked = isNowBookmarked) }
+
+            // 3. Revert if the server request failed
+            if (result.isFailure) {
+                _uiState.update { it.copy(isBookmarked = previousState) }
             }
         }
     }
