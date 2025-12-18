@@ -14,6 +14,7 @@ import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.datetime.Clock
 import java.util.UUID
 import javax.inject.Inject
@@ -40,6 +41,9 @@ class TicketRepository @Inject constructor(
             }
             .map {
                 getUserTicketsList(userId)
+            }
+            .onStart { // <--- ADD THIS BLOCK
+                emit(getUserTicketsList(userId))
             }
     }
 

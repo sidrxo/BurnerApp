@@ -10,6 +10,7 @@ import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,6 +26,9 @@ class TagRepository @Inject constructor(
         }
         .map {
             getTagsInternal()
+        }
+        .onStart { // <--- ADD THIS BLOCK
+            emit(getTagsInternal())
         }
 
     // Get tags once
