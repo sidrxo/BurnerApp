@@ -107,7 +107,7 @@ class BookmarkRepository @Inject constructor(
                 "user_id" to userId,
                 "event_id" to bookmark.eventId,
                 "event_name" to bookmark.eventName,
-                "event_venue" to bookmark.eventVenue,
+                "venue" to bookmark.eventVenue,
                 "start_time" to bookmark.startTime,
                 "event_price" to bookmark.eventPrice,
                 "event_image_url" to bookmark.eventImageUrl,

@@ -3,6 +3,7 @@ package com.burner.app.ui.screens.tickets
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.burner.app.data.models.Ticket
+import com.burner.app.data.repository.EventRepository
 import com.burner.app.data.repository.TicketRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -17,7 +18,8 @@ data class TicketDetailUiState(
 
 @HiltViewModel
 class TicketDetailViewModel @Inject constructor(
-    private val ticketRepository: TicketRepository
+    private val ticketRepository: TicketRepository,
+    private val eventRepository: EventRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TicketDetailUiState())
@@ -28,8 +30,22 @@ class TicketDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
 
             ticketRepository.getTicketFlow(ticketId).collect { ticket ->
-                _uiState.update {
-                    it.copy(ticket = ticket, isLoading = false)
+                if (ticket != null) {
+                    // Enrich ticket with event's start_time
+                    val event = eventRepository.getEvent(ticket.eventId)
+                    val enrichedTicket = if (event != null) {
+                        ticket.copy(startTime = event.startTime)
+                    } else {
+                        ticket
+                    }
+
+                    _uiState.update {
+                        it.copy(ticket = enrichedTicket, isLoading = false)
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(ticket = null, isLoading = false)
+                    }
                 }
             }
         }
