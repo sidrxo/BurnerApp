@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy - APP NAME</title>
+    <title>Privacy Policy - Burner</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -18,31 +18,388 @@
     <div id="swup" class="transition-fade">
         <main class="content-container">
             <h1>Privacy Policy</h1>
-            <span class="last-updated">LAST UPDATED: OCTOBER 24, 2024</span>
+            <span class="last-updated">Effective Date: December 23, 2025</span>
 
-            <h2>1. Introduction</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+            <h2>1. Information We Collect</h2>
 
-            <h2>2. Data Collection</h2>
-            <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+            <h3>1.1 Information You Provide</h3>
+            <p><strong>Account Information:</strong> Name, email address, password (encrypted), and optional profile details</p>
+            <p><strong>Payment Information:</strong> Credit/debit card details, billing address, and transaction history (processed securely through Stripe)</p>
+            <p><strong>Purchase History:</strong> Tickets purchased, events attended, bookmarks, and preferences</p>
+            <p><strong>Communications:</strong> Support messages, feedback, and correspondence with us</p>
+
+            <h3>1.2 Automatically Collected Information</h3>
+            <p><strong>Device Information:</strong> Device type, operating system, unique device identifiers, mobile network information</p>
+            <p><strong>Usage Data:</strong> Features used, events viewed, search queries, time spent in app, crash reports</p>
+            <p><strong>Location Data:</strong> Approximate location (with your permission) to show nearby events within 31 miles (50km)</p>
+            <p><strong>Precise Location:</strong> Collected only during active app use for event discovery and venue navigation</p>
+
+            <h3>1.3 Burner Mode Permissions (iOS Only)</h3>
+            <p><strong>Screen Time API Access:</strong> If you enable Burner Mode parental controls, we request permission to block specified apps during events</p>
+            <p><strong>App Usage Data:</strong> Limited data on which apps are blocked (stored locally on your device only)</p>
+            <p>This feature requires explicit permission and can be disabled at any time in Settings</p>
+
+            <h3>1.4 Information from Third Parties</h3>
+            <p><strong>Google Sign-In:</strong> Email address, name, and profile picture (if you choose to sign in with Google)</p>
+            <p><strong>Event Organizers:</strong> Venue check-in times and attendance verification for purchased tickets</p>
+
+            <h2>2. How We Use Your Information</h2>
+
+            <h3>2.1 Service Delivery</h3>
+            <ul>
+                <li>Process ticket purchases and generate unique QR codes for venue entry</li>
+                <li>Manage your account and authenticate your identity</li>
+                <li>Send purchase confirmations, ticket details, and event reminders</li>
+                <li>Provide customer support and respond to your inquiries</li>
+                <li>Enable Burner Mode app blocking when tickets are scanned at venues</li>
+            </ul>
+
+            <h3>2.2 Personalization and Recommendations</h3>
+            <ul>
+                <li>Show events near your location based on GPS data</li>
+                <li>Recommend events based on your purchase history and bookmarks</li>
+                <li>Remember your preferences and settings across devices</li>
+            </ul>
+
+            <h3>2.3 Communication</h3>
+            <ul>
+                <li>Send transactional emails (purchase confirmations, event updates, cancellations)</li>
+                <li>Notify you of changes to our services or policies</li>
+                <li>Respond to support requests and provide assistance</li>
+                <li>Send marketing communications (only with your consent; you can opt out anytime)</li>
+            </ul>
+
+            <h3>2.4 Safety, Security, and Legal Compliance</h3>
+            <ul>
+                <li>Detect and prevent fraud, unauthorized access, and abuse</li>
+                <li>Verify ticket authenticity and prevent duplicate entry at venues</li>
+                <li>Enforce our Terms of Service and protect our rights</li>
+                <li>Comply with legal obligations, court orders, and regulatory requirements</li>
+            </ul>
+
+            <h3>2.5 Analytics and Improvement</h3>
+            <ul>
+                <li>Analyze usage patterns to improve app performance and user experience</li>
+                <li>Test new features and understand feature adoption</li>
+                <li>Monitor app stability and fix bugs or crashes</li>
+            </ul>
+
+            <h2>3. Information Sharing and Disclosure</h2>
+            <p>We do not sell, rent, or trade your personal information. We share information only in the following circumstances:</p>
+
+            <h3>3.1 Service Providers and Business Partners</h3>
+            <ul>
+                <li><strong>Supabase:</strong> Backend infrastructure, PostgreSQL database, authentication, and edge functions</li>
+                <li><strong>Stripe:</strong> Payment processing and secure transaction handling</li>
+                <li><strong>Google Cloud Platform:</strong> Hosting and infrastructure (via Supabase)</li>
+                <li><strong>Kingfisher:</strong> Image caching library (local device storage, 7-day expiration, 300MB max)</li>
+            </ul>
+            <p>All third-party providers are contractually obligated to protect your data and use it only for specified purposes.</p>
+
+            <h3>3.2 Event Organizers and Venues</h3>
+            <ul>
+                <li>Ticket validation data (name, ticket number, QR code verification status)</li>
+                <li>Check-in times and attendance records for events you attend</li>
+                <li>Limited contact information if required by venue security or event logistics</li>
+            </ul>
+
+            <h3>3.3 Legal Requirements</h3>
+            <ul>
+                <li>Compliance with applicable laws, regulations, or legal processes</li>
+                <li>Response to lawful requests from public authorities (law enforcement, courts)</li>
+                <li>Protection of our rights, privacy, safety, or property</li>
+                <li>Enforcement of our Terms of Service and investigation of violations</li>
+            </ul>
+
+            <h3>3.4 Business Transfers</h3>
+            <p>In the event of a merger, acquisition, or sale of assets, your information may be transferred to the acquiring entity. We will notify you before your information becomes subject to a different privacy policy.</p>
+
+            <h3>3.5 With Your Consent</h3>
+            <p>We may share information with other third parties when you explicitly consent to such sharing.</p>
+
+            <h2>4. Data Security Measures</h2>
+            <p>We implement robust security measures to protect your personal information:</p>
+            <ul>
+                <li><strong>End-to-End Encryption:</strong> All data transmitted between your device and our servers is encrypted using TLS 1.3</li>
+                <li><strong>Secure Storage:</strong> Personal data is encrypted at rest using industry-standard AES-256 encryption</li>
+                <li><strong>Payment Security:</strong> We are PCI-DSS compliant; payment card data is tokenized and never stored on our servers</li>
+                <li><strong>Authentication:</strong> Passwords are hashed using bcrypt; multi-factor authentication available</li>
+                <li><strong>Access Controls:</strong> Strict employee access policies with role-based permissions</li>
+                <li><strong>Regular Audits:</strong> Periodic security assessments, penetration testing, and vulnerability scanning</li>
+                <li><strong>Incident Response:</strong> 24/7 monitoring and rapid response protocols for security incidents</li>
+            </ul>
+            <p>However, no method of electronic transmission or storage is 100% secure. While we strive to protect your information, we cannot guarantee absolute security.</p>
+
+            <h2>5. Your Privacy Rights and Choices</h2>
+
+            <h3>5.1 Access and Portability</h3>
+            <ul>
+                <li>Request a copy of all personal data we hold about you</li>
+                <li>Export your data in a machine-readable format (JSON/CSV)</li>
+                <li>Access available through Settings > Account Details > Download My Data</li>
+            </ul>
+
+            <h3>5.2 Correction and Updates</h3>
+            <ul>
+                <li>Update your name, email, and profile information in Settings > Account Details</li>
+                <li>Correct inaccurate or incomplete personal information</li>
+            </ul>
+
+            <h3>5.3 Deletion and Account Closure</h3>
+            <ul>
+                <li>Delete your account permanently via Settings > Account Details > Delete Account</li>
+                <li>Upon deletion, we remove personal data within 30 days (except where legally required to retain)</li>
+                <li>Active tickets and transaction records may be retained for legal/accounting purposes (up to 7 years)</li>
+            </ul>
+
+            <h3>5.4 Marketing Communications</h3>
+            <ul>
+                <li>Opt out of promotional emails via the "Unsubscribe" link in any marketing email</li>
+                <li>Manage notification preferences in Settings > Notifications</li>
+                <li>Transactional emails (purchase confirmations, support responses) cannot be disabled</li>
+            </ul>
+
+            <h3>5.5 Location Data</h3>
+            <ul>
+                <li>Disable location access entirely in iOS/Android Settings > Burner > Location</li>
+                <li>Location data is only collected when the app is in use, not in the background</li>
+            </ul>
+
+            <h3>5.6 Burner Mode Permissions</h3>
+            <ul>
+                <li>Revoke Screen Time API access in iOS Settings > Screen Time > Apps with Access</li>
+                <li>Disable Burner Mode in Settings > Burner Mode > Disable Feature</li>
+            </ul>
+
+            <h3>5.7 GDPR Rights (UK/EU Residents)</h3>
+            <ul>
+                <li>Right to erasure ("right to be forgotten")</li>
+                <li>Right to restrict processing</li>
+                <li>Right to object to processing</li>
+                <li>Right to lodge a complaint with the Information Commissioner's Office (ICO)</li>
+            </ul>
+            <p>To exercise any of these rights, contact us at <a href="mailto:privacy@burner.app">privacy@burner.app</a>. We will respond within 30 days.</p>
+
+            <h2>6. Cookies and Tracking Technologies</h2>
+
+            <h3>6.1 Essential Cookies</h3>
+            <ul>
+                <li>Session cookies to keep you logged in</li>
+                <li>Authentication tokens for secure access</li>
+                <li>Shopping cart state for ticket purchases</li>
+            </ul>
+
+            <h3>6.2 Analytics and Diagnostics</h3>
+            <ul>
+                <li>Session tracking: Login sessions and authentication state</li>
+                <li>Error logging: Crash reports and error diagnostics for app stability</li>
+                <li>Performance monitoring: API response times and app performance metrics</li>
+            </ul>
+
+            <h3>6.3 Preference Cookies</h3>
+            <ul>
+                <li>Language and regional settings</li>
+                <li>App theme and display preferences</li>
+                <li>Notification settings and preferences</li>
+            </ul>
+
+            <h3>6.4 Managing Cookies</h3>
+            <p>While you cannot disable essential cookies (required for core functionality), you can opt out of analytics tracking through Settings > Privacy > Analytics Sharing. Note that disabling certain cookies may limit app functionality.</p>
+
+            <h2>7. Children's Privacy</h2>
+            <p>Burner is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.</p>
+            <ul>
+                <li><strong>Age Requirement:</strong> Users must be at least 13 years old to create an account</li>
+                <li><strong>Parental Controls:</strong> Burner Mode is a tool for parents to manage their own device usage, not for monitoring children</li>
+                <li><strong>Verification:</strong> We may request age verification for accounts that appear to belong to minors</li>
+            </ul>
+            <p>If we discover that we have inadvertently collected information from a child under 13, we will delete that information immediately. Parents or guardians who believe their child has provided information should contact us at <a href="mailto:privacy@burner.app">privacy@burner.app</a>.</p>
+
+            <h2>8. Third-Party Services and Integrations</h2>
+
+            <h3>8.1 Authentication Services</h3>
+            <ul>
+                <li><strong>Supabase Auth:</strong> Primary authentication service with encrypted password storage</li>
+                <li><strong>Google Sign-In:</strong> OAuth authentication (<a href="https://policies.google.com/privacy" target="_blank">https://policies.google.com/privacy</a>)</li>
+                <li><strong>Apple Sign-In:</strong> OAuth authentication (<a href="https://www.apple.com/legal/privacy/" target="_blank">https://www.apple.com/legal/privacy/</a>)</li>
+            </ul>
+
+            <h3>8.2 Payment Processing</h3>
+            <ul>
+                <li><strong>Stripe:</strong> PCI-DSS compliant payment processor (<a href="https://stripe.com/privacy" target="_blank">https://stripe.com/privacy</a>)</li>
+                <li><strong>Apple Pay/Google Pay:</strong> Subject to Apple/Google privacy policies</li>
+            </ul>
+
+            <h3>8.3 Backend and Infrastructure</h3>
+            <ul>
+                <li><strong>Supabase:</strong> PostgreSQL database, authentication, and serverless edge functions (<a href="https://supabase.com/privacy" target="_blank">https://supabase.com/privacy</a>)</li>
+                <li><strong>Google Cloud Platform:</strong> Infrastructure hosting (via Supabase)</li>
+            </ul>
+
+            <h3>8.4 Image Caching</h3>
+            <ul>
+                <li><strong>Kingfisher:</strong> Open-source image caching library that stores images locally on your device</li>
+                <li>Cache settings: 7-day expiration, 300MB disk limit, 100MB memory limit</li>
+                <li>No data transmitted to third parties</li>
+            </ul>
+
+            <h3>8.5 External Links</h3>
+            <p>Our app may contain links to event organizer websites, social media, and other external sites. We are not responsible for the privacy practices of these third parties. Please review their privacy policies before providing any information.</p>
+
+            <h2>9. Data Retention and Deletion</h2>
+
+            <h3>9.1 Account Data</h3>
+            <ul>
+                <li>Active accounts: Retained indefinitely while your account is active</li>
+                <li>Deleted accounts: Personal data removed within 30 days of account deletion</li>
+                <li>Backup systems: Deleted data purged from backups within 90 days</li>
+            </ul>
+
+            <h3>9.2 Transaction Records</h3>
+            <ul>
+                <li>Purchase history: Retained for 7 years for accounting, tax, and legal compliance</li>
+                <li>Payment card data: Tokenized data retained by Stripe per their retention policy</li>
+                <li>Refund records: Retained for 7 years for financial auditing</li>
+            </ul>
+
+            <h3>9.3 Communications</h3>
+            <ul>
+                <li>Support tickets: Retained for 3 years for quality assurance and legal purposes</li>
+                <li>Marketing emails: Retained until you unsubscribe or delete your account</li>
+            </ul>
+
+            <h3>9.4 Analytics Data</h3>
+            <ul>
+                <li>Aggregated analytics: Retained indefinitely (anonymized, no personal identifiers)</li>
+                <li>Individual usage logs: Retained for 26 months, then aggregated and anonymized</li>
+            </ul>
+
+            <h3>9.5 Legal Holds</h3>
+            <p>If your data is subject to legal proceedings, regulatory investigations, or valid legal holds, we may retain it beyond standard retention periods as required by law.</p>
+
+            <h2>10. International Data Transfers</h2>
+            <p>Burner operates globally and your information may be transferred to and processed in countries other than your own.</p>
+
+            <h3>10.1 Transfer Mechanisms</h3>
+            <ul>
+                <li>UK/EU to USA: We use Standard Contractual Clauses (SCCs) approved by the European Commission</li>
+                <li>Data Processing Agreements: All service providers sign DPAs ensuring GDPR compliance</li>
+                <li>Adequacy Decisions: We transfer data only to countries with adequate data protection laws</li>
+            </ul>
+
+            <h3>10.2 Data Locations</h3>
+            <ul>
+                <li>Primary servers: Managed by Supabase (multi-region cloud infrastructure)</li>
+                <li>Backup servers: Automated backups via Supabase on Google Cloud Platform</li>
+                <li>Image caching: Stored locally on your device via Kingfisher library</li>
+            </ul>
+
+            <h3>10.3 Safeguards</h3>
+            <p>All international transfers are protected by:</p>
+            <ul>
+                <li>Encryption in transit and at rest</li>
+                <li>Contractual data protection obligations</li>
+                <li>Regular compliance audits</li>
+                <li>GDPR Article 46 transfer mechanisms</li>
+            </ul>
+            <p>By using Burner, you consent to the transfer of your information to these locations.</p>
+
+            <h2>11. California Privacy Rights (CCPA)</h2>
+            <p>California residents have additional rights under the California Consumer Privacy Act (CCPA):</p>
+
+            <h3>11.1 Right to Know</h3>
+            <p>You can request disclosure of:</p>
+            <ul>
+                <li>Categories of personal information collected</li>
+                <li>Sources from which information was collected</li>
+                <li>Business purposes for collecting information</li>
+                <li>Categories of third parties with whom we share information</li>
+            </ul>
+
+            <h3>11.2 Right to Delete</h3>
+            <p>Request deletion of personal information we have collected (subject to legal exceptions).</p>
+
+            <h3>11.3 Right to Opt-Out of Sale</h3>
+            <p>We do not sell personal information. If this changes, we will provide an opt-out mechanism.</p>
+
+            <h3>11.4 Right to Non-Discrimination</h3>
+            <p>We will not discriminate against you for exercising your CCPA rights.</p>
+
+            <h3>11.5 Exercising Rights</h3>
+            <p>To exercise these rights, email <a href="mailto:privacy@burner.app">privacy@burner.app</a> or call our toll-free number (available in app). We will verify your identity and respond within 45 days.</p>
+
+            <h2>12. Changes to This Privacy Policy</h2>
+            <p>We may update this Privacy Policy periodically to reflect changes in our practices, legal requirements, or service features.</p>
+
+            <h3>12.1 Notification of Changes</h3>
+            <ul>
+                <li>Material changes: We will notify you via email and in-app notification at least 30 days before changes take effect</li>
+                <li>Minor updates: Posted to this page with an updated "Effective Date" at the top</li>
+            </ul>
+
+            <h3>12.2 Acceptance of Changes</h3>
+            <ul>
+                <li>Continued use of the app after the effective date constitutes acceptance of the updated policy</li>
+                <li>If you disagree with changes, you may delete your account before they take effect</li>
+            </ul>
+
+            <h3>12.3 Version History</h3>
+            <p>Previous versions of this Privacy Policy are available upon request by emailing <a href="mailto:privacy@burner.app">privacy@burner.app</a>.</p>
+
+            <h2>13. Contact Information and Data Protection Officer</h2>
+            <p>If you have questions, concerns, or requests regarding this Privacy Policy or our data practices:</p>
+
+            <p>
+                <strong>Data Protection Officer</strong><br>
+                Burner App Ltd<br>
+                United Kingdom
+            </p>
+
+            <p>
+                Email: <a href="mailto:privacy@burner.app">privacy@burner.app</a><br>
+                General Support: <a href="mailto:support@burner.app">support@burner.app</a>
+            </p>
+
+            <p>
+                <strong>For GDPR-related inquiries:</strong><br>
+                Email: <a href="mailto:dpo@burner.app">dpo@burner.app</a>
+            </p>
+
+            <p>
+                <strong>For CCPA-related inquiries:</strong><br>
+                Toll-Free: Available in-app under Settings > Help & Support
+            </p>
+
+            <p>We will respond to all requests within 30 days (or as required by applicable law).</p>
+
+            <p>
+                <strong>Regulatory Authority</strong><br>
+                If you are in the UK/EU and believe we have not adequately addressed your privacy concerns, you have the right to lodge a complaint with:
+            </p>
+            <ul>
+                <li>Information Commissioner's Office (ICO): <a href="https://ico.org.uk/make-a-complaint/" target="_blank">https://ico.org.uk/make-a-complaint/</a></li>
+                <li>Your local data protection supervisory authority</li>
+            </ul>
+
+            <p><em>Last updated: December 23, 2025</em></p>
         </main>
-
-        <footer>
-            <div class="footer-content-grid">
-                <div class="footer-lorem">
-                   <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.</p>
-                </div>
-
-                <nav class="footer-nav">
-                    <a href="privacy.html" class="footer-link" style="text-decoration: underline;">01. Privacy Policy</a>
-                    <a href="terms.html" class="footer-link">02. Terms of Service</a>
-                    <a href="faq.html" class="footer-link">03. Frequently Asked Questions</a>
-                    <a href="mailto:support@app.com" class="footer-link">04. Contact Support</a>
-                </nav>
-            </div>
-            <div class="footer-meta">&copy; 2024 APP NAME INC.<br>ALL RIGHTS RESERVED.</div>
-        </footer>
     </div>
+
+    <footer>
+        <div class="footer-content-grid">
+            <div class="footer-lorem">
+               <p>Burner is an event ticketing platform designed to help you discover live experiences and stay present during events. Simple, secure, and built for human connection.</p>
+            </div>
+
+            <nav class="footer-nav">
+                <a href="privacy.html" class="footer-link" style="text-decoration: underline;">01. Privacy Policy</a>
+                <a href="terms.html" class="footer-link">02. Terms of Service</a>
+                <a href="faq.html" class="footer-link">03. Frequently Asked Questions</a>
+                <a href="mailto:support@burner.app" class="footer-link">04. Contact Support</a>
+            </nav>
+        </div>
+        <div class="footer-meta">&copy; 2025 Burner App Ltd.<br>ALL RIGHTS RESERVED.</div>
+    </footer>
 
     <script src="https://unpkg.com/swup@4"></script>
     <script> const swup = new Swup({ containers: ["#swup"], animationSelector: '[class*="transition-"]' }); </script>
