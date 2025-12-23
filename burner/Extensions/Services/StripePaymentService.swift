@@ -25,6 +25,19 @@ class StripePaymentService: NSObject, ObservableObject {
     private let supabase = SupabaseManager.shared.client
     private let appState: AppState
 
+    init(appState: AppState) {
+            self.appState = appState
+            super.init()
+            
+            // Dynamically retrieve the key from the Info.plist mapping
+            if let key = Bundle.main.object(forInfoDictionaryKey: "StripePublishableKey") as? String {
+                StripeAPI.defaultPublishableKey = key
+            } else {
+                // Fallback or error handling if the key is missing from Info.plist
+                print("⚠️ Error: StripePublishableKey not found in Info.plist configuration.")
+            }
+        }
+    
     struct PaymentMethodInfo: Identifiable, Decodable {
         let id: String
         let brand: String
@@ -115,11 +128,7 @@ class StripePaymentService: NSObject, ObservableObject {
         let message: String?
     }
 
-    init(appState: AppState) {
-        self.appState = appState
-        super.init()
-        StripeAPI.defaultPublishableKey = "pk_test_51SKOqrFxXnVDuRLXw30ABLXPF9QyorMesOCHN9sMbRAIokEIL8gptsxxX4APRJSO0b8SRGvyAUBNzBZqCCgOSvVI00fxiHOZNe"
-    }
+
     
     func preparePayment(eventId: String) {
         guard !isPreparing else { return }

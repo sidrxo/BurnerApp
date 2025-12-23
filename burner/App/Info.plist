@@ -9,6 +9,8 @@
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
+            <key>StripePublishableKey</key>
+            <string>$(STRIPE_PUBLISHABLE_KEY)</string>
             <key>CFBundleURLName</key>
             <string>google-signin</string>
             <key>CFBundleURLSchemes</key>

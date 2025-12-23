@@ -36,6 +36,7 @@
 		8B7FF5B62E7C6E6B007072DD /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 8B7FF5B52E7C6E6B007072DD /* FirebaseFunctions */; };
 		8B7FF6482E7CF1DC007072DD /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B7FF6462E7CF1CB007072DD /* ActivityKit.framework */; };
 		8BCF682A2EC7CA17008C42F6 /* StripePaymentsUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8BCF68292EC7CA17008C42F6 /* StripePaymentsUI */; };
+		8BD9BB8C2EFA22F5009E4F22 /* Config.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 8BD9BB8B2EFA22F5009E4F22 /* Config.xcconfig */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,6 +82,7 @@
 		8B7FF5E02E7CEC3C007072DD /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		8B7FF5E22E7CEC3C007072DD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		8B7FF6462E7CF1CB007072DD /* ActivityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ActivityKit.framework; path = System/Library/Frameworks/ActivityKit.framework; sourceTree = SDKROOT; };
+		8BD9BB8B2EFA22F5009E4F22 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -198,6 +200,7 @@
 		8B66F8A72E67612A00760E4E = {
 			isa = PBXGroup;
 			children = (
+				8BD9BB8B2EFA22F5009E4F22 /* Config.xcconfig */,
 				8B36D9122E7DBFE600EDDF0F /* TicketWidgetExtensionExtension.entitlements */,
 				8B66F8B22E67612A00760E4E /* burner */,
 				8B36D8F62E7DBE2E00EDDF0F /* TicketWidgetExtension */,
@@ -382,6 +385,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8BD9BB8C2EFA22F5009E4F22 /* Config.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -614,6 +618,7 @@
 		};
 		8B66F8BA2E67612C00760E4E /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8BD9BB8B2EFA22F5009E4F22 /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -672,6 +677,7 @@
 		};
 		8B66F8BC2E67612C00760E4E /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8BD9BB8B2EFA22F5009E4F22 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

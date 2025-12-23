@@ -123,7 +123,7 @@ class BurnerModeMonitor: ObservableObject {
         subscriptionTask = Task {
             let channel = client.channel("burner-tickets:\(userId)")
 
-            channel.onPostgresChange(
+            _ = channel.onPostgresChange(
                 AnyAction.self,
                 schema: "public",
                 table: "tickets",
@@ -137,11 +137,29 @@ class BurnerModeMonitor: ObservableObject {
                 }
             }
 
-            await channel.subscribeWithError()
+            do {
+                try await channel.subscribeWithError()
+                
+                await MainActor.run {
+                    self.isMonitoring = true
+                }
+
+                // Keep the task alive
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                }
+
+                await channel.unsubscribe()
+            } catch {
+                // Handle subscription error silently
+                print("Channel subscription error: \(error)")
+            }
 
             await MainActor.run {
-                self.isMonitoring = true
+                self.isMonitoring = false
             }
+        
+
 
             // Keep the task alive
             while !Task.isCancelled {
