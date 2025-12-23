@@ -40,18 +40,14 @@ class AuthenticationService: ObservableObject {
     
     private func setupAuthListener() {
         authStateTask?.cancel()
-        
+
         authStateTask = Task {
-            do {
-                for await state in await supabase.auth.authStateChanges {
-                    guard !Task.isCancelled else { return }
-                    
-                    await MainActor.run {
-                        self.currentUser = state.session?.user
-                    }
+            for await state in supabase.auth.authStateChanges {
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    self.currentUser = state.session?.user
                 }
-            } catch {
-                print("Auth state listener error: \(error)")
             }
         }
     }
