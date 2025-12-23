@@ -254,7 +254,7 @@ struct TermsOfServiceView: View {
                         • Guarantors of event organizer performance or solvency
 
                         9.3 Third-Party Services
-                        We rely on third-party services (Stripe, Firebase, Supabase, Google Cloud) for critical functionality. We are not responsible for:
+                        We rely on third-party services (Stripe, Supabase, Google Cloud) for critical functionality. We are not responsible for:
                         • Outages or failures of third-party services
                         • Security breaches at third-party providers
                         • Changes to third-party terms or pricing
@@ -306,7 +306,8 @@ struct TermsOfServiceView: View {
                         By using the App, you consent to:
                         • Sharing your name and ticket information with event organizers for entry verification
                         • Processing payments through Stripe (subject to Stripe's privacy policy)
-                        • Using Firebase, Supabase, and Google Cloud for backend services
+                        • Using Supabase for backend database, authentication, and serverless functions
+                        • Data hosting on Google Cloud Platform infrastructure (via Supabase)
 
                         11.3 Communications
                         By creating an account, you consent to receive:

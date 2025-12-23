@@ -89,11 +89,10 @@ struct PrivacyPolicyView: View {
                         We do not sell, rent, or trade your personal information. We share information only in the following circumstances:
 
                         3.1 Service Providers and Business Partners
-                        • Firebase/Supabase: Backend infrastructure, authentication, and database services
+                        • Supabase: Backend infrastructure, PostgreSQL database, authentication, and edge functions
                         • Stripe: Payment processing and secure transaction handling
-                        • Google Cloud Platform: Hosting, storage, and cloud services
-                        • Kingfisher/Image CDNs: Image caching and delivery
-                        • Analytics Providers: App performance monitoring and usage analytics
+                        • Google Cloud Platform: Hosting and infrastructure (via Supabase)
+                        • Kingfisher: Image caching library (local device storage, 7-day expiration, 300MB max)
 
                         All third-party providers are contractually obligated to protect your data and use it only for specified purposes.
 
@@ -185,9 +184,10 @@ struct PrivacyPolicyView: View {
                         • Authentication tokens for secure access
                         • Shopping cart state for ticket purchases
 
-                        6.2 Analytics Cookies
-                        • Firebase Analytics: App usage patterns, feature adoption, crash reports
-                        • Performance monitoring: Load times, error rates, API response times
+                        6.2 Analytics and Diagnostics
+                        • Session tracking: Login sessions and authentication state
+                        • Error logging: Crash reports and error diagnostics for app stability
+                        • Performance monitoring: API response times and app performance metrics
 
                         6.3 Preference Cookies
                         • Language and regional settings
@@ -218,21 +218,22 @@ struct PrivacyPolicyView: View {
                         Our app integrates with the following third-party services:
 
                         8.1 Authentication Services
-                        • Google Sign-In: Governed by Google's Privacy Policy (https://policies.google.com/privacy)
-                        • Firebase Authentication: Part of Google Cloud Platform
+                        • Supabase Auth: Primary authentication service with encrypted password storage
+                        • Google Sign-In: OAuth authentication (https://policies.google.com/privacy)
+                        • Apple Sign-In: OAuth authentication (https://www.apple.com/legal/privacy/)
 
                         8.2 Payment Processing
                         • Stripe: PCI-DSS compliant payment processor (https://stripe.com/privacy)
                         • Apple Pay/Google Pay: Subject to Apple/Google privacy policies
 
                         8.3 Backend and Infrastructure
-                        • Supabase: PostgreSQL database hosting and real-time features (https://supabase.com/privacy)
-                        • Firebase Firestore: Document database for event data
-                        • Firebase Cloud Messaging: Push notifications
+                        • Supabase: PostgreSQL database, authentication, and serverless edge functions (https://supabase.com/privacy)
+                        • Google Cloud Platform: Infrastructure hosting (via Supabase)
 
-                        8.4 Analytics and Performance
-                        • Firebase Analytics: Usage tracking and crash reporting
-                        • Firebase Performance Monitoring: App performance metrics
+                        8.4 Image Caching
+                        • Kingfisher: Open-source image caching library that stores images locally on your device
+                        • Cache settings: 7-day expiration, 300MB disk limit, 100MB memory limit
+                        • No data transmitted to third parties
 
                         8.5 External Links
                         Our app may contain links to event organizer websites, social media, and other external sites. We are not responsible for the privacy practices of these third parties. Please review their privacy policies before providing any information.
@@ -278,9 +279,9 @@ struct PrivacyPolicyView: View {
                         • Adequacy Decisions: We transfer data only to countries with adequate data protection laws
 
                         10.2 Data Locations
-                        • Primary servers: European Union (Ireland, Frankfurt)
-                        • Backup servers: United States (Google Cloud Platform, Firebase)
-                        • CDN locations: Global content delivery network for images and static assets
+                        • Primary servers: Managed by Supabase (multi-region cloud infrastructure)
+                        • Backup servers: Automated backups via Supabase on Google Cloud Platform
+                        • Image caching: Stored locally on your device via Kingfisher library
 
                         10.3 Safeguards
                         All international transfers are protected by:
