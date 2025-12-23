@@ -444,17 +444,14 @@ struct ScannerView: View {
         }
 
         var data: [String: String] = [:]
-        var identifierType: String = ""
-        
+
         if let qrData = qrCodeData, let ticketId = extractTicketId(from: qrData) {
             // QR scan - send UUID only
             data["ticket_id"] = ticketId
-            identifierType = "UUID"
         } else if let ticketNum = ticketNumber, !ticketNum.isEmpty {
             // Manual entry - send ticket number + event ID for context
             data["ticket_number"] = ticketNum
             data["event_id"] = eventId
-            identifierType = "Ticket Number"
         } else {
             errorMessage = "Invalid QR Code or Ticket Number"
             showingError = true
@@ -521,7 +518,7 @@ struct ScannerView: View {
                                 
                                 let userName = response.userName ?? "Guest"
                                 let ticketNum = response.ticketNumber ?? "Unknown"
-                                let eventName = response.eventName ?? selectedEvent.name ?? "Unknown Event"
+                                let eventName = response.eventName ?? selectedEvent.name
                                 let formattedTime = self.formatScanTime(scannedAt)
                                 
                                 self.alreadyUsedDetails = AlreadyUsedTicket(
@@ -695,7 +692,7 @@ struct ScannerView: View {
 
         Task {
             do {
-                let events: [Event] = try await client.database
+                let events: [Event] = try await client
                     .from("events")
                     .select()
                     .eq("status", value: "active")

@@ -166,10 +166,10 @@ class StripePaymentService: NSObject, ObservableObject {
         usePreparedIfAvailable: Bool = false
     ) async throws -> (clientSecret: String, paymentIntentId: String, amount: Double) {
         if usePreparedIfAvailable,
-           let preparedId = preparedIntentId,
-           let secret = preparedClientSecret,
+           preparedIntentId != nil,
+           preparedClientSecret != nil,
            preparedEventId == eventId {
-            
+
             await MainActor.run {
                 self.preparedClientSecret = nil
                 self.preparedIntentId = nil
