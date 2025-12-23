@@ -163,6 +163,10 @@ struct TicketDetailView: View {
                         .appFont(size: 20, weight: .bold)
                         .kerning(-1.5)
                         .foregroundColor(.black)
+                        .fixedSize(horizontal: false, vertical: true) // Allows vertical expansion
+                                            .multilineTextAlignment(.leading)            // Ensures left alignment on wrap
+                                            .lineLimit(2)                                // Limits to 2 lines (or remove for infinite)
+                                            .padding(.trailing, 40)
 
                     Text(ticketWithEvent.event.venue.uppercased())
                         .appCard()

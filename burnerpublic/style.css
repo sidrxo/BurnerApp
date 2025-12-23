@@ -1,0 +1,272 @@
+/* style.css */
+
+/* --- 1. GLOBAL VARIABLES & RESET --- */
+:root {
+    --header-height: 100px; /* Increased slightly to accommodate larger logo */
+    --black: #000000;
+    --white: #ffffff;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background-color: var(--black);
+    color: var(--white);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+    line-height: 1.6;
+}
+
+/* --- 2. HEADER (Fixed - Outside Swup) --- */
+header {
+    height: var(--header-height);
+    background-color: var(--black);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid #111;
+}
+
+/* UPDATED: Logo Image Height */
+.header-logo-img {
+    height: 60px; /* Increased to 60px */
+    width: auto;
+    display: block;
+}
+
+.info-btn {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--white);
+    text-decoration: none;
+    padding: 8px 24px;
+    border-radius: 999px;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+}
+
+.info-btn:hover {
+    background-color: var(--white);
+    color: var(--black);
+}
+
+/* --- 3. SWUP TRANSITIONS --- */
+.transition-fade {
+    transition: 0.4s ease-in-out;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+html.is-animating .transition-fade {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+/* --- 4. HERO SECTION (Static Heart) --- */
+.hero-container {
+    width: 100%;
+    height: calc(100vh - var(--header-height));
+    background-color: var(--black);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.center-image {
+    width: 300px;
+    height: auto;
+    object-fit: contain;
+}
+
+/* --- 5. TEXT PAGE STYLES --- */
+.content-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 80px 20px 120px 20px;
+    min-height: 60vh;
+}
+
+.content-container h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.content-container h2 {
+    font-size: 1.5rem;
+    margin-top: 40px;
+    margin-bottom: 20px;
+    border-left: 2px solid var(--white);
+    padding-left: 20px;
+}
+
+.last-updated {
+    font-family: 'Courier New', Courier, monospace;
+    opacity: 0.5;
+    margin-bottom: 60px;
+    display: block;
+}
+
+.content-container p { margin-bottom: 20px; opacity: 0.9; }
+
+/* --- 6. FAQ STYLES --- */
+.faq-item { margin-bottom: 40px; border-bottom: 1px solid #333; padding-bottom: 20px; }
+.question { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; color: var(--white); }
+.answer { font-family: 'Courier New', Courier, monospace; font-size: 0.95rem; opacity: 0.7; }
+
+/* --- 7. FOOTER --- */
+footer {
+    background-color: var(--black);
+    color: var(--white);
+    /* UPDATED: Reduced bottom padding and height */
+    padding: 80px 40px 40px 40px; /* Top: 80, Right: 40, Bottom: 40, Left: 40 */
+    min-height: 30vh; /* Reduced from 50vh */
+}
+
+.footer-content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    margin-bottom: 60px; /* Reduced margin below grid */
+}
+
+.footer-lorem {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+    opacity: 0.6;
+    max-width: 400px;
+}
+
+.footer-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.footer-link {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1rem;
+    color: var(--white);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+}
+
+.footer-link:hover { text-decoration: underline; }
+
+.footer-meta {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.8rem;
+    opacity: 0.4;
+}
+
+@media (max-width: 768px) {
+    header, footer { padding: 20px; }
+    .content-container h1 { font-size: 2rem; }
+    .footer-content-grid { grid-template-columns: 1fr; gap: 40px; }
+}
+
+/* --- INFO PAGE STYLES --- */
+
+/* Split Layout (Left Text, Right Image) */
+.info-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 80vh;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px;
+    align-items: center;
+    gap: 60px;
+}
+
+/* Left Side: Text Box */
+.info-text-box {
+    text-align: left;
+}
+
+.info-text-box h1 {
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 0.9;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+    letter-spacing: -2px;
+}
+
+.info-text-box p {
+    font-size: 1.1rem;
+    color: #999;
+    max-width: 450px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+/* Right Side: Slideshow Container */
+.slideshow-container {
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Centers the square in the column */
+}
+
+.slideshow-img {
+    width: 100%;
+    max-width: 500px; /* Controls the maximum size of the square */
+    aspect-ratio: 1 / 1; /* Forces it to be a perfect square */
+    object-fit: cover;   /* Crops image to fit the square */
+    border-radius: 2px;
+    background-color: #27272a; /* Muted placeholder color */
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+}
+
+/* Mobile Adjustments */
+@media (max-width: 900px) {
+    .info-layout {
+        grid-template-columns: 1fr;
+        padding: 40px 20px;
+    }
+    .info-text-box h1 { font-size: 3rem; }
+}
+/* --- LOADING SHIMMER ANIMATION --- */
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.slideshow-img {
+    /* Existing styles... */
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 2px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+
+    /* NEW: Transition for the fade-in effect */
+    transition: opacity 0.5s ease-in-out;
+    opacity: 0; /* Hidden by default (until loaded) */
+}
+
+/* While loading: Visible + Shimmering Background */
+.slideshow-img.loading {
+    opacity: 1;
+    /* The Shimmer Gradient */
+    background: linear-gradient(90deg, #27272a 25%, #3f3f46 50%, #27272a 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+/* Once loaded: Visible + No Background */
+.slideshow-img.loaded {
+    opacity: 1;
+    background: #27272a; /* Fallback */
+    animation: none;
+}
