@@ -2,7 +2,8 @@ package com.burner.app.data.repository
 
 import android.util.Log
 import com.burner.app.data.BurnerSupabaseClient
-import com.burner.app.data.models.Event
+import com.burner.shared.models.Event
+import com.burner.app.util.startDate
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order

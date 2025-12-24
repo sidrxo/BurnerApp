@@ -2,7 +2,7 @@ package com.burner.app.ui.screens.tickets
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.burner.app.data.models.Ticket
+import com.burner.shared.models.Ticket
 import com.burner.app.data.repository.EventRepository
 import com.burner.app.data.repository.TicketRepository
 import dagger.hilt.android.lifecycle.HiltViewModel

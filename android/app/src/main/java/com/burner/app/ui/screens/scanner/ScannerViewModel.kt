@@ -4,8 +4,8 @@ import android.annotation.SuppressLint
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.burner.app.data.BurnerSupabaseClient
-import com.burner.app.data.models.Event
-import com.burner.app.data.models.UserRole
+import com.burner.shared.models.Event
+import com.burner.shared.models.UserRole
 import com.burner.app.data.repository.EventRepository
 import com.burner.app.services.AuthService
 import dagger.hilt.android.lifecycle.HiltViewModel

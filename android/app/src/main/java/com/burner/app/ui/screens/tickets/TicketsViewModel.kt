@@ -3,8 +3,8 @@ package com.burner.app.ui.screens.tickets
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.burner.app.data.models.Event
-import com.burner.app.data.models.Ticket
+import com.burner.shared.models.Event
+import com.burner.shared.models.Ticket
 import com.burner.app.data.repository.EventRepository
 import com.burner.app.data.repository.TicketRepository
 import com.burner.app.services.AuthService

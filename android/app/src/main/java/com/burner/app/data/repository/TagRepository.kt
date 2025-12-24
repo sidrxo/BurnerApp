@@ -1,7 +1,7 @@
 package com.burner.app.data.repository
 
 import com.burner.app.data.BurnerSupabaseClient
-import com.burner.app.data.models.Tag
+import com.burner.shared.models.Tag
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order

@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.burner.app.data.models.Tag
+import com.burner.shared.models.Tag
 import com.burner.app.data.repository.EventRepository
 import com.burner.app.data.repository.PreferencesRepository
 import com.burner.app.data.repository.TagRepository

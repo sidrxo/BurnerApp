@@ -2,7 +2,7 @@ package com.burner.app.ui.screens.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.burner.app.data.models.Event
+import com.burner.shared.models.Event
 import com.burner.app.data.repository.BookmarkRepository
 import com.burner.app.data.repository.EventRepository
 import com.burner.app.data.repository.PreferencesRepository

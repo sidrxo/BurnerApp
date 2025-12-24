@@ -2,8 +2,8 @@ package com.burner.app.ui.screens.bookmarks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.burner.app.data.models.Bookmark
-import com.burner.app.data.models.Event
+import com.burner.shared.models.Bookmark
+import com.burner.shared.models.Event
 import com.burner.app.data.repository.BookmarkRepository
 import com.burner.app.data.repository.EventRepository
 import com.burner.app.services.AuthService
@@ -92,7 +92,7 @@ class BookmarksViewModel @Inject constructor(
         return Event(
             id = bookmark.eventId,
             name = bookmark.eventName,
-            venue = bookmark.eventVenue,
+            venue = bookmark.venue,
             startTime = bookmark.startTime,
             price = bookmark.eventPrice,
             maxTickets = 100,

@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.burner.app.R // Import needed for R.drawable
-import com.burner.app.data.models.Ticket
+import com.burner.shared.models.Ticket
 import com.burner.app.ui.components.*
 import com.burner.app.ui.theme.BurnerColors
 import com.burner.app.ui.theme.BurnerTypography

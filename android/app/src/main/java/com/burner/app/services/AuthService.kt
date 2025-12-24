@@ -3,7 +3,7 @@ package com.burner.app.services
 import android.content.Context
 import android.content.Intent
 import com.burner.app.data.BurnerSupabaseClient
-import com.burner.app.data.models.User
+import com.burner.shared.models.User
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import dagger.hilt.android.qualifiers.ApplicationContext

@@ -21,8 +21,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
-import com.burner.app.data.models.Ticket
-import com.burner.app.data.models.TicketStatus
+import com.burner.shared.models.Ticket
+import com.burner.shared.models.TicketStatus
 import com.burner.app.ui.components.*
 import com.burner.app.ui.theme.BurnerColors
 import com.burner.app.ui.theme.BurnerDimensions

@@ -30,7 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
-import com.burner.app.data.models.Event
+import com.burner.shared.models.Event
 import com.burner.app.ui.components.PrimaryButton
 import com.burner.app.ui.theme.BurnerColors
 import com.burner.app.ui.theme.BurnerTypography

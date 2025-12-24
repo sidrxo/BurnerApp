@@ -2,7 +2,7 @@ package com.burner.app.data.repository
 
 import android.util.Log
 import com.burner.app.data.BurnerSupabaseClient
-import com.burner.app.data.models.Ticket
+import com.burner.shared.models.Ticket
 import com.burner.app.services.AuthService
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
