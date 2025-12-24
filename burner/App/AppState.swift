@@ -89,6 +89,9 @@ class AppState: ObservableObject {
 
         self.passwordlessAuthHandler = PasswordlessAuthHandler()
         self.navigationCoordinator = NavigationCoordinator()
+        
+        // Connect the handler to the coordinator for showing alerts
+        self.passwordlessAuthHandler.coordinator = self.navigationCoordinator
 
         self.onboardingManager = OnboardingManager(authService: self.authService)
 

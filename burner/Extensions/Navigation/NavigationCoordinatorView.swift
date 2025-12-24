@@ -41,6 +41,22 @@ struct NavigationCoordinatorView<Content: View>: View {
                     }
                 }
             }
+            .overlay {
+                if let customAlert = coordinator.activeCustomAlert {
+                    CustomAlertView(
+                        title: customAlert.title,
+                        description: customAlert.message,
+                        primaryAction: {
+                            customAlert.primaryAction()
+                            coordinator.dismissCustomAlert()
+                        },
+                        primaryActionTitle: customAlert.primaryButtonTitle,
+                        customContent: EmptyView()
+                    )
+                    .transition(.opacity)
+                    .zIndex(1002)
+                }
+            }
     }
 
     private var sheetBinding: Binding<ModalPresentation?> {

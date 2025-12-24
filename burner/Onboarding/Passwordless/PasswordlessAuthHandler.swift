@@ -10,10 +10,19 @@ class PasswordlessAuthHandler: ObservableObject {
     private let supabase = SupabaseManager.shared.client
     private let userRepository = UserRepository()
     
+    // Optional coordinator for showing user-friendly alerts
+    var coordinator: NavigationCoordinator?
+    
     func handleSignInLink(url: URL) -> Bool {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
             return false
         }
+        
+        
+        let isValidScheme = url.scheme == "burner" ||
+                           (url.scheme == "https" && url.host == "burnerlive.com")
+        
+        guard isValidScheme else { return false }
         
         // 1. Check for Fragment (Redirect Flow - most common for Magic Links)
         // URL looks like: burner://signin#access_token=...&refresh_token=...
@@ -31,6 +40,7 @@ class PasswordlessAuthHandler: ObservableObject {
             // For manual verification, we need the email we stored earlier
             guard let email = UserDefaults.standard.string(forKey: "pendingEmailForSignIn") else {
                 self.error = "Email not found. Please try signing in again."
+                showUserError(title: "Sign In Error", message: "Session expired. Please request a new sign-in link.")
                 return false
             }
             
@@ -53,40 +63,47 @@ class PasswordlessAuthHandler: ObservableObject {
                 await MainActor.run {
                     self.isProcessing = false
                     self.error = "Failed to parse session: \(error.localizedDescription)"
+                    
+                    // Show user-friendly error based on error type
+                    self.handleAuthError(error)
                 }
             }
         }
     }
     
     /// Handles the manual flow where we exchange a token/code for a session
-        private func handleManualVerification(email: String, token: String) {
-            Task {
-                do {
-                    // FIX: verifyOTP returns AuthResponse, so we must extract the session
-                    let response = try await supabase.auth.verifyOTP(
-                        email: email,
-                        token: token,
-                        type: .magiclink
-                    )
-                    
-                    // Safely unwrap the session
-                    guard let session = response.session else {
-                        await MainActor.run {
-                            self.isProcessing = false
-                            self.error = "Sign in failed: No session returned."
-                        }
-                        return
-                    }
-                    
-                    await finalizeSignIn(session: session)
-                } catch {
+    private func handleManualVerification(email: String, token: String) {
+        Task {
+            do {
+                // FIX: verifyOTP returns AuthResponse, so we must extract the session
+                let response = try await supabase.auth.verifyOTP(
+                    email: email,
+                    token: token,
+                    type: .magiclink
+                )
+                
+                // Safely unwrap the session
+                guard let session = response.session else {
                     await MainActor.run {
                         self.isProcessing = false
-                        self.error = "Sign in failed: \(error.localizedDescription)"
+                        self.error = "Sign in failed: No session returned."
+                        self.showUserError(title: "Sign In Failed", message: "Unable to complete sign in. Please try again.")
                     }
+                    return
+                }
+                
+                await finalizeSignIn(session: session)
+            } catch {
+                await MainActor.run {
+                    self.isProcessing = false
+                    self.error = "Sign in failed: \(error.localizedDescription)"
+                    
+                    // Show user-friendly error
+                    self.handleAuthError(error)
                 }
             }
         }
+    }
     
     /// Shared logic to run after a successful sign-in
     private func finalizeSignIn(session: Session) async {
@@ -142,6 +159,45 @@ class PasswordlessAuthHandler: ObservableObject {
         } catch {
             print("Failed to create/update user profile: \(error.localizedDescription)")
         }
+    }
+    
+    /// Handle authentication errors with user-friendly messages
+    private func handleAuthError(_ error: Error) {
+        let errorString = error.localizedDescription.lowercased()
+        
+        if errorString.contains("expired") || errorString.contains("otp_expired") {
+            showUserError(
+                title: "Link Expired",
+                message: "This sign-in link has expired. Please request a new one."
+            )
+        } else if errorString.contains("invalid") || errorString.contains("access_denied") {
+            showUserError(
+                title: "Invalid Link",
+                message: "This sign-in link is invalid or has already been used. Please request a new one."
+            )
+        } else if errorString.contains("network") || errorString.contains("connection") {
+            showUserError(
+                title: "Connection Error",
+                message: "Unable to connect. Please check your internet connection and try again."
+            )
+        } else {
+            showUserError(
+                title: "Sign In Failed",
+                message: "Something went wrong. Please try requesting a new sign-in link."
+            )
+        }
+    }
+    
+    /// Show user-friendly error alert
+    private func showUserError(title: String, message: String) {
+        // Show CustomAlertView through coordinator
+        if let coordinator = coordinator {
+            coordinator.showCustomAlert(title: title, message: message)
+        }
+        
+        // Also trigger haptic feedback
+        let notificationFeedback = UINotificationFeedbackGenerator()
+        notificationFeedback.notificationOccurred(.error)
     }
 }
 

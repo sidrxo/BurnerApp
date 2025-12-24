@@ -14,8 +14,15 @@ struct PasswordlessAuthView: View {
     @State private var canResend = false
     @State private var resendCountdown = 60
     @State private var countdownTimer: Timer?
+    @FocusState private var isEmailFieldFocused: Bool
+    @State private var hasAttemptedSubmit = false
     
     private let supabase = SupabaseManager.shared.client
+    
+    // Computed property for validation
+    private var showValidationError: Bool {
+        hasAttemptedSubmit && !email.isEmpty && !isValidEmail(email)
+    }
     
     var body: some View {
         NavigationStack {
@@ -68,14 +75,42 @@ struct PasswordlessAuthView: View {
                                             .autocorrectionDisabled()
                                             .textInputAutocapitalization(.never)
                                             .keyboardType(.emailAddress)
+                                            .textContentType(.emailAddress)
+                                            .submitLabel(.continue)
+                                            .focused($isEmailFieldFocused)
+                                            .onSubmit {
+                                                hasAttemptedSubmit = true
+                                                if isButtonEnabled {
+                                                    handleSendLink()
+                                                }
+                                            }
+                                            .onChange(of: email) { _, _ in
+                                                // Clear validation error when user types
+                                                if hasAttemptedSubmit && isValidEmail(email) {
+                                                    hasAttemptedSubmit = false
+                                                }
+                                            }
                                             .padding(.horizontal, 16)
                                             .padding(.vertical, 14)
                                             .background(Color.white.opacity(0.1))
                                             .clipShape(RoundedRectangle(cornerRadius: 12))
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                                    .stroke(showValidationError ? Color.red.opacity(0.6) : Color.white.opacity(0.2), lineWidth: showValidationError ? 2 : 1)
                                             )
+                                        
+                                        // Validation error message
+                                        if showValidationError {
+                                            HStack(spacing: 6) {
+                                                Image(systemName: "exclamationmark.circle.fill")
+                                                    .font(.system(size: 12))
+                                                Text("Please enter a valid email address")
+                                                    .appCaption()
+                                            }
+                                            .foregroundColor(.red.opacity(0.9))
+                                            .padding(.leading, 4)
+                                            .transition(.opacity.combined(with: .move(edge: .top)))
+                                        }
                                     }
                                 }
                                 .padding(.horizontal, 24)
@@ -131,6 +166,10 @@ struct PasswordlessAuthView: View {
                                     .frame(minHeight: 0)
                             }
                             .frame(minHeight: geometry.size.height - 80)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                isEmailFieldFocused = false
+                            }
                         }
                     }
 
@@ -238,10 +277,17 @@ struct PasswordlessAuthView: View {
     // MARK: - Send Sign-In Link
     
     private func handleSendLink() {
+        hasAttemptedSubmit = true
+        
         guard isValidEmail(email) else {
-            showErrorMessage("Please enter a valid email address")
+            // Haptic feedback for validation error
+            let notificationFeedback = UINotificationFeedbackGenerator()
+            notificationFeedback.notificationOccurred(.error)
             return
         }
+        
+        // Dismiss keyboard immediately to prevent lag during transition
+        isEmailFieldFocused = false
         
         startLoading()
         
@@ -253,7 +299,7 @@ struct PasswordlessAuthView: View {
                 // Supabase magic link with redirect URL
                 try await supabase.auth.signInWithOTP(
                     email: email,
-                    redirectTo: URL(string: "https://manageburner.online/signin")
+                    redirectTo: URL(string: "burner://signin")
                 )
                 
                 await MainActor.run {
@@ -302,9 +348,41 @@ struct PasswordlessAuthView: View {
     // MARK: - Helper Functions
     
     private func isValidEmail(_ email: String) -> Bool {
-        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        // Basic format check
+        let emailRegex = "^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
         let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
-        return emailPredicate.evaluate(with: email)
+        
+        guard emailPredicate.evaluate(with: email) else {
+            return false
+        }
+        
+        // Additional checks for common mistakes
+        let components = email.components(separatedBy: "@")
+        guard components.count == 2,
+              !components[0].isEmpty,
+              !components[1].isEmpty else {
+            return false
+        }
+        
+        let domain = components[1]
+        
+        // Check for common TLD typos
+        let commonTypos = ["cov", "con", "comm", "cim", "bet", "met", "ent"]
+        let tld = domain.components(separatedBy: ".").last?.lowercased() ?? ""
+        
+        if commonTypos.contains(tld) {
+            return false
+        }
+        
+        // Check domain has at least one dot and reasonable structure
+        guard domain.contains("."),
+              !domain.hasPrefix("."),
+              !domain.hasSuffix("."),
+              !domain.contains("..") else {
+            return false
+        }
+        
+        return true
     }
     
     private func startLoading() {

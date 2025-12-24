@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APP NAME</title>
+    <title>BURNER</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <header>
-        <a href="index.html">
+        <a href="/">
             <img src="logo.png" alt="Logo" class="header-logo-img">
         </a>
-        <a href="info.html" class="info-btn">INFO</a>
+        <a href="/info" class="info-btn">INFO</a>
     </header>
 
     <div id="swup" class="transition-fade">
@@ -28,13 +28,13 @@
             </div>
 
             <nav class="footer-nav">
-                <a href="privacy.html" class="footer-link">01. Privacy Policy</a>
-                <a href="terms.html" class="footer-link">02. Terms of Service</a>
-                <a href="faq.html" class="footer-link">03. Frequently Asked Questions</a>
-                <a href="mailto:support@burner.app" class="footer-link">04. Contact Support</a>
+                <a href="/privacy" class="footer-link">01. Privacy Policy</a>
+                <a href="/terms" class="footer-link">02. Terms of Service</a>
+                <a href="/faq" class="footer-link">03. Frequently Asked Questions</a>
+                <a href="mailto:support@burnerlive.com" class="footer-link">04. Contact Support</a>
             </nav>
         </div>
-        <div class="footer-meta">&copy; 2025 Burner App Ltd.<br>ALL RIGHTS RESERVED.</div>
+        <div class="footer-meta">&copy; 2025 BURNERLIVE<br>ALL RIGHTS RESERVED.</div>
     </footer>
 
    <script src="https://unpkg.com/swup@4"></script>
@@ -48,12 +48,12 @@
             if (!btn) return;
 
             // Check if we are currently on the info page
-            if (window.location.pathname.includes('info.html')) {
+            if (window.location.pathname.includes('/info')) {
                 btn.textContent = "CLOSE";
-                btn.href = "index.html";
+                btn.href = "/";
             } else {
                 btn.textContent = "INFO";
-                btn.href = "info.html";
+                btn.href = "/info";
             }
         }
 

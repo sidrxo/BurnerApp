@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "WFVLHMLM7A.com.gas.Burner",
+        "paths": ["/signin", "/signin/*", "/auth", "/auth/*"]
+      }
+    ]
+  }
+}

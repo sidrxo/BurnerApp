@@ -48,17 +48,6 @@ struct SettingsView: View {
                             .buttonStyle(PlainButtonStyle())
 
                             Button(action: {
-                                coordinator.navigate(to: .bookmarks)
-                            }) {
-                                MenuItemContent(
-                                    title: "Saves",
-                                    subtitle: "Your saves appear here"
-                                )
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(PlainButtonStyle())
-
-                            Button(action: {
                                 coordinator.navigate(to: .paymentSettings)
                             }) {
                                 MenuItemContent(

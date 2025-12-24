@@ -220,6 +220,15 @@ struct SignInSheetView: View {
                 }
             } catch {
                 await MainActor.run {
+                    // Check if user cancelled the sign-in
+                    let nsError = error as NSError
+                    if nsError.domain == "com.apple.AuthenticationServices.WebAuthenticationSession" && nsError.code == 1 {
+                        // User cancelled - just stop loading, don't show error
+                        stopLoading()
+                        return
+                    }
+                    
+                    // For other errors, show the error message
                     showErrorMessage("Google Sign-In failed: \(error.localizedDescription)")
                 }
             }

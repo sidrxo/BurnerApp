@@ -93,6 +93,7 @@ html.is-animating .transition-fade {
 .content-container h1 {
     font-size: 3rem;
     font-weight: 800;
+    line-height: 0.9;  /* Equivalent to "tight" spacing */
     letter-spacing: -1.5px;
     margin-bottom: 10px;
     text-transform: uppercase;
@@ -242,7 +243,6 @@ footer {
 }
 
 .slideshow-img {
-    /* Existing styles... */
     width: 100%;
     max-width: 500px;
     aspect-ratio: 1 / 1;
@@ -250,9 +250,18 @@ footer {
     border-radius: 2px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.5);
 
-    /* NEW: Transition for the fade-in effect */
+    /* --- FIXES START HERE --- */
+    border: none !important;      /* Forces removal of any border */
+    outline: none;                /* Removes focus outlines */
+    display: block;               /* Removes tiny gaps below inline images */
+    
+    /* These two lines hide the "broken image" icon/text that causes the white border */
+    font-size: 0;                 
+    color: transparent;           
+    /* ------------------------ */
+
     transition: opacity 0.5s ease-in-out;
-    opacity: 0; /* Hidden by default (until loaded) */
+    opacity: 0;
 }
 
 /* While loading: Visible + Shimmering Background */

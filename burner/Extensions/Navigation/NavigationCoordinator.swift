@@ -189,6 +189,14 @@ struct AlertPresentation: Identifiable {
     }
 }
 
+struct CustomAlertPresentation: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
+    let primaryButtonTitle: String
+    let primaryAction: () -> Void
+}
+
 @MainActor
 class NavigationCoordinator: ObservableObject {
     @Published var selectedTab: AppTab = .explore
@@ -201,6 +209,7 @@ class NavigationCoordinator: ObservableObject {
 
     @Published var activeModal: ModalPresentation?
     @Published var activeAlert: AlertPresentation?
+    @Published var activeCustomAlert: CustomAlertPresentation?
 
     @Published var pendingDeepLink: String?
 
@@ -300,6 +309,19 @@ class NavigationCoordinator: ObservableObject {
 
     func dismissAlert() {
         activeAlert = nil
+    }
+    
+    func showCustomAlert(title: String, message: String, buttonTitle: String = "OK", action: @escaping () -> Void = {}) {
+        activeCustomAlert = CustomAlertPresentation(
+            title: title,
+            message: message,
+            primaryButtonTitle: buttonTitle,
+            primaryAction: action
+        )
+    }
+    
+    func dismissCustomAlert() {
+        activeCustomAlert = nil
     }
 
     func handleDeepLink(eventId: String) {

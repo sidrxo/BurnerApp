@@ -180,6 +180,9 @@ struct BurnerApp: App {
             return
         }
         
+        // Set the coordinator so the handler can show alerts
+        appState.passwordlessAuthHandler.coordinator = appState.navigationCoordinator
+        
         if appState.passwordlessAuthHandler.handleSignInLink(url: url) {
             return
         }
