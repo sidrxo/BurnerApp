@@ -1,58 +1,27 @@
 package com.burner.shared.services
 
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.gotrue.Auth
-import io.github.jan.supabase.gotrue.auth
-import io.github.jan.supabase.gotrue.providers.builtin.Email
-
 /**
- * iOS implementation of AuthClient using Supabase KMP SDK
+ * iOS actual implementation of AuthClient
+ * This is a minimal placeholder - the real authentication happens in Swift
  */
 actual class AuthClient {
-    private val client: SupabaseClient
-
-    constructor(supabaseClient: SupabaseClient) {
-        this.client = supabaseClient
-    }
-
     actual suspend fun signIn(email: String, password: String): AuthSession {
-        val response = client.auth.signInWith(Email) {
-            this.email = email
-            this.password = password
-        }
-
-        val userId = response.user?.id ?: throw Exception("No user ID returned")
-        val userEmail = response.user?.email ?: email
-
-        return AuthSession(userId, userEmail)
+        throw NotImplementedError("Use Swift Supabase auth client directly - KMP auth not needed for iOS")
     }
 
     actual suspend fun signUp(email: String, password: String, displayName: String): AuthSession {
-        val response = client.auth.signUpWith(Email) {
-            this.email = email
-            this.password = password
-            data = mapOf("display_name" to displayName)
-        }
-
-        val userId = response.user?.id ?: throw Exception("No user ID returned")
-        val userEmail = response.user?.email ?: email
-
-        return AuthSession(userId, userEmail)
+        throw NotImplementedError("Use Swift Supabase auth client directly - KMP auth not needed for iOS")
     }
 
     actual suspend fun signOut() {
-        client.auth.signOut()
+        throw NotImplementedError("Use Swift Supabase auth client directly - KMP auth not needed for iOS")
     }
 
     actual suspend fun resetPasswordForEmail(email: String) {
-        client.auth.resetPasswordForEmail(email)
+        throw NotImplementedError("Use Swift Supabase auth client directly - KMP auth not needed for iOS")
     }
 
-    actual fun getCurrentUserId(): String? {
-        return client.auth.currentUserOrNull()?.id
-    }
+    actual fun getCurrentUserId(): String? = null
 
-    actual fun isAuthenticated(): Boolean {
-        return client.auth.currentSessionOrNull() != null
-    }
+    actual fun isAuthenticated(): Boolean = false
 }
