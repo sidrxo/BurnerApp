@@ -1,25 +1,24 @@
 import Foundation
 import Combine
-import Shared
 
-// MARK: - Type Alias
-// Map Swift Venue to KMP Venue
 
-typealias Venue = Shared.Venue
-
-// MARK: - Swift Extensions for KMP Venue
-// Add Swift-specific functionality
-
-extension Shared.Venue {
-    /// Convert KMP createdAt to Swift Date
-    var createdAt: Date? {
-        guard let instant = createdAt else { return nil }
-        return Date(timeIntervalSince1970: Double(instant.epochSeconds))
-    }
-
-    /// Convert KMP updatedAt to Swift Date
-    var updatedAt: Date? {
-        guard let instant = updatedAt else { return nil }
-        return Date(timeIntervalSince1970: Double(instant.epochSeconds))
-    }
+struct Venue: Identifiable, Codable, Sendable {
+    var id: String?
+    var name: String
+    var address: String
+    var city: String
+    var capacity: Int
+    var imageUrl: String?
+    var contactEmail: String
+    var website: String
+    var admins: [String]
+    var subAdmins: [String]
+    var active: Bool
+    var eventCount: Int
+    var createdAt: Date?
+    var createdBy: String?
+    var updatedAt: Date?
+    
+    // Optional fields from Phase 4 enhancement
+    var coordinates: Coordinate?
 }
