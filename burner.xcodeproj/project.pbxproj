@@ -426,7 +426,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a scrip# Force Java 21 for the build\nexport JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\"\n\ncd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcodet or drag a script file from your workspace to insert its path.\n";
+			shellScript = "cd \"$SRCROOT\"\n\n# Build the appropriate framework based on architecture\nif [ \"$PLATFORM_NAME\" = \"iphonesimulator\" ]; then\n    if [ \"$ARCHS\" = \"arm64\" ]; then\n        ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64\n    else\n        ./gradlew :shared:linkDebugFrameworkIosX64\n    fi\nelse\n    ./gradlew :shared:linkDebugFrameworkIosArm64\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
