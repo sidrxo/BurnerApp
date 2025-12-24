@@ -1,53 +1,50 @@
-# iOS KMP Integration Guide
+# iOS KMP Framework Integration Guide
 
-This document explains how the iOS app integrates with the Kotlin Multiplatform shared framework.
+This guide explains how to integrate the Kotlin Multiplatform (KMP) shared framework into the iOS BurnerApp.
 
 ## Overview
 
-The BurnerApp iOS application now uses a Kotlin Multiplatform (KMP) shared framework for:
-- **Models**: Event, Ticket, User, Bookmark, Tag, Venue, Coordinate
-- **Repositories**: EventRepository, TicketRepository, UserRepository, BookmarkRepository, TagRepository
-- **Services**: AuthService
-- **Business Logic**: EventFilteringUseCase, SearchUseCase, TicketStatusTracker
-- **Utilities**: DateUtils, PriceUtils, GeoUtils
+The shared KMP framework provides cross-platform business logic, data models, and repositories that can be used by both iOS and Android. This eliminates code duplication and ensures consistency across platforms.
 
-## Project Structure
+## What's Included in the Shared Framework
 
-```
-BurnerApp/
-├── shared/                          # KMP shared module
-│   ├── src/
-│   │   ├── commonMain/kotlin/       # Shared Kotlin code
-│   │   ├── androidMain/kotlin/      # Android-specific code
-│   │   └── iosMain/kotlin/          # iOS-specific code
-│   └── build.gradle.kts             # Shared module build config
-├── burner/                          # iOS app
-│   ├── App/
-│   │   ├── AppState.swift           # Initializes KMP framework
-│   │   └── AppExports.swift         # Re-exports Shared framework
-│   └── Extensions/
-│       └── SharedExtensions.swift   # Swift extensions for KMP types
-└── burner.xcodeproj/                # Xcode project
-```
+### Data Models
+- `Event` - Event data with computed properties (isPast, hasStarted, distanceFrom, etc.)
+- `Ticket` - Ticket management with status tracking
+- `User` - User profile and authentication
+- `Venue` - Venue information
+- `Bookmark` - Saved events
+- `Tag` - Event genres/categories
+- `Coordinate` - Geographic coordinates
 
-## Build Process
+### Repositories
+- `EventRepository` - Event fetching, filtering, and search
+- `TicketRepository` - Ticket management and status tracking
+- `BookmarkRepository` - Bookmark CRUD operations
+- `UserRepository` - User profile operations
+- `TagRepository` - Tag/genre management
 
-### Automatic Framework Building
+### Business Logic
+- `EventFilteringUseCase` - Filter events (featured, nearby, by genre)
+- `SearchUseCase` - Search and sort events
+- `TicketStatusTracker` - Track ticket status and history
 
-The Xcode project includes a build script phase that automatically builds the appropriate KMP framework based on the target architecture:
+### Services
+- `AuthService` - Authentication (sign in, sign up, password reset)
 
-- **iOS Simulator (ARM64)**: `linkDebugFrameworkIosSimulatorArm64`
-- **iOS Simulator (x64)**: `linkDebugFrameworkIosX64`
-- **iOS Device**: `linkDebugFrameworkIosArm64`
+### Utilities
+- `DateUtils` - Date formatting and calculations
+- `GeoUtils` - Distance calculations (haversine formula)
+- `PriceUtils` - Price formatting and conversions
 
-The build script runs before the iOS app compiles, ensuring the framework is always up-to-date.
+## Integration Steps
 
-### Manual Framework Building
+### Step 1: Build the Shared Framework
 
-To manually build the framework:
+The framework needs to be built for iOS simulator and device architectures:
 
 ```bash
-# For iOS Simulator (ARM64 - M1/M2 Macs)
+# For iOS Simulator (ARM64 - Apple Silicon Macs)
 ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
 
 # For iOS Simulator (x64 - Intel Macs)
@@ -55,157 +52,25 @@ To manually build the framework:
 
 # For iOS Device
 ./gradlew :shared:linkDebugFrameworkIosArm64
-
-# Build all iOS frameworks
-./gradlew :shared:linkDebugFrameworkIosArm64 :shared:linkDebugFrameworkIosSimulatorArm64
 ```
 
-## Usage in Swift
+The framework will be built to:
+- `shared/build/bin/iosSimulatorArm64/debugFramework/Shared.framework`
+- `shared/build/bin/iosX64/debugFramework/Shared.framework`
+- `shared/build/bin/iosArm64/debugFramework/Shared.framework`
 
-### Initialization
+**Note:** The `build_shared_framework.sh` script automates this process.
 
-The shared framework is initialized in `AppState.swift`:
+### Step 2: Link the Framework in Xcode
 
-```swift
-import Shared
+1. Open `burner.xcodeproj` in Xcode
+2. Select the `burner` target
+3. Go to "Build Phases" > Verify the "Run Script" phase exists that executes `build_shared_framework.sh`
+4. Go to "General" > "Frameworks, Libraries, and Embedded Content"
+5. Add the Shared.framework and set "Embed" to "Embed & Sign"
 
-init() {
-    // Initialize KMP with Supabase credentials
-    let url = "https://lsqlgyyugysvhvxtssik.supabase.co"
-    let key = "sb_publishable_..."
-    KmpHelper.shared.initialize(url: url, key: key)
+### Step 3: Initialize KMP in AppState
 
-    // Get repository instances
-    self.authService = KmpHelper.shared.getAuthService()
-    self.eventRepository = KmpHelper.shared.getEventRepository()
-    self.ticketRepository = KmpHelper.shared.getTicketRepository()
-    self.bookmarkRepository = KmpHelper.shared.getBookmarkRepository()
-    self.userRepository = KmpHelper.shared.getUserRepository()
-}
-```
+Update `burner/App/AppState.swift` to initialize the KMP Supabase manager.
 
-### Using KMP Types
-
-Thanks to `@_exported import Shared` in `AppExports.swift`, KMP types are available throughout the app:
-
-```swift
-// No need to import Shared explicitly
-let event: Event = ...
-let ticket: Ticket = ...
-```
-
-### Repository Operations
-
-```swift
-// Fetch events
-let events = try await eventRepository.fetchEvents(
-    sinceDate: Kotlinx_datetimeInstant.now(),
-    page: 1,
-    pageSize: 20
-)
-
-// Search events
-let results = try await eventRepository.searchEvents(
-    query: "concert",
-    sortBy: SearchSortOption.date,
-    userLatitude: 37.7749,
-    userLongitude: -122.4194
-)
-
-// Get user tickets
-let tickets = try await ticketRepository.fetchUserTickets(userId: userId)
-
-// Authenticate
-let success = try await authService.signInWithEmail(
-    email: "user@example.com",
-    password: "password"
-)
-```
-
-### Working with Dates
-
-KMP uses `kotlinx.datetime.Instant` and stores dates as ISO8601 strings. Swift extensions provide easy conversion:
-
-```swift
-// KMP Event has:
-// - startTime: String? (ISO8601)
-// - startInstant: Instant? (computed)
-// - isPast: Boolean (computed)
-
-// Use Swift extensions:
-let event: Event = ...
-let startDate: Date? = event.startDate  // Converted to Swift Date
-let isPast: Bool = event.isPast         // Direct from KMP
-```
-
-### Handling Async Operations
-
-KMP suspend functions are exposed as Swift async functions:
-
-```swift
-Task {
-    do {
-        let events = try await eventRepository.getAllEvents()
-        // Handle success
-    } catch {
-        // Handle error
-        print("Error: \(error)")
-    }
-}
-```
-
-## Swift Extensions
-
-The `SharedExtensions.swift` file provides convenient Swift-specific functionality:
-
-- **Event extensions**: `startDate`, `endDate`, `location`, `formattedPrice`
-- **Ticket extensions**: `purchaseDateSwift`, `isActive`, `isConfirmed`
-- **User extensions**: `createdAtDate`, `lastLoginAtDate`
-- **Bookmark extensions**: `bookmarkedAtDate`
-
-## Architecture Benefits
-
-### Code Sharing
-- Business logic shared between iOS and Android
-- Single source of truth for data models
-- Consistent API behavior across platforms
-
-### Type Safety
-- Compile-time type checking
-- Shared data models ensure consistency
-- Reduced runtime errors
-
-### Maintainability
-- Update logic once for both platforms
-- Easier to add features
-- Centralized testing
-
-## Troubleshooting
-
-### Framework Not Found
-If you see "Framework not found Shared":
-1. Clean build folder (Cmd+Shift+K)
-2. Rebuild project (Cmd+B)
-3. Manually run: `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64`
-
-### Date Conversion Issues
-Use the Swift extensions in `SharedExtensions.swift` for date conversions. The KMP framework uses ISO8601 strings internally.
-
-### Build Script Errors
-If the build script fails:
-1. Ensure Gradle wrapper is executable: `chmod +x gradlew`
-2. Check Java version: `java -version` (should be Java 17+)
-3. Try building manually to see detailed errors
-
-## Next Steps
-
-1. **Migration**: Continue migrating iOS-specific repository code to use KMP repositories
-2. **Testing**: Add tests for Swift-KMP integration
-3. **Documentation**: Document any platform-specific quirks
-4. **Performance**: Profile and optimize data transfer between Swift and Kotlin
-
-## Resources
-
-- [Kotlin Multiplatform Documentation](https://kotlinlang.org/docs/multiplatform.html)
-- [KMP for iOS](https://kotlinlang.org/docs/multiplatform-mobile-getting-started.html)
-- [kotlinx.datetime](https://github.com/Kotlin/kotlinx-datetime)
+See full documentation in the file for more details.
