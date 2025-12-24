@@ -1,164 +1,68 @@
 package com.burner.shared.services
 
 import com.burner.shared.models.User
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.gotrue.providers.builtin.Email
 import kotlinx.datetime.Clock
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
-/**
- * Authentication Service
- * Handles user authentication and session management
- * Based on iOS AuthenticationService
- */
 class AuthService(
-    private val authClient: AuthClient,
+    private val client: SupabaseClient,
     private val userRepository: com.burner.shared.repositories.UserRepository
 ) {
-    /**
-     * Sign in with email and password
-     */
-    suspend fun signInWithEmail(email: String, password: String): AuthResult {
-        return try {
-            val session = authClient.signIn(email, password)
-            val userId = session.userId
+    @Throws(Exception::class)
+    suspend fun signInWithEmail(email: String, password: String): String {
+        client.auth.signInWith(Email) {
+            this.email = email
+            this.password = password
+        }
 
-            // Update last login
+        val currentUser = client.auth.currentUserOrNull()
+        val userId = currentUser?.id ?: throw Exception("User not found after login")
+
+        // Update last login (Fire and forget, or await if strict)
+        try {
             val now = Clock.System.now().toString()
             userRepository.updateUserProfile(
                 userId,
                 mapOf("last_login_at" to now)
             )
-
-            AuthResult.Success(userId)
         } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "Sign in failed")
+            // Ignore analytics errors
         }
+
+        return userId
     }
 
-    /**
-     * Sign up with email and password
-     */
-    suspend fun signUpWithEmail(
-        email: String,
-        password: String,
-        displayName: String
-    ): AuthResult {
-        return try {
-            val session = authClient.signUp(email, password, displayName)
-            val userId = session.userId
-
-            AuthResult.Success(userId)
-        } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "Sign up failed")
+    @Throws(Exception::class)
+    suspend fun signUpWithEmail(email: String, password: String, displayName: String): String {
+        client.auth.signUpWith(Email) {
+            this.email = email
+            this.password = password
+            data = buildJsonObject {
+                put("full_name", displayName)
+            }
         }
+        return client.auth.currentUserOrNull()?.id ?: throw Exception("Signup failed")
     }
 
-    /**
-     * Sign out current user
-     */
-    suspend fun signOut(): Result<Unit> {
-        return try {
-            authClient.signOut()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    @Throws(Exception::class)
+    suspend fun signOut() {
+        client.auth.signOut()
     }
 
-    /**
-     * Send password reset email
-     */
-    suspend fun resetPassword(email: String): Result<Unit> {
-        return try {
-            authClient.resetPasswordForEmail(email)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    @Throws(Exception::class)
+    suspend fun resetPassword(email: String) {
+        client.auth.resetPasswordForEmail(email)
     }
 
-    /**
-     * Get current user ID
-     */
     fun getCurrentUserId(): String? {
-        return authClient.getCurrentUserId()
+        return client.auth.currentUserOrNull()?.id
     }
 
-    /**
-     * Check if user is authenticated
-     */
     fun isAuthenticated(): Boolean {
-        return authClient.isAuthenticated()
+        return client.auth.currentUserOrNull() != null
     }
-
-    /**
-     * Get user profile
-     */
-    suspend fun getUserProfile(): Result<User?> {
-        val userId = getCurrentUserId() ?: return Result.success(null)
-        return userRepository.fetchUserProfile(userId)
-    }
-
-    /**
-     * Get user role
-     */
-    suspend fun getUserRole(): Result<String?> {
-        return try {
-            val profile = getUserProfile().getOrNull()
-            Result.success(profile?.role)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    /**
-     * Check if user has a specific role
-     */
-    suspend fun hasRole(role: String): Result<Boolean> {
-        return try {
-            val userRole = getUserRole().getOrNull()
-            Result.success(userRole == role)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    /**
-     * Check if user has any of the specified roles
-     */
-    suspend fun hasAnyRole(roles: List<String>): Result<Boolean> {
-        return try {
-            val userRole = getUserRole().getOrNull() ?: return Result.success(false)
-            Result.success(roles.contains(userRole))
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-}
-
-/**
- * Auth result sealed class
- */
-sealed class AuthResult {
-    data class Success(val userId: String) : AuthResult()
-    data class Error(val message: String) : AuthResult()
-}
-
-/**
- * Auth session data
- */
-data class AuthSession(
-    val userId: String,
-    val email: String
-)
-
-/**
- * Platform-specific auth client
- * Implementations will be provided for iOS and Android
- */
-expect class AuthClient {
-    suspend fun signIn(email: String, password: String): AuthSession
-    suspend fun signUp(email: String, password: String, displayName: String): AuthSession
-    suspend fun signOut()
-    suspend fun resetPasswordForEmail(email: String)
-    fun getCurrentUserId(): String?
-    fun isAuthenticated(): Boolean
 }

@@ -2,24 +2,26 @@ package com.burner.shared.repositories
 
 import com.burner.shared.models.Bookmark
 import com.burner.shared.models.Event
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.from
 import kotlinx.datetime.Clock
 
 /**
  * Bookmark Repository
  * Handles all bookmark-related data operations
- * Based on iOS BookmarkRepository implementation
  */
-class BookmarkRepository(private val supabaseClient: SupabaseClient) {
+class BookmarkRepository(private val client: SupabaseClient) {
 
     /**
      * Fetch all bookmarks for a user
      */
     suspend fun fetchBookmarks(userId: String): Result<List<Bookmark>> {
         return try {
-            val bookmarks = supabaseClient.from("bookmarks")
-                .select()
-                .eq("user_id", userId)
-                .execute<List<Bookmark>>()
+            val bookmarks = client.from("bookmarks").select {
+                filter {
+                    eq("user_id", userId)
+                }
+            }.decodeList<Bookmark>()
 
             Result.success(bookmarks)
         } catch (e: Exception) {
@@ -32,6 +34,7 @@ class BookmarkRepository(private val supabaseClient: SupabaseClient) {
      */
     suspend fun addBookmark(userId: String, event: Event): Result<Unit> {
         return try {
+            // Using a Map for insertion is supported by Supabase KMP
             val bookmark = mapOf(
                 "user_id" to userId,
                 "event_id" to (event.id ?: ""),
@@ -43,10 +46,7 @@ class BookmarkRepository(private val supabaseClient: SupabaseClient) {
                 "bookmarked_at" to Clock.System.now().toString()
             )
 
-            supabaseClient.from("bookmarks")
-                .insert(bookmark)
-                .execute<Unit>()
-
+            client.from("bookmarks").insert(bookmark)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -58,12 +58,12 @@ class BookmarkRepository(private val supabaseClient: SupabaseClient) {
      */
     suspend fun removeBookmark(userId: String, eventId: String): Result<Unit> {
         return try {
-            supabaseClient.from("bookmarks")
-                .delete()
-                .eq("user_id", userId)
-                .eq("event_id", eventId)
-                .execute<Unit>()
-
+            client.from("bookmarks").delete {
+                filter {
+                    eq("user_id", userId)
+                    eq("event_id", eventId)
+                }
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -75,25 +75,17 @@ class BookmarkRepository(private val supabaseClient: SupabaseClient) {
      */
     suspend fun isBookmarked(userId: String, eventId: String): Result<Boolean> {
         return try {
-            val bookmarks = supabaseClient.from("bookmarks")
-                .select()
-                .eq("user_id", userId)
-                .eq("event_id", eventId)
-                .execute<List<Bookmark>>()
+            val count = client.from("bookmarks").select {
+                count(io.github.jan.supabase.postgrest.query.Count.EXACT)
+                filter {
+                    eq("user_id", userId)
+                    eq("event_id", eventId)
+                }
+            }.countOrNull() ?: 0
 
-            Result.success(bookmarks.isNotEmpty())
+            Result.success(count > 0)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 }
-
-/**
- * Extension for delete operations
- */
-expect fun QueryBuilder.delete(): QueryBuilder
-
-/**
- * Extension for insert operations
- */
-expect fun QueryBuilder.insert(data: Map<String, Any?>): QueryBuilder

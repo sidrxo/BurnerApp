@@ -1,14 +1,15 @@
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version "1.9.22"
+    kotlin("plugin.serialization")
     id("com.android.library")
 }
 
 kotlin {
+    // 1. Added the missing androidTarget() call
     androidTarget {
         compilations.all {
-            kotlinOptions {
-                jvmTarget = "17"
+            compilerOptions.configure {
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
             }
         }
     }
@@ -27,13 +28,9 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                // Kotlin Serialization
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
-
-                // DateTime
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
-
-                // Coroutines
+                // 2. Cleaned up the citation tags and kept the updated versions
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
                 // Supabase KMP
@@ -50,14 +47,8 @@ kotlin {
             }
         }
 
-        val iosX64Main by getting
-        val iosArm64Main by getting
-        val iosSimulatorArm64Main by getting
         val iosMain by creating {
             dependsOn(commonMain)
-            iosX64Main.dependsOn(this)
-            iosArm64Main.dependsOn(this)
-            iosSimulatorArm64Main.dependsOn(this)
             dependencies {
                 implementation("io.ktor:ktor-client-darwin:2.3.7")
             }
