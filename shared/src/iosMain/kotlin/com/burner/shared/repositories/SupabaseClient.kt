@@ -34,3 +34,23 @@ actual class QueryBuilder {
         throw NotImplementedError("Use Swift Supabase client directly - KMP repositories not needed for iOS")
     }
 }
+
+/**
+ * iOS actual implementation of QueryBuilder extension for delete operations
+ */
+actual fun QueryBuilder.delete(): QueryBuilder = this
+
+/**
+ * iOS actual implementation of QueryBuilder extension for insert operations
+ */
+actual fun QueryBuilder.insert(data: Map<String, Any?>): QueryBuilder = this
+
+/**
+ * iOS actual implementation of QueryBuilder extension for update operations
+ */
+actual fun QueryBuilder.update(data: Map<String, Any>): QueryBuilder = this
+
+/**
+ * iOS actual implementation of QueryBuilder extension for upsert operations
+ */
+actual fun QueryBuilder.upsert(data: Any): QueryBuilder = this
