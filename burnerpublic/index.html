@@ -126,7 +126,8 @@
                                window.location.pathname === '/index.html' ||
                                window.location.pathname === '';
 
-            footerIntro.style.display = isHomepage ? 'block' : 'none';
+            footerIntro.style.opacity = isHomepage ? '1' : '0';
+            footerIntro.style.pointerEvents = isHomepage ? 'auto' : 'none';
         }
 
         // --- 5. EVENT LISTENERS ---
