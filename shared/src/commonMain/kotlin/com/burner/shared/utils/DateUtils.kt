@@ -30,7 +30,9 @@ object DateUtils {
             else -> hour
         }
 
-        return String.format("%d:%02d %s", hour12, minute, period)
+        // Format time string (KMP compatible)
+        val minuteStr = if (minute < 10) "0$minute" else "$minute"
+        return "$hour12:$minuteStr $period"
     }
 
     /**
@@ -87,7 +89,7 @@ object DateUtils {
      */
     fun isThisWeek(instant: Instant, timeZone: TimeZone = TimeZone.currentSystemDefault()): Boolean {
         val now = Clock.System.now()
-        val sevenDaysLater = now + 7.days
+        val sevenDaysLater = now + kotlinx.datetime.DateTimeUnit.DayBased(7)
         return instant in now..sevenDaysLater
     }
 }
