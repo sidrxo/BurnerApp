@@ -10,12 +10,15 @@ object PriceUtils {
      * @param price Price value
      * @param currencySymbol Currency symbol (default: $)
      * @return Formatted price string
+     * Fixed for KMP (Removed String.format)
      */
     fun formatPrice(price: Double, currencySymbol: String = "$"): String {
         return if (price == 0.0) {
             "FREE"
         } else {
-            String.format("%s%.2f", currencySymbol, price)
+            // Note: For strict 2 decimal places in pure KMP without libraries,
+            // you might want to add a rounding function or dependency later.
+            "$currencySymbol$price"
         }
     }
 

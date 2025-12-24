@@ -1,23 +1,25 @@
 package com.burner.shared.repositories
 
 import com.burner.shared.models.User
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.from
 
 /**
  * User Repository
  * Handles all user-related data operations
- * Based on iOS UserRepository implementation
  */
-class UserRepository(private val supabaseClient: SupabaseClient) {
+class UserRepository(private val client: SupabaseClient) {
 
     /**
      * Fetch user profile by ID
      */
     suspend fun fetchUserProfile(userId: String): Result<User?> {
         return try {
-            val user = supabaseClient.from("users")
-                .select()
-                .eq("id", userId)
-                .executeSingle<User>()
+            val user = client.from("users").select {
+                filter {
+                    eq("id", userId)
+                }
+            }.decodeSingleOrNull<User>()
 
             Result.success(user)
         } catch (e: Exception) {
@@ -30,11 +32,11 @@ class UserRepository(private val supabaseClient: SupabaseClient) {
      */
     suspend fun updateUserProfile(userId: String, data: Map<String, Any>): Result<Unit> {
         return try {
-            supabaseClient.from("users")
-                .update(data)
-                .eq("id", userId)
-                .execute<Unit>()
-
+            client.from("users").update(data) {
+                filter {
+                    eq("id", userId)
+                }
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -46,10 +48,7 @@ class UserRepository(private val supabaseClient: SupabaseClient) {
      */
     suspend fun createUserProfile(user: User): Result<Unit> {
         return try {
-            supabaseClient.from("users")
-                .upsert(user)
-                .execute<Unit>()
-
+            client.from("users").upsert(user)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -68,13 +67,3 @@ class UserRepository(private val supabaseClient: SupabaseClient) {
         }
     }
 }
-
-/**
- * Extension for update operations
- */
-expect fun QueryBuilder.update(data: Map<String, Any>): QueryBuilder
-
-/**
- * Extension for upsert operations
- */
-expect fun QueryBuilder.upsert(data: Any): QueryBuilder

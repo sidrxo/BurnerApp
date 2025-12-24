@@ -37,6 +37,8 @@
 		8B7FF6482E7CF1DC007072DD /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B7FF6462E7CF1CB007072DD /* ActivityKit.framework */; };
 		8BCF682A2EC7CA17008C42F6 /* StripePaymentsUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8BCF68292EC7CA17008C42F6 /* StripePaymentsUI */; };
 		8BD9BB8C2EFA22F5009E4F22 /* Config.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 8BD9BB8B2EFA22F5009E4F22 /* Config.xcconfig */; };
+		8BEE068C2EFB83D400FF7451 /* Shared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BEE068B2EFB83D400FF7451 /* Shared.framework */; };
+		8BEE068D2EFB83D400FF7451 /* Shared.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8BEE068B2EFB83D400FF7451 /* Shared.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,6 +71,17 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8BEE068E2EFB83D400FF7451 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				8BEE068D2EFB83D400FF7451 /* Shared.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -83,6 +96,7 @@
 		8B7FF5E22E7CEC3C007072DD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		8B7FF6462E7CF1CB007072DD /* ActivityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ActivityKit.framework; path = System/Library/Frameworks/ActivityKit.framework; sourceTree = SDKROOT; };
 		8BD9BB8B2EFA22F5009E4F22 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		8BEE068B2EFB83D400FF7451 /* Shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Shared.framework; path = shared/build/bin/iosArm64/debugFramework/Shared.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -189,6 +203,7 @@
 				8B66F9232E677D3300760E4E /* FirebaseFirestore in Frameworks */,
 				8B66F90B2E676ACF00760E4E /* GoogleSignInSwift in Frameworks */,
 				8B493ED62EC2480F000AB2E4 /* StripePayments in Frameworks */,
+				8BEE068C2EFB83D400FF7451 /* Shared.framework in Frameworks */,
 				8B32421F2EEF15150039B6F9 /* Realtime in Frameworks */,
 				8B36D9182E7E31AE00EDDF0F /* CodeScanner in Frameworks */,
 			);
@@ -215,6 +230,7 @@
 		8B7FF5DF2E7CEC3C007072DD /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				8BEE068B2EFB83D400FF7451 /* Shared.framework */,
 				8B1F297E2E7F9A5800B13ED2 /* FamilyControls.framework */,
 				8B1F297C2E7F946E00B13ED2 /* ManagedSettings.framework */,
 				8B7FF6462E7CF1CB007072DD /* ActivityKit.framework */,
@@ -280,6 +296,8 @@
 				8B66F8AD2E67612A00760E4E /* Frameworks */,
 				8B66F8AE2E67612A00760E4E /* Resources */,
 				8B7FF5FA2E7CEC3F007072DD /* Embed Foundation Extensions */,
+				8BEE068E2EFB83D400FF7451 /* Embed Frameworks */,
+				8BEE068F2EFB843700FF7451 /* Build KMP Shared Framework */,
 			);
 			buildRules = (
 			);
@@ -390,6 +408,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		8BEE068F2EFB843700FF7451 /* Build KMP Shared Framework */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build KMP Shared Framework";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a scrip# Force Java 21 for the build\nexport JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\"\n\ncd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcodet or drag a script file from your workspace to insert its path.\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		8B36D8EF2E7DBE2E00EDDF0F /* Sources */ = {
@@ -703,6 +742,10 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = WFVLHMLM7A;
 				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/shared/build/bin/iosArm64/debugFramework",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = burner/App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BURNER;
@@ -750,6 +793,10 @@
 				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = WFVLHMLM7A;
 				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/shared/build/bin/iosArm64/debugFramework",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = burner/App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BURNER;

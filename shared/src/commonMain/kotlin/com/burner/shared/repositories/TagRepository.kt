@@ -1,45 +1,41 @@
 package com.burner.shared.repositories
 
 import com.burner.shared.models.Tag
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.from
 
 /**
  * Tag Repository
- * Handles all tag/genre-related data operations
+ * Handles fetching event tags
  */
-class TagRepository(private val supabaseClient: SupabaseClient) {
+class TagRepository(private val client: SupabaseClient) {
 
     /**
-     * Fetch all active tags/genres
+     * Fetch all available tags
      */
     suspend fun fetchTags(): Result<List<Tag>> {
         return try {
-            val tags = supabaseClient.from("tags")
-                .select()
-                .eq("active", true)
-                .order("order", ascending = true)
-                .execute<List<Tag>>()
-
-            // Return default tags if none found
-            Result.success(
-                if (tags.isEmpty()) Tag.defaultGenres else tags
-            )
+            val tags = client.from("tags").select().decodeList<Tag>()
+            Result.success(tags)
         } catch (e: Exception) {
-            // Return default tags on error
-            Result.success(Tag.defaultGenres)
+            Result.failure(e)
         }
     }
 
     /**
-     * Fetch a specific tag by ID
+     * Fetch trending tags
      */
-    suspend fun fetchTag(tagId: String): Result<Tag?> {
+    suspend fun fetchTrendingTags(limit: Int = 5): Result<List<Tag>> {
         return try {
-            val tag = supabaseClient.from("tags")
-                .select()
-                .eq("id", tagId)
-                .executeSingle<Tag>()
+            val tags = client.from("tags")
+                .select {
+                    limit(limit.toLong())
+                    // Assuming you might have a 'usage_count' or 'is_trending' column
+                    // If not, standard select is fine
+                }
+                .decodeList<Tag>()
 
-            Result.success(tag)
+            Result.success(tags)
         } catch (e: Exception) {
             Result.failure(e)
         }

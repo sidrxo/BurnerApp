@@ -7,6 +7,13 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.math.max
+// KMP Specific Imports
+import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
 
 /**
  * Event model
@@ -88,27 +95,24 @@ data class Event(
     /**
      * Check if the event is in the past
      * An event is past if current time is after 6 AM the day after the event
-     * Based on iOS implementation
+     * Fixed for KMP using DateTimeUnit and LocalTime
      */
     val isPast: Boolean
         get() {
             val start = startInstant ?: return true
-            val localStart = start.toLocalDateTime(TimeZone.currentSystemDefault())
+            val timeZone = TimeZone.currentSystemDefault()
+            val localStart = start.toLocalDateTime(timeZone)
 
-            // Calculate 6 AM the next day
-            val nextDay = localStart.date.let { date ->
-                kotlinx.datetime.LocalDateTime(
-                    year = date.year,
-                    monthNumber = date.monthNumber,
-                    dayOfMonth = date.dayOfMonth + 1,
-                    hour = 6,
-                    minute = 0,
-                    second = 0
-                )
-            }
+            // 1. Safely add 1 day to the date
+            val nextDayDate = localStart.date.plus(1, DateTimeUnit.DAY)
 
-            val nextDay6AM = nextDay.toInstant(TimeZone.currentSystemDefault())
-            return kotlinx.datetime.Clock.System.now() > nextDay6AM
+            // 2. Create LocalDateTime for 6:00 AM on that next day
+            val nextDay6AM = LocalDateTime(nextDayDate, LocalTime(6, 0))
+
+            // 3. Convert back to Instant to compare with "Now"
+            val nextDay6AMInstant = nextDay6AM.toInstant(timeZone)
+
+            return Clock.System.now() > nextDay6AMInstant
         }
 
     /**
@@ -117,7 +121,7 @@ data class Event(
     val hasStarted: Boolean
         get() {
             val start = startInstant ?: return false
-            return kotlinx.datetime.Clock.System.now() >= start
+            return Clock.System.now() >= start
         }
 
     /**

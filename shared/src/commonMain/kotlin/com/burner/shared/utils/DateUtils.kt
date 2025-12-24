@@ -1,6 +1,7 @@
 package com.burner.shared.utils
 
 import kotlinx.datetime.*
+import kotlin.time.Duration.Companion.days
 
 /**
  * Date and time utility functions
@@ -17,6 +18,7 @@ object DateUtils {
 
     /**
      * Format time to a readable string (e.g., "7:00 PM")
+     * Fixed for KMP (Removed String.format)
      */
     fun formatTime(instant: Instant, timeZone: TimeZone = TimeZone.currentSystemDefault()): String {
         val localDateTime = instant.toLocalDateTime(timeZone)
@@ -30,7 +32,10 @@ object DateUtils {
             else -> hour
         }
 
-        return String.format("%d:%02d %s", hour12, minute, period)
+        // Manual padding for minutes (e.g., 5 -> "05")
+        val minuteStr = if (minute < 10) "0$minute" else "$minute"
+
+        return "$hour12:$minuteStr $period"
     }
 
     /**
