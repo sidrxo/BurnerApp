@@ -169,7 +169,6 @@ footer {
     font-family: 'Courier New', Courier, monospace;
     font-size: 0.8rem;
     opacity: 0.4;
-    text-align: center;
 }
 
 @media (max-width: 768px) {
