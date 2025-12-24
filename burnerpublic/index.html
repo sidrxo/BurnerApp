@@ -116,16 +116,31 @@
             animationSelector: '[class*="transition-"]' 
         });
 
-        // --- 4. EVENT LISTENERS ---
-        
+        // --- 4. FOOTER INTRO VISIBILITY ---
+        function updateFooterIntro() {
+            const footerIntro = document.querySelector('.footer-intro');
+            if (!footerIntro) return;
+
+            // Show only on homepage (root path or /index.html)
+            const isHomepage = window.location.pathname === '/' ||
+                               window.location.pathname === '/index.html' ||
+                               window.location.pathname === '';
+
+            footerIntro.style.display = isHomepage ? 'block' : 'none';
+        }
+
+        // --- 5. EVENT LISTENERS ---
+
         // Run everything on initial load
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
             updateHeaderButton();
             startSlideshow();
+            updateFooterIntro();
         } else {
             document.addEventListener('DOMContentLoaded', () => {
                 updateHeaderButton();
                 startSlideshow();
+                updateFooterIntro();
             });
         }
 
@@ -133,6 +148,7 @@
         swup.hooks.on('page:view', () => {
             updateHeaderButton();
             startSlideshow();
+            updateFooterIntro();
         });
     </script>
 </body>
