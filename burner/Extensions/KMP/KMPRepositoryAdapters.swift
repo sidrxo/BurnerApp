@@ -4,13 +4,8 @@ import Shared
 /**
  * Swift helpers for using KMP shared types
  *
- * NOTE: For now, iOS continues to use its existing Swift-based repositories.
- * This file provides utilities for:
- * - Converting between Swift and KMP types
- * - Using shared business logic (EventFilteringUseCase, SearchUseCase, etc.)
- * - Using shared utilities (DateUtils, GeoUtils, PriceUtils)
- *
- * The KMP models (Event, Ticket, etc.) will be migrated incrementally.
+ * This provides simple wrappers around the shared KMP business logic.
+ * iOS continues to use its existing Swift-based repositories for now.
  */
 
 // MARK: - Business Logic Helpers
@@ -33,15 +28,15 @@ class KMPEventFilteringHelper {
     /// Filter nearby events
     func filterNearby(
         events: [Shared.Event],
-        userLat: Double,
-        userLon: Double,
+        userLatitude: Double,
+        userLongitude: Double,
         radiusKm: Double = 50.0,
         limit: Int32 = 20
     ) -> [Shared.Event] {
         return Array(useCase.filterNearby(
             events: events,
-            userLat: userLat,
-            userLon: userLon,
+            userLatitude: userLatitude,
+            userLongitude: userLongitude,
             radiusKm: radiusKm,
             limit: limit
         ))
@@ -77,14 +72,17 @@ class KMPSearchHelper {
     func sortEvents(
         events: [Shared.Event],
         sortBy: Shared.SearchSortOption,
-        userLat: Double? = nil,
-        userLon: Double? = nil
+        userLatitude: Double? = nil,
+        userLongitude: Double? = nil
     ) -> [Shared.Event] {
+        let userLat = userLatitude.map { KotlinDouble(double: $0) }
+        let userLon = userLongitude.map { KotlinDouble(double: $0) }
+
         return Array(useCase.sortEvents(
             events: events,
             sortBy: sortBy,
-            userLat: userLat.map { KotlinDouble(double: $0) },
-            userLon: userLon.map { KotlinDouble(double: $0) }
+            userLatitude: userLat,
+            userLongitude: userLon
         ))
     }
 
@@ -93,17 +91,21 @@ class KMPSearchHelper {
         events: [Shared.Event],
         query: String,
         sortBy: Shared.SearchSortOption,
-        userLat: Double? = nil,
-        userLon: Double? = nil,
+        userLatitude: Double? = nil,
+        userLongitude: Double? = nil,
         limit: Int32? = nil
     ) -> [Shared.Event] {
+        let userLat = userLatitude.map { KotlinDouble(double: $0) }
+        let userLon = userLongitude.map { KotlinDouble(double: $0) }
+        let kotlinLimit = limit.map { KotlinInt(int: $0) }
+
         return Array(useCase.searchAndSort(
             events: events,
             query: query,
             sortBy: sortBy,
-            userLat: userLat.map { KotlinDouble(double: $0) },
-            userLon: userLon.map { KotlinDouble(double: $0) },
-            limit: limit.map { KotlinInt(int: $0) }
+            userLatitude: userLat,
+            userLongitude: userLon,
+            limit: kotlinLimit
         ))
     }
 }
@@ -152,41 +154,26 @@ class KMPTicketStatusHelper {
 // MARK: - Utility Helpers
 
 /// Wrapper for shared DateUtils
+/// Note: DateUtils is an object in Kotlin, accessed directly without .companion
 struct KMPDateUtils {
     /// Format date
-    static func formatDate(_ instant: Kotlinx_datetimeInstant, timeZone: String = "UTC") -> String {
-        return Shared.DateUtils.companion.formatDate(instant: instant, timeZone: timeZone)
+    static func formatDate(_ instant: Kotlinx_datetimeInstant, timeZone: Kotlinx_datetimeTimeZone) -> String {
+        return Shared.DateUtils().formatDate(instant: instant, timeZone: timeZone)
     }
 
     /// Format time
-    static func formatTime(_ instant: Kotlinx_datetimeInstant, timeZone: String = "UTC") -> String {
-        return Shared.DateUtils.companion.formatTime(instant: instant, timeZone: timeZone)
+    static func formatTime(_ instant: Kotlinx_datetimeInstant, timeZone: Kotlinx_datetimeTimeZone) -> String {
+        return Shared.DateUtils().formatTime(instant: instant, timeZone: timeZone)
     }
 
     /// Format date and time
-    static func formatDateTime(_ instant: Kotlinx_datetimeInstant, timeZone: String = "UTC") -> String {
-        return Shared.DateUtils.companion.formatDateTime(instant: instant, timeZone: timeZone)
+    static func formatDateTime(_ instant: Kotlinx_datetimeInstant, timeZone: Kotlinx_datetimeTimeZone) -> String {
+        return Shared.DateUtils().formatDateTime(instant: instant, timeZone: timeZone)
     }
 
     /// Get relative time string (e.g., "2 hours ago")
     static func getRelativeTimeString(_ instant: Kotlinx_datetimeInstant) -> String {
-        return Shared.DateUtils.companion.getRelativeTimeString(instant: instant)
-    }
-}
-
-/// Wrapper for shared GeoUtils
-struct KMPGeoUtils {
-    /// Calculate distance between two coordinates in kilometers
-    static func calculateDistance(
-        from: (lat: Double, lon: Double),
-        to: (lat: Double, lon: Double)
-    ) -> Double {
-        return Shared.GeoUtils.companion.haversineDistance(
-            lat1: from.lat,
-            lon1: from.lon,
-            lat2: to.lat,
-            lon2: to.lon
-        )
+        return Shared.DateUtils().getRelativeTimeString(instant: instant)
     }
 }
 
@@ -194,10 +181,7 @@ struct KMPGeoUtils {
 struct KMPPriceUtils {
     /// Format price with currency symbol
     static func formatPrice(_ price: Double, currencySymbol: String = "$") -> String {
-        return Shared.PriceUtils.companion.formatPrice(
-            price: price,
-            currencySymbol: currencySymbol
-        )
+        return Shared.PriceUtils().formatPrice(price: price, currencySymbol: currencySymbol)
     }
 
     /// Format price range
@@ -206,7 +190,7 @@ struct KMPPriceUtils {
         maxPrice: Double,
         currencySymbol: String = "$"
     ) -> String {
-        return Shared.PriceUtils.companion.formatPriceRange(
+        return Shared.PriceUtils().formatPriceRange(
             minPrice: minPrice,
             maxPrice: maxPrice,
             currencySymbol: currencySymbol
@@ -215,11 +199,28 @@ struct KMPPriceUtils {
 
     /// Convert cents to dollars
     static func centsToDollars(_ cents: Int32) -> Double {
-        return Shared.PriceUtils.companion.centsToDollars(cents: cents)
+        return Shared.PriceUtils().centsToDollars(cents: cents)
     }
 
     /// Convert dollars to cents
     static func dollarsToCents(_ dollars: Double) -> Int32 {
-        return Shared.PriceUtils.companion.dollarsToCents(dollars: dollars)
+        return Shared.PriceUtils().dollarsToCents(dollars: dollars)
+    }
+}
+
+/// Utility to calculate distance between coordinates
+/// Note: GeoUtils functions are package-level in Kotlin, not in a class
+struct KMPGeoUtils {
+    /// Calculate distance between two coordinates in kilometers
+    static func calculateDistance(
+        from: (lat: Double, lon: Double),
+        to: (lat: Double, lon: Double)
+    ) -> Double {
+        return SharedKt.haversineDistance(
+            lat1: from.lat,
+            lon1: from.lon,
+            lat2: to.lat,
+            lon2: to.lon
+        )
     }
 }
