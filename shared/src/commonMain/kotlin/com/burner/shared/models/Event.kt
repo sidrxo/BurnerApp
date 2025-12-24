@@ -107,7 +107,7 @@ data class Event(
                 )
             }
 
-            val nextDay6AM = nextDay.toInstant(TimeZone.currentSystemDefault())
+            val nextDay6AM = nextDay.toInstant(kotlinx.datetime.TimeZone.currentSystemDefault())
             return kotlinx.datetime.Clock.System.now() > nextDay6AM
         }
 

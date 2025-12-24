@@ -15,7 +15,17 @@ object PriceUtils {
         return if (price == 0.0) {
             "FREE"
         } else {
-            String.format("%s%.2f", currencySymbol, price)
+            // Format with 2 decimal places (KMP compatible)
+            val rounded = (price * 100).toLong() / 100.0
+            val formatted = rounded.toString()
+            val withDecimals = if (!formatted.contains('.')) {
+                "$formatted.00"
+            } else {
+                val parts = formatted.split('.')
+                val decimal = parts.getOrNull(1) ?: "00"
+                "${parts[0]}.${decimal.padEnd(2, '0').take(2)}"
+            }
+            "$currencySymbol$withDecimals"
         }
     }
 
