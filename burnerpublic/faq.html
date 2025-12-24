@@ -196,46 +196,13 @@
             </div>
         </main>
 
-        <footer>
-            <div class="footer-content-grid">
-                <div class="footer-intro">
-                    <p>BURNER helps you find live events worth remembering. Built for connection</p>
-                </div>
-
-                <nav class="footer-nav">
-                    <a href="privacy.html" class="footer-link">01. Privacy Policy</a>
-                    <a href="terms.html" class="footer-link">02. Terms of Service</a>
-                    <a href="faq.html" class="footer-link" style="text-decoration: underline;">03. Frequently Asked Questions</a>
-                    <a href="mailto:support@burnerlive.com" class="footer-link">04. Contact Support</a>
-                </nav>
-            </div>
-
-            <div class="footer-meta">&copy; 2025 BURNER &mdash; ALL RIGHTS RESERVED.</div>
-        </footer>
+        <!-- Footer loaded dynamically via footer.js -->
     </div>
 
     <script src="https://unpkg.com/swup@4"></script>
+    <script src="footer.js"></script>
     <script>
         const swup = new Swup({ containers: ["#swup"], animationSelector: '[class*="transition-"]' });
-
-        function updateFooterIntro() {
-            const footerIntro = document.querySelector('.footer-intro');
-            if (!footerIntro) return;
-
-            const isHomepage = window.location.pathname === '/' ||
-                               window.location.pathname === '/index.html' ||
-                               window.location.pathname === '';
-
-            footerIntro.style.opacity = isHomepage ? '1' : '0';
-            footerIntro.style.pointerEvents = isHomepage ? 'auto' : 'none';
-        }
-
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            updateFooterIntro();
-        } else {
-            document.addEventListener('DOMContentLoaded', updateFooterIntro);
-        }
-        swup.hooks.on('page:view', updateFooterIntro);
     </script>
 </body>
 </html>

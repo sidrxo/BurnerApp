@@ -20,27 +20,13 @@
             <img src="heart.png" alt="Heart" class="center-image">
         </section>
 
-        <footer>
-            <div class="footer-content-grid">
-                <div class="footer-intro">
-                    <p>BURNER helps you find live events worth remembering. Built for connection</p>
-                </div>
-
-                <nav class="footer-nav">
-                    <a href="/privacy" class="footer-link">01. Privacy Policy</a>
-                    <a href="/terms" class="footer-link">02. Terms of Service</a>
-                    <a href="/faq" class="footer-link">03. Frequently Asked Questions</a>
-                    <a href="mailto:support@burnerlive.com" class="footer-link">04. Contact Support</a>
-                </nav>
-            </div>
-
-            <div class="footer-meta">&copy; 2025 BURNER &mdash; ALL RIGHTS RESERVED.</div>
-        </footer>
+        <!-- Footer loaded dynamically via footer.js -->
     </div>
 
    <script src="https://unpkg.com/swup@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="footer.js"></script>
 
     <script>
         // --- 1. HEADER BUTTON FIX ---
@@ -111,37 +97,21 @@
         }
 
         // --- 3. INITIALIZE SWUP ---
-        const swup = new Swup({ 
-            containers: ["#swup"], 
-            animationSelector: '[class*="transition-"]' 
+        const swup = new Swup({
+            containers: ["#swup"],
+            animationSelector: '[class*="transition-"]'
         });
 
-        // --- 4. FOOTER INTRO VISIBILITY ---
-        function updateFooterIntro() {
-            const footerIntro = document.querySelector('.footer-intro');
-            if (!footerIntro) return;
-
-            // Show only on homepage (root path or /index.html)
-            const isHomepage = window.location.pathname === '/' ||
-                               window.location.pathname === '/index.html' ||
-                               window.location.pathname === '';
-
-            footerIntro.style.opacity = isHomepage ? '1' : '0';
-            footerIntro.style.pointerEvents = isHomepage ? 'auto' : 'none';
-        }
-
-        // --- 5. EVENT LISTENERS ---
+        // --- 4. EVENT LISTENERS ---
 
         // Run everything on initial load
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
             updateHeaderButton();
             startSlideshow();
-            updateFooterIntro();
         } else {
             document.addEventListener('DOMContentLoaded', () => {
                 updateHeaderButton();
                 startSlideshow();
-                updateFooterIntro();
             });
         }
 
@@ -149,7 +119,6 @@
         swup.hooks.on('page:view', () => {
             updateHeaderButton();
             startSlideshow();
-            updateFooterIntro();
         });
     </script>
 </body>
