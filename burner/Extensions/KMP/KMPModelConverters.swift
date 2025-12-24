@@ -1,6 +1,7 @@
 import Foundation
 import Shared
 
+
 /**
  * Converters between Swift models (Codable for Supabase) and KMP shared models
  *
@@ -34,20 +35,20 @@ extension Event {
             name: self.name,
             venue: self.venue,
             venueId: self.venueId,
-            startInstant: self.startTime?.toKMPInstant(),
-            endInstant: self.endTime?.toKMPInstant(),
+            startTime: self.startTime?.toKMPInstantString(),
+            endTime: self.endTime?.toKMPInstantString(),
             price: self.price,
             maxTickets: Int32(self.maxTickets),
             ticketsSold: Int32(self.ticketsSold),
             imageUrl: self.imageUrl,
             isFeatured: self.isFeatured,
-            featuredPriority: self.featuredPriority.map { Int32($0) },
+            featuredPriority: self.featuredPriority.map { KotlinInt(int: Int32($0)) },
             description: self.description,
             status: self.status,
             tags: self.tags,
             coordinates: self.coordinates?.toKMP(),
-            createdAt: self.createdAt?.toKMPInstant(),
-            updatedAt: self.updatedAt?.toKMPInstant()
+            createdAt: self.createdAt?.toKMPInstantString(),
+            updatedAt: self.updatedAt?.toKMPInstantString()
         )
     }
 }
@@ -60,8 +61,8 @@ extension Shared.Event {
             name: self.name,
             venue: self.venue,
             venueId: self.venueId,
-            startTime: self.startInstant?.toSwiftDate(),
-            endTime: self.endInstant?.toSwiftDate(),
+            startTime: self.startTime.flatMap { $0.toSwiftDate() },
+            endTime: self.endTime.flatMap { $0.toSwiftDate() },
             price: self.price,
             maxTickets: Int(self.maxTickets),
             ticketsSold: Int(self.ticketsSold),
@@ -72,8 +73,8 @@ extension Shared.Event {
             status: self.status,
             tags: self.tags,
             coordinates: self.coordinates?.toSwift(),
-            createdAt: self.createdAt?.toSwiftDate(),
-            updatedAt: self.updatedAt?.toSwiftDate()
+            createdAt: self.createdAt.flatMap { $0.toSwiftDate() },
+            updatedAt: self.updatedAt.flatMap { $0.toSwiftDate() }
         )
     }
 }
@@ -90,23 +91,23 @@ extension Ticket {
             ticketNumber: self.ticketNumber,
             eventName: self.eventName,
             venue: self.venue,
-            startTime: self.startTime.toKMPInstant(),
-            totalPrice: self.totalPrice,
-            purchaseDate: self.purchaseDate.toKMPInstant(),
+            startTime: self.startTime.toKMPInstantString(),
+            totalPrice: self.totalPrice.map { KotlinDouble(double: $0) },
+            purchaseDate: self.purchaseDate.toKMPInstantString(),
             status: self.status,
             qrCode: self.qrCode,
             venueId: self.venueId,
             paymentIntentId: self.paymentIntentId,
-            usedAt: self.usedAt?.toKMPInstant(),
+            usedAt: self.usedAt?.toKMPInstantString(),
             scannedBy: self.scannedBy,
-            cancelledAt: self.cancelledAt?.toKMPInstant(),
+            cancelledAt: self.cancelledAt?.toKMPInstantString(),
             cancelReason: self.cancelReason,
-            refundedAt: self.refundedAt?.toKMPInstant(),
-            refundAmount: self.refundAmount,
+            refundedAt: self.refundedAt?.toKMPInstantString(),
+            refundAmount: self.refundAmount.map { KotlinDouble(double: $0) },
             transferredFrom: self.transferredFrom,
-            transferredAt: self.transferredAt?.toKMPInstant(),
-            deletedAt: self.deletedAt?.toKMPInstant(),
-            updatedAt: self.updatedAt?.toKMPInstant()
+            transferredAt: self.transferredAt?.toKMPInstantString(),
+            deletedAt: self.deletedAt?.toKMPInstantString(),
+            updatedAt: self.updatedAt?.toKMPInstantString()
         )
     }
 }
@@ -121,23 +122,23 @@ extension Shared.Ticket {
             ticketNumber: self.ticketNumber,
             eventName: self.eventName,
             venue: self.venue,
-            startTime: self.startTime.toSwiftDate(),
-            totalPrice: self.totalPrice,
-            purchaseDate: self.purchaseDate.toSwiftDate(),
+            startTime: self.startTime?.toSwiftDate() ?? Date(),
+            totalPrice: self.totalPrice?.doubleValue,
+            purchaseDate: self.purchaseDate?.toSwiftDate() ?? Date(),
             status: self.status,
             qrCode: self.qrCode,
             venueId: self.venueId,
             paymentIntentId: self.paymentIntentId,
-            usedAt: self.usedAt?.toSwiftDate(),
+            usedAt: self.usedAt.flatMap { $0.toSwiftDate() },
             scannedBy: self.scannedBy,
-            cancelledAt: self.cancelledAt?.toSwiftDate(),
+            cancelledAt: self.cancelledAt.flatMap { $0.toSwiftDate() },
             cancelReason: self.cancelReason,
-            refundedAt: self.refundedAt?.toSwiftDate(),
-            refundAmount: self.refundAmount,
+            refundedAt: self.refundedAt.flatMap { $0.toSwiftDate() },
+            refundAmount: self.refundAmount?.doubleValue,
             transferredFrom: self.transferredFrom,
-            transferredAt: self.transferredAt?.toSwiftDate(),
-            deletedAt: self.deletedAt?.toSwiftDate(),
-            updatedAt: self.updatedAt?.toSwiftDate()
+            transferredAt: self.transferredAt.flatMap { $0.toSwiftDate() },
+            deletedAt: self.deletedAt.flatMap { $0.toSwiftDate() },
+            updatedAt: self.updatedAt.flatMap { $0.toSwiftDate() }
         )
     }
 }
@@ -150,13 +151,10 @@ extension Tag {
         return Shared.Tag(
             id: self.id,
             name: self.name,
-            nameLowercase: self.nameLowercase,
-            description: self.description,
-            color: self.color,
             order: Int32(self.order),
             active: self.active,
-            createdAt: self.createdAt?.toKMPInstant(),
-            updatedAt: self.updatedAt?.toKMPInstant()
+            color: self.color,
+            description: self.description
         )
     }
 }
@@ -168,13 +166,10 @@ extension Shared.Tag {
         let dict: [String: Any] = [
             "id": self.id as Any,
             "name": self.name,
-            "nameLowercase": self.nameLowercase as Any,
             "description": self.description as Any,
             "color": self.color as Any,
             "order": Int(self.order),
-            "active": self.active,
-            "createdAt": self.createdAt?.toSwiftDate() as Any,
-            "updatedAt": self.updatedAt?.toSwiftDate() as Any
+            "active": self.active
         ]
 
         let data = try! JSONSerialization.data(withJSONObject: dict)
@@ -202,10 +197,10 @@ extension Venue {
             subAdmins: self.subAdmins,
             active: self.active,
             eventCount: Int32(self.eventCount),
-            coordinates: self.coordinates?.toKMP(),
-            createdAt: self.createdAt?.toKMPInstant(),
+            createdAt: self.createdAt?.toKMPInstantString(),
             createdBy: self.createdBy,
-            updatedAt: self.updatedAt?.toKMPInstant()
+            updatedAt: self.updatedAt?.toKMPInstantString(),
+            coordinates: self.coordinates?.toKMP()
         )
     }
 }
@@ -226,9 +221,9 @@ extension Shared.Venue {
             subAdmins: Array(self.subAdmins),
             active: self.active,
             eventCount: Int(self.eventCount),
-            createdAt: self.createdAt?.toSwiftDate(),
+            createdAt: self.createdAt.flatMap { $0.toSwiftDate() },
             createdBy: self.createdBy,
-            updatedAt: self.updatedAt?.toSwiftDate(),
+            updatedAt: self.updatedAt.flatMap { $0.toSwiftDate() },
             coordinates: self.coordinates?.toSwift()
         )
     }
@@ -237,21 +232,26 @@ extension Shared.Venue {
 // MARK: - Date Conversion Utilities
 
 extension Date {
-    /// Convert Swift Date to KMP Instant
-    func toKMPInstant() -> Kotlinx_datetimeInstant {
-        let seconds = Int64(self.timeIntervalSince1970)
-        let nanoseconds = Int32((self.timeIntervalSince1970 - Double(seconds)) * 1_000_000_000)
-        return Kotlinx_datetimeInstant.Companion().fromEpochSeconds(
-            epochSeconds: seconds,
-            nanosecondAdjustment: nanoseconds
-        )
+    /// Convert Swift Date to KMP Instant string (ISO 8601 format)
+    func toKMPInstantString() -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: self)
     }
 }
 
-extension Kotlinx_datetimeInstant {
-    /// Convert KMP Instant to Swift Date
-    func toSwiftDate() -> Date {
-        return Date(timeIntervalSince1970: Double(self.epochSeconds))
+extension String {
+    /// Convert ISO 8601 string to Swift Date
+    func toSwiftDate() -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: self) {
+            return date
+        }
+        
+        // Fallback to standard format without fractional seconds
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: self)
     }
 }
 

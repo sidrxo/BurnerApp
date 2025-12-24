@@ -38,8 +38,8 @@ struct EventDetailView: View {
     }
 
     var availableTickets: Int {
-        guard let event = Shared.Event else { return 0 }
-        return max(0, event.maxTickets - event.ticketsSold)
+        guard let event = event else { return 0 }
+        return max(0, Int(event.maxTickets) - Int(event.ticketsSold))
     }
 
     private var isBookmarked: Bool {
@@ -57,7 +57,7 @@ struct EventDetailView: View {
     }
 
     private var hasEventStarted: Bool {
-        guard let event = Shared.Event, let startTime = event.startTime else { return false }
+        guard let event = event, let startTime = event.startTime else { return false }
         return Date() >= startTime
     }
 
