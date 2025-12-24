@@ -89,7 +89,12 @@ object DateUtils {
      */
     fun isThisWeek(instant: Instant, timeZone: TimeZone = TimeZone.currentSystemDefault()): Boolean {
         val now = Clock.System.now()
-        val sevenDaysLater = now + kotlinx.datetime.DateTimeUnit.DayBased(7)
+        // Add 7 days (in seconds)
+        val sevenDaysInSeconds = 7L * 24 * 60 * 60
+        val sevenDaysLater = Instant.fromEpochSeconds(
+            now.epochSeconds + sevenDaysInSeconds,
+            now.nanosecondsOfSecond
+        )
         return instant in now..sevenDaysLater
     }
 }

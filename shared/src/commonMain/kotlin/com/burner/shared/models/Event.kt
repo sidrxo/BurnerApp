@@ -4,6 +4,7 @@ import com.burner.shared.utils.haversineDistance
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.math.max
@@ -93,21 +94,14 @@ data class Event(
     val isPast: Boolean
         get() {
             val start = startInstant ?: return true
-            val localStart = start.toLocalDateTime(TimeZone.currentSystemDefault())
 
-            // Calculate 6 AM the next day
-            val nextDay = localStart.date.let { date ->
-                kotlinx.datetime.LocalDateTime(
-                    year = date.year,
-                    monthNumber = date.monthNumber,
-                    dayOfMonth = date.dayOfMonth + 1,
-                    hour = 6,
-                    minute = 0,
-                    second = 0
-                )
-            }
-
-            val nextDay6AM = nextDay.toInstant(kotlinx.datetime.TimeZone.currentSystemDefault())
+            // Calculate 6 AM the next day by adding 30 hours to start time
+            // This ensures we're past the event day (24h) + 6 hours
+            val thirtyHoursInSeconds = 30L * 60 * 60
+            val nextDay6AM = Instant.fromEpochSeconds(
+                start.epochSeconds + thirtyHoursInSeconds,
+                start.nanosecondsOfSecond
+            )
             return kotlinx.datetime.Clock.System.now() > nextDay6AM
         }
 
