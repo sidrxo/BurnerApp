@@ -1,6 +1,7 @@
 import Foundation
 import Supabase
 import Combine
+import Shared
 
 @MainActor
 class BaseRepository: ObservableObject {
@@ -27,7 +28,11 @@ class BaseRepository: ObservableObject {
 
 @MainActor
 class EventRepository: BaseRepository, EventRepositoryProtocol {
-    
+
+    // KMP helpers for shared business logic
+    private let filteringHelper = KMPEventFilteringHelper()
+    private let searchHelper = KMPSearchHelper()
+
     func eventStream(since date: Date) -> AsyncThrowingStream<[Event], Error> {
         return AsyncThrowingStream { continuation in
             let task = Task {
@@ -39,16 +44,16 @@ class EventRepository: BaseRepository, EventRepositoryProtocol {
                     continuation.finish(throwing: error)
                 }
             }
-            
+
             continuation.onTermination = { @Sendable _ in
                 task.cancel()
             }
         }
     }
-    
+
     func observeEvents(completion: @escaping (Result<[Event], Error>) -> Void) {
         stopObserving()
-        
+
         subscriptionTask = Task {
             do {
                 let events = try await fetchEventsFromServer(since: Date())
@@ -60,7 +65,7 @@ class EventRepository: BaseRepository, EventRepositoryProtocol {
             }
         }
     }
-    
+
     // UPDATED Implementation
         func fetchEventsFromServer(since date: Date, page: Int? = nil, pageSize: Int? = nil) async throws -> [Event] {
             let dateString = ISO8601DateFormatter().string(from: date)
@@ -85,7 +90,7 @@ class EventRepository: BaseRepository, EventRepositoryProtocol {
             let events: [Event] = try await query.execute().value
             return events
         }
-    
+
     func fetchEvent(by id: String) async throws -> Event? {
         let event: Event = try await client
             .from("events")
@@ -96,10 +101,10 @@ class EventRepository: BaseRepository, EventRepositoryProtocol {
             .value
         return event
     }
-    
+
     func fetchEvents(by ids: [String]) async throws -> [Event] {
         guard !ids.isEmpty else { return [] }
-        
+
         let events: [Event] = try await client
             .from("events")
             .select()
@@ -108,18 +113,85 @@ class EventRepository: BaseRepository, EventRepositoryProtocol {
             .value
         return events
     }
+
+    // MARK: - KMP Business Logic Integration
+
+    /// Fetch featured events using shared KMP filtering logic
+    func fetchFeaturedEvents(limit: Int = 5) async throws -> [Event] {
+        // 1. Fetch all upcoming events from Supabase (Swift models)
+        let allEvents = try await fetchEventsFromServer(since: Date())
+
+        // 2. Convert to KMP types
+        let kmpEvents = allEvents.toKMP()
+
+        // 3. Apply shared KMP filtering logic
+        let filteredKMP = filteringHelper.filterFeatured(events: kmpEvents, limit: Int32(limit))
+
+        // 4. Convert back to Swift types
+        return filteredKMP.toSwift()
+    }
+
+    /// Fetch events happening this week using shared KMP logic
+    func fetchThisWeekEvents(limit: Int = 20) async throws -> [Event] {
+        let allEvents = try await fetchEventsFromServer(since: Date())
+        let kmpEvents = allEvents.toKMP()
+        let filteredKMP = filteringHelper.filterThisWeek(events: kmpEvents, limit: Int32(limit))
+        return filteredKMP.toSwift()
+    }
+
+    /// Fetch nearby events using shared KMP geolocation logic
+    func fetchNearbyEvents(
+        userLatitude: Double,
+        userLongitude: Double,
+        radiusKm: Double = 50.0,
+        limit: Int = 20
+    ) async throws -> [Event] {
+        let allEvents = try await fetchEventsFromServer(since: Date())
+        let kmpEvents = allEvents.toKMP()
+        let filteredKMP = filteringHelper.filterNearby(
+            events: kmpEvents,
+            userLatitude: userLatitude,
+            userLongitude: userLongitude,
+            radiusKm: radiusKm,
+            limit: Int32(limit)
+        )
+        return filteredKMP.toSwift()
+    }
+
+    /// Filter events by genre using shared KMP logic
+    func fetchEventsByGenre(_ genre: String) async throws -> [Event] {
+        let allEvents = try await fetchEventsFromServer(since: Date())
+        let kmpEvents = allEvents.toKMP()
+        let filteredKMP = filteringHelper.filterByGenre(events: kmpEvents, genre: genre)
+        return filteredKMP.toSwift()
+    }
+
+    /// Search events using shared KMP search logic
+    func searchEvents(query: String, sortBy: Shared.SearchSortOption = .date) async throws -> [Event] {
+        let allEvents = try await fetchEventsFromServer(since: Date())
+        let kmpEvents = allEvents.toKMP()
+        let searchResults = searchHelper.searchAndSort(
+            events: kmpEvents,
+            query: query,
+            sortBy: sortBy
+        )
+        return searchResults.toSwift()
+    }
 }
 
 @MainActor
 class TicketRepository: BaseRepository, TicketRepositoryProtocol {
-    
+
     private var currentChannel: RealtimeChannelV2?
     private var cachedTickets: [Ticket] = []
+
+    // KMP helper for shared ticket status logic
+    private let ticketStatusHelper = KMPTicketStatusHelper()
 
     override func stopObserving() {
         subscriptionTask?.cancel()
         subscriptionTask = nil
-        
+
         if let channel = currentChannel {
             Task {
                 await client.removeChannel(channel)
@@ -255,10 +327,10 @@ class TicketRepository: BaseRepository, TicketRepositoryProtocol {
     
     func fetchUserTicketStatus(userId: String, eventIds: [String]) async throws -> [String: Bool] {
         guard !eventIds.isEmpty else { return [:] }
-        
+
         var status: [String: Bool] = [:]
         for eventId in eventIds { status[eventId] = false }
-        
+
         let tickets: [Ticket] = try await client
             .from("tickets")
             .select()
@@ -267,12 +339,61 @@ class TicketRepository: BaseRepository, TicketRepositoryProtocol {
             .eq("status", value: "confirmed")
             .execute()
             .value
-        
+
         for ticket in tickets {
             status[ticket.eventId] = true
         }
-        
+
         return status
+    }
+
+    // MARK: - KMP Business Logic Integration
+
+    /// Get active tickets using shared KMP logic
+    func getActiveTickets() -> [Ticket] {
+        let kmpTickets = cachedTickets.toKMP()
+        let activeKMP = ticketStatusHelper.getActiveTickets(tickets: kmpTickets)
+        return activeKMP.toSwift()
+    }
+
+    /// Get past tickets using shared KMP logic
+    func getPastTickets() -> [Ticket] {
+        let kmpTickets = cachedTickets.toKMP()
+        let pastKMP = ticketStatusHelper.getPastTickets(tickets: kmpTickets)
+        return pastKMP.toSwift()
+    }
+
+    /// Get tickets for a specific event using shared KMP logic
+    func getTicketsForEvent(eventId: String) -> [Ticket] {
+        let kmpTickets = cachedTickets.toKMP()
+        let filteredKMP = ticketStatusHelper.getTicketsForEvent(tickets: kmpTickets, eventId: eventId)
+        return filteredKMP.toSwift()
+    }
+
+    /// Check if user has confirmed ticket using shared KMP logic
+    func hasConfirmedTicket(eventId: String) -> Bool {
+        let kmpTickets = cachedTickets.toKMP()
+        return ticketStatusHelper.hasConfirmedTicket(tickets: kmpTickets, eventId: eventId)
+    }
+
+    /// Get total amount spent on tickets using shared KMP logic
+    func getTotalSpent() -> Double {
+        let kmpTickets = cachedTickets.toKMP()
+        return ticketStatusHelper.getTotalSpent(tickets: kmpTickets)
+    }
+
+    /// Sort tickets by purchase date using shared KMP logic
+    func sortTicketsByPurchaseDate(ascending: Bool = false) -> [Ticket] {
+        let kmpTickets = cachedTickets.toKMP()
+        let sortedKMP = ticketStatusHelper.sortByPurchaseDate(tickets: kmpTickets, ascending: ascending)
+        return sortedKMP.toSwift()
+    }
+
+    /// Sort tickets by event date using shared KMP logic
+    func sortTicketsByEventDate(ascending: Bool = true) -> [Ticket] {
+        let kmpTickets = cachedTickets.toKMP()
+        let sortedKMP = ticketStatusHelper.sortByEventDate(tickets: kmpTickets, ascending: ascending)
+        return sortedKMP.toSwift()
     }
 }
 
