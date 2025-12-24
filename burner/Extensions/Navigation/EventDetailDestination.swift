@@ -1,5 +1,6 @@
 // EventDetailDestination.swift
 import SwiftUI
+import Combine
 
 struct EventDetailDestination: View {
     @EnvironmentObject var eventViewModel: EventViewModel

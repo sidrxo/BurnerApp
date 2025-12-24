@@ -1,5 +1,7 @@
 import Foundation
 import ActivityKit
+import Combine
+
 
 @available(iOS 16.1, *)
 struct TicketActivityAttributes: ActivityAttributes {

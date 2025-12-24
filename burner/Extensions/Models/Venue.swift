@@ -1,4 +1,6 @@
 import Foundation
+import Combine
+
 
 struct Venue: Identifiable, Codable, Sendable {
     var id: String?

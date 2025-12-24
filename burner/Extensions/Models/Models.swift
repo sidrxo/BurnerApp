@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 // MARK: - Shared Types
 // ADDED: Hashable
