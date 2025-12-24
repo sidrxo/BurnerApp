@@ -105,7 +105,7 @@ class KMPSearchHelper {
             sortBy: sortBy,
             userLatitude: userLat,
             userLongitude: userLon,
-            limit: kotlinLimit
+            limit: kotlinLimit as! Int32
         ))
     }
 }
@@ -199,12 +199,12 @@ struct KMPPriceUtils {
 
     /// Convert cents to dollars
     static func centsToDollars(_ cents: Int32) -> Double {
-        return Shared.PriceUtils().centsToDollars(cents: cents)
+        return Shared.PriceUtils().centsToDollars(cents: Int64(cents))
     }
 
     /// Convert dollars to cents
     static func dollarsToCents(_ dollars: Double) -> Int32 {
-        return Shared.PriceUtils().dollarsToCents(dollars: dollars)
+        return Int32(Shared.PriceUtils().dollarsToCents(dollars: dollars))
     }
 }
 
@@ -212,15 +212,5 @@ struct KMPPriceUtils {
 /// Note: GeoUtils functions are package-level in Kotlin, not in a class
 struct KMPGeoUtils {
     /// Calculate distance between two coordinates in kilometers
-    static func calculateDistance(
-        from: (lat: Double, lon: Double),
-        to: (lat: Double, lon: Double)
-    ) -> Double {
-        return SharedKt.haversineDistance(
-            lat1: from.lat,
-            lon1: from.lon,
-            lat2: to.lat,
-            lon2: to.lon
-        )
-    }
+
 }

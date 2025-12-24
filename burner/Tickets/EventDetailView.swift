@@ -4,6 +4,7 @@ import Supabase
 import PassKit
 import MapKit
 import CoreLocation
+import Shared
 
 struct EventDetailView: View {
     let eventId: String
@@ -37,7 +38,7 @@ struct EventDetailView: View {
     }
 
     var availableTickets: Int {
-        guard let event = event else { return 0 }
+        guard let event = Shared.Event else { return 0 }
         return max(0, event.maxTickets - event.ticketsSold)
     }
 
@@ -56,7 +57,7 @@ struct EventDetailView: View {
     }
 
     private var hasEventStarted: Bool {
-        guard let event = event, let startTime = event.startTime else { return false }
+        guard let event = Shared.Event, let startTime = event.startTime else { return false }
         return Date() >= startTime
     }
 
