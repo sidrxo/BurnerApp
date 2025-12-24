@@ -16,3 +16,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Burner"
 include(":app")
+include(":shared")
+project(":shared").projectDir = File(rootDir, "../shared")
