@@ -1,6 +1,6 @@
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version "1.9.22"
+    kotlin("plugin.serialization")  // Version inherited from root build.gradle.kts (2.0.0)
     id("com.android.library")
 }
 
