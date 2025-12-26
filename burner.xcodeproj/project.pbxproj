@@ -36,7 +36,6 @@
 		8B7FF5B62E7C6E6B007072DD /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 8B7FF5B52E7C6E6B007072DD /* FirebaseFunctions */; };
 		8B7FF6482E7CF1DC007072DD /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B7FF6462E7CF1CB007072DD /* ActivityKit.framework */; };
 		8BCF682A2EC7CA17008C42F6 /* StripePaymentsUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8BCF68292EC7CA17008C42F6 /* StripePaymentsUI */; };
-		8BD9BB8C2EFA22F5009E4F22 /* Config.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 8BD9BB8B2EFA22F5009E4F22 /* Config.xcconfig */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -323,7 +322,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2610;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					8B36D8F22E7DBE2E00EDDF0F = {
 						CreatedOnToolsVersion = 16.4;
@@ -385,7 +384,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8BD9BB8C2EFA22F5009E4F22 /* Config.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -620,6 +618,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_MetalCaptureEnabled = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -680,6 +679,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_MetalCaptureEnabled = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;

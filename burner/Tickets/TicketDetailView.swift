@@ -1,4 +1,3 @@
-
 import SwiftUI
 import Kingfisher
 import ActivityKit
@@ -7,15 +6,14 @@ import FamilyControls
 
 struct TicketDetailView: View {
     let ticketWithEvent: TicketWithEventData
-    var shouldAnimateFlip: Bool = false  // NEW: Control flip animation
+    var shouldAnimateFlip: Bool = false  // Control flip animation
 
     @State private var hasStartedLiveActivity = false
     @State private var isLiveActivityActive = false
     @State private var showBurnerSetup = false
     @State private var liveActivityUpdateTimer: Timer?
-    @State private var flipped = true
+    @State private var flipped = false  // FIXED: Start with front side (false) by default
     @State private var qrCodeImage: UIImage? = nil
-    @State private var viewOpacity: Double = 0  // NEW: Control fade-in
 
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var coordinator: NavigationCoordinator
@@ -39,13 +37,12 @@ struct TicketDetailView: View {
                             axis: (x: 0, y: 1, z: 0)
                         )
 
-                        simpleTicketView
-                    
-                    .opacity(flipped ? 0 : 1)
-                    .rotation3DEffect(
-                        flipped ? Angle(degrees: 180) : Angle(degrees: 0),
-                        axis: (x: 0, y: 1, z: 0)
-                    )
+                    simpleTicketView
+                        .opacity(flipped ? 0 : 1)
+                        .rotation3DEffect(
+                            flipped ? Angle(degrees: 180) : Angle(degrees: 0),
+                            axis: (x: 0, y: 1, z: 0)
+                        )
                 }
                 .frame(height: 550)
                 .padding(.horizontal, 20)
@@ -53,7 +50,6 @@ struct TicketDetailView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(EmptyView())
         }
-        .opacity(viewOpacity)  // NEW: Apply fade-in opacity
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .background(NavigationControllerConfigurator())
@@ -82,22 +78,18 @@ struct TicketDetailView: View {
                 updateLiveActivityIfNeeded()
             }
 
-            // NEW: Fade in the view
-            withAnimation(.easeIn(duration: 0.3)) {
-                viewOpacity = 1
-            }
-
-            // NEW: Only flip if explicitly requested (after purchase)
+            // FIXED: Only animate flip if explicitly requested (after purchase)
             if shouldAnimateFlip {
+                // Start with back side for animation
+                flipped = true
+                
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                         flipped = false
                     }
                 }
-            } else {
-                // Show front side immediately without animation
-                flipped = false
             }
+            // If shouldAnimateFlip is false, flipped stays false (front side shows immediately)
         }
         .onDisappear {
             liveActivityUpdateTimer?.invalidate()
@@ -163,10 +155,10 @@ struct TicketDetailView: View {
                         .appFont(size: 20, weight: .bold)
                         .kerning(-1.5)
                         .foregroundColor(.black)
-                        .fixedSize(horizontal: false, vertical: true) // Allows vertical expansion
-                                            .multilineTextAlignment(.leading)            // Ensures left alignment on wrap
-                                            .lineLimit(2)                                // Limits to 2 lines (or remove for infinite)
-                                            .padding(.trailing, 40)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                        .padding(.trailing, 40)
 
                     Text(ticketWithEvent.event.venue.uppercased())
                         .appCard()

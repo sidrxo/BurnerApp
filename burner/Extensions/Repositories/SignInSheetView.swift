@@ -209,9 +209,17 @@ struct SignInSheetView: View {
 
         Task {
             do {
+                // Add queryItems to include prompt=select_account
+                // This forces Google to show the account picker every time
+                var components = URLComponents(string: "burner://auth")
+                components?.queryItems = [
+                    URLQueryItem(name: "prompt", value: "select_account")
+                ]
+                
                 try await SupabaseManager.shared.client.auth.signInWithOAuth(
                     provider: .google,
-                    redirectTo: URL(string: "burner://auth")
+                    redirectTo: components?.url,
+                    queryParams: [("prompt", "select_account")]
                 )
                 
                 await MainActor.run {

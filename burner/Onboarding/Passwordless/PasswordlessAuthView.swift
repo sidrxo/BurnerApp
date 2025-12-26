@@ -16,6 +16,7 @@ struct PasswordlessAuthView: View {
     @State private var countdownTimer: Timer?
     @FocusState private var isEmailFieldFocused: Bool
     @State private var hasAttemptedSubmit = false
+    @State private var showingPINEntry = false  // NEW: For demo PIN flow
     
     private let supabase = SupabaseManager.shared.client
     
@@ -245,6 +246,14 @@ struct PasswordlessAuthView: View {
                 showingSignIn = false
             }
         }
+        // NEW: Show PIN entry for demo email
+        .fullScreenCover(isPresented: $showingPINEntry) {
+            DemoPINEntryView(
+                showingSignIn: $showingSignIn,
+                demoEmail: email
+            )
+            .environmentObject(appState)
+        }
     }
     
     // MARK: - Instruction Row
@@ -286,6 +295,17 @@ struct PasswordlessAuthView: View {
             return
         }
         
+        // NEW: Check if this is the demo email
+        if appState.authService.isDemoEmail(email) {
+            // Dismiss keyboard
+            isEmailFieldFocused = false
+            
+            // Show PIN entry instead of sending magic link
+            showingPINEntry = true
+            return
+        }
+        
+        // Regular magic link flow for non-demo emails
         // Dismiss keyboard immediately to prevent lag during transition
         isEmailFieldFocused = false
         

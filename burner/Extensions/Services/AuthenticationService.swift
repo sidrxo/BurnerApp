@@ -9,12 +9,16 @@ class AuthenticationService: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    private let userRepository: UserRepositoryProtocol // Updated to use protocol for better dependency management
+    private let userRepository: UserRepositoryProtocol
     private let supabase = SupabaseManager.shared.client
     private var authStateTask: Task<Void, Never>?
     
-    // NOTE: The UserRepository passed to init should conform to UserRepositoryProtocol.
-    // Assuming UserRepository implements UserRepositoryProtocol.
+    // MARK: - Demo User Configuration
+    // This email triggers the PIN entry flow instead of magic link
+    let demoEmail = "demo@burner.com"  // Change this to your actual demo email
+    private let demoPassword = "DemoSecurePassword2024!"  // Strong password for the demo account
+    private let demoPIN = "001247"  // 6-digit PIN to unlock demo mode
+    
     init(userRepository: UserRepositoryProtocol) {
         self.userRepository = userRepository
         
@@ -52,7 +56,25 @@ class AuthenticationService: ObservableObject {
         }
     }
     
-    // MARK: - FIX: Make public so AppState can use it to fetch the full profile
+    // MARK: - Demo User Methods
+    
+    /// Check if an email is the demo email
+    func isDemoEmail(_ email: String) -> Bool {
+        return email.lowercased().trimmingCharacters(in: .whitespaces) == demoEmail.lowercased()
+    }
+    
+    /// Validate the demo PIN
+    func validateDemoPIN(_ pin: String) -> Bool {
+        return pin == demoPIN
+    }
+    
+    /// Sign in with demo account using PIN
+    func signInWithDemoAccount() async throws {
+        try await signInWithEmail(email: demoEmail, password: demoPassword)
+    }
+    
+    // MARK: - User Profile Methods
+    
     public func getUserProfile() async throws -> UserProfile? {
         guard let userId = currentUser?.id.uuidString else {
             return nil
@@ -69,27 +91,21 @@ class AuthenticationService: ObservableObject {
     }
     
     func getUserRole() async throws -> String? {
-        // Preference: check userMetadata first (fastest)
         let claims = try await getUserCustomClaims()
         if let role = claims?["role"] as? String {
             return role
         }
         
-        // Fallback: fetch from profile table if metadata is missing
         let profile = try await getUserProfile()
         return profile?.role
     }
     
     func isScannerActive() async throws -> Bool {
-        // Preference: check userMetadata first
         let claims = try await getUserCustomClaims()
         if let active = claims?["active"] as? Bool {
             return active
         }
-        
-        // Fallback: fetch from profile table
-        // NOTE: This assumes 'isScannerActive' property exists on UserProfile
-        return false // If the full profile is complex, assume false unless explicitly checked
+        return false
     }
     
     func getVenueId() async throws -> String? {
@@ -108,6 +124,8 @@ class AuthenticationService: ObservableObject {
         }
         return roles.contains(userRole)
     }
+    
+    // MARK: - Authentication Methods
     
     func signInWithEmail(email: String, password: String) async throws {
         isLoading = true
@@ -216,8 +234,6 @@ class AuthenticationService: ObservableObject {
         errorMessage = nil
         
         do {
-            // FIX: Explicitly wrap the String in the .string() enum case for AnyJSON
-            // The metadata here is often quickly accessible but might be different from the 'users' table
             let session = try await supabase.auth.signUp(
                 email: email,
                 password: password,
