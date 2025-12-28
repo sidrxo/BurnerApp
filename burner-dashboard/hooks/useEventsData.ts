@@ -125,7 +125,7 @@ export function useEventsData() {
     if (!authLoading && user) {
       loadEvents();
       loadTagsFromCollection();
-      if (user.role === "siteAdmin") {
+      if (user.role === "siteAdmin" || user.role === "organiser") {
         loadVenues();
       }
     }
@@ -154,18 +154,58 @@ export function useEventsData() {
 
   const loadVenues = async () => {
     try {
-      // Performance: Only select needed fields
-      const { data, error } = await supabase
-        .from('venues')
-        .select('id, name, coordinates');
+      if (!user) return;
 
-      if (error) throw error;
+      let loadedVenues: Venue[] = [];
 
-      const loadedVenues: Venue[] = (data || []).map((venue: any) => ({
-        id: venue.id,
-        name: venue.name ?? venue.id,
-        coordinates: venue.coordinates,
-      }));
+      if (user.role === "siteAdmin") {
+        // Site admins see all venues
+        const { data, error } = await supabase
+          .from('venues')
+          .select('id, name, coordinates');
+
+        if (error) throw error;
+
+        loadedVenues = (data || []).map((venue: any) => ({
+          id: venue.id,
+          name: venue.name ?? venue.id,
+          coordinates: venue.coordinates,
+        }));
+      } else if (user.role === "organiser") {
+        // Organisers see only their assigned venues
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !sessionData.session) {
+          toast.error("Authentication error");
+          return;
+        }
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/manage-organizer-venues`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${sessionData.session.access_token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              action: 'get',
+              organizerId: user.uid
+            })
+          }
+        );
+
+        if (!response.ok) {
+          toast.error("Failed to fetch assigned venues");
+          return;
+        }
+
+        const result = await response.json();
+        loadedVenues = (result.venues || []).map((v: any) => ({
+          id: v.venues.id,
+          name: v.venues.name,
+          coordinates: v.venues.coordinates,
+        }));
+      }
 
       setVenues(loadedVenues);
 
@@ -210,6 +250,49 @@ export function useEventsData() {
           return;
         }
         query = query.eq('venue_id', user.venueId);
+      } else if (user.role === "organiser") {
+        // Fetch organiser's assigned venues
+        const { data: venueData, error: venueError } = await supabase.auth.getSession();
+        if (venueError || !venueData.session) {
+          toast.error("Authentication error");
+          setEvents([]);
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/manage-organizer-venues`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${venueData.session.access_token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              action: 'get',
+              organizerId: user.uid
+            })
+          }
+        );
+
+        if (!response.ok) {
+          toast.error("Failed to fetch assigned venues");
+          setEvents([]);
+          setLoading(false);
+          return;
+        }
+
+        const result = await response.json();
+        const venueIds = result.venues?.map((v: any) => v.venue_id) || [];
+
+        if (venueIds.length === 0) {
+          toast.error("No venues assigned to your organiser account");
+          setEvents([]);
+          setLoading(false);
+          return;
+        }
+
+        query = query.in('venue_id', venueIds);
       } else if (user.role !== "siteAdmin") {
         setEvents([]);
         setLoading(false);
@@ -543,7 +626,7 @@ export function useEventForm(
     id: existing?.id ?? "",
     name: existing?.name ?? "",
     description: existing?.description ?? "",
-    venueId: existing?.venue_id ?? (user.role === "siteAdmin" ? "" : user.venueId || ""),
+    venueId: existing?.venue_id ?? (user.role === "siteAdmin" || user.role === "organiser" ? "" : user.venueId || ""),
     startDateTime: timestampToInputValue(existing?.start_time ?? null),
     endDateTime: timestampToInputValue(existing?.end_time ?? null),
     price: existing?.price ?? 0,
@@ -616,7 +699,7 @@ export function useEventForm(
       let selectedVenueId = "";
       let selectedVenueName = "";
 
-      if (user.role === "siteAdmin") {
+      if (user.role === "siteAdmin" || user.role === "organiser") {
         if (!form.venueId) {
           throw new Error("Please select a venue");
         }
@@ -764,7 +847,7 @@ export function useEventForm(
       id: existing?.id ?? "",
       name: existing?.name ?? "",
       description: existing?.description ?? "",
-      venueId: existing?.venue_id ?? (user.role === "siteAdmin" ? "" : user.venueId || ""),
+      venueId: existing?.venue_id ?? (user.role === "siteAdmin" || user.role === "organiser" ? "" : user.venueId || ""),
       startDateTime: timestampToInputValue(existing?.start_time ?? null),
       endDateTime: timestampToInputValue(existing?.end_time ?? null),
       price: existing?.price ?? 0,

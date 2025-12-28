@@ -24,9 +24,9 @@ serve(async (req) => {
     }
 
     // Validate role
-    const validRoles = ['siteAdmin', 'venueAdmin', 'subAdmin', 'scanner']
+    const validRoles = ['siteAdmin', 'venueAdmin', 'subAdmin', 'scanner', 'organiser']
     if (!validRoles.includes(role)) {
-      throw new Error('Invalid role. Must be one of: siteAdmin, venueAdmin, subAdmin, scanner')
+      throw new Error('Invalid role. Must be one of: siteAdmin, venueAdmin, subAdmin, scanner, organiser')
     }
 
     // Validate password strength (minimum 6 characters)

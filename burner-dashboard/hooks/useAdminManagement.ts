@@ -9,7 +9,7 @@ export interface Admin {
   id: string;
   email: string;
   name: string;
-  role: 'venueAdmin' | 'subAdmin' | 'siteAdmin';
+  role: 'venueAdmin' | 'subAdmin' | 'siteAdmin' | 'organiser';
   venueId?: string;
   created_at?: string;
   last_login?: string;
@@ -43,7 +43,7 @@ export interface Venue {
 export interface CreateAdminData {
   email: string;
   name: string;
-  role: 'venueAdmin' | 'subAdmin' | 'siteAdmin';
+  role: 'venueAdmin' | 'subAdmin' | 'siteAdmin' | 'organiser';
   venueId?: string;
   password?: string;
 }
@@ -416,6 +416,40 @@ export function useAdminManagement() {
     }
   };
 
+  const manageOrganizerVenues = async (organizerId: string, venueIds: string[]) => {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) throw new Error('Not authenticated');
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/manage-organizer-venues`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${data.session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'set',
+            organizerId: organizerId,
+            venueIds: venueIds
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update organizer venues');
+      }
+
+      toast.success('Organizer venues updated successfully');
+    } catch (error: any) {
+      console.error('Error managing organizer venues:', error);
+      toast.error(error.message || 'Failed to update organizer venues');
+      throw error;
+    }
+  };
+
   return {
     user,
     authLoading,
@@ -430,6 +464,7 @@ export function useAdminManagement() {
     createScanner,
     updateScanner,
     deleteScanner,
+    manageOrganizerVenues,
     loadData,
     refreshUser
   };

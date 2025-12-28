@@ -52,7 +52,7 @@ export const verifyScannerPermission = async (
 }
 
 export const verifyAdminPermission = async (
-  supabase: SupabaseClient, 
+  supabase: SupabaseClient,
   userId: string,
   requiredRole: 'siteAdmin' | 'venueAdmin' = 'siteAdmin'
 ) => {
@@ -69,7 +69,9 @@ export const verifyAdminPermission = async (
   // Role hierarchy check
   const roleHierarchy = {
     'scanner': 1,
+    'organiser': 2,
     'venueAdmin': 2,
+    'subAdmin': 2,
     'siteAdmin': 3
   }
 
@@ -78,4 +80,83 @@ export const verifyAdminPermission = async (
   }
 
   return admin
+}
+
+// Verify organizer has access to a specific venue
+export const verifyOrganizerVenueAccess = async (
+  supabase: SupabaseClient,
+  userId: string,
+  venueId: string
+) => {
+  const { data: admin, error } = await supabase
+    .from('admins')
+    .select('*')
+    .eq('id', userId)
+    .single()
+
+  if (error || !admin || !admin.active) {
+    throw new Error('Permission denied: Not an admin')
+  }
+
+  // siteAdmin has access to all venues
+  if (admin.role === 'siteAdmin') {
+    return admin
+  }
+
+  // venueAdmin/subAdmin have access to their assigned venue
+  if (admin.role === 'venueAdmin' || admin.role === 'subAdmin') {
+    if (admin.venue_id === venueId) {
+      return admin
+    }
+    throw new Error('Permission denied: Invalid venue access')
+  }
+
+  // organiser must have venue assigned via organizer_venues table
+  if (admin.role === 'organiser') {
+    const { data: assignment, error: assignmentError } = await supabase
+      .from('organizer_venues')
+      .select('id')
+      .eq('organizer_id', userId)
+      .eq('venue_id', venueId)
+      .single()
+
+    if (assignmentError || !assignment) {
+      throw new Error('Permission denied: Organizer not authorized for this venue')
+    }
+
+    return admin
+  }
+
+  throw new Error('Permission denied: Invalid role for venue access')
+}
+
+// Get all venues accessible to an organizer
+export const getOrganizerVenues = async (
+  supabase: SupabaseClient,
+  userId: string
+) => {
+  const { data: admin, error } = await supabase
+    .from('admins')
+    .select('*')
+    .eq('id', userId)
+    .single()
+
+  if (error || !admin || !admin.active) {
+    throw new Error('Permission denied: Not an admin')
+  }
+
+  if (admin.role !== 'organiser') {
+    throw new Error('User is not an organiser')
+  }
+
+  const { data: venues, error: venuesError } = await supabase
+    .from('organizer_venues')
+    .select('venue_id')
+    .eq('organizer_id', userId)
+
+  if (venuesError) {
+    throw venuesError
+  }
+
+  return venues.map(v => v.venue_id)
 }
