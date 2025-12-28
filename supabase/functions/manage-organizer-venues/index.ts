@@ -13,9 +13,6 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(authHeader?.replace('Bearer ', '') ?? '')
     if (!user) throw new Error('Unauthenticated')
 
-    // Only siteAdmins can manage organizer-venue assignments
-    await verifyAdminPermission(supabase, user.id, 'siteAdmin')
-
     const { action, organizerId, venueId, venueIds } = await req.json()
 
     // Validate required fields
@@ -29,7 +26,21 @@ serve(async (req) => {
       throw new Error('Invalid action. Must be one of: add, remove, set, get')
     }
 
-    // Verify organizer exists and has organiser role
+    // For write operations (add, remove, set), only siteAdmins can perform them
+    // For 'get' action, organisers can fetch their own venues
+    if (action !== 'get') {
+      await verifyAdminPermission(supabase, user.id, 'siteAdmin')
+    } else {
+      // For 'get' action, allow organisers to fetch their own venues
+      const isSiteAdmin = await verifyAdminPermission(supabase, user.id, 'siteAdmin').then(() => true).catch(() => false)
+      const isOwnVenues = organizerId === user.id
+
+      if (!isSiteAdmin && !isOwnVenues) {
+        throw new Error('You can only fetch your own venue assignments')
+      }
+    }
+
+    // Verify organizer exists
     const { data: organizer, error: organizerError } = await supabase
       .from('users')
       .select('id, role, email, display_name')
@@ -40,7 +51,9 @@ serve(async (req) => {
       throw new Error('Organizer not found')
     }
 
-    if (organizer.role !== 'organiser') {
+    // For write operations, verify the user has organiser role
+    // For 'get', we allow fetching venues for any user (returns empty if not an organiser)
+    if (action !== 'get' && organizer.role !== 'organiser') {
       throw new Error('Specified admin is not an organiser')
     }
 
