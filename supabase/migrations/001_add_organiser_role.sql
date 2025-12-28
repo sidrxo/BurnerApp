@@ -1,25 +1,25 @@
 -- Migration: Add Event Organiser Role and Venue Assignments
 -- Description: Adds support for event organisers who can create events at multiple assigned venues
 
--- 1. Update admins table role constraint to include 'organiser'
--- Note: The admins table already exists with a role field
+-- 1. Update users table role constraint to include 'organiser'
+-- Note: The users table already exists with a role field
 -- This adds 'organiser' as a valid role option
 -- Run this in Supabase SQL Editor:
-ALTER TABLE admins
-DROP CONSTRAINT IF EXISTS admins_role_check;
+ALTER TABLE users
+DROP CONSTRAINT IF EXISTS users_role_check;
 
-ALTER TABLE admins
-ADD CONSTRAINT admins_role_check
-CHECK (role IN ('siteAdmin', 'venueAdmin', 'subAdmin', 'scanner', 'organiser'));
+ALTER TABLE users
+ADD CONSTRAINT users_role_check
+CHECK (role IN ('siteAdmin', 'venueAdmin', 'subAdmin', 'scanner', 'organiser', 'user'));
 
 -- 2. Create organizer_venues junction table
 -- This manages the many-to-many relationship between organisers and venues
 CREATE TABLE IF NOT EXISTS organizer_venues (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organizer_id UUID NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+  organizer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  created_by UUID REFERENCES admins(id),
+  created_by UUID REFERENCES users(id),
   UNIQUE(organizer_id, venue_id)
 );
 
@@ -38,9 +38,9 @@ ON organizer_venues FOR SELECT
 TO authenticated
 USING (
   EXISTS (
-    SELECT 1 FROM admins
-    WHERE admins.id = auth.uid()
-    AND admins.active = true
+    SELECT 1 FROM users
+    WHERE users.id = auth.uid()
+    AND users.active = true
   )
 );
 
@@ -50,10 +50,10 @@ ON organizer_venues FOR INSERT
 TO authenticated
 WITH CHECK (
   EXISTS (
-    SELECT 1 FROM admins
-    WHERE admins.id = auth.uid()
-    AND admins.role = 'siteAdmin'
-    AND admins.active = true
+    SELECT 1 FROM users
+    WHERE users.id = auth.uid()
+    AND users.role = 'siteAdmin'
+    AND users.active = true
   )
 );
 
@@ -63,10 +63,10 @@ ON organizer_venues FOR DELETE
 TO authenticated
 USING (
   EXISTS (
-    SELECT 1 FROM admins
-    WHERE admins.id = auth.uid()
-    AND admins.role = 'siteAdmin'
-    AND admins.active = true
+    SELECT 1 FROM users
+    WHERE users.id = auth.uid()
+    AND users.role = 'siteAdmin'
+    AND users.active = true
   )
 );
 
@@ -109,6 +109,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Note: This assumes the events table already has RLS enabled
 -- Drop existing insert policy if needed and recreate
 
+DROP POLICY IF EXISTS "Admins can insert events" ON events;
 DROP POLICY IF EXISTS "Admins can create events" ON events;
 
 CREATE POLICY "Admins can create events"
@@ -116,7 +117,7 @@ ON events FOR INSERT
 TO authenticated
 WITH CHECK (
   EXISTS (
-    SELECT 1 FROM admins a
+    SELECT 1 FROM users a
     WHERE a.id = auth.uid()
     AND a.active = true
     AND (
@@ -140,7 +141,7 @@ ON events FOR UPDATE
 TO authenticated
 USING (
   EXISTS (
-    SELECT 1 FROM admins a
+    SELECT 1 FROM users a
     WHERE a.id = auth.uid()
     AND a.active = true
     AND (
@@ -164,7 +165,7 @@ ON events FOR DELETE
 TO authenticated
 USING (
   EXISTS (
-    SELECT 1 FROM admins a
+    SELECT 1 FROM users a
     WHERE a.id = auth.uid()
     AND a.active = true
     AND (
