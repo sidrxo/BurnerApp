@@ -43,7 +43,7 @@ function TicketsPageContent() {
   }
 
   // Show access denied for users without proper permissions
-  if (!user || (user.role !== "siteAdmin" && user.role !== "venueAdmin" && user.role !== "subAdmin")) {
+  if (!user || (user.role !== "siteAdmin" && user.role !== "venueAdmin" && user.role !== "subAdmin" && user.role !== "organiser")) {
     return <AccessDenied />;
   }
 

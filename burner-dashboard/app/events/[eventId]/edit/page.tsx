@@ -113,7 +113,7 @@ function EditEventPageContent() {
     return <AccessDenied user={null} />;
   }
 
-  if (user.role !== "siteAdmin" && user.role !== "venueAdmin" && user.role !== "subAdmin") {
+  if (user.role !== "siteAdmin" && user.role !== "venueAdmin" && user.role !== "subAdmin" && user.role !== "organiser") {
     return <AccessDenied user={user} />;
   }
 
