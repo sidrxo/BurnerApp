@@ -52,6 +52,7 @@ if (process.env.NODE_ENV === 'development') {
 // Type definitions for database schema
 export type Role = 'siteAdmin' | 'venueAdmin' | 'subAdmin' | 'scanner' | 'organiser' | 'user';
 
+// Unified User interface (replaces both AppUser and Admin)
 export interface AppUser {
   id: string;
   email: string | null;
@@ -61,7 +62,11 @@ export interface AppUser {
   name?: string | null;
   created_at?: string;
   last_login?: string;
+  needs_password_reset?: boolean;
 }
+
+// Alias for backward compatibility
+export type Admin = AppUser;
 
 export interface Event {
   id: string;
@@ -120,18 +125,6 @@ export interface Venue {
   active: boolean;
   event_count?: number;
   created_at?: string;
-}
-
-export interface Admin {
-  id: string;
-  email: string;
-  name: string | null;
-  role: Role;
-  venue_id: string | null;
-  created_at: string;
-  last_login: string | null;
-  active: boolean;
-  needs_password_reset: boolean;
 }
 
 export interface Tag {

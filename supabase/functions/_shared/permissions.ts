@@ -6,7 +6,7 @@ export const verifyScannerPermission = async (
   venueId?: string
 ) => {
   const { data: admin, error } = await supabase
-    .from('admins')
+    .from('users')
     .select('*')
     .eq('id', userId)
     .single()
@@ -57,7 +57,7 @@ export const verifyAdminPermission = async (
   requiredRole: 'siteAdmin' | 'venueAdmin' = 'siteAdmin'
 ) => {
   const { data: admin, error } = await supabase
-    .from('admins')
+    .from('users')
     .select('*')
     .eq('id', userId)
     .single()
@@ -89,7 +89,7 @@ export const verifyOrganizerVenueAccess = async (
   venueId: string
 ) => {
   const { data: admin, error } = await supabase
-    .from('admins')
+    .from('users')
     .select('*')
     .eq('id', userId)
     .single()
@@ -136,7 +136,7 @@ export const getOrganizerVenues = async (
   userId: string
 ) => {
   const { data: admin, error } = await supabase
-    .from('admins')
+    .from('users')
     .select('*')
     .eq('id', userId)
     .single()

@@ -36,7 +36,7 @@ serve(async (req) => {
 
     // Check if admin already exists in database
     const { data: existingAdmin } = await supabase
-      .from('admins')
+      .from('users')
       .select('id')
       .eq('email', email.trim())
       .single()
@@ -61,7 +61,7 @@ serve(async (req) => {
 
     // Create admin entry in database
     const { data: adminData, error: adminError } = await supabase
-      .from('admins')
+      .from('users')
       .insert({
         id: authData.user.id,
         email: email.trim(),

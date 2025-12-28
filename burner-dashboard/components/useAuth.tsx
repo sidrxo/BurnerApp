@@ -40,47 +40,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const getUserProfile = async (supabaseUser: SupabaseUser): Promise<AppUser> => {
     try {
-      // First check if user is an admin/scanner
-      const { data: adminData, error: adminError } = await supabase
-        .from('admins')
+      // Query unified users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
         .select('id, email, role, venue_id, active')
         .eq('id', supabaseUser.id)
         .single();
 
-      if (adminData && !adminError) {
-        console.log("User is admin/staff:", adminData);
-
-        // Check if user is active
-        if (!adminData.active) {
-          console.log("Admin account is inactive");
-          await supabase.auth.signOut();
-          return {
-            uid: supabaseUser.id,
-            email: supabaseUser.email ?? null,
-            role: "user",
-            venueId: null,
-            active: false,
-          };
-        }
-
-        return {
-          uid: adminData.id,
-          email: adminData.email,
-          role: isValidRole(adminData.role) ? adminData.role : "user",
-          venueId: adminData.venue_id,
-          active: adminData.active,
-        };
-      }
-
-      // If not an admin, check regular users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, email, active')
-        .eq('id', supabaseUser.id)
-        .single();
-
       if (userData && !userError) {
-        console.log("User is regular user:", userData);
+        console.log("User profile loaded:", { role: userData.role, active: userData.active });
 
         // Check if user is active
         if (userData.active === false) {
@@ -98,13 +66,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return {
           uid: userData.id,
           email: userData.email,
-          role: "user",
-          venueId: null,
+          role: isValidRole(userData.role) ? userData.role : "user",
+          venueId: userData.venue_id,
           active: userData.active !== false,
         };
       }
 
-      // If user not found in either table, return basic info
+      // If user not found in database, return basic profile
       console.log("User not found in database, creating basic profile");
       return {
         uid: supabaseUser.id,
