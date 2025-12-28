@@ -72,25 +72,25 @@ serve(async (req) => {
 
     authData = newAuthData
 
-    // Create admin entry in database
+    // Update the user record that was automatically created by the database trigger
+    // Note: The on_auth_user_created trigger automatically creates a users table record
     const { data: adminData, error: adminError } = await supabase
       .from('users')
-      .insert({
-        id: authData.user.id,
+      .update({
         email: email.trim(),
         display_name: display_name.trim(),
         role: role,
         venue_id: venueId || null,
         active: true,
-        created_at: new Date().toISOString(),
       })
+      .eq('id', authData.user.id)
       .select()
       .single()
 
     if (adminError) {
-      // Rollback: Delete the auth user if database insert fails
+      // Rollback: Delete the auth user if database update fails
       await supabase.auth.admin.deleteUser(authData.user.id)
-      throw new Error(`Failed to create user record: ${adminError.message || JSON.stringify(adminError)}`)
+      throw new Error(`Failed to update user record: ${adminError.message || JSON.stringify(adminError)}`)
     }
 
     return new Response(
