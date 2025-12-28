@@ -178,6 +178,7 @@ footer {
     header, footer { padding: 20px; }
     .content-container h1 { font-size: 2rem; }
     .footer-content-grid { grid-template-columns: 1fr; gap: 40px; }
+    .footer-meta { margin-top: 40px; } /* FIXED: Proper spacing on mobile */
 }
 
 /* --- INFO PAGE STYLES --- */

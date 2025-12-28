@@ -148,7 +148,9 @@ class AuthenticationService: ObservableObject {
                 self.isLoading = false
             }
             
-            NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
+            // FIX: Remove immediate notification - let auth state listener handle it
+            // This prevents multiple navigation updates when combined with view dismissals
+            // NotificationCenter.default.post(name: NSNotification.Name("UserSignedIn"), object: nil)
             
         } catch {
             await MainActor.run {

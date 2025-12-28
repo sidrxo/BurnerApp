@@ -12,8 +12,7 @@ struct BurnerModeLockScreen: View {
     @State private var lockScreenOpacity: Double = 0
     @State private var eventEndTime: Date = Date()
     @State private var isExiting = false // Prevent race condition in exit
-    @State private var showNFCScanner = false
-    @State private var nfcScanMessage = ""
+    @State private var isLongPressing = false
 
     // Terminal state - Initialize based on whether terminal has been shown this session
     @State private var showTerminal: Bool = !UserDefaults.standard.bool(forKey: "burnerModeTerminalShown")
@@ -123,7 +122,7 @@ struct BurnerModeLockScreen: View {
                     Button(action: { exitBurnerModeImmediately() }) {
                         Image(systemName: "xmark")
                             .appFont(size: 20, weight: .semibold)
-                            .foregroundColor(.white.opacity(0.7))
+                            .foregroundColor(.white.opacity(0.1))
                             .frame(width: 44, height: 44)
                     }
                     .padding(.trailing, 20)
@@ -137,21 +136,17 @@ struct BurnerModeLockScreen: View {
                         Text("YOU'RE IN.")
                             .appFont(size: 42, weight: .bold)
                             .foregroundColor(.white)
+                            .kerning(-1.5)
                             .textCase(.uppercase)
-                            .tracking(2)
 
-                        Text("Focus on the moment.")
-                            .appFont(size: 22, weight: .medium)
+                        Text("MEET ME IN THE MOMENT.")
+                            .appFont(size: 22)
+                            .kerning(-1.5)
                             .foregroundColor(.white.opacity(0.9))
                             .multilineTextAlignment(.center)
-
-                        Text("Put your phone away and be present.")
-                            .appBody()
-                            .foregroundColor(.white.opacity(0.7))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
                     }
-                    .padding(.bottom, 40)
+                    .padding(.vertical, 20)
+                    .padding(.top, 10)
 
                     VStack(spacing: 8) {
                         Text("TIME UNTIL EVENT ENDS")
@@ -162,17 +157,25 @@ struct BurnerModeLockScreen: View {
                             .appFont(size: 28, weight: .medium)
                             .foregroundColor(.white)
                             .monospacedDigit()
-                    }
+                }
                     .padding(.vertical, 20)
                     .padding(.horizontal, 30)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white.opacity(0.1))
+                            .fill(Color.white.opacity(isLongPressing ? 0.2 : 0.1))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                    .stroke(Color.white.opacity(isLongPressing ? 0.4 : 0.2), lineWidth: 1)
                             )
                     )
+                    .scaleEffect(isLongPressing ? 0.98 : 1.0)
+                    .animation(.easeInOut(duration: 0.2), value: isLongPressing)
+                    .onLongPressGesture(minimumDuration: 1.5, pressing: { pressing in
+                        isLongPressing = pressing
+                    }) {
+                        // Long press completed - start NFC unlock
+                        startNFCUnlock()
+                    }
 
                     if timerIsActive {
                         VStack(spacing: 8) {
@@ -213,33 +216,7 @@ struct BurnerModeLockScreen: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         .transition(.opacity)
-                        .padding(.top, 24)
-                    }
-                    
-                    // NFC Unlock Button (only when timer is active)
-                    if timerIsActive && burnerManager.nfcManager.isNFCAvailable() {
-                        Button(action: { startNFCUnlock() }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "wave.3.right")
-                                    .appBody()
-                                Text("Unlock with NFC Tag")
-                                    .appCaption().fontWeight(.semibold)
-                            }
-                            .foregroundColor(.teal)
-                            .padding(.vertical, 16)
-                            .padding(.horizontal, 24)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.teal.opacity(0.15))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.teal.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .transition(.opacity)
-                        .padding(.top, 12)
+                        .padding(.top, 14)
                     }
                 }
 
@@ -265,19 +242,6 @@ struct BurnerModeLockScreen: View {
                     customContent: EmptyView()
                 )
                 .transition(.opacity)
-            }
-            
-            // NFC Scanner Overlay
-            if showNFCScanner {
-                NFCScannerOverlay(
-                    message: nfcScanMessage,
-                    onCancel: {
-                        burnerManager.nfcManager.stopScanning()
-                        showNFCScanner = false
-                    }
-                )
-                .transition(.opacity)
-                .zIndex(10)
             }
         }
     }
@@ -341,13 +305,10 @@ struct BurnerModeLockScreen: View {
     
     // MARK: - NFC Unlock
     private func startNFCUnlock() {
-        showNFCScanner = true
-        nfcScanMessage = "Hold your phone near the unlock tag"
-        
+        // Just start the NFC reader - it will show the native iOS NFC dialog
         burnerManager.nfcManager.startReadingForUnlock {
             // Success - unlock burner mode
             DispatchQueue.main.async {
-                showNFCScanner = false
                 exitBurnerMode()
             }
         }
@@ -429,72 +390,5 @@ struct BlinkingCursor: View {
                     isVisible.toggle()
                 }
             }
-    }
-}
-
-// MARK: - NFC Scanner Overlay
-struct NFCScannerOverlay: View {
-    let message: String
-    let onCancel: () -> Void
-    @State private var pulseScale: CGFloat = 1.0
-    
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.95).ignoresSafeArea()
-            
-            VStack(spacing: 40) {
-                Spacer()
-                
-                // NFC Icon with pulse animation
-                ZStack {
-                    Circle()
-                        .fill(Color.teal.opacity(0.2))
-                        .frame(width: 150, height: 150)
-                        .scaleEffect(pulseScale)
-                        .animation(
-                            .easeInOut(duration: 1.5)
-                            .repeatForever(autoreverses: true),
-                            value: pulseScale
-                        )
-                    
-                    Image(systemName: "wave.3.right.circle.fill")
-                        .appFont(size: 80)
-                        .foregroundColor(.teal)
-                }
-                .onAppear {
-                    pulseScale = 1.2
-                }
-                
-                VStack(spacing: 12) {
-                    Text("NFC UNLOCK")
-                        .appFont(size: 24, weight: .bold)
-                        .foregroundColor(.white)
-                        .tracking(2)
-                    
-                    Text(message)
-                        .appBody()
-                        .foregroundColor(.white.opacity(0.7))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                }
-                
-                Spacer()
-                
-                Button(action: onCancel) {
-                    Text("Cancel")
-                        .appBody()
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white.opacity(0.15))
-                        )
-                }
-                .padding(.horizontal, 40)
-                .padding(.bottom, 60)
-            }
-        }
     }
 }

@@ -12,7 +12,7 @@ class NFCUnlockManager: NSObject, ObservableObject {
     private var onUnlockSuccess: (() -> Void)?
     
     // Static unlock code - simple and straightforward
-    private let unlockCode = "BURNER_UNLOCK_2024"
+    private let unlockCode = "BURNERUNLOCK2026"
     
     // MARK: - Check NFC Availability
     func isNFCAvailable() -> Bool {
@@ -154,7 +154,7 @@ extension NFCUnlockManager: NFCNDEFReaderSessionDelegate {
                     if let text = String(data: textData, encoding: .utf8) {
                         // Check if this matches our static unlock code
                         if text == unlockCode {
-                            session.alertMessage = "✅ Unlock successful!"
+                            session.alertMessage = "BURNER disabled."
                             session.invalidate()
 
                             // Trigger unlock

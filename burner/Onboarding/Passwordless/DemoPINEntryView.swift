@@ -200,9 +200,10 @@ struct DemoPINEntryView: View {
                     let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                     impactFeedback.impactOccurred()
                     
-                    // Dismiss both this view and the sign-in sheet
-                    dismiss()
+                    // FIX: Set binding first, then dismiss
+                    // This ensures both navigation changes happen in the same frame
                     showingSignIn = false
+                    dismiss()
                 }
             } catch {
                 await MainActor.run {
