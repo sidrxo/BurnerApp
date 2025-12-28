@@ -85,10 +85,11 @@ export function useAdminManagement() {
         subAdmins: v.sub_admins || []
       })));
 
-      // Load admins with RLS protection
+      // Load admins (users with admin roles) with RLS protection
       const { data: adminsData, error: adminsError } = await supabase
-        .from('admins')
+        .from('users')
         .select('*')
+        .in('role', ['siteAdmin', 'venueAdmin', 'subAdmin', 'organiser'])
         .order('created_at', { ascending: false });
 
       if (adminsError) throw adminsError;
@@ -100,7 +101,7 @@ export function useAdminManagement() {
 
       // Load scanners (they're in the admins table with role='scanner')
       const { data: scannersData } = await supabase
-        .from('admins')
+        .from('users')
         .select('*')
         .eq('role', 'scanner')
         .order('created_at', { ascending: false });
@@ -162,7 +163,7 @@ export function useAdminManagement() {
 
       // Check if admin already exists
       const { data: existing } = await supabase
-        .from('admins')
+        .from('users')
         .select('id')
         .eq('email', adminData.email.trim())
         .single();
@@ -174,7 +175,7 @@ export function useAdminManagement() {
 
       // Create admin entry in database
       const { data, error } = await supabase
-        .from('admins')
+        .from('users')
         .insert([{
           email: adminData.email.trim(),
           name: adminData.name.trim(),
@@ -219,7 +220,7 @@ export function useAdminManagement() {
       if (updates.email) updateData.email = updates.email;
 
       const { error } = await supabase
-        .from('admins')
+        .from('users')
         .update(updateData)
         .eq('id', adminId);
 
@@ -254,7 +255,7 @@ export function useAdminManagement() {
       // NOTE: This should also delete the auth user
       // TODO: Create 'delete-admin' Edge Function to handle auth deletion
       const { error } = await supabase
-        .from('admins')
+        .from('users')
         .delete()
         .eq('id', adminId);
 
@@ -316,7 +317,7 @@ export function useAdminManagement() {
 
       // Check if scanner already exists
       const { data: existing } = await supabase
-        .from('admins')
+        .from('users')
         .select('id')
         .eq('email', scannerData.email.trim())
         .single();
@@ -328,7 +329,7 @@ export function useAdminManagement() {
 
       // Create scanner entry in database (scanners are stored in admins table with role='scanner')
       const { data, error } = await supabase
-        .from('admins')
+        .from('users')
         .insert([{
           email: scannerData.email.trim(),
           name: scannerData.name.trim(),
@@ -369,7 +370,7 @@ export function useAdminManagement() {
       if (typeof updates.active === 'boolean') updateData.active = updates.active;
 
       const { error } = await supabase
-        .from('admins')
+        .from('users')
         .update(updateData)
         .eq('id', scannerId);
 
@@ -397,7 +398,7 @@ export function useAdminManagement() {
       // NOTE: This should also delete the auth user
       // TODO: Create 'delete-scanner' Edge Function to handle auth deletion
       const { error } = await supabase
-        .from('admins')
+        .from('users')
         .delete()
         .eq('id', scannerId);
 

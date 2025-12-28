@@ -31,7 +31,7 @@ serve(async (req) => {
 
     // Verify organizer exists and has organiser role
     const { data: organizer, error: organizerError } = await supabase
-      .from('admins')
+      .from('users')
       .select('id, role, email, name')
       .eq('id', organizerId)
       .single()
