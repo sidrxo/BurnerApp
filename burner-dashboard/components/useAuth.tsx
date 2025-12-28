@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, createContext, useContext, ReactNode } fro
 import { supabase } from "@/lib/supabase";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
-type Role = "siteAdmin" | "venueAdmin" | "subAdmin" | "scanner" | "user";
+type Role = "siteAdmin" | "venueAdmin" | "subAdmin" | "scanner" | "organiser" | "user";
 
 type AppUser = {
   uid: string;
@@ -29,7 +29,7 @@ const AuthContext = createContext<AuthContextType>({
 // Helper function to validate role type
 function isValidRole(role: any): role is Role {
   return typeof role === 'string' &&
-         ['siteAdmin', 'venueAdmin', 'subAdmin', 'scanner', 'user'].includes(role);
+         ['siteAdmin', 'venueAdmin', 'subAdmin', 'scanner', 'organiser', 'user'].includes(role);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

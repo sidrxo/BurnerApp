@@ -7,6 +7,7 @@ import {
   UnifiedCreateForm,
   AdminsTable,
   ScannersTable,
+  OrganiserVenueManagement,
   LoadingSkeleton,
   AccessDenied
 } from "@/components/adminmanagement/AdminManagementComponents";
@@ -24,7 +25,8 @@ function AdminManagementPageContent() {
     updateAdmin,
     createScanner,
     updateScanner,
-    deleteScanner
+    deleteScanner,
+    manageOrganizerVenues
   } = useAdminManagement();
 
   // Show loading state while auth is loading
@@ -77,6 +79,16 @@ function AdminManagementPageContent() {
             venues={venues}
             onDeleteAdmin={deleteAdmin}
             onUpdateAdmin={updateAdmin}
+          />
+        )}
+
+        {/* Organiser Venue Management - Only for Site Admins */}
+        {user.role === 'siteAdmin' && (
+          <OrganiserVenueManagement
+            admins={admins}
+            venues={venues}
+            onManageVenues={manageOrganizerVenues}
+            loading={loading}
           />
         )}
 

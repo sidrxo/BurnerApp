@@ -50,7 +50,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Type definitions for database schema
-export type Role = 'siteAdmin' | 'venueAdmin' | 'subAdmin' | 'scanner' | 'user';
+export type Role = 'siteAdmin' | 'venueAdmin' | 'subAdmin' | 'scanner' | 'organiser' | 'user';
 
 export interface AppUser {
   id: string;
@@ -143,4 +143,12 @@ export interface Tag {
   active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface OrganizerVenue {
+  id: string;
+  organizer_id: string;
+  venue_id: string;
+  created_at: string;
+  created_by: string | null;
 }

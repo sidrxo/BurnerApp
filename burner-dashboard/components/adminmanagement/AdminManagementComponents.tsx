@@ -75,7 +75,7 @@ export function UnifiedCreateForm({
   const [formData, setFormData] = useState({
     email: '',
     name: '',
-    role: 'venueAdmin' as 'venueAdmin' | 'subAdmin' | 'siteAdmin' | 'scanner',
+    role: 'venueAdmin' as 'venueAdmin' | 'subAdmin' | 'siteAdmin' | 'scanner' | 'organiser',
     venueId: currentUserRole === 'siteAdmin' ? '' : defaultVenueId || '',
     password: '',
     confirmPassword: ''
@@ -117,7 +117,7 @@ export function UnifiedCreateForm({
       const adminData: CreateAdminData = {
         email: formData.email,
         name: formData.name,
-        role: formData.role as 'venueAdmin' | 'subAdmin' | 'siteAdmin',
+        role: formData.role as 'venueAdmin' | 'subAdmin' | 'siteAdmin' | 'organiser',
         venueId: (formData.role === 'venueAdmin' || formData.role === 'subAdmin') ? formData.venueId : undefined,
         password: formData.password
       };
@@ -245,7 +245,7 @@ export function UnifiedCreateForm({
             <Label htmlFor="role">Role</Label>
             <Select
               value={formData.role}
-              onValueChange={(value: 'venueAdmin' | 'subAdmin' | 'siteAdmin' | 'scanner') =>
+              onValueChange={(value: 'venueAdmin' | 'subAdmin' | 'siteAdmin' | 'scanner' | 'organiser') =>
                 setFormData(prev => ({ ...prev, role: value }))
               }
             >
@@ -258,6 +258,7 @@ export function UnifiedCreateForm({
                 )}
                 <SelectItem value="venueAdmin">Venue Admin</SelectItem>
                 <SelectItem value="subAdmin">Sub Admin</SelectItem>
+                <SelectItem value="organiser">Organiser</SelectItem>
                 <SelectItem value="scanner">Scanner</SelectItem>
               </SelectContent>
             </Select>
@@ -540,6 +541,8 @@ export function AdminsTable({ admins, venues, onDeleteAdmin, onUpdateAdmin }: Ad
         return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
       case 'subAdmin':
         return 'bg-green-100 text-green-800 hover:bg-green-200';
+      case 'organiser':
+        return 'bg-purple-100 text-purple-800 hover:bg-purple-200';
       default:
         return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
     }
@@ -577,8 +580,9 @@ export function AdminsTable({ admins, venues, onDeleteAdmin, onUpdateAdmin }: Ad
                   <TableCell>{admin.email}</TableCell>
                   <TableCell>
                     <Badge className={getRoleBadgeColor(admin.role)}>
-                      {admin.role === 'siteAdmin' ? 'Site Admin' : 
-                       admin.role === 'venueAdmin' ? 'Venue Admin' : 'Sub Admin'}
+                      {admin.role === 'siteAdmin' ? 'Site Admin' :
+                       admin.role === 'venueAdmin' ? 'Venue Admin' :
+                       admin.role === 'organiser' ? 'Organiser' : 'Sub Admin'}
                     </Badge>
                   </TableCell>
                   <TableCell>{getVenueName(admin.venueId)}</TableCell>
@@ -884,6 +888,226 @@ export function LoadingSkeleton() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Component to manage organiser venue assignments
+interface OrganiserVenueManagementProps {
+  admins: Admin[];
+  venues: Venue[];
+  onManageVenues: (organizerId: string, venueIds: string[]) => Promise<void>;
+  loading: boolean;
+}
+
+export function OrganiserVenueManagement({
+  admins,
+  venues,
+  onManageVenues,
+  loading
+}: OrganiserVenueManagementProps) {
+  const [selectedOrganiser, setSelectedOrganiser] = useState<string | null>(null);
+  const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
+  const [currentVenues, setCurrentVenues] = useState<string[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Filter to only show organisers
+  const organisers = admins.filter(admin => admin.role === 'organiser');
+
+  const handleOpenDialog = async (organizerId: string) => {
+    setSelectedOrganiser(organizerId);
+    setIsDialogOpen(true);
+
+    // Fetch current venue assignments
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) throw error;
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/manage-organizer-venues`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${data.session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'get',
+            organizerId: organizerId
+          })
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to fetch organizer venues');
+
+      const result = await response.json();
+      const venueIds = result.venues?.map((v: any) => v.venue_id) || [];
+      setCurrentVenues(venueIds);
+      setSelectedVenues(venueIds);
+    } catch (error) {
+      console.error('Error fetching organizer venues:', error);
+      toast.error('Failed to load organizer venues');
+      setCurrentVenues([]);
+      setSelectedVenues([]);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!selectedOrganiser) return;
+
+    setSaving(true);
+    try {
+      await onManageVenues(selectedOrganiser, selectedVenues);
+      setIsDialogOpen(false);
+      toast.success('Organiser venues updated successfully');
+    } catch (error) {
+      console.error('Error updating organiser venues:', error);
+      toast.error('Failed to update organiser venues');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleVenue = (venueId: string) => {
+    setSelectedVenues(prev =>
+      prev.includes(venueId)
+        ? prev.filter(id => id !== venueId)
+        : [...prev, venueId]
+    );
+  };
+
+  if (organisers.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Building className="h-5 w-5" />
+            <span>Organiser Venue Assignments</span>
+          </CardTitle>
+          <CardDescription>
+            Manage which venues organisers can create events at
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">
+            No organisers found. Create an organiser account to manage venue assignments.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <Building className="h-5 w-5" />
+          <span>Organiser Venue Assignments</span>
+        </CardTitle>
+        <CardDescription>
+          Manage which venues organisers can create events at
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Organiser Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Assigned Venues</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {organisers.map((organiser) => (
+                <TableRow key={organiser.id}>
+                  <TableCell className="font-medium">{organiser.name}</TableCell>
+                  <TableCell>{organiser.email}</TableCell>
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">
+                      Click manage to view/edit
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenDialog(organiser.id)}
+                      disabled={loading}
+                    >
+                      Manage Venues
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Manage Organiser Venues</DialogTitle>
+              <DialogDescription>
+                Select which venues this organiser can create events at
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-2 py-4">
+              <div className="text-sm font-medium mb-3">
+                Selected: {selectedVenues.length} of {venues.length} venues
+              </div>
+
+              {venues.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No venues available. Create venues first.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {venues.map((venue) => (
+                    <div
+                      key={venue.id}
+                      className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent cursor-pointer"
+                      onClick={() => toggleVenue(venue.id)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedVenues.includes(venue.id)}
+                        onChange={() => toggleVenue(venue.id)}
+                        className="h-4 w-4"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium">{venue.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {venue.city || 'No city'} {venue.address && `• ${venue.address}`}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving || venues.length === 0}
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
   );
 }
 
