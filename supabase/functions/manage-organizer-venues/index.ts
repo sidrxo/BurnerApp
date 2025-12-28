@@ -32,7 +32,7 @@ serve(async (req) => {
     // Verify organizer exists and has organiser role
     const { data: organizer, error: organizerError } = await supabase
       .from('users')
-      .select('id, role, email, name')
+      .select('id, role, email, display_name')
       .eq('id', organizerId)
       .single()
 
@@ -99,7 +99,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          message: `Venue "${venue.name}" assigned to organizer "${organizer.name}"`,
+          message: `Venue "${venue.name}" assigned to organizer "${organizer.display_name}"`,
           assignment: assignment
         }),
         {
@@ -195,7 +195,7 @@ serve(async (req) => {
           success: true,
           organizer: {
             id: organizer.id,
-            name: organizer.name,
+            name: organizer.display_name,
             email: organizer.email
           },
           venues: assignments || []

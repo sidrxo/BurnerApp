@@ -65,7 +65,7 @@ serve(async (req) => {
       .insert({
         id: authData.user.id,
         email: email.trim(),
-        name: name.trim(),
+        display_name: name.trim(),
         role: role,
         venue_id: venueId || null,
         active: true,

@@ -88,7 +88,7 @@ export function useAdminManagement() {
       // Load admins (users with admin roles) with RLS protection
       const { data: adminsData, error: adminsError } = await supabase
         .from('users')
-        .select('*')
+        .select('*, name:display_name')
         .in('role', ['siteAdmin', 'venueAdmin', 'subAdmin', 'organiser'])
         .order('created_at', { ascending: false });
 
@@ -96,20 +96,21 @@ export function useAdminManagement() {
 
       setAdmins((adminsData || []).map(admin => ({
         ...admin,
+        name: admin.display_name || admin.name,
         venueId: admin.venue_id
       })));
 
-      // Load scanners (they're in the admins table with role='scanner')
+      // Load scanners (users with scanner role)
       const { data: scannersData } = await supabase
         .from('users')
-        .select('*')
+        .select('*, name:display_name')
         .eq('role', 'scanner')
         .order('created_at', { ascending: false });
 
       setScanners((scannersData || []).map(scanner => ({
         id: scanner.id,
         email: scanner.email,
-        name: scanner.name || 'Scanner',
+        name: scanner.display_name || scanner.name || 'Scanner',
         venue_id: scanner.venue_id ?? null,
         active: scanner.active !== false,
         created_at: scanner.created_at,
@@ -138,7 +139,7 @@ export function useAdminManagement() {
           body: {
             email: adminData.email.trim(),
             password: adminData.password,
-            name: adminData.name.trim(),
+            display_name: adminData.name.trim(),
             role: adminData.role,
             venueId: adminData.venueId || null,
           },
@@ -178,7 +179,7 @@ export function useAdminManagement() {
         .from('users')
         .insert([{
           email: adminData.email.trim(),
-          name: adminData.name.trim(),
+          display_name: adminData.name.trim(),
           role: adminData.role,
           venue_id: adminData.venueId || null,
           active: true,
@@ -216,7 +217,7 @@ export function useAdminManagement() {
       if (updates.role) updateData.role = updates.role;
       if (typeof updates.active === 'boolean') updateData.active = updates.active;
       if (updates.venueId !== undefined) updateData.venue_id = updates.venueId;
-      if (updates.name) updateData.name = updates.name;
+      if (updates.name) updateData.display_name = updates.name;
       if (updates.email) updateData.email = updates.email;
 
       const { error } = await supabase
