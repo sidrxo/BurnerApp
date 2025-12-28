@@ -16,11 +16,11 @@ serve(async (req) => {
     // Only siteAdmins can create other admins
     await verifyAdminPermission(supabase, user.id, 'siteAdmin')
 
-    const { email, password, name, role, venueId } = await req.json()
+    const { email, password, display_name, role, venueId } = await req.json()
 
     // Validate required fields
-    if (!email || !password || !name || !role) {
-      throw new Error('Missing required fields: email, password, name, and role are required')
+    if (!email || !password || !display_name || !role) {
+      throw new Error('Missing required fields: email, password, display_name, and role are required')
     }
 
     // Validate role
@@ -51,7 +51,7 @@ serve(async (req) => {
       password: password,
       email_confirm: true, // Auto-confirm email
       user_metadata: {
-        name: name.trim(),
+        display_name: display_name.trim(),
         role: role,
       }
     })
@@ -65,7 +65,7 @@ serve(async (req) => {
       .insert({
         id: authData.user.id,
         email: email.trim(),
-        display_name: name.trim(),
+        display_name: display_name.trim(),
         role: role,
         venue_id: venueId || null,
         active: true,
