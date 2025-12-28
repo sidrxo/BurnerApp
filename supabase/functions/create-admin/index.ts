@@ -34,19 +34,30 @@ serve(async (req) => {
       throw new Error('Password must be at least 6 characters long')
     }
 
-    // Check if admin already exists in database
-    const { data: existingAdmin } = await supabase
+    // Check if user already exists in database or auth
+    const { data: existingUser } = await supabase
       .from('users')
-      .select('id')
+      .select('id, email')
       .eq('email', email.trim())
       .single()
 
-    if (existingAdmin) {
-      throw new Error('Admin with this email already exists')
+    if (existingUser) {
+      throw new Error('User with this email already exists')
+    }
+
+    // Check if auth user exists (in case of orphaned auth account)
+    const { data: existingAuthUser } = await supabase.auth.admin.listUsers()
+    const authUserExists = existingAuthUser?.users?.find(u => u.email === email.trim())
+
+    let authData
+
+    if (authUserExists) {
+      // Delete orphaned auth user and recreate
+      await supabase.auth.admin.deleteUser(authUserExists.id)
     }
 
     // Create Supabase auth user
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    const { data: newAuthData, error: authError } = await supabase.auth.admin.createUser({
       email: email.trim(),
       password: password,
       email_confirm: true, // Auto-confirm email
@@ -56,8 +67,10 @@ serve(async (req) => {
       }
     })
 
-    if (authError) throw authError
-    if (!authData.user) throw new Error('Failed to create auth user')
+    if (authError) throw new Error(`Failed to create auth user: ${authError.message}`)
+    if (!newAuthData.user) throw new Error('Failed to create auth user')
+
+    authData = newAuthData
 
     // Create admin entry in database
     const { data: adminData, error: adminError } = await supabase
@@ -77,7 +90,7 @@ serve(async (req) => {
     if (adminError) {
       // Rollback: Delete the auth user if database insert fails
       await supabase.auth.admin.deleteUser(authData.user.id)
-      throw adminError
+      throw new Error(`Failed to create user record: ${adminError.message || JSON.stringify(adminError)}`)
     }
 
     return new Response(
@@ -92,8 +105,12 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Error creating admin:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({
+        error: errorMessage,
+        success: false
+      }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -145,8 +145,15 @@ export function useAdminManagement() {
           },
         });
 
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
+        if (error) {
+          throw new Error(error.message || 'Edge Function error');
+        }
+        if (data?.error) {
+          throw new Error(data.error);
+        }
+        if (!data?.success) {
+          throw new Error('Failed to create admin');
+        }
 
         toast.success("Admin created successfully with authentication credentials.");
 
