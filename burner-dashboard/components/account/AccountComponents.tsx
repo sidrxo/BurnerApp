@@ -415,23 +415,10 @@ export function SignOutCard({ handleSignOut }: { handleSignOut: () => void }) {
           <LogOut className="h-5 w-5" />
           Sign Out
         </CardTitle>
-        <CardDescription>
-          End your current session and return to the login page
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between p-4 border border-destructive/20 rounded-lg bg-destructive/5">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-destructive/10 rounded-lg">
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-            </div>
-            <div>
-              <div className="font-medium">End Session</div>
-              <div className="text-sm text-muted-foreground">
-                You'll need to sign in again to access the system
-              </div>
-            </div>
-          </div>
+          <div className="font-medium">Sign Out</div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" className="gap-2">
@@ -451,8 +438,8 @@ export function SignOutCard({ handleSignOut }: { handleSignOut: () => void }) {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleSignOut} 
+                <AlertDialogAction
+                  onClick={handleSignOut}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   Sign Out
