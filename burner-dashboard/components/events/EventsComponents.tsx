@@ -571,7 +571,7 @@ export function EventForm({
           />
         </div>
 
-        {user.role === "siteAdmin" && (
+        {(user.role === "siteAdmin" || user.role === "organiser") && (
           <div className="space-y-2">
             <Label htmlFor="venue-select">Venue *</Label>
             <Select
@@ -621,8 +621,8 @@ export function EventForm({
             type="number"
             step="0.01"
             min="0"
-            value={form.price}
-            onChange={(e) => setForm((state) => ({ ...state, price: Number(e.target.value) }))}
+            value={form.price || ""}
+            onChange={(e) => setForm((state) => ({ ...state, price: Number(e.target.value) || 0 }))}
             placeholder="25.00"
             required
           />
@@ -632,8 +632,8 @@ export function EventForm({
           <Input
             type="number"
             min="1"
-            value={form.maxTickets}
-            onChange={(e) => setForm((state) => ({ ...state, maxTickets: Number(e.target.value) }))}
+            value={form.maxTickets || ""}
+            onChange={(e) => setForm((state) => ({ ...state, maxTickets: Number(e.target.value) || 0 }))}
             placeholder="100"
             required
           />

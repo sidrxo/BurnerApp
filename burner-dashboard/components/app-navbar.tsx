@@ -91,7 +91,7 @@ export function AppNavbar() {
         </Link>
 
         {/* Navigation */}
-        <nav className="flex items-center space-x-1">
+        <nav className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-1">
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.url;
@@ -118,8 +118,8 @@ export function AppNavbar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="flex items-center space-x-2">
               <User className="h-4 w-4" />
-              <span className="hidden sm:inline-block max-w-[150px] truncate">
-                {user?.email || "User"}
+              <span className="hidden sm:inline-block">
+                Account
               </span>
             </Button>
           </DropdownMenuTrigger>

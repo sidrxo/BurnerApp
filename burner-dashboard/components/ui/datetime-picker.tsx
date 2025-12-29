@@ -103,6 +103,8 @@ export function DateTimeRangePicker({
                 selected={startDate}
                 captionLayout="dropdown"
                 onSelect={handleStartDateChange}
+                fromYear={2020}
+                toYear={2035}
               />
             </PopoverContent>
           </Popover>
@@ -145,6 +147,8 @@ export function DateTimeRangePicker({
                 selected={endDate}
                 captionLayout="dropdown"
                 onSelect={handleEndDateChange}
+                fromYear={2020}
+                toYear={2035}
               />
             </PopoverContent>
           </Popover>
