@@ -10,6 +10,9 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <title>BURNER</title>
+      </head>
       <body className="min-h-screen bg-background text-foreground">
         <ErrorBoundary fallbackTitle="Application Error" fallbackMessage="The application encountered an unexpected error. Please try refreshing the page.">
           <AuthProvider>

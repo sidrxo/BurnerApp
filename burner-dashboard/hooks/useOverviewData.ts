@@ -163,6 +163,40 @@ export function useOverviewData() {
         if (error) throw error;
         allTickets = (data || []).map(transformTicket);
 
+      } else if (user.role === "organiser") {
+        // Organisers: Get their assigned venues from organizer_venues junction table
+        const { data: organiserVenuesData, error: organiserVenuesError } = await supabase
+          .from('organizer_venues')
+          .select('venue_id')
+          .eq('organizer_id', user.uid);
+
+        if (organiserVenuesError) throw organiserVenuesError;
+
+        const venueIds = organiserVenuesData?.map((ov: any) => ov.venue_id) || [];
+
+        if (venueIds.length > 0) {
+          // Get events for these venues
+          const { data: eventsData, error: eventsError } = await supabase
+            .from('events')
+            .select('id')
+            .in('venue_id', venueIds);
+
+          if (eventsError) throw eventsError;
+
+          const eventIds = eventsData?.map((e: any) => e.id) || [];
+
+          if (eventIds.length > 0) {
+            // Query tickets for these events
+            const { data, error } = await supabase
+              .from('tickets')
+              .select('*')
+              .in('event_id', eventIds);
+
+            if (error) throw error;
+            allTickets = (data || []).map(transformTicket);
+          }
+        }
+
       } else if (user.role === "venueAdmin" || user.role === "subAdmin") {
         if (!user.venueId) {
           toast.error("No venue assigned to your account");
@@ -228,7 +262,19 @@ export function useOverviewData() {
       // Otherwise return false to fall back to client-side aggregation
       let query = supabase.from('eventStats').select('*');
 
-      if (user?.role === "venueAdmin" || user?.role === "subAdmin") {
+      if (user?.role === "organiser") {
+        // Organisers: Filter by their assigned venues
+        const { data: organiserVenuesData } = await supabase
+          .from('organizer_venues')
+          .select('venue_id')
+          .eq('organizer_id', user.uid);
+
+        const venueIds = organiserVenuesData?.map((ov: any) => ov.venue_id) || [];
+        if (venueIds.length === 0) return false;
+
+        query = query.in('venue_id', venueIds);
+
+      } else if (user?.role === "venueAdmin" || user?.role === "subAdmin") {
         if (!user.venueId) return false;
         query = query.eq('venue_id', user.venueId);
       }
