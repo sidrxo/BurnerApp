@@ -131,10 +131,13 @@ export function useOverviewData() {
           ? data.ticket_price
           : 0;
 
+        // Extract email from joined users table or fallback to user_email field
+        const userEmail = data.users?.email || data.user_email || '';
+
         return {
           id: data.id,
           user_id: data.user_id,
-          user_email: data.user_email,
+          user_email: userEmail,
           event_name: data.event_name,
           event_id: data.event_id,
           venue_id: data.venue_id,
@@ -144,7 +147,7 @@ export function useOverviewData() {
           used_at: data.used_at,
           // Legacy camelCase for backward compatibility
           userID: data.user_id,
-          userEmail: data.user_email,
+          userEmail: userEmail,
           eventName: data.event_name,
           eventId: data.event_id,
           venueId: data.venue_id,
@@ -158,7 +161,7 @@ export function useOverviewData() {
         // Site admin sees all tickets
         const { data, error } = await supabase
           .from('tickets')
-          .select('*');
+          .select('*, users!tickets_user_id_fkey(email)');
 
         if (error) throw error;
         allTickets = (data || []).map(transformTicket);
@@ -189,7 +192,7 @@ export function useOverviewData() {
             // Query tickets for these events
             const { data, error } = await supabase
               .from('tickets')
-              .select('*')
+              .select('*, users!tickets_user_id_fkey(email)')
               .in('event_id', eventIds);
 
             if (error) throw error;
@@ -218,7 +221,7 @@ export function useOverviewData() {
           // Query tickets for this venue's events
           const { data, error } = await supabase
             .from('tickets')
-            .select('*')
+            .select('*, users!tickets_user_id_fkey(email)')
             .in('event_id', eventIds);
 
           if (error) throw error;
