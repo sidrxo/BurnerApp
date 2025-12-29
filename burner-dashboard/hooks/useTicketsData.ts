@@ -172,6 +172,47 @@ export function useTicketsData() {
         });
         activeEvents = eventIds.size;
 
+      } else if (user.role === "organiser") {
+        // Organisers: Get stats from their assigned venues
+        const { data: organiserVenuesData, error: organiserVenuesError } = await supabase
+          .from('organizer_venues')
+          .select('venue_id')
+          .eq('organizer_id', user.uid);
+
+        if (organiserVenuesError) throw organiserVenuesError;
+
+        const venueIds = organiserVenuesData?.map((ov: any) => ov.venue_id) || [];
+
+        if (venueIds.length > 0) {
+          // Get events for these venues
+          const { data: eventsData, error: eventsError } = await supabase
+            .from('events')
+            .select('id')
+            .in('venue_id', venueIds);
+
+          if (eventsError) throw eventsError;
+
+          const eventIds = eventsData?.map((e: any) => e.id) || [];
+          activeEvents = eventIds.length;
+
+          if (eventIds.length > 0) {
+            // Aggregate tickets for these events
+            const { data: ticketsData, error } = await supabase
+              .from('tickets')
+              .select('total_price, status')
+              .in('event_id', eventIds)
+              .gte('purchase_date', dateCutoff);
+
+            if (error) throw error;
+
+            ticketsData?.forEach((ticket: any) => {
+              totalTickets++;
+              totalRevenue += ticket.total_price || 0;
+              if (ticket.status === 'used') usedTickets++;
+            });
+          }
+        }
+
       } else if (user.role === "venueAdmin" || user.role === "subAdmin") {
         if (!user.venueId) return;
 
@@ -267,6 +308,53 @@ export function useTicketsData() {
         // Update pagination state
         setCurrentOffset(offset + newTickets.length);
         setHasMore(newTickets.length === PAGE_SIZE);
+
+      } else if (user.role === "organiser") {
+        // Organisers: Get their assigned venues from organizer_venues junction table
+        const { data: organiserVenuesData, error: organiserVenuesError } = await supabase
+          .from('organizer_venues')
+          .select('venue_id')
+          .eq('organizer_id', user.uid);
+
+        if (organiserVenuesError) throw organiserVenuesError;
+
+        const venueIds = organiserVenuesData?.map((ov: any) => ov.venue_id) || [];
+
+        if (venueIds.length > 0) {
+          // Get events for these venues
+          const { data: eventsData, error: eventsError } = await supabase
+            .from('events')
+            .select('id')
+            .in('venue_id', venueIds)
+            .gte('start_time', dateCutoff);
+
+          if (eventsError) throw eventsError;
+
+          const eventIds = eventsData?.map((e: any) => e.id) || [];
+
+          if (eventIds.length > 0) {
+            // Query tickets for these events with pagination, joining with users to get email
+            const { data, error } = await supabase
+              .from('tickets')
+              .select('*, users!tickets_user_id_fkey(email)')
+              .in('event_id', eventIds)
+              .order('purchase_date', { ascending: false })
+              .range(offset, offset + PAGE_SIZE - 1);
+
+            if (error) throw error;
+
+            const newTickets = (data || []).map(transformTicket);
+            allTickets = [...allTickets, ...newTickets];
+
+            // Update pagination state
+            setCurrentOffset(offset + newTickets.length);
+            setHasMore(newTickets.length === PAGE_SIZE);
+          } else {
+            setHasMore(false);
+          }
+        } else {
+          setHasMore(false);
+        }
 
       } else if (user.role === "venueAdmin" || user.role === "subAdmin") {
         if (!user.venueId) {
