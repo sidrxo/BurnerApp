@@ -1,51 +1,28 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase"; // Importing your existing client
+import { useAuth } from "@/components/useAuth";
 
 export default function Index() {
   const router = useRouter();
-  const [isChecking, setIsChecking] = useState(true);
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      // 1. Check the current session immediately
-      const { data: { session } } = await supabase.auth.getSession();
+    // Only redirect to overview if user is authenticated
+    // RequireAuth component handles showing login form when not authenticated
+    if (!loading && user) {
+      router.replace("/overview");
+    }
+  }, [user, loading, router]);
 
-      if (session) {
-        router.replace("/overview");
-      } else {
-        router.replace("/login");
-      }
-      setIsChecking(false);
-    };
-
-    checkAuth();
-
-    // 2. Set up a listener for changes (e.g. if they sign out in another tab)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        router.replace("/overview");
-      } else {
-        router.replace("/login");
-      }
-    });
-
-    // Cleanup subscription on unmount
-    return () => subscription.unsubscribe();
-  }, [router]);
-
-  // Loading UI
-  if (isChecking) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <div className="text-4xl">⏳</div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+  // Show loading state while checking auth
+  // If not authenticated, RequireAuth will handle showing the login form
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <p className="text-muted-foreground">Loading...</p>
       </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 }
