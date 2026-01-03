@@ -232,20 +232,16 @@ struct TicketPurchaseView: View {
             }) {
                 HStack(spacing: 8) {
                     Text("Buy with")
-                        .font(.system(size: 18, weight: .medium))
+                        .font(.system(size: 20, weight: .medium))
 
                     Image(systemName: "creditcard.fill")
-                        .font(.system(size: 18, weight: .medium))
+                        .font(.system(size: 20, weight: .medium))
                 }
-                .foregroundColor(.white)
+                .foregroundColor(.black)
                 .frame(height: 50)
                 .frame(maxWidth: .infinity)
-                .background(Color.black.opacity(0.8))
+                .background(Color.white)
                 .clipShape(Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                )
             }
             .buttonStyle(PlainButtonStyle())
             .disabled(hasInitiatedPurchase)

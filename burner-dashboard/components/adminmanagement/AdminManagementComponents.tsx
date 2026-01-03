@@ -21,6 +21,7 @@ import {
 import { Trash2, Edit, UserPlus, Shield, Building, Scan, Activity, Power, Eye, EyeOff } from "lucide-react";
 import { Admin, Venue, CreateAdminData, Scanner, CreateScannerData } from "@/hooks/useAdminManagement";
 import { formatDateSafe } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 export function AdminManagementHeader() {
   return null;
