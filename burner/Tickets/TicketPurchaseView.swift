@@ -210,26 +210,13 @@ struct TicketPurchaseView: View {
     private var paymentButtons: some View {
         VStack(spacing: 12) {
             if ApplePayHandler.canMakePayments() {
-                Button(action: {
+                ApplePayButtonView(action: {
                     print("🟡 [TicketView] Apple Pay button tapped.")
                     checkAuthAndProceed {
                         handleApplePayPayment()
                     }
-                }) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "applelogo")
-                            .font(.appIcon)
-
-                        Text("BUY WITH APPLE PAY")
-                            .appButton()
-                    }
-                    .foregroundColor(.black)
-                    .frame(height: 50)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.white)
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(PlainButtonStyle())
+                })
+                .frame(height: 50)
                 .disabled(hasInitiatedPurchase)
             }
 
@@ -243,12 +230,12 @@ struct TicketPurchaseView: View {
                     }
                 }
             }) {
-                HStack(spacing: 12) {
-                    Image(systemName: "creditcard.fill")
-                        .font(.appIcon)
+                HStack(spacing: 8) {
+                    Text("Buy with")
+                        .font(.system(size: 18, weight: .medium))
 
-                    Text("BUY WITH CARD")
-                        .appButton()
+                    Image(systemName: "creditcard.fill")
+                        .font(.system(size: 18, weight: .medium))
                 }
                 .foregroundColor(.white)
                 .frame(height: 50)
@@ -705,11 +692,11 @@ struct TicketPurchaseView: View {
             // CHANGED: ticket.ticketId instead of ticket.id
             ticket.ticketId == ticketId && ticket.eventId == event.id && ticket.status == "confirmed"
         }
-        
+
         if let ticket = matchingTickets.first {
             let ticketWithEvent = TicketWithEventData(ticket: ticket, event: event)
             print("🟢 [TicketView] Found definitive ticket (\(ticketId)) after \(retryCount) retries. Pushing TicketDetailView.")
-            
+
             coordinator.pop(in: tab)
             coordinator.navigate(to: .ticketDetail(ticketWithEvent, shouldAnimate: true), in: tab)
         } else if retryCount < maxRetries {
@@ -723,6 +710,38 @@ struct TicketPurchaseView: View {
                 message: "Your ticket for \(event.name) is now available in the Tickets tab."
             )
             coordinator.pop(in: tab)
+        }
+    }
+}
+
+// MARK: - Apple Pay Button View
+
+struct ApplePayButtonView: UIViewRepresentable {
+    var action: () -> Void
+
+    func makeUIView(context: Context) -> PKPaymentButton {
+        let button = PKPaymentButton(paymentButtonType: .buy, paymentButtonStyle: .black)
+        button.addTarget(context.coordinator, action: #selector(Coordinator.buttonTapped), for: .touchUpInside)
+        return button
+    }
+
+    func updateUIView(_ uiView: PKPaymentButton, context: Context) {
+        // No updates needed
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(action: action)
+    }
+
+    class Coordinator: NSObject {
+        let action: () -> Void
+
+        init(action: @escaping () -> Void) {
+            self.action = action
+        }
+
+        @objc func buttonTapped() {
+            action()
         }
     }
 }
