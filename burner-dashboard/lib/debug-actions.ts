@@ -2,6 +2,16 @@
 
 import { supabaseAdmin } from "./supabase-server";
 
+// Type definition for event data from database
+type EventData = {
+  id: string;
+  name?: string;
+  title?: string;
+  start_time: string;
+  end_time: string;
+  [key: string]: any;
+};
+
 export async function getDebugInfoAction() {
   try {
     console.log('🔵 [Debug] Fetching debug info...');
@@ -85,7 +95,8 @@ export async function movePastEventsToFutureAction() {
     const { data: pastEvents, error: fetchError } = await supabaseAdmin
       .from('events')
       .select('*')
-      .lt('end_time', now.toISOString());
+      .lt('end_time', now.toISOString())
+      .returns<EventData[]>();
 
     if (fetchError) {
       console.error("❌ [Debug] Error fetching past events:", fetchError);
@@ -160,7 +171,8 @@ export async function simulateEventStartingSoonAction() {
       .from('events')
       .select('*')
       .order('start_time', { ascending: true })
-      .limit(1);
+      .limit(1)
+      .returns<EventData[]>();
 
     if (fetchError) {
       console.error("Error fetching events:", fetchError);
