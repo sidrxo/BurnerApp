@@ -135,7 +135,7 @@ export async function movePastEventsToFutureAction() {
     const updatePromises = updates.map(({ id, start_time, end_time }) =>
       supabaseAdmin
         .from('events')
-        .update({ start_time, end_time })
+        .update({ start_time, end_time } as any)
         .eq('id', id)
     );
 
@@ -199,7 +199,7 @@ export async function simulateEventStartingSoonAction() {
       .update({
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
-      })
+      } as any)
       .eq('id', soonestEvent.id);
 
     if (updateError) {
