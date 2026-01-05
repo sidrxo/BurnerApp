@@ -4,12 +4,17 @@ import { supabaseAdmin } from "./supabase-server";
 
 export async function getDebugInfoAction() {
   try {
+    console.log('🔵 [Debug] Fetching debug info...');
+
     // Get total events count using admin client
     const { count: totalEvents, error: totalError } = await supabaseAdmin
       .from('events')
       .select('*', { count: 'exact', head: true });
 
-    if (totalError) throw totalError;
+    if (totalError) {
+      console.error('❌ [Debug] Error fetching total events:', totalError);
+      throw totalError;
+    }
 
     // Get past events count (events that have already ended)
     const now = new Date().toISOString();
@@ -18,7 +23,10 @@ export async function getDebugInfoAction() {
       .select('*', { count: 'exact', head: true })
       .lt('end_time', now);
 
-    if (pastError) throw pastError;
+    if (pastError) {
+      console.error('❌ [Debug] Error fetching past events:', pastError);
+      throw pastError;
+    }
 
     // Get future events count (events that haven't ended yet)
     const { count: futureEvents, error: futureError } = await supabaseAdmin
@@ -26,14 +34,27 @@ export async function getDebugInfoAction() {
       .select('*', { count: 'exact', head: true })
       .gte('end_time', now);
 
-    if (futureError) throw futureError;
+    if (futureError) {
+      console.error('❌ [Debug] Error fetching future events:', futureError);
+      throw futureError;
+    }
 
     // Get total venues count
     const { count: totalVenues, error: venuesError } = await supabaseAdmin
       .from('venues')
       .select('*', { count: 'exact', head: true });
 
-    if (venuesError) throw venuesError;
+    if (venuesError) {
+      console.error('❌ [Debug] Error fetching venues:', venuesError);
+      throw venuesError;
+    }
+
+    console.log('✅ [Debug] Successfully fetched debug info:', {
+      totalEvents,
+      pastEvents,
+      futureEvents,
+      totalVenues
+    });
 
     return {
       totalEvents: totalEvents || 0,
@@ -42,7 +63,8 @@ export async function getDebugInfoAction() {
       totalVenues: totalVenues || 0,
     };
   } catch (error) {
-    console.error("Error getting debug info:", error);
+    console.error("❌ [Debug] Error getting debug info:", error);
+    // Return zeros instead of throwing to prevent page crashes
     return {
       totalEvents: 0,
       pastEvents: 0,
@@ -54,6 +76,7 @@ export async function getDebugInfoAction() {
 
 export async function movePastEventsToFutureAction() {
   try {
+    console.log('🔵 [Debug] Starting move events to future...');
     const now = new Date();
     const futureDate = new Date(now);
     futureDate.setDate(futureDate.getDate() + 7); // Move 7 days into the future
@@ -65,13 +88,16 @@ export async function movePastEventsToFutureAction() {
       .lt('end_time', now.toISOString());
 
     if (fetchError) {
-      console.error("Error fetching past events:", fetchError);
+      console.error("❌ [Debug] Error fetching past events:", fetchError);
       throw fetchError;
     }
 
     if (!pastEvents || pastEvents.length === 0) {
+      console.log('ℹ️ [Debug] No past events to move');
       return { success: true, count: 0 };
     }
+
+    console.log(`🔵 [Debug] Found ${pastEvents.length} past events to move`);
 
     // Update each event
     const updates = pastEvents.map(event => {
@@ -107,16 +133,18 @@ export async function movePastEventsToFutureAction() {
     // Check if any updates failed
     const failedUpdates = results.filter(result => result.error);
     if (failedUpdates.length > 0) {
-      console.error("Some updates failed:", failedUpdates);
+      console.error("❌ [Debug] Some updates failed:", failedUpdates);
       throw new Error(`${failedUpdates.length} event updates failed`);
     }
+
+    console.log(`✅ [Debug] Successfully moved ${pastEvents.length} events to future`);
 
     return {
       success: true,
       count: pastEvents.length,
     };
   } catch (error) {
-    console.error("Error moving past events:", error);
+    console.error("❌ [Debug] Error moving past events:", error);
     return {
       success: false,
       count: 0,
