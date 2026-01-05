@@ -716,7 +716,7 @@ struct ApplePayButtonView: UIViewRepresentable {
     var action: () -> Void
 
     func makeUIView(context: Context) -> PKPaymentButton {
-        let button = PKPaymentButton(paymentButtonType: .buy, paymentButtonStyle: .black)
+        let button = PKPaymentButton(paymentButtonType: .continue, paymentButtonStyle: .black)
         button.addTarget(context.coordinator, action: #selector(Coordinator.buttonTapped), for: .touchUpInside)
         return button
     }

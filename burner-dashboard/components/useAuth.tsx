@@ -122,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check active session on mount
     const initializeAuth = async () => {
       try {
+        console.log("Initializing auth...");
         const { data: { session } } = await supabase.auth.getSession();
         console.log("Initial session:", !!session);
 
@@ -130,18 +131,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           updateUser(appUser);
           console.log("Initial user set:", appUser);
         } else {
+          console.log("No session found, setting user to null");
           updateUser(null);
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
         updateUser(null);
       } finally {
+        console.log("Auth initialization complete, setting loading to false");
         setLoading(false);
         isInitializedRef.current = true;
       }
     };
 
-    initializeAuth();
+    // Add timeout fallback to ensure loading doesn't stay true forever
+    const initTimeout = setTimeout(() => {
+      if (loading && !isInitializedRef.current) {
+        console.warn("Auth initialization timed out after 10s, forcing loading to false");
+        setLoading(false);
+        isInitializedRef.current = true;
+        updateUser(null);
+      }
+    }, 10000);
+
+    initializeAuth().finally(() => clearTimeout(initTimeout));
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -167,11 +180,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(true);
           }
 
+          // Set a timeout to prevent infinite loading
+          const loadingTimeout = setTimeout(() => {
+            if (loading || shouldShowLoading) {
+              console.warn("Auth state change processing timed out after 10s, forcing loading to false");
+              setLoading(false);
+            }
+          }, 10000);
+
           try {
             // Retry logic with exponential backoff for database sync
             let appUser: AppUser | null = null;
             let retries = 0;
-            const maxRetries = 5;
+            const maxRetries = 3; // Reduced from 5 to 3
 
             while (retries < maxRetries && !appUser) {
               try {
@@ -205,11 +226,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.error("Error processing authenticated user:", error);
             updateUser(null);
           } finally {
+            clearTimeout(loadingTimeout);
             if (shouldShowLoading) {
               setLoading(false);
             }
           }
         } else {
+          console.log("No session in auth state change, setting user to null");
           updateUser(null);
           setLoading(false);
         }
