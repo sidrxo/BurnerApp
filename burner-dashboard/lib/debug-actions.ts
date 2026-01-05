@@ -14,8 +14,6 @@ type EventData = {
 
 export async function getDebugInfoAction() {
   try {
-    console.log('🔵 [Debug] Fetching debug info...');
-
     // Get total events count using admin client
     const { count: totalEvents, error: totalError } = await supabaseAdmin
       .from('events')
@@ -59,13 +57,6 @@ export async function getDebugInfoAction() {
       throw venuesError;
     }
 
-    console.log('✅ [Debug] Successfully fetched debug info:', {
-      totalEvents,
-      pastEvents,
-      futureEvents,
-      totalVenues
-    });
-
     return {
       totalEvents: totalEvents || 0,
       pastEvents: pastEvents || 0,
@@ -73,20 +64,21 @@ export async function getDebugInfoAction() {
       totalVenues: totalVenues || 0,
     };
   } catch (error) {
-    console.error("❌ [Debug] Error getting debug info:", error);
+    console.error("❌ [Debug] CRITICAL ERROR in getDebugInfoAction:", error);
+    console.error("❌ [Debug] This usually means SUPABASE_SERVICE_ROLE_KEY is not set");
     // Return zeros instead of throwing to prevent page crashes
     return {
       totalEvents: 0,
       pastEvents: 0,
       futureEvents: 0,
       totalVenues: 0,
+      error: error instanceof Error ? error.message : "Failed to fetch debug info - check server logs",
     };
   }
 }
 
 export async function movePastEventsToFutureAction() {
   try {
-    console.log('🔵 [Debug] Starting move events to future...');
     const now = new Date();
     const futureDate = new Date(now);
     futureDate.setDate(futureDate.getDate() + 7); // Move 7 days into the future
@@ -104,11 +96,8 @@ export async function movePastEventsToFutureAction() {
     }
 
     if (!pastEvents || pastEvents.length === 0) {
-      console.log('ℹ️ [Debug] No past events to move');
       return { success: true, count: 0 };
     }
-
-    console.log(`🔵 [Debug] Found ${pastEvents.length} past events to move`);
 
     // Update each event
     const updates = pastEvents.map(event => {
@@ -147,8 +136,6 @@ export async function movePastEventsToFutureAction() {
       console.error("❌ [Debug] Some updates failed:", failedUpdates);
       throw new Error(`${failedUpdates.length} event updates failed`);
     }
-
-    console.log(`✅ [Debug] Successfully moved ${pastEvents.length} events to future`);
 
     return {
       success: true,

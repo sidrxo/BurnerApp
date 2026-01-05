@@ -48,11 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (userData && !userError) {
-        console.log("User profile loaded:", { role: userData.role, active: userData.active });
-
         // Check if user is active
         if (userData.active === false) {
-          console.log("User account is inactive");
           await supabase.auth.signOut();
           return {
             uid: supabaseUser.id,
@@ -73,7 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // If user not found in database, return basic profile
-      console.log("User not found in database, creating basic profile");
       return {
         uid: supabaseUser.id,
         email: supabaseUser.email ?? null,
@@ -102,13 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = async () => {
     try {
-      console.log("Refreshing user...");
       const { data: { user: supabaseUser } } = await supabase.auth.getUser();
 
       if (supabaseUser) {
         const appUser = await getUserProfile(supabaseUser);
         updateUser(appUser);
-        console.log("User refreshed:", appUser);
       } else {
         updateUser(null);
       }
@@ -122,23 +116,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check active session on mount
     const initializeAuth = async () => {
       try {
-        console.log("Initializing auth...");
         const { data: { session } } = await supabase.auth.getSession();
-        console.log("Initial session:", !!session);
 
         if (session?.user) {
           const appUser = await getUserProfile(session.user);
           updateUser(appUser);
-          console.log("Initial user set:", appUser);
         } else {
-          console.log("No session found, setting user to null");
           updateUser(null);
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
         updateUser(null);
       } finally {
-        console.log("Auth initialization complete, setting loading to false");
         setLoading(false);
         isInitializedRef.current = true;
       }
@@ -147,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Add timeout fallback to ensure loading doesn't stay true forever
     const initTimeout = setTimeout(() => {
       if (loading && !isInitializedRef.current) {
-        console.warn("Auth initialization timed out after 10s, forcing loading to false");
+        console.warn("Auth initialization timed out - check server connection");
         setLoading(false);
         isInitializedRef.current = true;
         updateUser(null);
@@ -159,8 +148,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed:", event, !!session);
-
         // Skip reloading for SIGNED_IN and TOKEN_REFRESHED events when user is already authenticated
         // This prevents loading spinners when navigating between pages or when tab regains focus
         const currentUser = userRef.current;
@@ -168,7 +155,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             currentUser !== null &&
             session?.user?.id === currentUser.uid &&
             isInitializedRef.current) {
-          console.log(`Skipping reload for ${event} - user already authenticated`);
           return;
         }
 
@@ -183,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Set a timeout to prevent infinite loading
           const loadingTimeout = setTimeout(() => {
             if (loading || shouldShowLoading) {
-              console.warn("Auth state change processing timed out after 10s, forcing loading to false");
+              console.warn("Auth state change timed out - check server connection");
               setLoading(false);
             }
           }, 10000);
@@ -192,13 +178,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Retry logic with exponential backoff for database sync
             let appUser: AppUser | null = null;
             let retries = 0;
-            const maxRetries = 3; // Reduced from 5 to 3
+            const maxRetries = 3;
 
             while (retries < maxRetries && !appUser) {
               try {
                 if (retries > 0) {
                   const delay = Math.min(100 * Math.pow(2, retries - 1), 1600);
-                  console.log(`Retry ${retries}: Waiting ${delay}ms for profile...`);
                   await new Promise(resolve => setTimeout(resolve, delay));
                 }
 
@@ -206,7 +191,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                 // If we got a valid user, break out
                 if (appUser) {
-                  console.log("Successfully loaded user profile:", appUser.role);
                   break;
                 }
 
@@ -221,7 +205,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             updateUser(appUser);
-            console.log("Final user set:", appUser);
           } catch (error) {
             console.error("Error processing authenticated user:", error);
             updateUser(null);
@@ -232,7 +215,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }
         } else {
-          console.log("No session in auth state change, setting user to null");
           updateUser(null);
           setLoading(false);
         }
