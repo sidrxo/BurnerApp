@@ -3,6 +3,7 @@ import { corsHeaders } from "../_shared/cors.ts"
 import { stripe } from "../_shared/stripe.ts"
 import { createAdminClient } from "../_shared/supabase.ts"
 import { checkRateLimit, createRateLimitResponse, getRequestIdentifier, RATE_LIMITS } from "../_shared/ratelimit.ts"
+import { logPaymentEvent, logSecurityEvent } from "../_shared/audit.ts"
 
 serve(async (req) => {
   // Set CORS headers for all responses
@@ -60,6 +61,13 @@ serve(async (req) => {
 
     if (!rateLimitResult.success) {
       console.warn(`⚠️ Rate limit exceeded for ${user.email}`)
+      // Log rate limit security event
+      await logSecurityEvent(supabase, req, 'rate_limited', {
+        userId: user.id,
+        userEmail: user.email || undefined,
+        description: `Payment confirmation rate limit exceeded`,
+        severity: 'WARN'
+      })
       return createRateLimitResponse(rateLimitResult, headers)
     }
 
@@ -136,14 +144,24 @@ serve(async (req) => {
     
     if (paymentIntent.status !== 'succeeded') {
       console.error(`❌ Payment not succeeded. Status: ${paymentIntent.status}`)
+      // Log failed payment
+      await logPaymentEvent(supabase, req, 'failed', {
+        userId: user.id,
+        userEmail: user.email || '',
+        paymentIntentId,
+        amountCents: paymentIntent.amount,
+        status: 'failure',
+        errorMessage: `Payment status: ${paymentIntent.status}`,
+        errorCode: 'PAYMENT_NOT_SUCCEEDED'
+      })
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: `Payment not succeeded: ${paymentIntent.status}` 
-        }), 
-        { 
-          status: 400, 
-          headers 
+        JSON.stringify({
+          success: false,
+          message: `Payment not succeeded: ${paymentIntent.status}`
+        }),
+        {
+          status: 400,
+          headers
         }
       )
     }
@@ -220,26 +238,36 @@ serve(async (req) => {
 
     if (eventError || !event) {
       console.error('❌ Event not found:', eventError)
-      
+
       // Attempt refund
       try {
-        const refund = await stripe.refunds.create({ 
-          payment_intent: paymentIntentId, 
-          reason: 'requested_by_customer' 
+        const refund = await stripe.refunds.create({
+          payment_intent: paymentIntentId,
+          reason: 'requested_by_customer'
         })
         console.log('✅ Refund issued due to event not found:', refund.id)
+        // Log refund
+        await logPaymentEvent(supabase, req, 'refunded', {
+          userId: user.id,
+          userEmail: user.email || '',
+          paymentIntentId,
+          eventId,
+          amountCents: paymentIntent.amount,
+          status: 'success',
+          errorMessage: 'Event not found'
+        })
       } catch (refundError) {
         console.warn('⚠️ Failed to issue refund:', refundError)
       }
-      
+
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'Event not found - refund issued' 
-        }), 
-        { 
-          status: 404, 
-          headers 
+        JSON.stringify({
+          success: false,
+          message: 'Event not found - refund issued'
+        }),
+        {
+          status: 404,
+          headers
         }
       )
     }
@@ -247,26 +275,36 @@ serve(async (req) => {
     // 7. Check if event is sold out
     if (event.tickets_sold >= event.max_tickets) {
       console.error(`❌ Event sold out: ${event.tickets_sold}/${event.max_tickets}`)
-      
+
       // Attempt refund
       try {
-        const refund = await stripe.refunds.create({ 
-          payment_intent: paymentIntentId, 
-          reason: 'requested_by_customer' 
+        const refund = await stripe.refunds.create({
+          payment_intent: paymentIntentId,
+          reason: 'requested_by_customer'
         })
         console.log('✅ Refund issued due to event sold out:', refund.id)
+        // Log refund
+        await logPaymentEvent(supabase, req, 'refunded', {
+          userId: user.id,
+          userEmail: user.email || '',
+          paymentIntentId,
+          eventId,
+          amountCents: paymentIntent.amount,
+          status: 'success',
+          errorMessage: 'Event sold out'
+        })
       } catch (refundError) {
         console.warn('⚠️ Failed to issue refund:', refundError)
       }
-      
+
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'Event is sold out - refund issued' 
-        }), 
-        { 
-          status: 400, 
-          headers 
+        JSON.stringify({
+          success: false,
+          message: 'Event is sold out - refund issued'
+        }),
+        {
+          status: 400,
+          headers
         }
       )
     }
@@ -346,7 +384,18 @@ serve(async (req) => {
 
     console.log(`✅ Ticket created: ${ticket.ticket_number} (${ticket.ticket_id})`)
 
-    // 11. Return success
+    // 11. Log successful payment
+    await logPaymentEvent(supabase, req, 'succeeded', {
+      userId: user.id,
+      userEmail: user.email || '',
+      paymentIntentId,
+      eventId,
+      ticketId: ticket.ticket_id,
+      amountCents: paymentIntent.amount,
+      status: 'success'
+    })
+
+    // 12. Return success
     return new Response(
       JSON.stringify({ 
         success: true, 

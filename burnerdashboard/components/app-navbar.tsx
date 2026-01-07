@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Calendar, Home, Settings, Ticket, MapPin, Shield, User, Tag, LogOut } from "lucide-react";
+import { Calendar, Home, Settings, Ticket, MapPin, Shield, User, Tag, LogOut, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/useAuth";
 import { useEffect, useState } from "react";
@@ -149,6 +149,12 @@ export function AppNavbar() {
                   <Link href="/tag-management">
                     <Tag className="mr-2 h-4 w-4" />
                     Tag Management
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/audit-logs">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Audit Logs
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

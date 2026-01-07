@@ -3,6 +3,7 @@ import { corsHeaders } from "../_shared/cors.ts"
 import { createAdminClient } from "../_shared/supabase.ts"
 import { verifyScannerPermission } from "../_shared/permissions.ts"
 import { checkRateLimit, createRateLimitResponse, getRequestIdentifier, RATE_LIMITS } from "../_shared/ratelimit.ts"
+import { logTicketEvent, logSecurityEvent } from "../_shared/audit.ts"
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -92,13 +93,25 @@ serve(async (req) => {
       console.log(`✅ Permission granted: ${user.email} (${scanner.role})`)
     } catch (permError) {
       console.error('❌ Permission denied:', permError.message)
-      return new Response(JSON.stringify({ 
-        success: false, 
+      // Log security event
+      await logSecurityEvent(supabase, req, 'permission_denied', {
+        userId: user.id,
+        userEmail: user.email || undefined,
+        description: `Permission denied scanning ticket ${ticket.ticket_number} at venue ${eventVenueId}`,
+        severity: 'WARN',
+        metadata: {
+          ticket_id: ticket.ticket_id,
+          venue_id: eventVenueId,
+          event_id: ticket.event_id
+        }
+      })
+      return new Response(JSON.stringify({
+        success: false,
         message: "You don't have permission to scan tickets at this venue.",
         errorType: "PERMISSION_DENIED"
-      }), { 
+      }), {
         status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -138,6 +151,19 @@ serve(async (req) => {
         }
       }
 
+      // Log already-used attempt
+      await logTicketEvent(supabase, req, 'scanned', {
+        userId: user.id,
+        userEmail: user.email || '',
+        ticketId: ticket.ticket_id,
+        ticketNumber: ticket.ticket_number,
+        eventId: ticket.event_id,
+        eventName: ticket.events?.name,
+        status: 'failure',
+        errorMessage: 'Ticket already used',
+        errorCode: 'ALREADY_USED'
+      })
+
       // Return 200 with detailed info about already-used ticket
       return new Response(JSON.stringify({
         success: false,
@@ -149,9 +175,9 @@ serve(async (req) => {
         scannedBy: scannerDetails.email,
         scannedByEmail: scannerDetails.email,
         scannedAt: ticket.used_at
-      }), { 
+      }), {
         status: 200, // Use 200 for business logic responses
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -206,6 +232,25 @@ serve(async (req) => {
 
     console.log(`✅ Ticket ${ticket.ticket_number} successfully scanned by ${user.email}`)
 
+    // Get user role
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    // Log successful scan
+    await logTicketEvent(supabase, req, 'scanned', {
+      userId: user.id,
+      userEmail: user.email || '',
+      userRole: userData?.role,
+      ticketId: ticket.ticket_id,
+      ticketNumber: ticket.ticket_number,
+      eventId: ticket.event_id,
+      eventName: ticket.events?.name,
+      status: 'success'
+    })
+
     // ✅ SUCCESS
     return new Response(JSON.stringify({
       success: true,
@@ -219,9 +264,9 @@ serve(async (req) => {
         userName: "Guest",
         eventName: ticket.events?.name
       }
-    }), { 
+    }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
   } catch (error) {
