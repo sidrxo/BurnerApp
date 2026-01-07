@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { corsHeaders } from "../_shared/cors.ts"
 import { stripe } from "../_shared/stripe.ts"
 import { createAdminClient } from "../_shared/supabase.ts"
+import { checkRateLimit, createRateLimitResponse, getRequestIdentifier, RATE_LIMITS } from "../_shared/ratelimit.ts"
 
 serve(async (req) => {
   // Set CORS headers for all responses
@@ -53,7 +54,16 @@ serve(async (req) => {
 
     console.log(`🔐 Confirm purchase for user: ${user.email} (${user.id})`)
 
-    // 2. Parse request body with better error handling
+    // 2. Rate limiting (5 requests per minute for payments)
+    const rateLimitIdentifier = getRequestIdentifier(req, user.id)
+    const rateLimitResult = checkRateLimit(rateLimitIdentifier, RATE_LIMITS.PAYMENT)
+
+    if (!rateLimitResult.success) {
+      console.warn(`⚠️ Rate limit exceeded for ${user.email}`)
+      return createRateLimitResponse(rateLimitResult, headers)
+    }
+
+    // 3. Parse request body with better error handling
     let requestBody
     let paymentIntentId
     
@@ -261,8 +271,9 @@ serve(async (req) => {
       )
     }
 
-    // 8. Generate ticket number
-    const ticketNumber = `TKT${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+    // 8. Generate ticket number using cryptographically secure random
+    const randomBytes = crypto.getRandomValues(new Uint8Array(3))
+    const ticketNumber = `TKT${Array.from(randomBytes).map(b => b.toString(36).toUpperCase()).join('').slice(0, 4).padEnd(4, '0')}`
     const ticketId = crypto.randomUUID()
     
     console.log(`🎟️ Generating ticket: ${ticketNumber} (${ticketId})`)
@@ -322,19 +333,15 @@ serve(async (req) => {
       )
     }
 
-    // 10. Update tickets sold count
-    const { error: updateError } = await supabase
-      .from('events')
-      .update({ 
-        tickets_sold: event.tickets_sold + 1,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', eventId)
+    // 10. Update tickets sold count atomically using database increment
+    const { error: updateError } = await supabase.rpc('increment_tickets_sold', {
+      p_event_id: eventId
+    })
 
     if (updateError) {
       console.warn('⚠️ Failed to update tickets sold count:', updateError)
     } else {
-      console.log(`📈 Updated tickets sold: ${event.tickets_sold} → ${event.tickets_sold + 1}`)
+      console.log(`📈 Tickets sold count incremented for event ${eventId}`)
     }
 
     console.log(`✅ Ticket created: ${ticket.ticket_number} (${ticket.ticket_id})`)

@@ -16,13 +16,24 @@ const missingVars = Object.entries(requiredEnvVars)
 if (missingVars.length > 0) {
   const errorMessage = `Missing required Supabase environment variables: ${missingVars.join(', ')}`;
   console.error('🔥 Supabase Configuration Error:', errorMessage);
+  throw new Error(errorMessage);
+}
 
-  if (typeof window !== 'undefined') {
-    // Client-side: Show user-friendly error
-    alert('Application configuration error. Please contact support.');
+// Production-specific validations
+if (process.env.NODE_ENV === 'production') {
+  const supabaseUrl = requiredEnvVars.NEXT_PUBLIC_SUPABASE_URL!;
+
+  // Ensure HTTPS in production
+  if (!supabaseUrl.startsWith('https://')) {
+    const errorMessage = 'Production Supabase URL must use HTTPS';
+    console.error('🔥 Security Error:', errorMessage);
+    throw new Error(errorMessage);
   }
 
-  throw new Error(errorMessage);
+  // Warn if using localhost in production
+  if (supabaseUrl.includes('localhost') || supabaseUrl.includes('127.0.0.1')) {
+    console.warn('⚠️ Warning: Using localhost Supabase URL in production');
+  }
 }
 
 // Create Supabase client

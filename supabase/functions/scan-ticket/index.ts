@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { corsHeaders } from "../_shared/cors.ts"
 import { createAdminClient } from "../_shared/supabase.ts"
 import { verifyScannerPermission } from "../_shared/permissions.ts"
+import { checkRateLimit, createRateLimitResponse, getRequestIdentifier, RATE_LIMITS } from "../_shared/ratelimit.ts"
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -24,6 +25,15 @@ serve(async (req) => {
     }
 
     console.log(`🔐 Authenticated user: ${user.email} (${user.id})`)
+
+    // Rate limiting (30 requests per minute for ticket scanning)
+    const rateLimitIdentifier = getRequestIdentifier(req, user.id)
+    const rateLimitResult = checkRateLimit(rateLimitIdentifier, RATE_LIMITS.TICKET_SCAN)
+
+    if (!rateLimitResult.success) {
+      console.warn(`⚠️ Rate limit exceeded for ${user.email}`)
+      return createRateLimitResponse(rateLimitResult, { ...corsHeaders, 'Content-Type': 'application/json' })
+    }
 
     const { ticket_id, ticket_number, event_id } = await req.json()
     
