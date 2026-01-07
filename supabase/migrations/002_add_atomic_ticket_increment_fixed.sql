@@ -1,11 +1,11 @@
--- Migration: Add atomic ticket increment function
+-- Migration: Add atomic ticket increment function (FIXED for Firebase IDs)
 -- Description: Prevents race conditions when multiple users purchase tickets simultaneously
--- Note: Uses TEXT for event_id to support Firebase-style IDs (not UUID)
+-- Fixed: Changed parameter type from UUID to TEXT to support Firebase-style event IDs
 
--- Drop old UUID version if it exists
+-- Drop old function if it exists
 DROP FUNCTION IF EXISTS increment_tickets_sold(UUID);
 
--- Create function for atomic ticket increment
+-- Create function for atomic ticket increment with TEXT parameter
 CREATE OR REPLACE FUNCTION increment_tickets_sold(p_event_id TEXT)
 RETURNS void AS $$
 BEGIN
