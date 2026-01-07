@@ -1,0 +1,50 @@
+# iOS Assets & Media
+burner/Assets.xcassets/
+burnermedia/
+burner/App/launch.mp4
+burner/App/splash.mp4
+*.xcuserstate
+xcuserdata/
+DerivedData/
+*.moved-aside
+Config.xcconfig
+
+# Dashboard
+burnerdashboard/package-lock.json
+burnerdashboard/node_modules/
+burnerdashboard/app/favicon.ico
+burnerdashboard/.next/
+burnerdashboard/out/
+
+# Public assets
+burnerpublic/logo.png
+burnerpublic/favicon.ico
+
+# Build outputs
+build/
+dist/
+out/
+
+# Android
+android/.gradle/
+android/.kotlin/
+android/build/
+android/app/build/
+android/.idea/
+android/local.properties
+.gradle/
+**/build/
+gradle/
+local.properties
+*.iml
+*.apk
+*.aab
+
+# Dependencies
+node_modules/
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*

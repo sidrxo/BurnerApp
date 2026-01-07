@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <a href="/">
+            <img src="logo.png" alt="Logo" class="header-logo-img">
+        </a>
+        <a href="/" class="info-btn">Home</a>
+    </header>
+
+    <div id="swup" class="transition-fade">
+        <main class="content-container">
+            <h1>Frequently Asked<br>Questions</h1>
+
+            <h2>Account & Getting Started</h2>
+
+            <div class="faq-item">
+                <div class="question">How do I create an account?</div>
+                <div class="answer">You can create an account by downloading the BURNER app and signing up with your email address and password, or by using Google Sign-In for quick authentication. You must be at least 13 years old to create an account.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">Can I sign in with Google?</div>
+                <div class="answer">Yes! When creating an account or signing in, you can choose 'Sign in with Google' to authenticate using your existing Google account. This makes login faster and more convenient.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">How do I reset my password?</div>
+                <div class="answer">On the login screen, tap 'Forgot Password' and enter your email address. You'll receive a password reset link via email. Follow the link to create a new password. If you signed up with Google Sign-In, you'll need to reset your password through Google.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">How do I delete my account?</div>
+                <div class="answer">Go to Settings > Account Details and scroll to the bottom to find 'Delete Account'. This action is permanent and will delete all your personal information, bookmarks, and purchase history. Active tickets may be forfeited, so ensure you don't have any upcoming events before deleting.</div>
+            </div>
+
+            <h2>Tickets & Purchases</h2>
+
+            <div class="faq-item">
+                <div class="question">How do I purchase tickets?</div>
+                <div class="answer">Browse events on the Explore or Search tab, select an event you're interested in, and tap 'Buy Ticket'. Choose your payment method (Apple Pay, Google Pay, or credit/debit card) and confirm your purchase. You'll receive a confirmation email immediately.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">Can I get a refund for my ticket?</div>
+                <div class="answer">All ticket sales are final and non-refundable unless: (1) the event is cancelled by the organizer (full refund within 5-10 business days), (2) the event is rescheduled and you cannot attend the new date (refund at organizer's discretion), or (3) a technical error resulted in duplicate purchases (refund of duplicate only).</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">How do I access my tickets?</div>
+                <div class="answer">Your tickets are available in the 'Tickets' tab at the bottom of the screen. Tap on any ticket to view its unique QR code, which will be scanned at the venue entrance. Make sure your phone is charged and ready when arriving at the event.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">Can I transfer my ticket to someone else?</div>
+                <div class="answer">Ticket transfers are not currently supported. All tickets are tied to the purchasing account and cannot be transferred, shared, or resold. Each account is limited to one ticket per event. Please ensure you can attend before purchasing.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">Can I buy multiple tickets for the same event?</div>
+                <div class="answer">Currently, you can purchase one ticket per event per account. If you need tickets for friends or family, each person will need to create their own Burner account and purchase tickets individually.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">What happens if I lose my phone before the event?</div>
+                <div class="answer">Don't worry! Sign in to your Burner account on another device (phone, tablet, or borrowed device) to access your tickets. Your tickets are stored securely in the cloud and can be accessed from any device where you're signed in.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">Can I view past tickets?</div>
+                <div class="answer">Yes! In the Tickets tab, you'll see separate sections for 'Upcoming' and 'Past' tickets. Past tickets are automatically moved after the event date. You can swipe left on past tickets to delete them from your view while maintaining a record in our system.</div>
+            </div>
+
+            <h2>Payments & Billing</h2>
+
+            <div class="faq-item">
+                <div class="question">What payment methods do you accept?</div>
+                <div class="answer">We accept Apple Pay (iOS), Google Pay (Android), and all major credit/debit cards including Visa, Mastercard, and American Express. All payments are processed securely through Stripe, a PCI-DSS compliant payment processor.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">How do I add a payment method?</div>
+                <div class="answer">During ticket purchase, you'll be prompted to add a payment method. You can also add cards in advance by going to Settings > Payment Methods > Add Payment Method. Your card details are encrypted and tokenized by Stripe—we never store your full card number on our servers.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">Is it safe to save my payment information?</div>
+                <div class="answer">Yes! All payment information is encrypted and tokenized by Stripe, a PCI-DSS Level 1 compliant payment processor. We never store your full credit card number, CVV, or PIN. Your payment data is protected using bank-level security.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">Why did my payment fail?</div>
+                <div class="answer">Payment failures can occur due to insufficient funds, expired cards, incorrect billing information, or your bank declining the transaction. Check your card details and try again. If the problem persists, contact your bank or try a different payment method. You'll only be charged if the purchase is successful.</div>
+            </div>
+
+            <h2>Venue Entry & QR Codes</h2>
+
+            <div class="faq-item">
+                <div class="question">What should I do if my QR code won't scan?</div>
+                <div class="answer">First, ensure your screen brightness is at maximum and the QR code is clearly visible without glare. Clean your screen if necessary. If the code still won't scan, venue staff can manually verify your ticket using the ticket number displayed below the QR code in the ticket details.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">Do I need an internet connection at the venue?</div>
+                <div class="answer">Tickets are cached locally on your device, so you can display your QR code even without an internet connection. However, we recommend having a connection when possible for real-time updates about the event.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">Can I use a screenshot of my ticket?</div>
+                <div class="answer">While screenshots may work at some venues, we strongly recommend using the live QR code from the app. The app ensures your ticket is valid, not already scanned, and provides the most up-to-date information. Screenshots may be rejected by venue security.</div>
+            </div>
+
+            <h2>Burner Mode</h2>
+
+            <div class="faq-item">
+                <div class="question">What is Burner Mode?</div>
+                <div class="answer">Burner Mode is an optional iOS feature (iOS 16.1+) that uses the Screen Time API to block distracting apps during events. When your ticket is scanned at the venue, Burner Mode automatically activates and blocks apps you've configured, helping you stay present and focused on the live experience.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">How do I set up Burner Mode?</div>
+                <div class="answer">Go to Settings > Burner Mode and enable the feature. You'll be prompted to grant Screen Time permissions in iOS Settings. Then, select which apps you want to block during events (like social media, games, etc.). Burner Mode will automatically activate when your ticket is scanned.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">Can I disable Burner Mode during an event?</div>
+                <div class="answer">Burner Mode is designed to help you stay focused, but you can disable it at any time through iOS Settings > Screen Time. However, the goal is to enjoy the event without digital distractions. Emergency services (Phone, Messages, emergency calls) are never blocked.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">Is Burner Mode available on Android?</div>
+                <div class="answer">Burner Mode is currently only available on iOS 16.1 and later due to the Screen Time API. We're exploring similar functionality for Android in future updates. Android users can still enjoy all other features of the app.</div>
+            </div>
+
+            <h2>Events & Discovery</h2>
+
+            <div class="faq-item">
+                <div class="question">How do I find events near me?</div>
+                <div class="answer">Events are automatically shown based on your location (within 31 miles / 50km). Make sure location permissions are enabled in Settings > Burner > Location. You can browse featured events on the Explore tab or use the Search tab to find specific events by name, date, or price.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">How do bookmarks work?</div>
+                <div class="answer">Tap the bookmark icon on any event card to save it for later. View all your bookmarked events in the Bookmarks tab. Bookmarks sync across all devices signed in to your account, making it easy to track events you're interested in without purchasing tickets immediately.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">How are events sorted in search?</div>
+                <div class="answer">In the Search tab, you can sort events by date (showing upcoming events first) or by price (from lowest to highest). Use the filter buttons at the top of the Search tab to change the sorting method and find events that match your preferences.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">What if an event is cancelled or rescheduled?</div>
+                <div class="answer">You'll receive an immediate notification via email and push notification if an event is cancelled or rescheduled. For cancellations, refunds are processed automatically to your original payment method within 5-10 business days. For rescheduled events, your ticket remains valid for the new date.</div>
+            </div>
+
+            <h2>Privacy & Security</h2>
+
+            <div class="faq-item">
+                <div class="question">How is my personal information protected?</div>
+                <div class="answer">We use industry-standard security measures including TLS 1.3 encryption for data transmission, AES-256 encryption for data storage, and secure authentication protocols. Payment data is tokenized by Stripe and never stored on our servers. Read our Privacy Policy for detailed information.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">Why does the app need location access?</div>
+                <div class="answer">Location access (only when the app is in use) allows us to show events within 31 miles of your current location and provide personalized recommendations. Location data is never tracked in the background and is only used for event discovery. You can disable location access in device settings, but this will limit event recommendations.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">What data does Burner collect?</div>
+                <div class="answer">We collect account information (name, email), payment information (processed by Stripe), purchase history, bookmarks, location data (with permission), and usage analytics. We do not sell your data to third parties. For complete details, see our Privacy Policy in Settings > Privacy Policy.</div>
+            </div>
+
+            <h2>Support</h2>
+
+            <div class="faq-item">
+                <div class="question">How do I contact support?</div>
+                <div class="answer">Go to Settings > Help & Support > Contact Support to submit a request. You can also email us directly at support@burnerlive.com. We typically respond within 24-48 hours. For urgent ticket issues on event day, contact venue staff directly—they can manually verify your ticket.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">The app is crashing or not working properly. What should I do?</div>
+                <div class="answer">First, try restarting the app or your device. Ensure you're running the latest version of the app (check the App Store/Play Store for updates). Clear the app cache in Settings > Storage if the problem persists. If issues continue, contact support@burnerlive.com with details about your device and the problem.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="question">Are there any age restrictions?</div>
+                <div class="answer">You must be at least 13 years old to create a Burner account and use the app. Individual events may have their own age restrictions (18+, 21+, etc.), which are clearly stated in the event details. Please check age requirements before purchasing tickets.</div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="footer-content-grid">
+                <div class="footer-intro">
+                    <p>BURNER helps you find live events worth remembering. Built for connection</p>
+                </div>
+
+                <nav class="footer-nav">
+                    <a href="privacy.html" class="footer-link">01. Privacy Policy</a>
+                    <a href="terms.html" class="footer-link">02. Terms of Service</a>
+                    <a href="faq.html" class="footer-link" style="text-decoration: underline;">03. Frequently Asked Questions</a>
+                    <a href="mailto:support@burnerlive.com" class="footer-link">04. Contact Support</a>
+                </nav>
+            </div>
+
+            <div class="footer-meta">&copy; 2025 BURNER &mdash; ALL RIGHTS RESERVED.</div>
+        </footer>
+    </div>
+
+    <script src="https://unpkg.com/swup@4"></script>
+    <script>
+        const swup = new Swup({ containers: ["#swup"], animationSelector: '[class*="transition-"]' });
+
+        function updateFooterIntro() {
+            const footerIntro = document.querySelector('.footer-intro');
+            if (!footerIntro) return;
+
+            const isHomepage = window.location.pathname === '/' ||
+                               window.location.pathname === '/index.html' ||
+                               window.location.pathname === '';
+
+            footerIntro.style.opacity = isHomepage ? '1' : '0';
+            footerIntro.style.pointerEvents = isHomepage ? 'auto' : 'none';
+        }
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            updateFooterIntro();
+        } else {
+            document.addEventListener('DOMContentLoaded', updateFooterIntro);
+        }
+        swup.hooks.on('page:view', updateFooterIntro);
+    </script>
+</body>
+</html>

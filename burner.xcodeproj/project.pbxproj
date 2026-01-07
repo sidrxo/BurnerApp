@@ -1,0 +1,976 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		8B1F297B2E7F946500B13ED2 /* DeviceActivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1F296D2E7F924400B13ED2 /* DeviceActivity.framework */; };
+		8B1F297D2E7F946E00B13ED2 /* ManagedSettings.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1F297C2E7F946E00B13ED2 /* ManagedSettings.framework */; };
+		8B1F297F2E7F9A5800B13ED2 /* FamilyControls.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1F297E2E7F9A5800B13ED2 /* FamilyControls.framework */; };
+		8B32421B2EEF15150039B6F9 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 8B32421A2EEF15150039B6F9 /* Auth */; };
+		8B32421D2EEF15150039B6F9 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 8B32421C2EEF15150039B6F9 /* Functions */; };
+		8B32421F2EEF15150039B6F9 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 8B32421E2EEF15150039B6F9 /* Realtime */; };
+		8B3242212EEF15150039B6F9 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 8B3242202EEF15150039B6F9 /* Storage */; };
+		8B3242232EEF15150039B6F9 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 8B3242222EEF15150039B6F9 /* Supabase */; };
+		8B3242282EEF18C00039B6F9 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 8B3242272EEF18C00039B6F9 /* PostgREST */; };
+		8B36D8F42E7DBE2E00EDDF0F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B7FF5E02E7CEC3C007072DD /* WidgetKit.framework */; };
+		8B36D8F52E7DBE2E00EDDF0F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B7FF5E22E7CEC3C007072DD /* SwiftUI.framework */; };
+		8B36D9042E7DBE3100EDDF0F /* TicketWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8B36D8F32E7DBE2E00EDDF0F /* TicketWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8B36D9182E7E31AE00EDDF0F /* CodeScanner in Frameworks */ = {isa = PBXBuildFile; productRef = 8B36D9172E7E31AE00EDDF0F /* CodeScanner */; };
+		8B493ED42EC2480F000AB2E4 /* Stripe in Frameworks */ = {isa = PBXBuildFile; productRef = 8B493ED32EC2480F000AB2E4 /* Stripe */; };
+		8B493ED62EC2480F000AB2E4 /* StripePayments in Frameworks */ = {isa = PBXBuildFile; productRef = 8B493ED52EC2480F000AB2E4 /* StripePayments */; };
+		8B493EDA2EC2483A000AB2E4 /* StripePaymentSheet in Frameworks */ = {isa = PBXBuildFile; productRef = 8B493ED92EC2483A000AB2E4 /* StripePaymentSheet */; };
+		8B4941172EC3FF67000AB2E4 /* DeviceActivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1F296D2E7F924400B13ED2 /* DeviceActivity.framework */; };
+		8B49411F2EC3FF67000AB2E4 /* BurnerDeviceActivityMonitor.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8B4941162EC3FF67000AB2E4 /* BurnerDeviceActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8B4941262EC408AA000AB2E4 /* FamilyControls.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1F297E2E7F9A5800B13ED2 /* FamilyControls.framework */; };
+		8B4941272EC408BE000AB2E4 /* ManagedSettings.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1F297C2E7F946E00B13ED2 /* ManagedSettings.framework */; };
+		8B66F8C02E6762AB00760E4E /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 8B66F8BF2E6762AB00760E4E /* GoogleSignIn */; };
+		8B66F8C32E67633D00760E4E /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 8B66F8C22E67633D00760E4E /* FirebaseAuth */; };
+		8B66F8C52E67633D00760E4E /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8B66F8C42E67633D00760E4E /* FirebaseCore */; };
+		8B66F90B2E676ACF00760E4E /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8B66F90A2E676ACF00760E4E /* GoogleSignInSwift */; };
+		8B66F9232E677D3300760E4E /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 8B66F9222E677D3300760E4E /* FirebaseFirestore */; };
+		8B66F9422E6864FB00760E4E /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 8B66F9412E6864FB00760E4E /* Kingfisher */; };
+		8B7FF5B62E7C6E6B007072DD /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 8B7FF5B52E7C6E6B007072DD /* FirebaseFunctions */; };
+		8B7FF6482E7CF1DC007072DD /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B7FF6462E7CF1CB007072DD /* ActivityKit.framework */; };
+		8BCF682A2EC7CA17008C42F6 /* StripePaymentsUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8BCF68292EC7CA17008C42F6 /* StripePaymentsUI */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		8B36D9022E7DBE3100EDDF0F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B66F8A82E67612A00760E4E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8B36D8F22E7DBE2E00EDDF0F;
+			remoteInfo = TicketWidgetExtensionExtension;
+		};
+		8B49411D2EC3FF67000AB2E4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B66F8A82E67612A00760E4E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8B4941152EC3FF67000AB2E4;
+			remoteInfo = BurnerDeviceActivityMonitor;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8B7FF5FA2E7CEC3F007072DD /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				8B49411F2EC3FF67000AB2E4 /* BurnerDeviceActivityMonitor.appex in Embed Foundation Extensions */,
+				8B36D9042E7DBE3100EDDF0F /* TicketWidgetExtensionExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		8B1F296D2E7F924400B13ED2 /* DeviceActivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DeviceActivity.framework; path = System/Library/Frameworks/DeviceActivity.framework; sourceTree = SDKROOT; };
+		8B1F297C2E7F946E00B13ED2 /* ManagedSettings.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettings.framework; path = System/Library/Frameworks/ManagedSettings.framework; sourceTree = SDKROOT; };
+		8B1F297E2E7F9A5800B13ED2 /* FamilyControls.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FamilyControls.framework; path = System/Library/Frameworks/FamilyControls.framework; sourceTree = SDKROOT; };
+		8B36D8C72E7DAB7F00EDDF0F /* burner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = burner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8B36D8F32E7DBE2E00EDDF0F /* TicketWidgetExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TicketWidgetExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		8B36D9122E7DBFE600EDDF0F /* TicketWidgetExtensionExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TicketWidgetExtensionExtension.entitlements; sourceTree = "<group>"; };
+		8B4941162EC3FF67000AB2E4 /* BurnerDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BurnerDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		8B7FF5E02E7CEC3C007072DD /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		8B7FF5E22E7CEC3C007072DD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		8B7FF6462E7CF1CB007072DD /* ActivityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ActivityKit.framework; path = System/Library/Frameworks/ActivityKit.framework; sourceTree = SDKROOT; };
+		8BD9BB8B2EFA22F5009E4F22 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8B36D8C82E7DAB8A00EDDF0F /* Exceptions for "burner" folder in "burner" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				App/Info.plist,
+			);
+			target = 8B66F8AF2E67612A00760E4E /* burner */;
+		};
+		8B36D9082E7DBE3100EDDF0F /* Exceptions for "TicketWidgetExtension" folder in "TicketWidgetExtensionExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8B36D8F22E7DBE2E00EDDF0F /* TicketWidgetExtensionExtension */;
+		};
+		8B36D9102E7DBEE300EDDF0F /* Exceptions for "burner" folder in "TicketWidgetExtensionExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Extensions/FontExtensions.swift,
+				Extensions/Managers/TicketActivityAttributes.swift,
+			);
+			target = 8B36D8F22E7DBE2E00EDDF0F /* TicketWidgetExtensionExtension */;
+		};
+		8B4941232EC3FF67000AB2E4 /* Exceptions for "BurnerDeviceActivityMonitor" folder in "BurnerDeviceActivityMonitor" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8B4941152EC3FF67000AB2E4 /* BurnerDeviceActivityMonitor */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		8B36D8F62E7DBE2E00EDDF0F /* TicketWidgetExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8B36D9082E7DBE3100EDDF0F /* Exceptions for "TicketWidgetExtension" folder in "TicketWidgetExtensionExtension" target */,
+			);
+			path = TicketWidgetExtension;
+			sourceTree = "<group>";
+		};
+		8B4941182EC3FF67000AB2E4 /* BurnerDeviceActivityMonitor */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8B4941232EC3FF67000AB2E4 /* Exceptions for "BurnerDeviceActivityMonitor" folder in "BurnerDeviceActivityMonitor" target */,
+			);
+			path = BurnerDeviceActivityMonitor;
+			sourceTree = "<group>";
+		};
+		8B66F8B22E67612A00760E4E /* burner */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8B36D8C82E7DAB8A00EDDF0F /* Exceptions for "burner" folder in "burner" target */,
+				8B36D9102E7DBEE300EDDF0F /* Exceptions for "burner" folder in "TicketWidgetExtensionExtension" target */,
+			);
+			path = burner;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8B36D8F02E7DBE2E00EDDF0F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8B36D8F52E7DBE2E00EDDF0F /* SwiftUI.framework in Frameworks */,
+				8B36D8F42E7DBE2E00EDDF0F /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8B4941132EC3FF67000AB2E4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8B4941262EC408AA000AB2E4 /* FamilyControls.framework in Frameworks */,
+				8B4941272EC408BE000AB2E4 /* ManagedSettings.framework in Frameworks */,
+				8B4941172EC3FF67000AB2E4 /* DeviceActivity.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8B66F8AD2E67612A00760E4E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8B32421B2EEF15150039B6F9 /* Auth in Frameworks */,
+				8B493EDA2EC2483A000AB2E4 /* StripePaymentSheet in Frameworks */,
+				8B493ED42EC2480F000AB2E4 /* Stripe in Frameworks */,
+				8B1F297F2E7F9A5800B13ED2 /* FamilyControls.framework in Frameworks */,
+				8B1F297D2E7F946E00B13ED2 /* ManagedSettings.framework in Frameworks */,
+				8B1F297B2E7F946500B13ED2 /* DeviceActivity.framework in Frameworks */,
+				8B3242282EEF18C00039B6F9 /* PostgREST in Frameworks */,
+				8B66F9422E6864FB00760E4E /* Kingfisher in Frameworks */,
+				8BCF682A2EC7CA17008C42F6 /* StripePaymentsUI in Frameworks */,
+				8B3242212EEF15150039B6F9 /* Storage in Frameworks */,
+				8B7FF5B62E7C6E6B007072DD /* FirebaseFunctions in Frameworks */,
+				8B7FF6482E7CF1DC007072DD /* ActivityKit.framework in Frameworks */,
+				8B66F8C02E6762AB00760E4E /* GoogleSignIn in Frameworks */,
+				8B66F8C52E67633D00760E4E /* FirebaseCore in Frameworks */,
+				8B32421D2EEF15150039B6F9 /* Functions in Frameworks */,
+				8B3242232EEF15150039B6F9 /* Supabase in Frameworks */,
+				8B66F8C32E67633D00760E4E /* FirebaseAuth in Frameworks */,
+				8B66F9232E677D3300760E4E /* FirebaseFirestore in Frameworks */,
+				8B66F90B2E676ACF00760E4E /* GoogleSignInSwift in Frameworks */,
+				8B493ED62EC2480F000AB2E4 /* StripePayments in Frameworks */,
+				8B32421F2EEF15150039B6F9 /* Realtime in Frameworks */,
+				8B36D9182E7E31AE00EDDF0F /* CodeScanner in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		8B66F8A72E67612A00760E4E = {
+			isa = PBXGroup;
+			children = (
+				8BD9BB8B2EFA22F5009E4F22 /* Config.xcconfig */,
+				8B36D9122E7DBFE600EDDF0F /* TicketWidgetExtensionExtension.entitlements */,
+				8B66F8B22E67612A00760E4E /* burner */,
+				8B36D8F62E7DBE2E00EDDF0F /* TicketWidgetExtension */,
+				8B4941182EC3FF67000AB2E4 /* BurnerDeviceActivityMonitor */,
+				8B7FF5DF2E7CEC3C007072DD /* Frameworks */,
+				8B36D8C72E7DAB7F00EDDF0F /* burner.app */,
+				8B36D8F32E7DBE2E00EDDF0F /* TicketWidgetExtensionExtension.appex */,
+				8B4941162EC3FF67000AB2E4 /* BurnerDeviceActivityMonitor.appex */,
+			);
+			sourceTree = "<group>";
+		};
+		8B7FF5DF2E7CEC3C007072DD /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				8B1F297E2E7F9A5800B13ED2 /* FamilyControls.framework */,
+				8B1F297C2E7F946E00B13ED2 /* ManagedSettings.framework */,
+				8B7FF6462E7CF1CB007072DD /* ActivityKit.framework */,
+				8B7FF5E02E7CEC3C007072DD /* WidgetKit.framework */,
+				8B7FF5E22E7CEC3C007072DD /* SwiftUI.framework */,
+				8B1F296D2E7F924400B13ED2 /* DeviceActivity.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8B36D8F22E7DBE2E00EDDF0F /* TicketWidgetExtensionExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8B36D9052E7DBE3100EDDF0F /* Build configuration list for PBXNativeTarget "TicketWidgetExtensionExtension" */;
+			buildPhases = (
+				8B36D8EF2E7DBE2E00EDDF0F /* Sources */,
+				8B36D8F02E7DBE2E00EDDF0F /* Frameworks */,
+				8B36D8F12E7DBE2E00EDDF0F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8B36D8F62E7DBE2E00EDDF0F /* TicketWidgetExtension */,
+			);
+			name = TicketWidgetExtensionExtension;
+			packageProductDependencies = (
+			);
+			productName = TicketWidgetExtensionExtension;
+			productReference = 8B36D8F32E7DBE2E00EDDF0F /* TicketWidgetExtensionExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		8B4941152EC3FF67000AB2E4 /* BurnerDeviceActivityMonitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8B4941222EC3FF67000AB2E4 /* Build configuration list for PBXNativeTarget "BurnerDeviceActivityMonitor" */;
+			buildPhases = (
+				8B4941122EC3FF67000AB2E4 /* Sources */,
+				8B4941132EC3FF67000AB2E4 /* Frameworks */,
+				8B4941142EC3FF67000AB2E4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8B4941182EC3FF67000AB2E4 /* BurnerDeviceActivityMonitor */,
+			);
+			name = BurnerDeviceActivityMonitor;
+			packageProductDependencies = (
+			);
+			productName = BurnerDeviceActivityMonitor;
+			productReference = 8B4941162EC3FF67000AB2E4 /* BurnerDeviceActivityMonitor.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		8B66F8AF2E67612A00760E4E /* burner */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8B66F8BB2E67612C00760E4E /* Build configuration list for PBXNativeTarget "burner" */;
+			buildPhases = (
+				8B66F8AC2E67612A00760E4E /* Sources */,
+				8B66F8AD2E67612A00760E4E /* Frameworks */,
+				8B66F8AE2E67612A00760E4E /* Resources */,
+				8B7FF5FA2E7CEC3F007072DD /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8B36D9032E7DBE3100EDDF0F /* PBXTargetDependency */,
+				8B49411E2EC3FF67000AB2E4 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				8B66F8B22E67612A00760E4E /* burner */,
+			);
+			name = burner;
+			packageProductDependencies = (
+				8B66F8BF2E6762AB00760E4E /* GoogleSignIn */,
+				8B66F8C22E67633D00760E4E /* FirebaseAuth */,
+				8B66F8C42E67633D00760E4E /* FirebaseCore */,
+				8B66F90A2E676ACF00760E4E /* GoogleSignInSwift */,
+				8B66F9222E677D3300760E4E /* FirebaseFirestore */,
+				8B66F9412E6864FB00760E4E /* Kingfisher */,
+				8B7FF5B52E7C6E6B007072DD /* FirebaseFunctions */,
+				8B36D9172E7E31AE00EDDF0F /* CodeScanner */,
+				8B493ED32EC2480F000AB2E4 /* Stripe */,
+				8B493ED52EC2480F000AB2E4 /* StripePayments */,
+				8B493ED92EC2483A000AB2E4 /* StripePaymentSheet */,
+				8BCF68292EC7CA17008C42F6 /* StripePaymentsUI */,
+				8B32421A2EEF15150039B6F9 /* Auth */,
+				8B32421C2EEF15150039B6F9 /* Functions */,
+				8B32421E2EEF15150039B6F9 /* Realtime */,
+				8B3242202EEF15150039B6F9 /* Storage */,
+				8B3242222EEF15150039B6F9 /* Supabase */,
+				8B3242272EEF18C00039B6F9 /* PostgREST */,
+			);
+			productName = burner;
+			productReference = 8B36D8C72E7DAB7F00EDDF0F /* burner.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8B66F8A82E67612A00760E4E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2610;
+				LastUpgradeCheck = 2620;
+				TargetAttributes = {
+					8B36D8F22E7DBE2E00EDDF0F = {
+						CreatedOnToolsVersion = 16.4;
+						LastSwiftMigration = 1640;
+					};
+					8B4941152EC3FF67000AB2E4 = {
+						CreatedOnToolsVersion = 26.1;
+					};
+					8B66F8AF2E67612A00760E4E = {
+						CreatedOnToolsVersion = 26.0;
+					};
+				};
+			};
+			buildConfigurationList = 8B66F8AB2E67612A00760E4E /* Build configuration list for PBXProject "burner" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 8B66F8A72E67612A00760E4E;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8B66F8BE2E6762AB00760E4E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				8B66F8C12E67633D00760E4E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				8B66F9402E6864FB00760E4E /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				8B36D9162E7E31AE00EDDF0F /* XCRemoteSwiftPackageReference "CodeScanner" */,
+				8B493ED22EC241CE000AB2E4 /* XCRemoteSwiftPackageReference "stripe-ios" */,
+				8B3242192EEF15150039B6F9 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 8B66F8A72E67612A00760E4E;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8B66F8AF2E67612A00760E4E /* burner */,
+				8B36D8F22E7DBE2E00EDDF0F /* TicketWidgetExtensionExtension */,
+				8B4941152EC3FF67000AB2E4 /* BurnerDeviceActivityMonitor */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8B36D8F12E7DBE2E00EDDF0F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8B4941142EC3FF67000AB2E4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8B66F8AE2E67612A00760E4E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8B36D8EF2E7DBE2E00EDDF0F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8B4941122EC3FF67000AB2E4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8B66F8AC2E67612A00760E4E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		8B36D9032E7DBE3100EDDF0F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8B36D8F22E7DBE2E00EDDF0F /* TicketWidgetExtensionExtension */;
+			targetProxy = 8B36D9022E7DBE3100EDDF0F /* PBXContainerItemProxy */;
+		};
+		8B49411E2EC3FF67000AB2E4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8B4941152EC3FF67000AB2E4 /* BurnerDeviceActivityMonitor */;
+			targetProxy = 8B49411D2EC3FF67000AB2E4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		8B36D9062E7DBE3100EDDF0F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = TicketWidgetExtensionExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				DEVELOPMENT_TEAM = WFVLHMLM7A;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TicketWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TicketWidgetExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gas.Burner.TicketWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		8B36D9072E7DBE3100EDDF0F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = TicketWidgetExtensionExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				DEVELOPMENT_TEAM = WFVLHMLM7A;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TicketWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TicketWidgetExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gas.Burner.TicketWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		8B4941202EC3FF67000AB2E4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BurnerDeviceActivityMonitor/BurnerDeviceActivityMonitor.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = WFVLHMLM7A;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BurnerDeviceActivityMonitor/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BurnerDeviceActivityMonitor;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gas.Burner.BurnerDeviceActivityMonitor;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		8B4941212EC3FF67000AB2E4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BurnerDeviceActivityMonitor/BurnerDeviceActivityMonitor.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				DEVELOPMENT_TEAM = WFVLHMLM7A;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BurnerDeviceActivityMonitor/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BurnerDeviceActivityMonitor;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gas.Burner.BurnerDeviceActivityMonitor;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		8B66F8B92E67612C00760E4E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = VZRZF367BF;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_MetalCaptureEnabled = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		8B66F8BA2E67612C00760E4E /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8BD9BB8B2EFA22F5009E4F22 /* Config.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = VZRZF367BF;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_MetalCaptureEnabled = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		8B66F8BC2E67612C00760E4E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8BD9BB8B2EFA22F5009E4F22 /* Config.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = burner/App/burner.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = WFVLHMLM7A;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = burner/App/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BURNER;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NFCReaderUsageDescription = "We use NFC to allow you to unlock Burner Mode using your personal NFC tag for quick and secure access.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need camera access to scan QR codes on tickets";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to show you nearby events and help you discover what's happening around you.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gas.Burner;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		8B66F8BD2E67612C00760E4E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = burner/App/burner.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				DEVELOPMENT_TEAM = WFVLHMLM7A;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = burner/App/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BURNER;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NFCReaderUsageDescription = "We use NFC to allow you to unlock Burner Mode using your personal NFC tag for quick and secure access.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need camera access to scan QR codes on tickets";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to show you nearby events and help you discover what's happening around you.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gas.Burner;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		8B36D9052E7DBE3100EDDF0F /* Build configuration list for PBXNativeTarget "TicketWidgetExtensionExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8B36D9062E7DBE3100EDDF0F /* Debug */,
+				8B36D9072E7DBE3100EDDF0F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8B4941222EC3FF67000AB2E4 /* Build configuration list for PBXNativeTarget "BurnerDeviceActivityMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8B4941202EC3FF67000AB2E4 /* Debug */,
+				8B4941212EC3FF67000AB2E4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8B66F8AB2E67612A00760E4E /* Build configuration list for PBXProject "burner" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8B66F8B92E67612C00760E4E /* Debug */,
+				8B66F8BA2E67612C00760E4E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8B66F8BB2E67612C00760E4E /* Build configuration list for PBXNativeTarget "burner" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8B66F8BC2E67612C00760E4E /* Debug */,
+				8B66F8BD2E67612C00760E4E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8B3242192EEF15150039B6F9 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+		8B36D9162E7E31AE00EDDF0F /* XCRemoteSwiftPackageReference "CodeScanner" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/twostraws/CodeScanner";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.2;
+			};
+		};
+		8B493ED22EC241CE000AB2E4 /* XCRemoteSwiftPackageReference "stripe-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stripe/stripe-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 25.0.0;
+			};
+		};
+		8B66F8BE2E6762AB00760E4E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
+		8B66F8C12E67633D00760E4E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.2.0;
+			};
+		};
+		8B66F9402E6864FB00760E4E /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8B32421A2EEF15150039B6F9 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B3242192EEF15150039B6F9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		8B32421C2EEF15150039B6F9 /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B3242192EEF15150039B6F9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		8B32421E2EEF15150039B6F9 /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B3242192EEF15150039B6F9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		8B3242202EEF15150039B6F9 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B3242192EEF15150039B6F9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		8B3242222EEF15150039B6F9 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B3242192EEF15150039B6F9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+		8B3242272EEF18C00039B6F9 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B3242192EEF15150039B6F9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		8B36D9172E7E31AE00EDDF0F /* CodeScanner */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B36D9162E7E31AE00EDDF0F /* XCRemoteSwiftPackageReference "CodeScanner" */;
+			productName = CodeScanner;
+		};
+		8B493ED32EC2480F000AB2E4 /* Stripe */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B493ED22EC241CE000AB2E4 /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = Stripe;
+		};
+		8B493ED52EC2480F000AB2E4 /* StripePayments */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B493ED22EC241CE000AB2E4 /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = StripePayments;
+		};
+		8B493ED92EC2483A000AB2E4 /* StripePaymentSheet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B493ED22EC241CE000AB2E4 /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = StripePaymentSheet;
+		};
+		8B66F8BF2E6762AB00760E4E /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B66F8BE2E6762AB00760E4E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		8B66F8C22E67633D00760E4E /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B66F8C12E67633D00760E4E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		8B66F8C42E67633D00760E4E /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B66F8C12E67633D00760E4E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		8B66F90A2E676ACF00760E4E /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B66F8BE2E6762AB00760E4E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+		8B66F9222E677D3300760E4E /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B66F8C12E67633D00760E4E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		8B66F9412E6864FB00760E4E /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B66F9402E6864FB00760E4E /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		8B7FF5B52E7C6E6B007072DD /* FirebaseFunctions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B66F8C12E67633D00760E4E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFunctions;
+		};
+		8BCF68292EC7CA17008C42F6 /* StripePaymentsUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B493ED22EC241CE000AB2E4 /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = StripePaymentsUI;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 8B66F8A82E67612A00760E4E /* Project object */;
+}

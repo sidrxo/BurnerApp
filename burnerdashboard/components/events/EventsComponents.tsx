@@ -1,0 +1,741 @@
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/utils";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Plus, Edit, Trash2, Star, StarOff, Calendar, MapPin,
+  Clock, Users, AlertCircle, Pin
+} from "lucide-react";
+import { Event, Venue, useEventForm } from "@/hooks/useEventsData";
+import { EVENT_STATUS_OPTIONS } from "@/lib/constants";
+import { CachedImage } from "@/components/CachedImage";
+import { DateTimeRangePicker } from "@/components/ui/datetime-picker";
+
+export function EventSkeleton() {
+  return (
+    <Card className="overflow-hidden group">
+      <div className="relative">
+        <Skeleton className="h-56 w-full" />
+        <div className="absolute top-4 left-4">
+          <Skeleton className="h-6 w-20 rounded-full" />
+        </div>
+      </div>
+      <CardContent className="p-6 space-y-4">
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-2/3" />
+        <div className="flex justify-between items-center pt-2">
+          <Skeleton className="h-8 w-20" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function AccessDenied({ user }: { user: any }) {
+  return (
+    <Card className="max-w-md mx-auto mt-10">
+      <CardHeader>
+        <h2 className="text-xl font-bold text-center">Access Denied</h2>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center space-y-2">
+          <p className="text-muted-foreground">
+            You don't have permission to view events.
+          </p>
+          <div className="text-sm bg-muted p-2 rounded">
+            <p><strong>Your role:</strong> {user?.role}</p>
+            <p><strong>Required roles:</strong> siteAdmin, venueAdmin, or subAdmin</p>
+            {user?.venueId && <p><strong>Your venue:</strong> {user.venueId}</p>}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function CreateEventDialog({
+  openForm,
+  setOpenForm,
+  editing,
+  setEditing,
+  user,
+  venues,
+  availableTags,
+  setEvents
+}: {
+  openForm: boolean;
+  setOpenForm: (open: boolean) => void;
+  editing: Event | null;
+  setEditing: (event: Event | null) => void;
+  user: any;
+  venues: Venue[];
+  availableTags: string[];
+  setEvents: React.Dispatch<React.SetStateAction<Event[]>>;
+}) {
+  return (
+    <Dialog open={openForm} onOpenChange={setOpenForm}>
+      <DialogTrigger asChild>
+        <Button onClick={() => setEditing(null)} size="lg" className="shadow-md">
+          <Plus className="mr-2 h-4 w-4" />
+          Create Event
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {editing ? "Edit Event" : "Create New Event"}
+          </DialogTitle>
+        </DialogHeader>
+        <EventForm
+          existing={editing}
+          user={user}
+          venues={venues}
+          availableTags={availableTags}
+          onClose={() => setOpenForm(false)}
+          onSaved={(e) => {
+            setEvents(prev => {
+              const rest = prev.filter(x => x.id !== e.id);
+              return [e, ...rest].sort((a,b)=>Number(!!b.isFeatured)-Number(!!a.isFeatured));
+            });
+          }}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function SearchAndStats({
+  search,
+  setSearch,
+  statusFilter,
+  setStatusFilter,
+  tagFilter,
+  setTagFilter,
+  sortBy,
+  setSortBy,
+  availableTags,
+  events,
+}: {
+  search: string;
+  setSearch: (search: string) => void;
+  statusFilter: string;
+  setStatusFilter: (value: string) => void;
+  tagFilter: string;
+  setTagFilter: (value: string) => void;
+  sortBy: string;
+  setSortBy: (value: string) => void;
+  availableTags: string[];
+  events: Event[];
+}) {
+  const tagOptions = availableTags;
+  const totalSoldOut = events.filter((event) => (event.ticketsSold ?? 0) >= (event.maxTickets ?? 0)).length;
+  const totalActive = events.filter((event) => (event.status ?? "").toLowerCase() === "active").length;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col lg:flex-row gap-4 lg:items-center justify-between">
+        <div className="relative max-w-md w-full">
+          <Input
+            placeholder="Search events..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-4 pr-4 h-11 border-2 focus:border-primary/50 transition-colors"
+          />
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {EVENT_STATUS_OPTIONS.map((status) => (
+                <SelectItem key={status.value} value={status.value}>
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={tagFilter} onValueChange={setTagFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Filter by tag" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All tags</SelectItem>
+              {tagOptions.map((tag) => (
+                <SelectItem key={tag} value={tag}>
+                  #{tag}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date-desc">Date (Newest First)</SelectItem>
+              <SelectItem value="date-asc">Date (Oldest First)</SelectItem>
+              <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+              <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+              <SelectItem value="price-asc">Price (Low to High)</SelectItem>
+              <SelectItem value="price-desc">Price (High to Low)</SelectItem>
+              <SelectItem value="tickets-asc">Tickets Sold (Low to High)</SelectItem>
+              <SelectItem value="tickets-desc">Tickets Sold (High to Low)</SelectItem>
+              <SelectItem value="featured">Featured First</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+        <span className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-blue-500 rounded-full" />
+          {events.length} total
+        </span>
+        <span className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full" />
+          {totalActive} active
+        </span>
+        <span className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+          {events.filter((event) => event.isFeatured).length} featured
+        </span>
+        <span className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-red-500 rounded-full" />
+          {totalSoldOut} sold out
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function EmptyEventsState({
+  search,
+  onCreateClick,
+  userRole
+}: {
+  search: string;
+  onCreateClick: () => void;
+  userRole: string;
+}) {
+  return (
+    <div className="col-span-full">
+      <Card className="p-12 text-center border-dashed border-2">
+        <Calendar className="mx-auto h-16 w-16 text-muted-foreground/50 mb-6" />
+        <h3 className="text-xl font-semibold mb-3">No events found</h3>
+        <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+          {search
+            ? "Try adjusting your search terms to find what you're looking for"
+            : userRole === "siteAdmin"
+              ? "Create your first event to get started with managing your events"
+              : "Create your first event for your venue to get started"
+          }
+        </p>
+        {!search && (
+          <Button onClick={onCreateClick} size="lg">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Your First Event
+          </Button>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+export function EventCard({
+  ev,
+  index,
+  eventStatus,
+  ticketProgress,
+  user,
+  onToggleFeatured,
+  onSetTopFeatured,
+  onDelete,
+  onEditClick
+}: {
+  ev: Event;
+  index: number;
+  eventStatus: any;
+  ticketProgress: number;
+  user: any;
+  onToggleFeatured: (event: Event) => void;
+  onSetTopFeatured: (event: Event) => void;
+  onDelete: (event: Event) => void;
+  onEditClick: () => void;
+}) {
+  // Parse start_time and end_time as ISO strings from Supabase
+  const startDate = ev.start_time ? new Date(ev.start_time) : ev.startTime ? new Date(ev.startTime) : undefined;
+  const endDate = ev.end_time ? new Date(ev.end_time) : ev.endTime ? new Date(ev.endTime) : undefined;
+
+  const formattedDate = startDate
+    ? startDate.toLocaleDateString("en-GB", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      })
+    : "Date TBA";
+
+  const formattedStartTime = startDate
+    ? startDate.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
+
+  const formattedEndTime = endDate
+    ? endDate.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
+  const primaryTag = ev.tags?.[0];
+
+  return (
+    <Card
+      key={`event-${ev.id}-${index}`}
+      className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-gradient-to-br from-background to-background/50 flex flex-col"
+    >
+      {/* Image Header */}
+      <div className="relative overflow-hidden">
+        <div className="relative h-56 overflow-hidden">
+          <CachedImage
+            src={ev.imageUrl}
+            alt={ev.name}
+            className="w-full h-full object-cover transition-transform duration-300"
+            fill
+            priority={index < 3}
+          />
+          {ev.imageUrl && (
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+          )}
+        </div>
+
+        {/* Badges below image */}
+        <div className="flex flex-wrap gap-2 p-4 pt-4 pb-0 min-h-[52px]">
+          {ev.isFeatured && (
+            <Badge className="bg-yellow-500/90 text-white border-0 shadow-lg backdrop-blur-sm">
+              <Star className="h-3 w-3 mr-1 fill-current" />
+              Featured
+            </Badge>
+          )}
+          <Badge variant={eventStatus.variant} className="backdrop-blur-sm shadow-lg border-0">
+            {eventStatus.label}
+          </Badge>
+          {primaryTag && (
+            <Badge variant="outline" className="backdrop-blur-sm border-primary/40 text-primary">
+              #{primaryTag}
+            </Badge>
+          )}
+        </div>
+
+        {/* Price Badge */}
+        <div className="absolute top-4 right-4">
+          <Badge className="bg-background/90 text-foreground border shadow-lg backdrop-blur-sm text-lg font-bold px-3 py-1">
+            {formatCurrency(ev.price)}
+          </Badge>
+        </div>
+      </div>
+
+      <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
+        {/* Title & Description */}
+        <div className="space-y-2 min-h-[120px]">
+          <h3 className="text-xl font-bold leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+            {ev.name || "Untitled Event"}
+          </h3>
+          <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+            {ev.description || 'No description available'}
+          </p>
+        </div>
+
+        {/* Event Details */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 text-sm">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Clock className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <div className="font-medium">{formattedDate}</div>
+              <div className="text-muted-foreground text-xs">
+                {formattedStartTime}
+                {formattedEndTime ? ` – ${formattedEndTime}` : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 text-sm">
+            <div className="p-2 bg-blue-500/10 rounded-lg">
+              <MapPin className="h-4 w-4 text-blue-600" />
+            </div>
+            <div>
+              <div className="font-medium truncate">{ev.venue || "Venue TBA"}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Ticket Progress */}
+        <div className="space-y-2 mt-auto">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{ev.ticketsSold || 0} / {ev.maxTickets || 0} tickets</span>
+            </div>
+            <div className="text-muted-foreground">
+              {Math.round(ticketProgress)}% sold
+            </div>
+          </div>
+
+          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                ticketProgress >= 100
+                  ? 'bg-red-500'
+                  : ticketProgress >= 80
+                  ? 'bg-yellow-500'
+                  : 'bg-green-500'
+              }`}
+              style={{ width: `${ticketProgress}%` }}
+            />
+          </div>
+        </div>
+      </CardContent>
+
+      <Separator />
+
+      <CardFooter className="p-4 bg-muted/30">
+        <div className="flex flex-col gap-2 w-full">
+          <div className="flex gap-2 w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onEditClick}
+              className="flex-1 hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              <Edit className="h-3 w-3 mr-2" />
+              Edit
+            </Button>
+
+            {/* Only show feature button for site admins */}
+            {user.role === "siteAdmin" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onToggleFeatured(ev)}
+                className={`flex-1 transition-colors ${
+                  ev.isFeatured
+                    ? 'hover:bg-yellow-500 hover:text-white'
+                    : 'hover:bg-yellow-500 hover:text-white'
+                }`}
+              >
+                {ev.isFeatured ? (
+                  <>
+                    <StarOff className="h-3 w-3 mr-2" />
+                    Unfeature
+                  </>
+                ) : (
+                  <>
+                    <Star className="h-3 w-3 mr-2" />
+                    Feature
+                  </>
+                )}
+              </Button>
+            )}
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="hover:bg-destructive hover:text-destructive-foreground transition-colors">
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-destructive" />
+                    Delete Event
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete "{ev.name}"? This will also remove all associated tickets and cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(ev)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete Event
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+
+          {/* Set as Top Featured button - only for site admins */}
+          {user.role === "siteAdmin" && (
+            <Button
+              variant={ev.featuredPriority === 0 ? "default" : "outline"}
+              size="sm"
+              onClick={() => onSetTopFeatured(ev)}
+              className={`w-full transition-colors ${
+                ev.featuredPriority === 0
+                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white'
+                  : 'hover:bg-gradient-to-r hover:from-yellow-500 hover:to-orange-500 hover:text-white'
+              }`}
+            >
+              <Pin className="h-3 w-3 mr-2" />
+              {ev.featuredPriority === 0 ? 'Top Featured Event' : 'Set as Top Featured'}
+            </Button>
+          )}
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}
+
+export function EventForm({
+  existing,
+  user,
+  venues,
+  availableTags,
+  onSaved,
+  onClose,
+}: {
+  existing: Event | null;
+  user: any;
+  venues: Venue[];
+  availableTags: string[];
+  onSaved: (e: Event) => void;
+  onClose: () => void;
+}) {
+  const {
+    form,
+    setForm,
+    file,
+    setFile,
+    progress,
+    saving,
+    onSubmit,
+    resetForm,
+    isEdit,
+    statusOptions,
+    tagOptions
+  } = useEventForm(existing, user, venues, onSaved, onClose, availableTags);
+
+  return (
+    <form className="space-y-4" onSubmit={onSubmit}>
+      {!isEdit && (
+        <div className="space-y-2">
+          <Label htmlFor="id">Event ID *</Label>
+          <Input 
+            id="id" 
+            value={form.id} 
+            onChange={e => setForm(s=>({...s, id: e.target.value}))} 
+            placeholder="unique-event-id"
+            required 
+          />
+        </div>
+      )}
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Event Name *</Label>
+          <Input
+            id="name"
+            value={form.name}
+            onChange={(e) => setForm((state) => ({ ...state, name: e.target.value }))}
+            placeholder="Summer Music Festival"
+            required
+          />
+        </div>
+
+        {(user.role === "siteAdmin" || user.role === "organiser") && (
+          <div className="space-y-2">
+            <Label htmlFor="venue-select">Venue *</Label>
+            <Select
+              value={form.venueId}
+              onValueChange={(value) => setForm((state) => ({ ...state, venueId: value }))}
+            >
+              <SelectTrigger id="venue-select">
+                <SelectValue placeholder="Select a venue" />
+              </SelectTrigger>
+              <SelectContent>
+                {venues.map((venue) => (
+                  <SelectItem key={venue.id} value={venue.id}>
+                    {venue.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="desc">Description</Label>
+        <Textarea 
+          id="desc" 
+          value={form.description} 
+          onChange={e => setForm(s=>({...s, description: e.target.value}))} 
+          placeholder="Brief description of your event..."
+          rows={3}
+        />
+        <div className="text-xs text-muted-foreground text-right">
+          {form.description.length} / 390 characters
+        </div>
+      </div>
+
+      <DateTimeRangePicker
+        startValue={form.startDateTime}
+        endValue={form.endDateTime}
+        onStartChange={(value) => setForm((state) => ({ ...state, startDateTime: value }))}
+        onEndChange={(value) => setForm((state) => ({ ...state, endDateTime: value }))}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Ticket Price (£) *</Label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={form.price || ""}
+            onChange={(e) => setForm((state) => ({ ...state, price: Number(e.target.value) || 0 }))}
+            placeholder="25.00"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Maximum Tickets *</Label>
+          <Input
+            type="number"
+            min="1"
+            value={form.maxTickets || ""}
+            onChange={(e) => setForm((state) => ({ ...state, maxTickets: Number(e.target.value) || 0 }))}
+            placeholder="100"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="status">Status</Label>
+        <Select
+          value={form.status}
+          onValueChange={(value) => setForm((state) => ({ ...state, status: value as typeof form.status }))}
+        >
+          <SelectTrigger id="status">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {statusOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Tag</Label>
+        <div className="flex flex-wrap gap-2">
+          {tagOptions.map((tag) => (
+            <Button
+              key={tag}
+              type="button"
+              size="sm"
+              variant={form.tag === tag ? "default" : "outline"}
+              onClick={() => setForm((state) => ({ ...state, tag }))}
+            >
+              #{tag}
+            </Button>
+          ))}
+        </div>
+        <Input
+          value={form.tag}
+          onChange={(e) => setForm((state) => ({ ...state, tag: e.target.value }))}
+          placeholder="Custom tag (one tag per event)"
+        />
+        <p className="text-xs text-muted-foreground">Only one tag can be associated with each event.</p>
+      </div>
+
+      {/* Only show featured checkbox for site admins */}
+      {user.role === "siteAdmin" && (
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="featured"
+            checked={form.isFeatured}
+            onCheckedChange={(value) => setForm((state) => ({ ...state, isFeatured: !!value }))}
+          />
+          <Label htmlFor="featured" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            Mark as featured event
+          </Label>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <Label htmlFor="img">Event Image</Label>
+        <Input 
+          id="img" 
+          type="file" 
+          accept="image/*" 
+          onChange={e => setFile(e.target.files?.[0] ?? null)} 
+        />
+        <div className="text-xs text-muted-foreground">
+          Supported formats: JPEG, PNG, GIF (max 5MB)
+        </div>
+        {progress > 0 && progress < 100 && (
+          <div className="space-y-2">
+            <Progress value={progress} />
+            <div className="text-xs text-center text-muted-foreground">
+              Uploading... {Math.round(progress)}%
+            </div>
+          </div>
+        )}
+      </div>
+
+      <Separator />
+
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={onClose} className="min-w-[100px]">
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={resetForm}
+          disabled={saving}
+          className="min-w-[100px]"
+        >
+          Reset
+        </Button>
+        <Button type="submit" disabled={saving} className="min-w-[120px]">
+          {saving ? "Saving..." : (isEdit ? "Update Event" : "Create Event")}
+        </Button>
+      </div>
+    </form>
+  );
+}

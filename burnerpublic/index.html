@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BURNER</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <a href="/">
+            <img src="logo.png" alt="Logo" class="header-logo-img">
+        </a>
+        <a href="/info" class="info-btn">INFO</a>
+    </header>
+
+    <div id="swup" class="transition-fade">
+        <section class="hero-container">
+            <img src="heart.png" alt="Heart" class="center-image">
+        </section>
+
+        <footer>
+            <div class="footer-content-grid">
+                <div class="footer-intro">
+                    <p>BURNER helps you find live events worth remembering. Built for connection</p>
+                </div>
+
+                <nav class="footer-nav">
+                    <a href="/privacy" class="footer-link">01. Privacy Policy</a>
+                    <a href="/terms" class="footer-link">02. Terms of Service</a>
+                    <a href="/faq" class="footer-link">03. Frequently Asked Questions</a>
+                    <a href="mailto:support@burnerlive.com" class="footer-link">04. Contact Support</a>
+                </nav>
+            </div>
+
+            <div class="footer-meta">&copy; 2025 BURNER &mdash; ALL RIGHTS RESERVED.</div>
+        </footer>
+    </div>
+
+   <script src="https://unpkg.com/swup@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+
+    <script>
+        // --- 1. HEADER BUTTON FIX ---
+        function updateHeaderButton() {
+            const btn = document.querySelector('.info-btn');
+            if (!btn) return;
+
+            // Check if we are currently on the info page
+            if (window.location.pathname.includes('/info')) {
+                btn.textContent = "CLOSE";
+                btn.href = "/";
+            } else {
+                btn.textContent = "INFO";
+                btn.href = "/info";
+            }
+        }
+
+        // --- 2. SLIDESHOW LOGIC (Only runs if slideshow element exists) ---
+        async function startSlideshow() {
+            const imgElement = document.getElementById('active-slide');
+            if (!imgElement) return; // Stop if we are not on the info page
+
+            // Helper to stop shimmer
+            const stopShimmer = () => {
+                imgElement.classList.remove('loading');
+                imgElement.classList.add('loaded');
+            };
+
+            // Reset
+            if (window.slideInterval) clearInterval(window.slideInterval);
+            imgElement.classList.remove('loaded');
+            imgElement.classList.add('loading');
+
+            // Config Check
+            if (!window.env) { console.error("config.js missing"); return; }
+            const { SUPABASE_URL, SUPABASE_KEY, TABLE_NAME } = window.env;
+            const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+            // Fetch
+            const { data, error } = await _supabase.from(TABLE_NAME).select('image_url');
+            
+            if (error || !data || data.length === 0) {
+                stopShimmer(); return;
+            }
+
+            const validRows = data.filter(row => row.image_url);
+            if (validRows.length === 0) { stopShimmer(); return; }
+
+            // Shuffle & Cycle
+            const shuffled = validRows.sort(() => 0.5 - Math.random());
+            let index = 0;
+
+            const tempImg = new Image();
+            tempImg.src = shuffled[0].image_url;
+            
+            tempImg.onload = () => {
+                imgElement.src = shuffled[0].image_url;
+                stopShimmer();
+                
+                index = 1; 
+                window.slideInterval = setInterval(() => {
+                    imgElement.src = shuffled[index].image_url;
+                    index = (index + 1) % shuffled.length; 
+                }, 600);
+            };
+            
+            tempImg.onerror = () => stopShimmer();
+        }
+
+        // --- 3. INITIALIZE SWUP ---
+        const swup = new Swup({ 
+            containers: ["#swup"], 
+            animationSelector: '[class*="transition-"]' 
+        });
+
+        // --- 4. FOOTER INTRO VISIBILITY ---
+        function updateFooterIntro() {
+            const footerIntro = document.querySelector('.footer-intro');
+            if (!footerIntro) return;
+
+            // Show only on homepage (root path or /index.html)
+            const isHomepage = window.location.pathname === '/' ||
+                               window.location.pathname === '/index.html' ||
+                               window.location.pathname === '';
+
+            footerIntro.style.opacity = isHomepage ? '1' : '0';
+            footerIntro.style.pointerEvents = isHomepage ? 'auto' : 'none';
+        }
+
+        // --- 5. EVENT LISTENERS ---
+
+        // Run everything on initial load
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            updateHeaderButton();
+            startSlideshow();
+            updateFooterIntro();
+        } else {
+            document.addEventListener('DOMContentLoaded', () => {
+                updateHeaderButton();
+                startSlideshow();
+                updateFooterIntro();
+            });
+        }
+
+        // Run everything every time Swup swaps the page
+        swup.hooks.on('page:view', () => {
+            updateHeaderButton();
+            startSlideshow();
+            updateFooterIntro();
+        });
+    </script>
+</body>
+</html>

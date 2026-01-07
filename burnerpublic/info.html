@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INFO</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <a href="/">
+            <img src="logo.png" alt="Logo" class="header-logo-img">
+        </a>
+        <a href="/" class="info-btn">CLOSE</a>
+    </header>
+
+    <div id="swup" class="transition-fade">
+        <section class="info-layout">
+            <div class="info-text-box">
+                <h1>About<br>BURNER.</h1>
+                <p>BURNER helps you discover live experiences and stay present when they happen.</p>
+                <p>Features like BURNER Mode, secure payments, and seamless ticket management make it simple to connect with what matters. Built for human connection.</p>
+            </div>
+
+            <div class="slideshow-container">
+                <img id="active-slide" class="slideshow-img loading">
+            </div>
+        </section>
+
+        <footer>
+            <div class="footer-content-grid">
+                <div class="footer-intro">
+                    <p>BURNER helps you find live events worth remembering. Built for connection</p>
+                </div>
+
+                <nav class="footer-nav">
+                    <a href="privacy.html" class="footer-link">01. Privacy Policy</a>
+                    <a href="terms.html" class="footer-link">02. Terms of Service</a>
+                    <a href="faq.html" class="footer-link">03. Frequently Asked Questions</a>
+                    <a href="mailto:support@burnerlive.com" class="footer-link">04. Contact Support</a>
+                </nav>
+            </div>
+
+            <div class="footer-meta">&copy; 2025 BURNER &mdash; ALL RIGHTS RESERVED.</div>
+        </footer>
+    </div>
+
+    <script src="https://unpkg.com/swup@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+
+    <script>
+        function updateHeaderButton() {
+            const btn = document.querySelector('.info-btn');
+            if (!btn) return;
+            if (window.location.pathname.includes('/info')) {
+                btn.textContent = "CLOSE";
+                btn.href = "/";
+            } else {
+                btn.textContent = "INFO";
+                btn.href = "/info";
+            }
+        }
+
+        async function startSlideshow() {
+            const imgElement = document.getElementById('active-slide');
+            if (!imgElement) return;
+
+            const stopShimmer = () => {
+                imgElement.classList.remove('loading');
+                imgElement.classList.add('loaded');
+            };
+
+            if (window.slideInterval) clearInterval(window.slideInterval);
+            imgElement.classList.remove('loaded');
+            imgElement.classList.add('loading');
+
+            if (!window.env) { console.error("config.js missing"); return; }
+            const { SUPABASE_URL, SUPABASE_KEY, TABLE_NAME } = window.env;
+            const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+            const { data, error } = await _supabase.from(TABLE_NAME).select('image_url');
+            
+            if (error || !data || data.length === 0) { stopShimmer(); return; }
+
+            const validRows = data.filter(row => row.image_url);
+            if (validRows.length === 0) { stopShimmer(); return; }
+
+            const shuffled = validRows.sort(() => 0.5 - Math.random());
+            let index = 0;
+
+            const tempImg = new Image();
+            tempImg.src = shuffled[0].image_url;
+            
+            tempImg.onload = () => {
+                imgElement.src = shuffled[0].image_url;
+                stopShimmer();
+                index = 1; 
+                window.slideInterval = setInterval(() => {
+                    imgElement.src = shuffled[index].image_url;
+                    index = (index + 1) % shuffled.length; 
+                }, 600);
+            };
+            tempImg.onerror = () => stopShimmer();
+        }
+
+        const swup = new Swup({ containers: ["#swup"], animationSelector: '[class*="transition-"]' });
+
+        function updateFooterIntro() {
+            const footerIntro = document.querySelector('.footer-intro');
+            if (!footerIntro) return;
+
+            const isHomepage = window.location.pathname === '/' ||
+                               window.location.pathname === '/index.html' ||
+                               window.location.pathname === '';
+
+            footerIntro.style.opacity = isHomepage ? '1' : '0';
+            footerIntro.style.pointerEvents = isHomepage ? 'auto' : 'none';
+        }
+
+        function initAll() {
+            updateHeaderButton();
+            startSlideshow();
+            updateFooterIntro();
+        }
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            initAll();
+        } else {
+            document.addEventListener('DOMContentLoaded', initAll);
+        }
+        swup.hooks.on('page:view', initAll);
+    </script>
+</body>
+</html>
