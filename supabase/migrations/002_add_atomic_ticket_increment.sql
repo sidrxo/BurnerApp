@@ -1,12 +1,13 @@
 -- Migration: Add atomic ticket increment function
 -- Description: Prevents race conditions when multiple users purchase tickets simultaneously
--- Note: Uses TEXT for event_id to support Firebase-style IDs (not UUID)
+-- Note: Uses UUID for proper Supabase event IDs
+-- IMPORTANT: Run convert-event-ids-to-uuid.sql FIRST if you have Firebase-style IDs
 
--- Drop old UUID version if it exists
-DROP FUNCTION IF EXISTS increment_tickets_sold(UUID);
+-- Drop old TEXT version if it exists (from Firebase migration)
+DROP FUNCTION IF EXISTS increment_tickets_sold(TEXT);
 
--- Create function for atomic ticket increment
-CREATE OR REPLACE FUNCTION increment_tickets_sold(p_event_id TEXT)
+-- Create function for atomic ticket increment with UUID
+CREATE OR REPLACE FUNCTION increment_tickets_sold(p_event_id UUID)
 RETURNS void AS $$
 BEGIN
   UPDATE events
@@ -18,5 +19,5 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Grant execute permission to authenticated users and service role
-GRANT EXECUTE ON FUNCTION increment_tickets_sold(TEXT) TO authenticated;
-GRANT EXECUTE ON FUNCTION increment_tickets_sold(TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION increment_tickets_sold(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION increment_tickets_sold(UUID) TO service_role;
