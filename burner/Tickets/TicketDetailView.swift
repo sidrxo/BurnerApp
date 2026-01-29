@@ -5,7 +5,8 @@ import Combine
 import FamilyControls
 
 struct TicketDetailView: View {
-    let ticketWithEvent: TicketWithEventData
+    let ticketId: String  // Just store the ID, look up current data from ViewModel
+    let eventId: String
     var shouldAnimateFlip: Bool = false  // Control flip animation
 
     @State private var hasStartedLiveActivity = false
@@ -19,6 +20,22 @@ struct TicketDetailView: View {
     @EnvironmentObject var coordinator: NavigationCoordinator
     @Environment(\.dismiss) private var dismiss
 
+    // Computed property to get current ticket data from ViewModel (reactive)
+    private var currentTicket: Ticket? {
+        appState.ticketsViewModel.tickets.first { $0.ticketId == ticketId }
+    }
+
+    // Computed property to get current event data
+    private var currentEvent: Event? {
+        appState.eventViewModel.events.first { $0.id == eventId }
+    }
+
+    // Fallback combined data for compatibility
+    private var ticketWithEvent: TicketWithEventData? {
+        guard let ticket = currentTicket, let event = currentEvent else { return nil }
+        return TicketWithEventData(ticket: ticket, event: event)
+    }
+
     private var shouldShowQRCode: Bool {
         appState.burnerManager.burnerSetupCompleted && appState.burnerManager.isAuthorized
     }
@@ -28,27 +45,32 @@ struct TicketDetailView: View {
             Color.black
                 .ignoresSafeArea(edges: [.bottom, .top])
 
-            VStack(spacing: 24) {
-                ZStack {
-                    cardBackView
-                        .opacity(flipped ? 1 : 0)
-                        .rotation3DEffect(
-                            flipped ? Angle(degrees: 0) : Angle(degrees: -180),
-                            axis: (x: 0, y: 1, z: 0)
-                        )
+            if let ticket = currentTicket, let event = currentEvent {
+                VStack(spacing: 24) {
+                    ZStack {
+                        cardBackView(event: event)
+                            .opacity(flipped ? 1 : 0)
+                            .rotation3DEffect(
+                                flipped ? Angle(degrees: 0) : Angle(degrees: -180),
+                                axis: (x: 0, y: 1, z: 0)
+                            )
 
-                    simpleTicketView
-                        .opacity(flipped ? 0 : 1)
-                        .rotation3DEffect(
-                            flipped ? Angle(degrees: 180) : Angle(degrees: 0),
-                            axis: (x: 0, y: 1, z: 0)
-                        )
+                        simpleTicketView(ticket: ticket, event: event)
+                            .opacity(flipped ? 0 : 1)
+                            .rotation3DEffect(
+                                flipped ? Angle(degrees: 180) : Angle(degrees: 0),
+                                axis: (x: 0, y: 1, z: 0)
+                            )
+                    }
+                    .frame(height: 550)
+                    .padding(.horizontal, 20)
                 }
-                .frame(height: 550)
-                .padding(.horizontal, 20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(EmptyView())
+            } else {
+                ProgressView()
+                    .tint(.white)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .overlay(EmptyView())
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
@@ -64,9 +86,9 @@ struct TicketDetailView: View {
         .onAppear {
             appState.syncBurnerModeAuthorization()
 
-            if shouldShowQRCode {
+            if shouldShowQRCode, let ticket = currentTicket {
                 Task {
-                    qrCodeImage = await generateQRCode(from: qrCodeData, size: 300)
+                    qrCodeImage = await generateQRCode(from: qrCodeData(for: ticket), size: 300)
                 }
             }
 
@@ -82,7 +104,7 @@ struct TicketDetailView: View {
             if shouldAnimateFlip {
                 // Start with back side for animation
                 flipped = true
-                
+
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                         flipped = false
@@ -96,16 +118,16 @@ struct TicketDetailView: View {
             liveActivityUpdateTimer = nil
         }
         .onChange(of: appState.burnerManager.burnerSetupCompleted) { oldValue, newValue in
-            if newValue && !oldValue && appState.burnerManager.isAuthorized {
+            if newValue && !oldValue && appState.burnerManager.isAuthorized, let ticket = currentTicket {
                 Task {
-                    qrCodeImage = await generateQRCode(from: qrCodeData, size: 300)
+                    qrCodeImage = await generateQRCode(from: qrCodeData(for: ticket), size: 300)
                 }
             }
         }
         .onChange(of: appState.burnerManager.isAuthorized) { oldValue, newValue in
-            if newValue && !oldValue && appState.burnerManager.burnerSetupCompleted {
+            if newValue && !oldValue && appState.burnerManager.burnerSetupCompleted, let ticket = currentTicket {
                 Task {
-                    qrCodeImage = await generateQRCode(from: qrCodeData, size: 300)
+                    qrCodeImage = await generateQRCode(from: qrCodeData(for: ticket), size: 300)
                 }
             } else if !newValue {
                 qrCodeImage = nil
@@ -113,11 +135,12 @@ struct TicketDetailView: View {
         }
     }
 
-    private var cardBackView: some View {
+    @ViewBuilder
+    private func cardBackView(event: Event) -> some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
                 ZStack(alignment: .bottom) {
-                    KFImage(URL(string: ticketWithEvent.event.imageUrl))
+                    KFImage(URL(string: event.imageUrl))
                         .resizable()
                         .placeholder {
                             Rectangle()
@@ -136,7 +159,8 @@ struct TicketDetailView: View {
         .padding(.vertical, 32)
     }
 
-    private var simpleTicketView: some View {
+    @ViewBuilder
+    private func simpleTicketView(ticket: Ticket, event: Event) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Spacer()
@@ -151,7 +175,7 @@ struct TicketDetailView: View {
 
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(ticketWithEvent.event.name.uppercased())
+                    Text(event.name.uppercased())
                         .appFont(size: 20, weight: .bold)
                         .kerning(-1.5)
                         .foregroundColor(.black)
@@ -160,23 +184,23 @@ struct TicketDetailView: View {
                         .lineLimit(2)
                         .padding(.trailing, 40)
 
-                    Text(ticketWithEvent.event.venue.uppercased())
+                    Text(event.venue.uppercased())
                         .appCard()
                         .foregroundColor(.black)
 
-                    Text("\(formatDateDay(ticketWithEvent.event.startTime ?? Date())) \(formatDateMonth(ticketWithEvent.event.startTime ?? Date())) \(formatDateYear(ticketWithEvent.event.startTime ?? Date()))")
+                    Text("\(formatDateDay(event.startTime ?? Date())) \(formatDateMonth(event.startTime ?? Date())) \(formatDateYear(event.startTime ?? Date()))")
                         .appCard()
                         .foregroundColor(.black)
 
-                    Text(formatTime(ticketWithEvent.event.startTime ?? Date()))
+                    Text(formatTime(event.startTime ?? Date()))
                         .appCard()
                         .foregroundColor(.black)
 
-                    Text((ticketWithEvent.ticket.status.uppercased()))
+                    Text(ticket.status.uppercased())
                         .appCard()
                         .foregroundColor(.black)
 
-                    Text(ticketWithEvent.ticket.ticketNumber ?? "N/A")
+                    Text(ticket.ticketNumber ?? "N/A")
                         .appCard()
                         .foregroundColor(.black)
                 }
@@ -196,7 +220,7 @@ struct TicketDetailView: View {
                                 .background(.white)
                         } else {
                             QRCodeView(
-                                data: qrCodeData,
+                                data: qrCodeData(for: ticket),
                                 size: 330
                             )
                             .background(.white)
@@ -210,7 +234,7 @@ struct TicketDetailView: View {
                                     .frame(width: 330, height: 330)
                             } else {
                                 QRCodeView(
-                                    data: qrCodeData,
+                                    data: qrCodeData(for: ticket),
                                     size: 330
                                 )
                             }
@@ -245,8 +269,8 @@ struct TicketDetailView: View {
         .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
     }
 
-    private var qrCodeData: String {
-        return ticketWithEvent.ticket.qrCode ?? "INVALID_TICKET"
+    private func qrCodeData(for ticket: Ticket) -> String {
+        return ticket.qrCode ?? "INVALID_TICKET"
     }
 
     private func generateQRCode(from string: String, size: CGFloat) async -> UIImage? {
@@ -295,20 +319,23 @@ struct TicketDetailView: View {
     }
 
     private var shouldShowLiveActivityInfo: Bool {
+        guard let ticket = currentTicket, let event = currentEvent else { return false }
         let calendar = Calendar.current
         let now = Date()
-        let isToday = calendar.isDate(ticketWithEvent.event.startTime ?? Date(), inSameDayAs: now)
-        let isTomorrow = calendar.isDate(ticketWithEvent.event.startTime ?? Date(), inSameDayAs: calendar.date(byAdding: .day, value: 1, to: now) ?? now)
+        let isToday = calendar.isDate(event.startTime ?? Date(), inSameDayAs: now)
+        let isTomorrow = calendar.isDate(event.startTime ?? Date(), inSameDayAs: calendar.date(byAdding: .day, value: 1, to: now) ?? now)
 
-        return (isToday || isTomorrow) && ticketWithEvent.ticket.status == "confirmed"
+        return (isToday || isTomorrow) && ticket.status == "confirmed"
     }
 
     private var isEventToday: Bool {
-        Calendar.current.isDate(ticketWithEvent.event.startTime ?? Date(), inSameDayAs: Date())
+        guard let event = currentEvent else { return false }
+        return Calendar.current.isDate(event.startTime ?? Date(), inSameDayAs: Date())
     }
 
     private func autoStartLiveActivityForEventDay() {
-        guard isEventToday && ticketWithEvent.ticket.status == "confirmed" else {
+        guard let ticket = currentTicket, let event = currentEvent else { return }
+        guard isEventToday && ticket.status == "confirmed" else {
             return
         }
 
@@ -322,8 +349,8 @@ struct TicketDetailView: View {
         }
 
         let existingActivity = Activity<TicketActivityAttributes>.activities.first { activity in
-            activity.attributes.eventName == ticketWithEvent.event.name &&
-            Calendar.current.isDate(activity.attributes.startTime, inSameDayAs: ticketWithEvent.event.startTime ?? Date())
+            activity.attributes.eventName == event.name &&
+            Calendar.current.isDate(activity.attributes.startTime, inSameDayAs: event.startTime ?? Date())
         }
 
         if existingActivity != nil {
@@ -331,7 +358,9 @@ struct TicketDetailView: View {
             return
         }
 
-        TicketLiveActivityManager.startLiveActivity(for: ticketWithEvent)
+        if let ticketWithEvent = ticketWithEvent {
+            TicketLiveActivityManager.startLiveActivity(for: ticketWithEvent)
+        }
         hasStartedLiveActivity = true
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
@@ -346,11 +375,12 @@ struct TicketDetailView: View {
     }
 
     private func checkLiveActivityStatus() {
+        guard let event = currentEvent else { return }
         guard #available(iOS 16.1, *) else { return }
 
         let hasActiveActivity = Activity<TicketActivityAttributes>.activities.contains { activity in
-            activity.attributes.eventName == ticketWithEvent.event.name &&
-            Calendar.current.isDate(activity.attributes.startTime, inSameDayAs: ticketWithEvent.event.startTime ?? Date())
+            activity.attributes.eventName == event.name &&
+            Calendar.current.isDate(activity.attributes.startTime, inSameDayAs: event.startTime ?? Date())
         }
 
         withAnimation(.easeInOut(duration: 0.3)) {
