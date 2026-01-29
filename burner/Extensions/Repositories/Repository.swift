@@ -177,51 +177,50 @@ class TicketRepository: BaseRepository, TicketRepositoryProtocol {
             }
 
             // 5. Handle payloads by MERGING into cachedTickets
-            Task {
-                await withThrowingTaskGroup(of: Void.self) { group in
-                    
-                    // HANDLE INSERT
-                    group.addTask {
-                        for await action in insertStream {
-                            if let newTicket = try? action.decodeRecord(as: Ticket.self, decoder: self.decoder) {
-                                await MainActor.run {
-                                    self.cachedTickets.append(newTicket)
-                                    self.cachedTickets.sort { $0.purchaseDate > $1.purchaseDate }
-                                    let active = self.cachedTickets.filter { $0.status != "deleted" }
-                                    completion(.success(active))
-                                }
-                            }
-                        }
-                    }
-                    
-                    // HANDLE UPDATE
-                    group.addTask {
-                        for await action in updateStream {
-                            if let updatedTicket = try? action.decodeRecord(as: Ticket.self, decoder: self.decoder) {
-                                await MainActor.run {
-                                    if let index = self.cachedTickets.firstIndex(where: { $0.id == updatedTicket.id }) {
-                                        self.cachedTickets[index] = updatedTicket
-                                    } else {
-                                        self.cachedTickets.append(updatedTicket)
-                                        self.cachedTickets.sort { $0.purchaseDate > $1.purchaseDate }
-                                    }
-                                    let active = self.cachedTickets.filter { $0.status != "deleted" }
-                                    completion(.success(active))
-                                }
-                            }
-                        }
-                    }
+            // IMPORTANT: Must await this to keep the streams alive
+            await withThrowingTaskGroup(of: Void.self) { group in
 
-                    // HANDLE DELETE
-                    group.addTask {
-                        for await action in deleteStream {
-                            // Fixed: oldRecord is already [String: AnyJSON], no cast needed
-                            if let deletedId = action.oldRecord["id"]?.stringValue {
-                                await MainActor.run {
-                                    self.cachedTickets.removeAll { $0.id == deletedId }
-                                    let active = self.cachedTickets.filter { $0.status != "deleted" }
-                                    completion(.success(active))
+                // HANDLE INSERT
+                group.addTask {
+                    for await action in insertStream {
+                        if let newTicket = try? action.decodeRecord(as: Ticket.self, decoder: self.decoder) {
+                            await MainActor.run {
+                                self.cachedTickets.append(newTicket)
+                                self.cachedTickets.sort { $0.purchaseDate > $1.purchaseDate }
+                                let active = self.cachedTickets.filter { $0.status != "deleted" }
+                                completion(.success(active))
+                            }
+                        }
+                    }
+                }
+
+                // HANDLE UPDATE
+                group.addTask {
+                    for await action in updateStream {
+                        if let updatedTicket = try? action.decodeRecord(as: Ticket.self, decoder: self.decoder) {
+                            await MainActor.run {
+                                if let index = self.cachedTickets.firstIndex(where: { $0.id == updatedTicket.id }) {
+                                    self.cachedTickets[index] = updatedTicket
+                                } else {
+                                    self.cachedTickets.append(updatedTicket)
+                                    self.cachedTickets.sort { $0.purchaseDate > $1.purchaseDate }
                                 }
+                                let active = self.cachedTickets.filter { $0.status != "deleted" }
+                                completion(.success(active))
+                            }
+                        }
+                    }
+                }
+
+                // HANDLE DELETE
+                group.addTask {
+                    for await action in deleteStream {
+                        // Use ticket_id as the primary key column
+                        if let deletedId = action.oldRecord["ticket_id"]?.stringValue {
+                            await MainActor.run {
+                                self.cachedTickets.removeAll { $0.id == deletedId }
+                                let active = self.cachedTickets.filter { $0.status != "deleted" }
+                                completion(.success(active))
                             }
                         }
                     }
@@ -362,43 +361,42 @@ class BookmarkRepository: BaseRepository, BookmarkRepositoryProtocol {
                 return
             }
             
-            Task {
-                await withThrowingTaskGroup(of: Void.self) { group in
-                    
-                    group.addTask {
-                        for await action in insertStream {
-                            if let newBookmark = try? action.decodeRecord(as: BookmarkData.self, decoder: self.decoder) {
-                                await MainActor.run {
-                                    self.cachedBookmarks.append(newBookmark)
-                                    completion(.success(self.cachedBookmarks))
-                                }
+            // IMPORTANT: Must await this to keep the streams alive
+            await withThrowingTaskGroup(of: Void.self) { group in
+
+                group.addTask {
+                    for await action in insertStream {
+                        if let newBookmark = try? action.decodeRecord(as: BookmarkData.self, decoder: self.decoder) {
+                            await MainActor.run {
+                                self.cachedBookmarks.append(newBookmark)
+                                completion(.success(self.cachedBookmarks))
                             }
                         }
                     }
-                    
-                    group.addTask {
-                        for await action in updateStream {
-                            if let updatedBookmark = try? action.decodeRecord(as: BookmarkData.self, decoder: self.decoder) {
-                                await MainActor.run {
-                                    if let index = self.cachedBookmarks.firstIndex(where: { $0.id == updatedBookmark.id }) {
-                                        self.cachedBookmarks[index] = updatedBookmark
-                                    } else {
-                                        self.cachedBookmarks.append(updatedBookmark)
-                                    }
-                                    completion(.success(self.cachedBookmarks))
+                }
+
+                group.addTask {
+                    for await action in updateStream {
+                        if let updatedBookmark = try? action.decodeRecord(as: BookmarkData.self, decoder: self.decoder) {
+                            await MainActor.run {
+                                if let index = self.cachedBookmarks.firstIndex(where: { $0.id == updatedBookmark.id }) {
+                                    self.cachedBookmarks[index] = updatedBookmark
+                                } else {
+                                    self.cachedBookmarks.append(updatedBookmark)
                                 }
+                                completion(.success(self.cachedBookmarks))
                             }
                         }
                     }
-                    
-                    group.addTask {
-                        for await action in deleteStream {
-                            // Fixed: use AnyJSON's stringValue property
-                            if let deletedId = action.oldRecord["id"]?.stringValue {
-                                await MainActor.run {
-                                    self.cachedBookmarks.removeAll { $0.id == deletedId }
-                                    completion(.success(self.cachedBookmarks))
-                                }
+                }
+
+                group.addTask {
+                    for await action in deleteStream {
+                        // Use id as the primary key column for bookmarks
+                        if let deletedId = action.oldRecord["id"]?.stringValue {
+                            await MainActor.run {
+                                self.cachedBookmarks.removeAll { $0.id == deletedId }
+                                completion(.success(self.cachedBookmarks))
                             }
                         }
                     }
