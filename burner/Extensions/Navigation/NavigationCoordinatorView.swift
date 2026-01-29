@@ -174,7 +174,11 @@ struct NavigationDestinationBuilder: View {
                 FilteredEventsView(title: sectionDestination.title, events: sectionDestination.events)
 
             case .ticketDetail(let ticketWithEvent, let shouldAnimate):
-                TicketDetailView(ticketWithEvent: ticketWithEvent, shouldAnimateFlip: shouldAnimate)
+                TicketDetailView(
+                    ticketId: ticketWithEvent.ticket.ticketId ?? "",
+                    eventId: ticketWithEvent.ticket.eventId,
+                    shouldAnimateFlip: shouldAnimate
+                )
 
             case .ticketById(let ticketId):
                 TicketDetailByIdDestination(ticketId: ticketId)
@@ -238,22 +242,11 @@ struct TicketDetailDestination: View {
     @Environment(\.heroNamespace) private var heroNamespace
 
     var body: some View {
-        Group {
-            if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
-                TicketDetailView(
-                    ticketWithEvent: TicketWithEventData(ticket: ticket, event: event),
-                    shouldAnimateFlip: false
-                )
-            } else {
-                TicketDetailView(
-                    ticketWithEvent: TicketWithEventData(
-                        ticket: ticket,
-                        event: createPlaceholderEvent(from: ticket)
-                    ),
-                    shouldAnimateFlip: false
-                )
-            }
-        }
+        TicketDetailView(
+            ticketId: ticket.ticketId ?? "",
+            eventId: ticket.eventId,
+            shouldAnimateFlip: false
+        )
     }
 }
 
@@ -267,20 +260,11 @@ struct TicketDetailByIdDestination: View {
     var body: some View {
         Group {
             if let ticket = ticketsViewModel.tickets.first(where: { $0.id == ticketId }) {
-                if let event = eventViewModel.events.first(where: { $0.id == ticket.eventId }) {
-                    TicketDetailView(
-                        ticketWithEvent: TicketWithEventData(ticket: ticket, event: event),
-                        shouldAnimateFlip: false
-                    )
-                } else {
-                    TicketDetailView(
-                        ticketWithEvent: TicketWithEventData(
-                            ticket: ticket,
-                            event: createPlaceholderEvent(from: ticket)
-                        ),
-                        shouldAnimateFlip: false
-                    )
-                }
+                TicketDetailView(
+                    ticketId: ticket.ticketId ?? "",
+                    eventId: ticket.eventId,
+                    shouldAnimateFlip: false
+                )
             } else {
                 ZStack {
                     Color.black.ignoresSafeArea()
