@@ -147,23 +147,25 @@ class TicketRepository: BaseRepository, TicketRepositoryProtocol {
             self.currentChannel = channel
 
             // 3. Set up streams with new filter syntax
+            // Use lowercased userId to match initial fetch
+            let userIdLower = userId.lowercased()
             let insertStream = channel.postgresChange(
                 InsertAction.self,
                 schema: "public",
                 table: "tickets",
-                filter: .eq("user_id", value: userId)
+                filter: .eq("user_id", value: userIdLower)
             )
             let updateStream = channel.postgresChange(
                 UpdateAction.self,
                 schema: "public",
                 table: "tickets",
-                filter: .eq("user_id", value: userId)
+                filter: .eq("user_id", value: userIdLower)
             )
             let deleteStream = channel.postgresChange(
                 DeleteAction.self,
                 schema: "public",
                 table: "tickets",
-                filter: .eq("user_id", value: userId)
+                filter: .eq("user_id", value: userIdLower)
             )
 
             // 4. Subscribe to channel using new method

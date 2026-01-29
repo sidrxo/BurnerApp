@@ -121,32 +121,33 @@ class BurnerModeMonitor: ObservableObject {
         subscriptionTask?.cancel()
 
         subscriptionTask = Task {
-            let channel = client.channel("burner-tickets:\(userId)")
+            let channelName = "burner-tickets-\(userId)-\(UUID().uuidString)"
+            let channel = client.realtimeV2.channel(channelName)
 
-            _ = channel.onPostgresChange(
-                AnyAction.self,
+            // Use typed filter syntax (matching TicketRepository pattern)
+            let updateStream = channel.postgresChange(
+                UpdateAction.self,
                 schema: "public",
                 table: "tickets",
-                filter: "user_id=eq.\(userId)"
-            ) { [weak self] payload in
-                guard let self = self else { return }
-
-                Task { @MainActor in
-                    // Re-check all conditions
-                    await self.checkShouldMonitor()
-                }
-            }
+                filter: .eq("user_id", value: userId.lowercased())
+            )
 
             do {
                 try await channel.subscribeWithError()
-                
+
                 await MainActor.run {
                     self.isMonitoring = true
                 }
 
-                // Keep the task alive
-                while !Task.isCancelled {
-                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                // Listen for updates using async iteration
+                for await _ in updateStream {
+                    guard !Task.isCancelled else { break }
+
+                    await MainActor.run {
+                        Task {
+                            await self.checkShouldMonitor()
+                        }
+                    }
                 }
 
                 await channel.unsubscribe()
@@ -154,19 +155,6 @@ class BurnerModeMonitor: ObservableObject {
                 // Handle subscription error silently
                 print("Channel subscription error: \(error)")
             }
-
-            await MainActor.run {
-                self.isMonitoring = false
-            }
-        
-
-
-            // Keep the task alive
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-            }
-
-            await channel.unsubscribe()
 
             await MainActor.run {
                 self.isMonitoring = false
