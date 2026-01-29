@@ -107,8 +107,9 @@ export function useTicketsData() {
     const userEmail = data.users?.email || data.user_email || '';
 
     // Return both snake_case (primary) and camelCase (compatibility)
+    // Note: Primary key is ticket_id, not id
     return {
-      id: data.id,
+      id: data.ticket_id,
       user_id: data.user_id,
       user_email: userEmail,
       event_name: data.event_name,
